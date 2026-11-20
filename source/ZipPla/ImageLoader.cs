@@ -389,6 +389,54 @@ namespace ZipPla
             return value == null ? new DihedralFraction() : ViewerFormImageFilter.GetOrientation((int)value);
         }
 
+        /// <summary>
+        /// サムネイル用に JPEG を縮小してデコードする（A2）。WIC の JPEG デコーダは DCT の段階で 1/2・1/4・1/8 に
+        /// 縮小できるので、大きな JPEG ほど速い。EXIF の回転も反映する。
+        /// 回転後のサイズが minSize の幅・高さとも以上になるようにし、元の画像がその 2 倍に満たない（縮小の効果がない）
+        /// 場合や読めない場合は null を返す（呼び出し側は従来どおり全体をデコードする）。
+        /// </summary>
+        public static Bitmap TryLoadReducedJpeg(string filePath, Size minSize)
+        {
+            if (!IsJpegPath(filePath) || minSize.Width <= 0 || minSize.Height <= 0) return null;
+            try
+            {
+                using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    var orientation = GetJpegOrientation(s);
+                    s.Position = 0;
+                    var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(s,
+                        System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile | System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation,
+                        System.Windows.Media.Imaging.BitmapCacheOption.None);
+                    var frame = decoder.Frames[0];
+                    int width = frame.PixelWidth, height = frame.PixelHeight;
+                    // 90 度回転する向きなら、縦横を入れ替えて比べる
+                    var swap = orientation == new DihedralFraction(1, 4) || orientation == new DihedralFraction(3, 4) ||
+                        orientation == new DihedralFraction(1, -4) || orientation == new DihedralFraction(3, -4);
+                    int needW = swap ? minSize.Height : minSize.Width, needH = swap ? minSize.Width : minSize.Height;
+                    var scale = Math.Max((double)needW / width, (double)needH / height);
+                    if (scale > 0.5) return null;
+                    s.Position = 0;
+                    var image = new System.Windows.Media.Imaging.BitmapImage();
+                    image.BeginInit();
+                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
+                    image.DecodePixelWidth = (int)Math.Ceiling(width * scale);
+                    image.StreamSource = s;
+                    image.EndInit();
+                    System.Windows.Media.Imaging.BitmapSource source = image;
+                    if (source.Format != System.Windows.Media.PixelFormats.Bgr24)
+                    {
+                        source = new System.Windows.Media.Imaging.FormatConvertedBitmap(source, System.Windows.Media.PixelFormats.Bgr24, null, 0);
+                    }
+                    return ViewerFormImageFilter.Rotate(BitmapResizer.GetBitmap(source), orientation);
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private static Bitmap LoadRotateBitmap(Stream stream)
         {
             using (var seekable = SeekableStream.Seekablize(stream, long.MaxValue, leaveOpen: true))

@@ -4962,7 +4962,13 @@ namespace ZipPla
                         MessageBox.Show("Delete cache error");
                     }
 #else
+#if PERFLOG
+                    var perfAds = PerfTrace.Now();
+#endif
                     GPSizeThumbnail.TryDeleteAlternateDataStream(zipPath);
+#if PERFLOG
+                    PerfTrace.AddStage("deleteADS", PerfTrace.Now() - perfAds);
+#endif
 #endif
                 }
 
@@ -5361,11 +5367,29 @@ namespace ZipPla
                 if (thumbnailCache != null && ImageLoader.SupportsFullReading(zipPath, ffmpegExists: true))
                 {
                     byte[] data;
-                    if (!(GPSizeThumbnail.TryGet(thumbnailCache, zipPath, tvCatalog.ThumbnailSize, currentClipMode == ClipMode.Letterbox, out img, out data) && ImageInfo.TryParseData(data, out imageInfo)))
+                    imageInfo = null;
+#if PERFLOG
+                    var perfT = PerfTrace.Now();
+#endif
+                    var cacheHit = GPSizeThumbnail.TryGet(thumbnailCache, zipPath, tvCatalog.ThumbnailSize, currentClipMode == ClipMode.Letterbox, out img, out data) && ImageInfo.TryParseData(data, out imageInfo);
+#if PERFLOG
+                    PerfTrace.AddStage(cacheHit ? "cacheGetHit" : "cacheGetMiss", PerfTrace.Now() - perfT);
+#endif
+                    if (!cacheHit)
                     {
                         if (img != null) img.Dispose();
-                        img = ImageLoader.GetFullBitmap(zipPath);
+#if PERFLOG
+                        perfT = PerfTrace.Now();
+#endif
+                        // 大きな JPEG は縮小してデコードする（A2）。キャッシュの作り方が変わらないよう、
+                        // サムネイルの 3 倍以上の大きさを確保できる場合だけ（画像情報は元ファイルのヘッダから取る）
+                        img = ImageInfo.Supports(zipPath) ? ImageLoader.TryLoadReducedJpeg(zipPath, ThumbnailReducedDecodeSize()) : null;
+                        if (img == null) img = ImageLoader.GetFullBitmap(zipPath);
                         imageInfo = ImageInfo.Supports(zipPath) ? new ImageInfo(zipPath) : ImageLoader.GetImageInfo(img);
+#if PERFLOG
+                        PerfTrace.AddStage("decodeFull", PerfTrace.Now() - perfT);
+                        perfT = PerfTrace.Now();
+#endif
                         Bitmap img2;
                         if (GPSizeThumbnail.TrySet(thumbnailCache, zipPath, -1, tvCatalog.ThumbnailSize, currentClipMode == ClipMode.Letterbox,
                             !ImageLoader.IsLowLoad(zipPath), img, imageInfo.ToData(), out img2))
@@ -5373,13 +5397,25 @@ namespace ZipPla
                             img.Dispose();
                             img = img2;
                         }
+#if PERFLOG
+                        PerfTrace.AddStage("cacheSet", PerfTrace.Now() - perfT);
+#endif
                     }
                     if (img == null) imageInfo = null;
                     //imageInfo = img != null ? new ImageInfo(zipPath) : null; // img からではなくバイナリから取得
                 }
                 else
                 {
-                    img = ImageLoader.GetAtLeastThumbnailBitmap(zipPath, tvCatalog.ThumbnailSize, true, out imageInfo);
+#if PERFLOG
+                    var perfT = PerfTrace.Now();
+#endif
+                    // 大きな JPEG は縮小してデコードする（A2）
+                    img = ImageInfo.Supports(zipPath) ? ImageLoader.TryLoadReducedJpeg(zipPath, ThumbnailReducedDecodeSize()) : null;
+                    if (img != null) imageInfo = new ImageInfo(zipPath);
+                    else img = ImageLoader.GetAtLeastThumbnailBitmap(zipPath, tvCatalog.ThumbnailSize, true, out imageInfo);
+#if PERFLOG
+                    PerfTrace.AddStage("decodeNoCache", PerfTrace.Now() - perfT);
+#endif
                 }
 
                 if (img != null)
@@ -5388,7 +5424,13 @@ namespace ZipPla
                     {
                         loadError = LoadResult.Success;
                         //var sw = new Stopwatch();sw.Start();
+#if PERFLOG
+                        var perfClip = PerfTrace.Now();
+#endif
                         var result = DoJustClipping(img, needToResize: true);
+#if PERFLOG
+                        PerfTrace.AddStage("clip", PerfTrace.Now() - perfClip);
+#endif
                         //sw.Stop();MessageBox.Show($"{sw.Elapsed}");
                         return result;
                     }
@@ -5413,6 +5455,14 @@ namespace ZipPla
                 //}
                 return result;
             }
+        }
+
+        // サムネイル用の縮小デコードで確保する大きさ。キャッシュ（GPSizeThumbnail）は表示サイズの √2 倍を最大に作り、
+        // 渡された画像がその 2 倍に満たないと作り方が変わるので、余裕を見て表示サイズの 3 倍にする（A2）
+        private Size ThumbnailReducedDecodeSize()
+        {
+            var size = tvCatalog.ThumbnailSize;
+            return new Size(size.Width * 3, size.Height * 3);
         }
 
         private Rectangle Round(RectangleF rect) { return new Rectangle((int)Math.Round(rect.X), (int)Math.Round(rect.Y), (int)Math.Round(rect.Width), (int)Math.Round(rect.Height)); }
@@ -30399,6 +30449,22 @@ namespace ZipPla
         // UI スレッドでの描画時間（DrawItem を直接呼んだもの＝サムネイル到着時など、OnPaint）
         private static long directDraws, directDrawTicks, maxDirectDrawTicks, paints, paintTicks, maxPaintTicks, generates, generateTicks;
         public static void AddGenerate(long ticks) { generates++; generateTicks += ticks; }
+        // サムネイル生成の段階ごとの時間（スレッドをまたぐので lock する）
+        private static readonly Dictionary<string, long[]> stageTicks = new Dictionary<string, long[]>();
+        public static void AddStage(string name, long ticks)
+        {
+            lock (stageTicks)
+            {
+                long[] v;
+                if (!stageTicks.TryGetValue(name, out v)) stageTicks[name] = v = new long[2];
+                v[0]++; v[1] += ticks;
+            }
+        }
+        public static string StageSummary()
+        {
+            lock (stageTicks) return string.Join(" ", stageTicks.Select(p => $"{p.Key}={p.Value[0]}x{Ms(p.Value[1]) / Math.Max(1, p.Value[0]):F1}ms"));
+        }
+        public static long Now() => Stopwatch.GetTimestamp();
         public static void AddDirectDraw(long ticks) { directDraws++; directDrawTicks += ticks; if (ticks > maxDirectDrawTicks) maxDirectDrawTicks = ticks; }
         public static void AddPaint(long ticks) { paints++; paintTicks += ticks; if (ticks > maxPaintTicks) maxPaintTicks = ticks; }
         private static double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
@@ -30406,7 +30472,7 @@ namespace ZipPla
         {
             Write($"draw summary: directDraws={directDraws} total={Ms(directDrawTicks):F1}ms avg={(directDraws > 0 ? Ms(directDrawTicks) / directDraws : 0):F3}ms max={Ms(maxDirectDrawTicks):F2}ms" +
                 $" | paints={paints} total={Ms(paintTicks):F1}ms avg={(paints > 0 ? Ms(paintTicks) / paints : 0):F3}ms max={Ms(maxPaintTicks):F2}ms" +
-                $" | generates={generates} avg={(generates > 0 ? Ms(generateTicks) / generates : 0):F1}ms");
+                $" | generates={generates} avg={(generates > 0 ? Ms(generateTicks) / generates : 0):F1}ms | stages: {StageSummary()}");
         }
         public static void ThumbnailQueued() { Interlocked.Increment(ref queued); }
         public static void ThumbnailCancelled() { Interlocked.Increment(ref cancelled); }
