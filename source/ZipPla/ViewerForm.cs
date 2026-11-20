@@ -3383,7 +3383,9 @@ namespace ZipPla
                                 var rect = new Rectangle(0, 0, resizedSize.Width, resizedSize.Height);
 
                                 //result = Clone(bmp);
-                                entity = bmp.CreateNew(Clone);
+                                // Clone は原寸のメモリを共有する別名を作る。表示フィルタ（PostFilter）は画素をその場で書き換えるので、
+                                // フィルタがあるときは本当に複製する（共有したままだと原寸まで書き換わり、作り直すたびに重ねがけされる、C9）
+                                entity = ViewerMode != ViewerModeEnum.CoverSetting && imageFilter.PostFilterExists() ? bmp.CreateNew(DeepClone) : bmp.CreateNew(Clone);
                             }
                             else
                             {
@@ -3651,6 +3653,47 @@ namespace ZipPla
         }
         */
 
+
+        // 画素のメモリも複製する Clone（C9）
+        private static unsafe Bitmap DeepClone(Bitmap bmp)
+        {
+            var rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
+            var result = new Bitmap(bmp.Width, bmp.Height, bmp.PixelFormat);
+            try
+            {
+                var src = bmp.LockBits(rect, ImageLockMode.ReadOnly, bmp.PixelFormat);
+                try
+                {
+                    var dst = result.LockBits(rect, ImageLockMode.WriteOnly, bmp.PixelFormat);
+                    try
+                    {
+                        var rowBytes = Math.Min(Math.Abs(src.Stride), Math.Abs(dst.Stride));
+                        for (var y = 0; y < rect.Height; y++)
+                        {
+                            CopyMemory(dst.Scan0 + y * dst.Stride, src.Scan0 + y * src.Stride, rowBytes);
+                        }
+                    }
+                    finally
+                    {
+                        result.UnlockBits(dst);
+                    }
+                }
+                finally
+                {
+                    bmp.UnlockBits(src);
+                }
+                if ((bmp.PixelFormat & PixelFormat.Indexed) == PixelFormat.Indexed)
+                {
+                    result.Palette = bmp.Palette;
+                }
+                return result;
+            }
+            catch
+            {
+                result.Dispose();
+                throw;
+            }
+        }
 
         private static Bitmap Clone(Bitmap bmp)
         {
