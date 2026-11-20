@@ -30378,12 +30378,22 @@ namespace ZipPla
                 try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "perf-trace.log"), $"{clock.ElapsedMilliseconds,7}\t{line}" + Environment.NewLine); } catch { }
             }
         }
+        private static long rangeChangedAt;
+        private static bool readyLogged = true;
         // 読み込み範囲が変わったときだけ記録する
         public static void LoadRange(int start, int stop, string detail)
         {
             if (start == lastStart && stop == lastStop) return;
             lastStart = start; lastStop = stop;
+            rangeChangedAt = clock.ElapsedMilliseconds; readyLogged = false;
             Write($"range [{start}, {stop}) count={Math.Max(0, stop - start)} {detail} queued={queued} started={started} cancelled={cancelled}");
+        }
+        // 読み込み範囲のサムネイルが全部揃ったら、範囲が変わってからの時間を1回だけ記録する
+        public static void CheckRangeReady(bool ready, Func<int> countLoadedImages)
+        {
+            if (!ready || readyLogged) return;
+            readyLogged = true;
+            Write($"range ready {clock.ElapsedMilliseconds - rangeChangedAt} ms after range change [{lastStart}, {lastStop}) queued={queued} started={started} cancelled={cancelled} imagesHeld={countLoadedImages()}");
         }
         public static void ThumbnailQueued() { Interlocked.Increment(ref queued); }
         public static void ThumbnailCancelled() { Interlocked.Increment(ref cancelled); }
@@ -30397,7 +30407,20 @@ namespace ZipPla
 
     public class ThumbViewerItem : IDisposable
     {
-        static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+        // サムネイル読み込みの待ち行列（A4/A10）。UI スレッドだけで操作する。
+        // 1 件ずつ、新しく依頼されたもの（＝今表示されているもの）から順に読み込む。
+        // スクロール中（読み込み範囲が直近 ScrollSettleMs 以内に変わった）は新しい読み込みを始めず、
+        // 通り過ぎただけの項目のサムネイルを作らないようにする。
+        private static readonly LinkedList<ThumbViewerItem> loadQueue = new LinkedList<ThumbViewerItem>();
+        private static bool loadPumpRunning = false;
+        private const int ScrollSettleMs = 60;
+        internal static int LastScrollTick = Environment.TickCount - 10000;
+        private LinkedListNode<ThumbViewerItem> queueNode = null;
+        private bool loading = false;          // GetThumbnail の実行中
+        private bool loadCancelled = false;    // 実行中に範囲外になった（Clear された）
+        private bool loadFailed = false;       // 現在のパスで読み込みに失敗した（描画のたびに読み直さない）
+        private bool disposed = false;
+
         public CatalogForm OwnerCatalog { get; set; }
         private ThumbViewer owner = null;
         public ThumbViewer Owner { get { return owner; } }
@@ -30439,49 +30462,107 @@ namespace ZipPla
                 if (filePath == value)
                     return;
                 filePath = value;
+                loadFailed = false;
                 Image = null;
             }
         }
 
-        CancellationTokenSource source;
-        public async Task LoadAsync()
+        /// <summary>サムネイルの読み込みを待ち行列に入れる（表示範囲に入ったとき PaintPart から呼ばれる）</summary>
+        public Task LoadAsync()
         {
-            var path = FilePath;
-            if (path == null || OwnerCatalog == null || source != null || Image != null)
-                return;
-            source = new CancellationTokenSource();
-            MovieInfo info = null;
+            if (disposed || filePath == null || OwnerCatalog == null || loading || queueNode != null || loadFailed || Image != null)
+                return Task.CompletedTask;
+            queueNode = loadQueue.AddLast(this);
 #if PERFLOG
             PerfTrace.ThumbnailQueued();
 #endif
-            await semaphore.WaitAsync();
+            if (!loadPumpRunning)
+            {
+                loadPumpRunning = true;
+                _ = PumpLoadQueueAsync();
+            }
+            return Task.CompletedTask;
+        }
+
+        private static async Task PumpLoadQueueAsync()
+        {
             try
             {
-                if (source.IsCancellationRequested)
+                while (loadQueue.Count > 0)
                 {
-#if PERFLOG
-                    PerfTrace.ThumbnailCancelled();
-#endif
-                    return;
+                    // スクロール中は、止まる（範囲が ScrollSettleMs 変わらない）まで待つ
+                    var wait = ScrollSettleMs - unchecked(Environment.TickCount - LastScrollTick);
+                    if (wait > 0)
+                    {
+                        await Task.Delay(wait);
+                        continue;
+                    }
+                    var item = loadQueue.Last.Value; // 新しく依頼されたものから
+                    loadQueue.RemoveLast();
+                    item.queueNode = null;
+                    await item.LoadCoreAsync();
                 }
-#if PERFLOG
-                PerfTrace.ThumbnailStarted();
-#endif
-                Image = await Task.Run(() => OwnerCatalog.GetThumbnail(path, Directory.Exists(path), null, out _, out _, out _, out _, out _, ref info, false));
-                if (FilePath != path)
-                    Image = null;
             }
             finally
             {
-                source.Dispose();
-                source = null;
-                semaphore.Release();
+                loadPumpRunning = false;
             }
         }
 
+        private async Task LoadCoreAsync()
+        {
+            var path = filePath;
+            var catalog = OwnerCatalog;
+            if (disposed || path == null || catalog == null || Image != null) return;
+            loading = true;
+            loadCancelled = false;
+#if PERFLOG
+            PerfTrace.ThumbnailStarted();
+#endif
+            Bitmap result = null;
+            try
+            {
+                MovieInfo info = null;
+                result = await Task.Run(() => catalog.GetThumbnail(path, Directory.Exists(path), null, out _, out _, out _, out _, out _, ref info, false));
+            }
+            catch
+            {
+                result = null;
+            }
+            finally
+            {
+                loading = false;
+            }
+
+            // 読み込み中に範囲外になった・パスが変わった・破棄された場合は、項目に持たせずに捨てる（A10）
+            if (loadCancelled || disposed || filePath != path)
+            {
+                result?.Dispose();
+                return;
+            }
+            if (result == null)
+            {
+                loadFailed = true;
+                return;
+            }
+            Image = result;
+#if PERFLOG
+            if (owner != null) PerfTrace.CheckRangeReady(owner.IsLoadRangeReady(), owner.CountLoadedImages);
+#endif
+        }
+
+        /// <summary>表示範囲外になったとき：待ち行列から外し、読み込み中なら結果を捨てさせ、画像を破棄する</summary>
         public void Clear()
         {
-            source?.Cancel();
+            if (queueNode != null)
+            {
+                loadQueue.Remove(queueNode);
+                queueNode = null;
+#if PERFLOG
+                PerfTrace.ThumbnailCancelled();
+#endif
+            }
+            if (loading) loadCancelled = true;
             Image = null;
         }
 
@@ -30534,11 +30615,8 @@ namespace ZipPla
 
         public void Dispose()
         {
-            if (Image != null)
-            {
-                Image.Dispose();
-                Image = null;
-            }
+            disposed = true;
+            Clear(); // 待ち行列から外し、読み込み中の結果は捨てさせ、画像を破棄する（Image の setter が Dispose する）
         }
     }
 
@@ -32665,6 +32743,25 @@ namespace ZipPla
             }
         }
 
+        // サムネイルを読み込む範囲（表示中＋前後1行、表示順のインデックス）と、そのときの項目数
+        private int loadRangeStart, loadRangeStop, loadRangeItemCount = -1;
+#if PERFLOG
+        // 調査用: 読み込み範囲（表示中＋前後1行）の項目がすべてサムネイルを持っているか
+        internal bool IsLoadRangeReady()
+        {
+            var s2d = ShowIndexToDataIndex;
+            if (s2d == null) return false;
+            for (var i = loadRangeStart; i < Math.Min(loadRangeStop, s2d.Length); i++)
+            {
+                var item = items[s2d[i]];
+                if (item != null && item.FilePath != null && item.Image == null) return false;
+            }
+            return true;
+        }
+        // 調査用: サムネイル画像を持っている項目の数（範囲外に残っているものも含む）
+        internal int CountLoadedImages() => items.Count(item => item != null && item.Image != null);
+#endif
+
         private void PaintPart(Graphics g, Rectangle clipRectangle, int autoScrollPositionY)
         {
             int rowStart = (-autoScrollPositionY + clipRectangle.Y) / gridSizeV;
@@ -32681,9 +32778,20 @@ namespace ZipPla
             //表示中のアイテム+前後1列のアイテムのBitmapを読み込み、それ以外を破棄する
             var clearBefore = -AutoScrollPosition.Y / gridSizeV - 1;
             var clearAfter = (-AutoScrollPosition.Y + Height) / gridSizeV + 2;
+            var rangeStart = Math.Max(0, clearBefore * cols);
+            var rangeStop = Math.Min(clearAfter * cols, ShowIndexToDataIndex.Length);
+            // 同じ一覧で範囲が動いた＝スクロール中。読み込みの待ち行列は、止まるまで新しい読み込みを始めない（A4）
+            if ((rangeStart != loadRangeStart || rangeStop != loadRangeStop) && loadRangeStop > loadRangeStart && loadRangeItemCount == ShowIndexToDataIndex.Length)
+            {
+                ThumbViewerItem.LastScrollTick = Environment.TickCount;
+            }
+            loadRangeStart = rangeStart;
+            loadRangeStop = rangeStop;
+            loadRangeItemCount = ShowIndexToDataIndex.Length;
 #if PERFLOG
-            PerfTrace.LoadRange(Math.Max(0, clearBefore * cols), Math.Min(clearAfter * cols, ShowIndexToDataIndex.Length),
+            PerfTrace.LoadRange(rangeStart, rangeStop,
                 $"scrollY={AutoScrollPosition.Y} height={Height} gridV={gridSizeV} cols={cols} clip={clipRectangle} paintY={autoScrollPositionY} items={ShowIndexToDataIndex.Length}");
+            PerfTrace.CheckRangeReady(IsLoadRangeReady(), CountLoadedImages);
 #endif
             for(int i=0;i<clearBefore*cols;i++)
             {
@@ -32691,7 +32799,8 @@ namespace ZipPla
                 var item = items[dataIndex];
                 item.Clear();
             }
-            for(int i=Math.Max(0, clearBefore*cols); i < Math.Min(clearAfter*cols, ShowIndexToDataIndex.Length);i++)
+            // 待ち行列は新しく依頼されたものから処理するので、下から依頼して上から読み込まれるようにする
+            for(int i = rangeStop - 1; i >= rangeStart; i--)
             {
                 var dataIndex = ShowIndexToDataIndex[i];
                 var item = items[dataIndex];
