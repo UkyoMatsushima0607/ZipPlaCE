@@ -1944,9 +1944,8 @@ namespace ZipPla
 
                 var entrySize = solidEntry.Size;
                 using (var imageStream = entrySize >= 0 && entrySize <= int.MaxValue ? new MemoryStream((int)entrySize) : new MemoryStream())
-                using (var entryStream = openSolidEntryStream(physicalIndex))
                 {
-                    entryStream.CopyTo(imageStream);
+                    extractSolidEntry(physicalIndex, imageStream);
                     imageStream.Position = 0;
                     var image = ImageFromStream(imageStream, solidEntry.Key, animation, imageStream.Length);
                     if (imageStream.Length <= SolidImageCacheLimit / 2)
@@ -2017,10 +2016,7 @@ namespace ZipPla
                 var result = size >= 0 && size <= int.MaxValue ? new MemoryStream((int)size) : new MemoryStream();
                 try
                 {
-                    using (var entryStream = openSolidEntryStream(physicalIndex))
-                    {
-                        entryStream.CopyTo(result);
-                    }
+                    extractSolidEntry(physicalIndex, result);
                     result.Seek(0, SeekOrigin.Begin);
                     return result;
                 }
@@ -2059,15 +2055,38 @@ namespace ZipPla
             }
         }
 
+        /// <summary>
+        /// solid 書庫のエントリを先頭から順に読む共有リーダーで取り出す（B2c）。
+        /// 取り出しの途中で例外が起きた場合、リーダーは途中まで読んだ・壊れた状態のまま残るので、
+        /// 次の要求で必ず作り直させる（画像のデコードで起きた例外はリーダーに影響しないので対象外）。
+        /// </summary>
+        private void extractSolidEntry(int physicalIndex, Stream destination)
+        {
+            try
+            {
+                using (var entryStream = openSolidEntryStream(physicalIndex))
+                {
+                    entryStream.CopyTo(destination);
+                }
+            }
+            catch
+            {
+                // openSolidEntryStream は physicalIndex <= solidLastRequestedIndex のときリーダーを作り直す
+                solidLastRequestedIndex = int.MaxValue;
+                throw;
+            }
+        }
+
         private void resetSolidReader()
         {
             if (iReader != null)
             {
-                iReader.Dispose();
+                // 例外で壊れたリーダーは Dispose でも例外を出すことがあるが、作り直しは続ける
+                try { iReader.Dispose(); } catch { }
                 iReader = null;
                 if (stream == null)
                 {
-                    iArchive.Dispose();
+                    try { iArchive.Dispose(); } catch { }
                     iArchive = ArchiveFactory.Open(path);
                     iArchiveEntries = iArchive.Entries.ToArray();
                 }
