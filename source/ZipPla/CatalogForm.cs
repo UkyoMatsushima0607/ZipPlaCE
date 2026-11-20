@@ -30394,6 +30394,19 @@ namespace ZipPla
             if (!ready || readyLogged) return;
             readyLogged = true;
             Write($"range ready {clock.ElapsedMilliseconds - rangeChangedAt} ms after range change [{lastStart}, {lastStop}) queued={queued} started={started} cancelled={cancelled} imagesHeld={countLoadedImages()}");
+            WriteDrawSummary();
+        }
+        // UI スレッドでの描画時間（DrawItem を直接呼んだもの＝サムネイル到着時など、OnPaint）
+        private static long directDraws, directDrawTicks, maxDirectDrawTicks, paints, paintTicks, maxPaintTicks, generates, generateTicks;
+        public static void AddGenerate(long ticks) { generates++; generateTicks += ticks; }
+        public static void AddDirectDraw(long ticks) { directDraws++; directDrawTicks += ticks; if (ticks > maxDirectDrawTicks) maxDirectDrawTicks = ticks; }
+        public static void AddPaint(long ticks) { paints++; paintTicks += ticks; if (ticks > maxPaintTicks) maxPaintTicks = ticks; }
+        private static double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+        public static void WriteDrawSummary()
+        {
+            Write($"draw summary: directDraws={directDraws} total={Ms(directDrawTicks):F1}ms avg={(directDraws > 0 ? Ms(directDrawTicks) / directDraws : 0):F3}ms max={Ms(maxDirectDrawTicks):F2}ms" +
+                $" | paints={paints} total={Ms(paintTicks):F1}ms avg={(paints > 0 ? Ms(paintTicks) / paints : 0):F3}ms max={Ms(maxPaintTicks):F2}ms" +
+                $" | generates={generates} avg={(generates > 0 ? Ms(generateTicks) / generates : 0):F1}ms");
         }
         public static void ThumbnailQueued() { Interlocked.Increment(ref queued); }
         public static void ThumbnailCancelled() { Interlocked.Increment(ref cancelled); }
@@ -30523,7 +30536,13 @@ namespace ZipPla
             try
             {
                 MovieInfo info = null;
+#if PERFLOG
+                var perfStart = Stopwatch.GetTimestamp();
+#endif
                 result = await Task.Run(() => catalog.GetThumbnail(path, Directory.Exists(path), null, out _, out _, out _, out _, out _, ref info, false));
+#if PERFLOG
+                PerfTrace.AddGenerate(Stopwatch.GetTimestamp() - perfStart);
+#endif
             }
             catch
             {
@@ -31237,7 +31256,13 @@ namespace ZipPla
         private Brush BackColorBrush;
         public void DrawItem(int index, bool selected, bool onlyFrame = false, bool alreadyCheckedVisibleRegion = false, Rectangle clipRectangle = default(Rectangle), int AutoScrollPositionY = int.MinValue)
         {
+#if PERFLOG
+            var perfStart = Stopwatch.GetTimestamp();
             DrawItem(null, index, selected, onlyFrame, alreadyCheckedVisibleRegion, clipRectangle, AutoScrollPositionY);
+            PerfTrace.AddDirectDraw(Stopwatch.GetTimestamp() - perfStart);
+#else
+            DrawItem(null, index, selected, onlyFrame, alreadyCheckedVisibleRegion, clipRectangle, AutoScrollPositionY);
+#endif
         }
         public void DrawItem(Graphics g, int index, bool selected, bool onlyFrame = false, bool alreadyCheckedVisibleRegion = false, Rectangle clipRectangle = default(Rectangle), int AutoScrollPositionY = int.MinValue)
         {
@@ -32736,11 +32761,17 @@ namespace ZipPla
 
             base.OnPaint(e);
 
+#if PERFLOG
+            var perfStart = Stopwatch.GetTimestamp();
+#endif
             var sub = tryRenderWithPrerender(e.Graphics, e.ClipRectangle, AutoScrollPosition.Y);
             if (!sub.IsEmpty)
             {
                 PaintPart(e.Graphics, sub, AutoScrollPosition.Y);
             }
+#if PERFLOG
+            PerfTrace.AddPaint(Stopwatch.GetTimestamp() - perfStart);
+#endif
         }
 
         // サムネイルを読み込む範囲（表示中＋前後1行、表示順のインデックス）と、そのときの項目数
