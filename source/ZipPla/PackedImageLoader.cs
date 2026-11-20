@@ -261,11 +261,12 @@ namespace ZipPla
         private IList<Microsoft.Deployment.Compression.ArchiveFileInfo> cabArchiveEntries;
         private IReader iReader;
         // Keep a bounded cache of extracted files; decoded bitmaps are much larger.
+        // solid 書庫で展開済みのエントリ（画像はもともと圧縮されているので、展開後もほぼ書庫と同じ大きさ）（B2）
         private Dictionary<int, byte[]> solidImageCache;
-        private LinkedList<int> solidImageCacheOrder;
         private long solidImageCacheBytes;
-        private const long SolidImageCacheLimit = 64L * 1024 * 1024;
         private int[] solidEntryOccurrences;
+        // (エントリ名, 同名の何番目か) → physicalIndex。リーダーで通過したエントリをキャッシュに入れるために使う
+        private Dictionary<string, int[]> solidIndexByKey;
         private Dictionary<string, int> solidReaderOccurrences;
         private int solidLastRequestedIndex = -1;
         private PdfReader pdfArchive;
@@ -1931,43 +1932,10 @@ namespace ZipPla
                 }
 
                 var solidEntry = iArchiveEntries[physicalIndex];
-                byte[] cached;
-                if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached))
+                var bytes = getSolidEntryBytes(physicalIndex);
+                using (var imageStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true))
                 {
-                    solidImageCacheOrder.Remove(physicalIndex);
-                    solidImageCacheOrder.AddLast(physicalIndex);
-                    using (var cachedStream = new MemoryStream(cached, 0, cached.Length, writable: false, publiclyVisible: true))
-                    {
-                        return ImageFromStream(cachedStream, solidEntry.Key, animation, cached.Length);
-                    }
-                }
-
-                var entrySize = solidEntry.Size;
-                using (var imageStream = entrySize >= 0 && entrySize <= int.MaxValue ? new MemoryStream((int)entrySize) : new MemoryStream())
-                {
-                    extractSolidEntry(physicalIndex, imageStream);
-                    imageStream.Position = 0;
-                    var image = ImageFromStream(imageStream, solidEntry.Key, animation, imageStream.Length);
-                    if (imageStream.Length <= SolidImageCacheLimit / 2)
-                    {
-                        var bytes = imageStream.Capacity == imageStream.Length ? imageStream.GetBuffer() : imageStream.ToArray();
-                        if (solidImageCache == null)
-                        {
-                            solidImageCache = new Dictionary<int, byte[]>();
-                            solidImageCacheOrder = new LinkedList<int>();
-                        }
-                        while (solidImageCacheOrder.Count >= 8 || solidImageCacheBytes + bytes.Length > SolidImageCacheLimit)
-                        {
-                            var oldest = solidImageCacheOrder.First.Value;
-                            solidImageCacheBytes -= solidImageCache[oldest].Length;
-                            solidImageCache.Remove(oldest);
-                            solidImageCacheOrder.RemoveFirst();
-                        }
-                        solidImageCache[physicalIndex] = bytes;
-                        solidImageCacheOrder.AddLast(physicalIndex);
-                        solidImageCacheBytes += bytes.Length;
-                    }
-                    return image;
+                    return ImageFromStream(imageStream, solidEntry.Key, animation, bytes.Length);
                 }
             }
             catch (Exception e)
@@ -2001,30 +1969,9 @@ namespace ZipPla
                     }
                 }
 
-                byte[] cached;
-                if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached))
-                {
-                    solidImageCacheOrder.Remove(physicalIndex);
-                    solidImageCacheOrder.AddLast(physicalIndex);
-                    var cachedCopy = new MemoryStream(cached.Length);
-                    cachedCopy.Write(cached, 0, cached.Length);
-                    cachedCopy.Position = 0;
-                    return cachedCopy;
-                }
-
-                var size = iArchiveEntries[physicalIndex].Size;
-                var result = size >= 0 && size <= int.MaxValue ? new MemoryStream((int)size) : new MemoryStream();
-                try
-                {
-                    extractSolidEntry(physicalIndex, result);
-                    result.Seek(0, SeekOrigin.Begin);
-                    return result;
-                }
-                catch
-                {
-                    result.Dispose();
-                    throw;
-                }
+                // キャッシュの配列は書き換えないので、コピーせず読み取り専用で包んで返す（B2e）
+                var bytes = getSolidEntryBytes(physicalIndex);
+                return new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
             }
             catch (Exception e)
             {
@@ -2053,6 +2000,13 @@ namespace ZipPla
                 solidEntryOccurrences[i] = count;
                 occurrences[key] = count + 1;
             }
+            solidIndexByKey = new Dictionary<string, int[]>(StringComparer.Ordinal);
+            foreach (var pair in occurrences) solidIndexByKey[pair.Key] = new int[pair.Value];
+            for (var i = 0; i < iArchiveEntries.Length; i++)
+            {
+                if (iArchiveEntries[i].IsDirectory) continue;
+                solidIndexByKey[iArchiveEntries[i].Key ?? string.Empty][solidEntryOccurrences[i]] = i;
+            }
         }
 
         /// <summary>
@@ -2060,14 +2014,19 @@ namespace ZipPla
         /// 取り出しの途中で例外が起きた場合、リーダーは途中まで読んだ・壊れた状態のまま残るので、
         /// 次の要求で必ず作り直させる（画像のデコードで起きた例外はリーダーに影響しないので対象外）。
         /// </summary>
-        private void extractSolidEntry(int physicalIndex, Stream destination)
+        private byte[] getSolidEntryBytes(int physicalIndex)
         {
+            byte[] cached;
+            if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached)) return cached;
             try
             {
+                byte[] bytes;
                 using (var entryStream = openSolidEntryStream(physicalIndex))
                 {
-                    entryStream.CopyTo(destination);
+                    bytes = readAllSolidEntryBytes(entryStream, iArchiveEntries[physicalIndex].Size);
                 }
+                addToSolidCache(physicalIndex, bytes, physicalIndex);
+                return bytes;
             }
             catch
             {
@@ -2075,6 +2034,56 @@ namespace ZipPla
                 solidLastRequestedIndex = int.MaxValue;
                 throw;
             }
+        }
+
+        private static byte[] readAllSolidEntryBytes(Stream entryStream, long size)
+        {
+            using (var ms = size >= 0 && size <= int.MaxValue ? new MemoryStream((int)size) : new MemoryStream())
+            {
+                entryStream.CopyTo(ms);
+                return ms.Capacity == ms.Length ? ms.GetBuffer() : ms.ToArray();
+            }
+        }
+
+        // solid キャッシュの上限: 物理メモリの 1/16（最低 64MB、最大 512MB）
+        private static readonly long SolidCacheBudget = getSolidCacheBudget();
+        private static long getSolidCacheBudget()
+        {
+            try
+            {
+                var total = (long)new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory;
+                return Math.Max(64L << 20, Math.Min(512L << 20, total / 16));
+            }
+            catch
+            {
+                return 256L << 20;
+            }
+        }
+
+        /// <summary>
+        /// 展開済みのエントリをキャッシュに入れる。あふれたら anchorIndex（今要求されているページ）から遠いものから捨てる（B2b）
+        /// </summary>
+        private void addToSolidCache(int physicalIndex, byte[] bytes, int anchorIndex)
+        {
+            if (bytes.Length > SolidCacheBudget / 4) return;
+            if (solidImageCache == null) solidImageCache = new Dictionary<int, byte[]>();
+            if (solidImageCache.ContainsKey(physicalIndex)) return;
+            var myDistance = Math.Abs(physicalIndex - anchorIndex);
+            while (solidImageCacheBytes + bytes.Length > SolidCacheBudget && solidImageCache.Count > 0)
+            {
+                var farthest = -1; var farthestDistance = -1;
+                foreach (var key in solidImageCache.Keys)
+                {
+                    var d = Math.Abs(key - anchorIndex);
+                    if (d > farthestDistance) { farthestDistance = d; farthest = key; }
+                }
+                // 入れようとしているものの方が遠ければ入れない
+                if (farthestDistance <= myDistance) return;
+                solidImageCacheBytes -= solidImageCache[farthest].Length;
+                solidImageCache.Remove(farthest);
+            }
+            solidImageCache[physicalIndex] = bytes;
+            solidImageCacheBytes += bytes.Length;
         }
 
         private void resetSolidReader()
@@ -2115,10 +2124,30 @@ namespace ZipPla
                         solidLastRequestedIndex = physicalIndex;
                         return iReader.OpenEntryStream();
                     }
+                    // 目的のエントリまで読み進める途中のエントリも、どのみち展開するのでキャッシュに入れておく。
+                    // これで戻る方向に読んだときに先頭から展開し直さずに済む（B2a）
+                    cachePassedSolidEntry(key, occurrence, physicalIndex);
                 }
                 if (attempt == 0) resetSolidReader();
             }
             throw new InvalidDataException("The archive entry could not be found during solid extraction.");
+        }
+
+        private void cachePassedSolidEntry(string key, int occurrence, int anchorIndex)
+        {
+            int[] indices;
+            if (solidIndexByKey == null || !solidIndexByKey.TryGetValue(key, out indices) || occurrence >= indices.Length) return;
+            var index = indices[occurrence];
+            if (solidImageCache != null && solidImageCache.ContainsKey(index)) return;
+            if (!ImageLoader.SupportsFullReading(key, ffmpegExists: true)) return; // 画像以外は読み飛ばす
+            var size = iReader.Entry.Size;
+            if (size > SolidCacheBudget / 4) return;
+            byte[] bytes;
+            using (var entryStream = iReader.OpenEntryStream())
+            {
+                bytes = readAllSolidEntryBytes(entryStream, size);
+            }
+            addToSolidCache(index, bytes, anchorIndex);
         }
 
         private Bitmap OpenInnerImageStreamSevenZip(int physicalIndex)
