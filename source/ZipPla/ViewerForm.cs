@@ -4548,7 +4548,52 @@ namespace ZipPla
             var dst = null as Bitmap;
             try
             {
-                if ((bmp.PixelFormat & PixelFormat.Alpha) == PixelFormat.Alpha)
+                if (bmp.PixelFormat == PixelFormat.Format32bppArgb && newPixelFormat == PixelFormat.Format24bppRgb)
+                {
+                    // 透明度付き（RGBA の PNG など）を白の背景に合成して 24bpp にする。GDI+ の DrawImage（非 PArgb の合成）は
+                    // 3000x4300 で約 25ms かかるので、行ごとに並列で処理する（C8）。不透明な画素はそのままコピーする
+                    dst = new Bitmap(w, h, newPixelFormat);
+                    var srcData = bmp.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                    try
+                    {
+                        var dstData = dst.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+                        try
+                        {
+                            var srcScan0 = (byte*)srcData.Scan0;
+                            var dstScan0 = (byte*)dstData.Scan0;
+                            int srcStride = srcData.Stride, dstStride = dstData.Stride;
+                            Parallel.For(0, h, y =>
+                            {
+                                var s = srcScan0 + (long)y * srcStride;
+                                var d = dstScan0 + (long)y * dstStride;
+                                for (var x = 0; x < w; x++, s += 4, d += 3)
+                                {
+                                    int a = s[3];
+                                    if (a == 255)
+                                    {
+                                        d[0] = s[0]; d[1] = s[1]; d[2] = s[2];
+                                    }
+                                    else
+                                    {
+                                        var white = 255 * (255 - a) + 127;
+                                        d[0] = (byte)((s[0] * a + white) / 255);
+                                        d[1] = (byte)((s[1] * a + white) / 255);
+                                        d[2] = (byte)((s[2] * a + white) / 255);
+                                    }
+                                }
+                            });
+                        }
+                        finally
+                        {
+                            dst.UnlockBits(dstData);
+                        }
+                    }
+                    finally
+                    {
+                        bmp.UnlockBits(srcData);
+                    }
+                }
+                else if ((bmp.PixelFormat & PixelFormat.Alpha) == PixelFormat.Alpha)
                 {
                     dst = new Bitmap(w, h, newPixelFormat);
                     bmp.SetResolution(dst.HorizontalResolution, dst.VerticalResolution);
@@ -6891,10 +6936,28 @@ namespace ZipPla
         int pbView_Paint_PrevHeight = 0;
         bool pbView_Paint_OnlyDrawMeasure = false;
         //readonly object pbView_Paint_Canvas_Locker = new object();
+#if PERFLOG
+        // 計測用（PERFLOG 定数を付けたビルドのみ）: ビューアの描画1回あたりの時間を exe のフォルダの viewer-paint.log に書く
+        private static long perfPaints, perfPaintTicks, perfPaintMax;
         private void pbView_Paint(object sender, PaintEventArgs e)
         {
+            var start = System.Diagnostics.Stopwatch.GetTimestamp();
+            pbView_PaintCore(sender, e);
+            var t = System.Diagnostics.Stopwatch.GetTimestamp() - start;
+            perfPaints++; perfPaintTicks += t; if (t > perfPaintMax) perfPaintMax = t;
+            if (perfPaints % 10 == 0)
+            {
+                double f = System.Diagnostics.Stopwatch.Frequency;
+                try { File.WriteAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-paint.log"), $"paints={perfPaints} avg={perfPaintTicks * 1000.0 / f / perfPaints:F2}ms max={perfPaintMax * 1000.0 / f:F2}ms"); } catch { }
+            }
+        }
+        private void pbView_PaintCore(object sender, PaintEventArgs e)
+#else
+        private void pbView_Paint(object sender, PaintEventArgs e)
+#endif
+        {
             if (FullScreen_pseudoFullScreen) return;
-            
+
             Rectangle pbViewRect;
 
             //lock (pbView_Paint_Canvas_Locker)
