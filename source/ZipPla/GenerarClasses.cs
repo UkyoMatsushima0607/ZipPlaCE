@@ -316,7 +316,7 @@ namespace GenerarClasses
             WorksOrderChanged = false;
             while (NextWork < WorksOrder.Length && IsStartedOrSkipped(WorksOrder[NextWork])) NextWork++;
 
-            if (e.Error == null && !CancellationPending && NextWork < Works.Length)
+            if (e.Error == null && !CancellationPending && NextWork < WorksOrder.Length)
             {
                 if (InternalThreadCount >= CurrentThreadCount)
                 {
@@ -401,6 +401,12 @@ namespace GenerarClasses
             }
         }
 
+        /// <summary>
+        /// true のとき、SetWorksOrder に一部のジョブだけの順番を渡してよい（含まれないジョブは実行しない）。
+        /// false（既定）のときは、開始時に長さが合わない順番を全ジョブの順番に置き換える（従来どおり）。
+        /// </summary>
+        public bool AllowPartialWorksOrder { get; set; }
+
         public void ReworkOrder(int workNumber)
         {
             if (SelfClosing)
@@ -445,7 +451,7 @@ namespace GenerarClasses
             Works = arguments.ToArray();
             WorksStarted = new bool[Works.Length];
             ResultArgs = new EachRunWorkerCompletedEventArgs[Works.Length];
-            if (WorksOrder == null || WorksOrder.Length != Works.Length)
+            if (WorksOrder == null || (AllowPartialWorksOrder ? WorksOrder.Any(w => w < 0 || w >= Works.Length) : WorksOrder.Length != Works.Length))
             {
                 WorksOrder = new int[Works.Length];
                 for (var i = 0; i < Works.Length; i++) WorksOrder[i] = i;

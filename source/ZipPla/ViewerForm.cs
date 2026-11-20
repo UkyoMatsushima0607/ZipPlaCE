@@ -1001,6 +1001,8 @@ namespace ZipPla
             if (ipcLookAheadInfo == null && Program.CheckConfigException()) CloseWithoutSave();
 
             InitializeComponent();
+            // 先読みは表示中のページの前後だけ（SetBackgroundMode）
+            bmwLoadEachPage.AllowPartialWorksOrder = true;
 
             Configuration.WaitPrepareTask();
 
@@ -5666,7 +5668,9 @@ namespace ZipPla
             var existingImageCountBound = (protectedIndex >= 0 ? -1 : 0) + MaxPageCountInWindow * 4;  // 今＋前後それぞれ 1 ページ分は読んでおかないとページ送りチェックができない。後トラックバー。
             while (usedMemory > uBound && existingImageCount > existingImageCountBound)
             {
-                while (ResizedImageArray[worksOrder[--disposeTarget]] == null && disposeTarget >= 0/*&& disposeTarget > protectedOrder + 1*/) ;
+                // 先読みの順番は表示中のページの前後だけなので、順番の中に捨てられるページが残っていないこともある
+                do { disposeTarget--; } while (disposeTarget >= 0 && ResizedImageArray[worksOrder[disposeTarget]] == null);
+                if (disposeTarget < 0) return existingImageCount;
                 // protected というのは、次に挿入しようとしている画像。
                 // これを消すとその分再び挿入することができて処理が繰り返しになってしまうことがある。
                 // しかし、これを消してもなお挿入できないこともあって、その場合は protected よりも更に優先順位が高いものも消さないといけない
@@ -5691,26 +5695,34 @@ namespace ZipPla
                 }
 
 
-                usedMemory = newUsedMemory;
-                image.Dispose();
-                ResizedImageArray[idx] = null;
-                ResizedSizeArray[idx] = default(Size);
-                if (AccountedSizeArray != null) AccountedSizeArray[idx] = 0;
-                if (OriginalStateArray != null) OriginalStateArray[idx] = OriginalState_Kept;
+                DiscardLoadedPage(idx);
                 existingImageCount--;
-                bmwLoadEachPage.ReworkOrder(idx);
-
-                LockManager.ForIReadOnlyList(PreFilteredImageArray, idx, item =>
-                {
-                    if (item != null)
-                    {
-                        item.Dispose();
-                        PreFilteredImageArray[idx] = null;
-                        OriginalImageInfoArray[idx] = null;
-                    }
-                });
             }
             return existingImageCount;
+        }
+
+        // 読み込み済みのページ（縮小画像と原寸）を捨て、もう一度読める状態に戻す
+        private void DiscardLoadedPage(int idx)
+        {
+            var image = ResizedImageArray[idx];
+            if (image == null) return;
+            usedMemory -= Math.Min(usedMemory, GetAccountedSize(idx, image));
+            image.Dispose();
+            ResizedImageArray[idx] = null;
+            ResizedSizeArray[idx] = default(Size);
+            if (AccountedSizeArray != null) AccountedSizeArray[idx] = 0;
+            if (OriginalStateArray != null) OriginalStateArray[idx] = OriginalState_Kept;
+            bmwLoadEachPage.ReworkOrder(idx);
+
+            LockManager.ForIReadOnlyList(PreFilteredImageArray, idx, item =>
+            {
+                if (item != null)
+                {
+                    item.Dispose();
+                    PreFilteredImageArray[idx] = null;
+                    OriginalImageInfoArray[idx] = null;
+                }
+            });
         }
 
         private ulong GetAccountedSize(int idx, VirtualBitmapEx image)
@@ -5856,15 +5868,48 @@ namespace ZipPla
             }
         }
 
+        // 先読みするのは表示中のページの前後この枚数まで。外れたページは PrefetchDiscardRange より離れたら捨てる。
+        // 以前は空き物理メモリの約 7 割まで書庫の全ページを読んでいた（1722 ページの書庫を 1080p で開くと 3.1GB・CPU 20 秒）。
+        // 1 ページの読み込みは 10ms 前後なので、遠くへ移動したときはその場で読めば足りる
+        private const int PrefetchRange = 64;
+        private const int PrefetchDiscardRange = 96;
+        private int prefetchOrderPage = int.MinValue;
+
+        private bool IsInPrefetchRange(int page, int center, int range)
+        {
+            var spread = Math.Max(1, MaxPageCountInWindow);
+            return center - range <= page && page < center + spread + range;
+        }
+
         private void SetBackgroundMode()
         {
             if (ResizedImageArray == null) return;
             var length = ResizedImageArray.Length;
-            var order = new int[length]; for (var i = 0; i < length; i++) order[i] = i;
             var clientCursorPosition = mtbPage.PointToClient(Cursor.Position);
             var onTrackbar = mtbPage.ClientRectangle.Contains(clientCursorPosition);
             var centerValue = onTrackbar ? mtbPage.PointToValue(clientCursorPosition) : currentPage;
             var stopPage = currentPage + MaxPageCountInWindow;
+            var current = Math.Max(0, currentPage);
+            prefetchOrderPage = currentPage;
+
+            // 表示中のページの前後と、トラックバー上のカーソル位置の近くだけを読む
+            var hoverRange = Math.Max(1, MaxPageCountInWindow) * 2;
+            var orderList = new List<int>();
+            for (var i = 0; i < length; i++)
+            {
+                if (IsInPrefetchRange(i, current, PrefetchRange) || (onTrackbar && IsInPrefetchRange(i, centerValue, hoverRange))) orderList.Add(i);
+            }
+            var order = orderList.ToArray();
+
+            // 表示から離れたページの縮小画像（と原寸）を捨てる
+            for (var i = 0; i < length; i++)
+            {
+                if (ResizedImageArray[i] != null && !IsInPrefetchRange(i, current, PrefetchDiscardRange) &&
+                    !(onTrackbar && IsInPrefetchRange(i, centerValue, hoverRange)))
+                {
+                    DiscardLoadedPage(i);
+                }
+            }
 
             Array.Sort(order, (a, b) =>
             {
@@ -6740,7 +6785,9 @@ namespace ZipPla
         {
             if (ResizedImageArray == null) return;
 
-            if (setBackgroundModeIfPausing) SetBackgroundModeIfPausing();
+            // ページが移ったら先読みの範囲を作り直す（読み終えて止まっているワーカーもここで再開する）
+            if (currentPage >= 0 && currentPage != prefetchOrderPage) SetBackgroundMode();
+            else if (setBackgroundModeIfPausing) SetBackgroundModeIfPausing();
 
 
             if (pbView_SizeChanged_SizeChanging) return;
