@@ -303,8 +303,13 @@ namespace ZipPla
                 switch (onMemory)
                 {
                     case PackedImageLoaderOnMemoryMode.OnMemory:
-                        stream = new MemoryStream();
-                        using (var fs = File.OpenRead(path)) fs.CopyTo(stream);
+                        using (var fs = File.OpenRead(path))
+                        {
+                            // 容量を先に確保して、倍々の拡張でファイルサイズの約2倍を一時的に確保しないようにする（B8）
+                            var length = fs.Length;
+                            stream = length <= int.MaxValue ? new MemoryStream((int)length) : new MemoryStream();
+                            fs.CopyTo(stream);
+                        }
                         stream.Seek(0, SeekOrigin.Begin);
                         break;
                     case PackedImageLoaderOnMemoryMode.Releasable:
@@ -822,6 +827,10 @@ namespace ZipPla
 
         public static bool PrioritizeSevenZip = false;
 
+        // 7z 形式は、7z.dll があれば SharpCompress より 7z.dll で読む方が速い（300 ページの 7z で solid 2.4 秒→1.0 秒、非 solid 2.5 秒→0.8 秒）。
+        // 7z.dll が見つからなければ従来どおり SharpCompress で読む。RAR4 などは検証できていないので従来どおり。
+        private static bool PreferSevenZipDll(PackType type) => type == PackType.SevenZip;
+
         private bool UseZipArchiveClass = true;
 
         public bool HasAnyEntry()
@@ -839,7 +848,7 @@ namespace ZipPla
                 case PackType.Pdf:
                     return hasAnyPdfEntry();
                 default:
-                    var sevenZipPath = !PrioritizeSevenZip || stream == null ? null : GetSevenZipPath();
+                    var sevenZipPath = stream == null || !(PrioritizeSevenZip || PreferSevenZipDll(Type)) ? null : GetSevenZipPath();
 
                     if (sevenZipPath == null)
                     {
@@ -887,7 +896,7 @@ namespace ZipPla
                 case PackType.Pdf:
                     return getPdfEntries();
                 default:
-                    var sevenZipPath = !PrioritizeSevenZip || stream == null ? null : GetSevenZipPath();
+                    var sevenZipPath = stream == null || !(PrioritizeSevenZip || PreferSevenZipDll(Type)) ? null : GetSevenZipPath();
 
                     if (sevenZipPath == null)
                     {
@@ -1329,7 +1338,8 @@ namespace ZipPla
 
         private static MemoryStream openSevenZipStream(Entry entry)
         {
-            var result = new MemoryStream();
+            var size = entry.Size;
+            var result = size >= 0 && size <= int.MaxValue ? new MemoryStream((int)size) : new MemoryStream(); // B9
             try
             {
                 entry.Extract(result);
@@ -2204,7 +2214,7 @@ namespace ZipPla
         }
 
         // まとめて展開する範囲（要求されたページの前後）
-        private const int SevenZipSolidBatchBehind = 16, SevenZipSolidBatchAhead = 16;
+        private const int SevenZipSolidBatchBehind = 16, SevenZipSolidBatchAhead = 64;
         private int sevenZipSolidExtractCount = 0;
 
         private byte[] getSevenZipSolidEntryBytes(int physicalIndex, bool inTask)

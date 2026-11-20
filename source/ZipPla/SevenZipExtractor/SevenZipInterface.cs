@@ -170,7 +170,7 @@ namespace SevenZipExtractor
         //  IntPtr processedSize); // ref uint processedSize
 
         uint Read(
-            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data,
+            IntPtr data, // ZipPla CE (B5): raw pointer instead of byte[] to avoid a managed array per call
             uint size);
 
         /*
@@ -190,7 +190,7 @@ namespace SevenZipExtractor
     {
         [PreserveSig]
         int Write(
-            [In, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data,
+            IntPtr data, // ZipPla CE (B5): raw pointer instead of byte[] to avoid a managed array per call
             uint size,
             IntPtr processedSize); // ref uint processedSize
         /*
@@ -212,7 +212,7 @@ namespace SevenZipExtractor
         //  IntPtr processedSize); // ref uint processedSize
 
         uint Read(
-            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data,
+            IntPtr data, // ZipPla CE (B5): raw pointer instead of byte[] to avoid a managed array per call
             uint size);
 
         //[PreserveSig]
@@ -229,7 +229,7 @@ namespace SevenZipExtractor
     {
         [PreserveSig]
         int Write(
-            [In, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data,
+            IntPtr data, // ZipPla CE (B5): raw pointer instead of byte[] to avoid a managed array per call
             uint size,
             IntPtr processedSize); // ref uint processedSize
 
@@ -387,6 +387,17 @@ namespace SevenZipExtractor
             this.BaseStream = baseStream;
         }
 
+        // ZipPla CE (B5): buffer reused between Read/Write calls
+        private byte[] transferBuffer;
+        protected byte[] GetTransferBuffer(int size)
+        {
+            if (this.transferBuffer == null || this.transferBuffer.Length < size)
+            {
+                this.transferBuffer = new byte[Math.Max(size, 81920)];
+            }
+            return this.transferBuffer;
+        }
+
         public void Dispose()
         {
             this.BaseStream.Close();
@@ -408,9 +419,12 @@ namespace SevenZipExtractor
         {
         }
 
-        public uint Read(byte[] data, uint size)
+        public uint Read(IntPtr data, uint size)
         {
-            return (uint) this.BaseStream.Read(data, 0, (int) size);
+            var buffer = this.GetTransferBuffer((int) size);
+            var read = this.BaseStream.Read(buffer, 0, (int) size);
+            if (read > 0) Marshal.Copy(buffer, 0, data, read);
+            return (uint) read;
         }
     }
 
@@ -474,10 +488,13 @@ namespace SevenZipExtractor
             }
         }
 
-        public uint Read(byte[] data, uint size)
+        public uint Read(IntPtr data, uint size)
         {
             this.ReopenStream();
-            return (uint) this.BaseStream.Read(data, 0, (int) size);
+            var buffer = this.GetTransferBuffer((int) size);
+            var read = this.BaseStream.Read(buffer, 0, (int) size);
+            if (read > 0) Marshal.Copy(buffer, 0, data, read);
+            return (uint) read;
         }
 
         public override void Seek(long offset, uint seekOrigin, IntPtr newPosition)
@@ -499,9 +516,11 @@ namespace SevenZipExtractor
             return 0;
         }
 
-        public int Write(byte[] data, uint size, IntPtr processedSize)
+        public int Write(IntPtr data, uint size, IntPtr processedSize)
         {
-            this.BaseStream.Write(data, 0, (int) size);
+            var buffer = this.GetTransferBuffer((int) size);
+            Marshal.Copy(data, buffer, 0, (int) size);
+            this.BaseStream.Write(buffer, 0, (int) size);
             if (processedSize != IntPtr.Zero)
             {
                 Marshal.WriteInt32(processedSize, (int) size);
