@@ -30491,8 +30491,21 @@ namespace ZipPla
         // スクロール中（読み込み範囲が直近 ScrollSettleMs 以内に変わった）は新しい読み込みを始めず、
         // 通り過ぎただけの項目のサムネイルを作らないようにする。
         private static readonly LinkedList<ThumbViewerItem> loadQueue = new LinkedList<ThumbViewerItem>();
-        private static bool loadPumpRunning = false;
+        private static int activeLoads = 0;
+        private static bool settleWaitScheduled = false;
         private const int ScrollSettleMs = 60;
+        // 同時に作るサムネイルの数（A4）
+        private static readonly int MaxParallelLoads = getMaxParallelLoads();
+        private static int getMaxParallelLoads()
+        {
+#if PERFLOG
+            // 計測用: 環境変数で変えられる
+            if (int.TryParse(Environment.GetEnvironmentVariable("ZIPPLA_THUMB_THREADS"), out var n) && n >= 1) return n;
+#endif
+            // 1 本では、表示中のサムネイルが多い（大きなウィンドウ）ときに揃うまで時間がかかる。
+            // 2〜3 本でも描画時間は増えなかった（07955f5 で懸念したカクつきは計測では見られない）
+            return Math.Max(1, Math.Min(3, Environment.ProcessorCount / 4));
+        }
         internal static int LastScrollTick = Environment.TickCount - 10000;
         private LinkedListNode<ThumbViewerItem> queueNode = null;
         private bool loading = false;          // GetThumbnail の実行中
@@ -30562,36 +30575,51 @@ namespace ZipPla
 #if PERFLOG
             PerfTrace.ThumbnailQueued();
 #endif
-            if (!loadPumpRunning)
-            {
-                loadPumpRunning = true;
-                _ = PumpLoadQueueAsync();
-            }
+            PumpLoadQueue();
             return Task.CompletedTask;
         }
 
-        private static async Task PumpLoadQueueAsync()
+        // 待ち行列から、同時実行数の上限まで読み込みを始める（UI スレッドで呼ぶ）
+        private static void PumpLoadQueue()
+        {
+            while (activeLoads < MaxParallelLoads && loadQueue.Count > 0)
+            {
+                // スクロール中は、止まる（範囲が ScrollSettleMs 変わらない）まで待つ
+                var wait = ScrollSettleMs - unchecked(Environment.TickCount - LastScrollTick);
+                if (wait > 0)
+                {
+                    if (!settleWaitScheduled)
+                    {
+                        settleWaitScheduled = true;
+                        _ = WaitAndPumpAsync(wait);
+                    }
+                    return;
+                }
+                var item = loadQueue.Last.Value; // 新しく依頼されたものから
+                loadQueue.RemoveLast();
+                item.queueNode = null;
+                activeLoads++;
+                _ = RunLoadAsync(item);
+            }
+        }
+
+        private static async Task WaitAndPumpAsync(int wait)
+        {
+            await Task.Delay(wait);
+            settleWaitScheduled = false;
+            PumpLoadQueue();
+        }
+
+        private static async Task RunLoadAsync(ThumbViewerItem item)
         {
             try
             {
-                while (loadQueue.Count > 0)
-                {
-                    // スクロール中は、止まる（範囲が ScrollSettleMs 変わらない）まで待つ
-                    var wait = ScrollSettleMs - unchecked(Environment.TickCount - LastScrollTick);
-                    if (wait > 0)
-                    {
-                        await Task.Delay(wait);
-                        continue;
-                    }
-                    var item = loadQueue.Last.Value; // 新しく依頼されたものから
-                    loadQueue.RemoveLast();
-                    item.queueNode = null;
-                    await item.LoadCoreAsync();
-                }
+                await item.LoadCoreAsync();
             }
             finally
             {
-                loadPumpRunning = false;
+                activeLoads--;
+                PumpLoadQueue();
             }
         }
 
