@@ -39,14 +39,18 @@ namespace ZipPla
         }
 
 
-        public static Bitmap CreateNew(Bitmap bmp, Size size)
+        /// <param name="keepGrayscale">
+        /// true の場合、入力が恒等グレースケールパレット（i → (i,i,i)）の 8bppIndexed なら、8bppIndexed のまま縮小して返す。
+        /// false（既定）の場合、Indexed 形式は 32bppArgb に変換して縮小する（従来どおり）。
+        /// </param>
+        public static Bitmap CreateNew(Bitmap bmp, Size size, bool keepGrayscale = false)
         {
-            return CreateNew(bmp, size.Width, size.Height);
+            return CreateNew(bmp, size.Width, size.Height, keepGrayscale);
         }
 
-        public static Bitmap CreateNew(Bitmap bmp, int width, int height)
+        public static Bitmap CreateNew(Bitmap bmp, int width, int height, bool keepGrayscale = false)
         {
-            var result = CreateNew(bmp, (double)width / bmp.Width, (double)height / bmp.Height);
+            var result = CreateNew(bmp, (double)width / bmp.Width, (double)height / bmp.Height, keepGrayscale);
 #if !AUTOBUILD
             if (result.Width != width || result.Height != height)
             {
@@ -56,11 +60,64 @@ namespace ZipPla
             return result;
         }
 
-        public static Bitmap CreateNew(Bitmap bmp, double scaleX, double scaleY)
+        public static Bitmap CreateNew(Bitmap bmp, double scaleX, double scaleY, bool keepGrayscale = false)
         {
+            if (keepGrayscale && IsIdentityGrayscale(bmp))
+            {
+                // グレースケールを Bgra32 に広げると入力のコピーと出力が 4 倍の大きさになるので、Gray8 のまま縮小する（C2）
+                var graySource = GetBitmapSource(bmp, new Rectangle(Point.Empty, bmp.Size),
+                    System.Drawing.Imaging.PixelFormat.Format8bppIndexed, PixelFormats.Gray8);
+                BitmapSource scaled = new TransformedBitmap(graySource, new ScaleTransform(scaleX, scaleY));
+                if (scaled.Format != PixelFormats.Gray8)
+                {
+                    scaled = new FormatConvertedBitmap(scaled, PixelFormats.Gray8, null, 0);
+                }
+                return GetGrayscaleBitmap(scaled);
+            }
+
             var transformedBitmap = new TransformedBitmap(GetBitmapSource(bmp), new ScaleTransform(scaleX, scaleY));
             //lastBitmapScalingMode = RenderOptions.GetBitmapScalingMode(transformedBitmap);
             return GetBitmap(transformedBitmap);
+        }
+
+        /// <summary>
+        /// 8bppIndexed で、パレットが i → (i,i,i)（不透明）の恒等グレースケールかどうか
+        /// （ViewerForm.ToBitmap8Unsafe が作る形式。インデックス値をそのまま輝度として扱える）
+        /// </summary>
+        private static bool IsIdentityGrayscale(Bitmap bmp)
+        {
+            if (bmp.PixelFormat != System.Drawing.Imaging.PixelFormat.Format8bppIndexed) return false;
+            var entries = bmp.Palette.Entries;
+            if (entries.Length != 256) return false;
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var c = entries[i];
+                if (c.A != 255 || c.R != i || c.G != i || c.B != i) return false;
+            }
+            return true;
+        }
+
+        private static Bitmap GetGrayscaleBitmap(BitmapSource source)
+        {
+            const System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Format8bppIndexed;
+            var bitmap = new Bitmap(source.PixelWidth, source.PixelHeight, format);
+            try
+            {
+                var palette = bitmap.Palette;
+                var entries = palette.Entries;
+                for (var i = 0; i < entries.Length; i++)
+                {
+                    entries[i] = System.Drawing.Color.FromArgb(i, i, i);
+                }
+                bitmap.Palette = palette;
+                SetToBitmap(source, bitmap, 0, format);
+            }
+            catch
+            {
+                bitmap.Dispose();
+                throw;
+            }
+            return bitmap;
         }
         
         const System.Drawing.Imaging.PixelFormat PixelFormat_Format32bppCMYK = (System.Drawing.Imaging.PixelFormat)8207;

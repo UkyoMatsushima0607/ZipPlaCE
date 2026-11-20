@@ -3418,7 +3418,7 @@ namespace ZipPla
                                 if (bench)
                                 {
                                     standardScalingAlgorithm_BenchRequest = -1;
-                                    BitmapResizer.CreateNew(bmp, resizedSize).Dispose(); // キャッシュ関係での不公平が生じないように
+                                    BitmapResizer.CreateNew(bmp, resizedSize, keepGrayscale: true).Dispose(); // キャッシュ関係での不公平が生じないように
                                     sw = new System.Diagnostics.Stopwatch();
                                     sw.Start();
                                 }
@@ -3446,7 +3446,7 @@ namespace ZipPla
                                     case ScalingAlgorithm.AntiMoire4: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.FewAliasingLanczos(6, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
 #endif
                                     */
-                                    default: entity = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize)); break;
+                                    default: entity = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize, keepGrayscale: true)); break; // グレースケールは 8bpp のまま縮小する（C2）
                                 }
 
                                 if (bench)
@@ -3457,7 +3457,7 @@ namespace ZipPla
                                     if (scalingAlgorithm != ScalingAlgorithm.Default)
                                     {
                                         sw.Restart();
-                                        using (var temp = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize)))
+                                        using (var temp = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize, keepGrayscale: true)))
                                         {
                                             sw.Stop();
                                             time2 = sw.Elapsed;
