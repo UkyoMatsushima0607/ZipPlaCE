@@ -59,7 +59,7 @@ namespace ZipPla
         public static Bitmap GetImageByFfmpeg(string filePath)
         {
             int outputSize;
-            var cmd = $"-i \"{filePath}\" -an -vcodec bmp -f image2 pipe:1";
+            var cmd = $"-i \"{filePath}\" -vframes 1 -an -vcodec bmp -f image2 pipe:1";
             
             var buf = readStdOutBinary(ffmpegPath, cmd, null, null, out outputSize);
 
@@ -93,6 +93,42 @@ namespace ZipPla
             finally
             {
                 File.Delete(tempFileName);
+            }
+        }
+
+        public static Bitmap GetWebPImageByFfmpeg(Stream stream, long streamLength = -1)
+        {
+            if (stream.CanSeek) return getWebPImageByFfmpegSeekable(stream);
+
+            // Keep the compressed image for a file-based fallback when an older ffmpeg
+            // cannot identify WebP from standard input.
+            using (var source = streamLength >= 0 && streamLength <= int.MaxValue ?
+                new MemoryStream((int)streamLength) : new MemoryStream())
+            {
+                stream.CopyTo(source);
+                source.Position = 0;
+                return getWebPImageByFfmpegSeekable(source);
+            }
+        }
+
+        private static Bitmap getWebPImageByFfmpegSeekable(Stream source)
+        {
+            var position = source.Position;
+            try
+            {
+                int outputSize;
+                var buf = readStdOutBinary(ffmpegPath,
+                    "-hide_banner -loglevel error -f webp_pipe -i pipe:0 -vframes 1 -an -vcodec bmp -f image2 pipe:1",
+                    source, null, out outputSize);
+                using (var imageStream = new MemoryStream(buf, 0, outputSize, writable: false, publiclyVisible: false))
+                {
+                    return new Bitmap(imageStream);
+                }
+            }
+            catch (Exception e) when (e is IOException || e is InvalidDataException || e is ArgumentException || e is System.ComponentModel.Win32Exception || e is System.Runtime.InteropServices.ExternalException)
+            {
+                source.Position = position;
+                return GetImageByFfmpeg(source);
             }
         }
 
@@ -203,9 +239,23 @@ namespace ZipPla
             outputSize = 0;
             using (var p = Process.Start(psi)) // アプリの実行開始
             {
+                Task inputTask = null;
                 try
                 {
-                    input?.CopyTo(p.StandardInput.BaseStream);
+                    if (input != null)
+                    {
+                        inputTask = Task.Run(() =>
+                        {
+                            try
+                            {
+                                input.CopyTo(p.StandardInput.BaseStream);
+                            }
+                            finally
+                            {
+                                p.StandardInput.Close();
+                            }
+                        });
+                    }
                     var stream = p.StandardOutput.BaseStream;
                     while (true)
                     {
@@ -233,7 +283,7 @@ namespace ZipPla
                         if (read > 0)
                         {
                             var nextOutputSize = outputSize + read;
-                            if(subBuf.Length < nextOutputSize)
+                            if(buf.Length < nextOutputSize)
                             {
                                 var nextBuf = new byte[nextOutputSize * 2];
                                 Array.Copy(buf, nextBuf, outputSize);
@@ -245,10 +295,27 @@ namespace ZipPla
                         }
                         else break;
                     }
+                    if (inputTask != null)
+                    {
+                        p.WaitForExit();
+                        try
+                        {
+                            inputTask.GetAwaiter().GetResult();
+                        }
+                        catch (IOException) when (p.ExitCode == 0 && outputSize > 0)
+                        {
+                            // ffmpeg may close stdin after it has decoded the first frame.
+                        }
+                        if (p.ExitCode != 0) throw new InvalidDataException("ffmpeg could not decode the piped image.");
+                    }
                 }
                 catch
                 {
-                    p.Kill(); // using (var p ... ではこの効果はない
+                    if (!p.HasExited) p.Kill(); // using (var p ... ではこの効果はない
+                    if (inputTask != null)
+                    {
+                        try { inputTask.Wait(); } catch { }
+                    }
                     throw;
                 }
             }

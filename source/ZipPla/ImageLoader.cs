@@ -556,7 +556,7 @@ namespace ZipPla
         }
 
         
-        private static Bitmap GetFullBitmap(Stream stream, bool setImageInfo, out ImageInfo imageInfo, string filePathForGetFileType, bool animation)
+        private static Bitmap GetFullBitmap(Stream stream, bool setImageInfo, out ImageInfo imageInfo, string filePathForGetFileType, bool animation, long streamLength)
         {
             if (filePathForGetFileType == null) throw new ArgumentNullException(nameof(filePathForGetFileType));
             if (defaultSupportPathRegex.IsMatch(filePathForGetFileType))
@@ -642,32 +642,29 @@ namespace ZipPla
                         {
                             using (var susie = new garu.Util.Susie(spiPath))
                             {
-                                byte[] buf;
-                                using (var ms = new MemoryStream())
+                                var buf = ReadImageBytes(stream, streamLength);
+                                var result = susie.GetPicture(filePathForGetFileType, buf);
+                                if (result != null)
                                 {
-                                    stream.CopyTo(ms);
-                                    buf = ms.ToArray();
-                                    var result = susie.GetPicture(filePathForGetFileType, buf);
-                                    if (result != null)
+                                    imageInfo = GetImageInfo(result);
+                                    return (Bitmap)result;
+                                }
+                                else if (withoutPeriod == "jp2" && MovieThumbnailLoader.ffmpegExists())
+                                {
+                                    using (var ms = new MemoryStream(buf, writable: false))
                                     {
-                                        imageInfo = GetImageInfo(result);
-                                        return (Bitmap)result;
-                                    }
-                                    else if (withoutPeriod == "jp2" && MovieThumbnailLoader.ffmpegExists())
-                                    {
-                                        ms.Seek(0, SeekOrigin.Begin);
                                         var result2 = MovieThumbnailLoader.GetImageByFfmpeg(ms);
                                         imageInfo = GetImageInfo(result2);
                                         return result2;
                                     }
-                                    else throw new Exception();
                                 }
+                                else throw new Exception();
                             }
                         }
 
                         if (MovieThumbnailLoader.SupportedImageExtensionsWithPeriodInLowerCase.Contains(extension))// && MovieThumbnailLoader.ffmpegExists())
                         {
-                            var result = MovieThumbnailLoader.GetImageByFfmpeg(stream);
+                            var result = extension == ".webp" ? MovieThumbnailLoader.GetWebPImageByFfmpeg(stream, streamLength) : MovieThumbnailLoader.GetImageByFfmpeg(stream);
                             imageInfo = GetImageInfo(result);
                             return result;
                         }
@@ -679,9 +676,54 @@ namespace ZipPla
             }
         }
 
+        private static byte[] ReadImageBytes(Stream stream, long streamLength)
+        {
+            var memory = stream as MemoryStream;
+            ArraySegment<byte> segment;
+            if (memory != null && memory.Position == 0 && memory.TryGetBuffer(out segment) &&
+                segment.Offset == 0 && segment.Count == segment.Array.Length)
+            {
+                memory.Position = memory.Length;
+                return segment.Array;
+            }
+
+            if (streamLength >= 0 && streamLength <= int.MaxValue)
+            {
+                var result = new byte[(int)streamLength];
+                var read = 0;
+                while (read < result.Length)
+                {
+                    var count = stream.Read(result, read, result.Length - read);
+                    if (count == 0) break;
+                    read += count;
+                }
+                var next = stream.ReadByte();
+                if (next < 0 && read == result.Length) return result;
+
+                using (var remainder = new MemoryStream())
+                {
+                    remainder.Write(result, 0, read);
+                    if (next >= 0) remainder.WriteByte((byte)next);
+                    stream.CopyTo(remainder);
+                    return remainder.ToArray();
+                }
+            }
+
+            using (var result = new MemoryStream())
+            {
+                stream.CopyTo(result);
+                return result.ToArray();
+            }
+        }
+
         public static Bitmap GetFullBitmap(Stream stream, string filePathForGetFileType, bool animation = false)
         {
-            return GetFullBitmap(stream, false, out var dummy, filePathForGetFileType, animation);
+            return GetFullBitmap(stream, filePathForGetFileType, animation, -1);
+        }
+
+        public static Bitmap GetFullBitmap(Stream stream, string filePathForGetFileType, bool animation, long streamLength)
+        {
+            return GetFullBitmap(stream, false, out var dummy, filePathForGetFileType, animation, streamLength);
         }
 
         public static Bitmap GetFullBitmap(string filePath, bool animation = false)

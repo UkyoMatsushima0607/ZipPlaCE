@@ -259,11 +259,15 @@ namespace ZipPla
         //private IList<CabFileInfo> cabArchiveEntries;
         private CabEngine cabArchive;
         private IList<Microsoft.Deployment.Compression.ArchiveFileInfo> cabArchiveEntries;
-        private List<Bitmap> entriesImageList;
         private IReader iReader;
-        private List<Stream> entriesStreamListForImage;
-        private List<Stream> entriesStreamList;
-        private IReader iReaderForStream;
+        // Keep a bounded cache of extracted files; decoded bitmaps are much larger.
+        private Dictionary<int, byte[]> solidImageCache;
+        private LinkedList<int> solidImageCacheOrder;
+        private long solidImageCacheBytes;
+        private const long SolidImageCacheLimit = 64L * 1024 * 1024;
+        private int[] solidEntryOccurrences;
+        private Dictionary<string, int> solidReaderOccurrences;
+        private int solidLastRequestedIndex = -1;
         private PdfReader pdfArchive;
         private bool pdfImageMustBeConvert = false;
 
@@ -1357,6 +1361,10 @@ namespace ZipPla
                 //var macFileList = needToIgnoreMacList ? new List<PackedImageEntry>() : null;
                 
                 iArchiveEntries = iArchive.Entries.ToArray();
+                if (OpenInnerImageStreamSharpCompress_IsSolid)
+                {
+                    initializeSolidEntryOccurrences();
+                }
                 var result = new List<PackedImageEntry>();
                 var length = iArchiveEntries.Length;
                 var needTime = (neededFileInfos & PackedImageLoaderFileInfo.LastWriteTime) == PackedImageLoaderFileInfo.LastWriteTime;
@@ -1831,7 +1839,7 @@ namespace ZipPla
                             case PackType.Cab:
                                 var cabEntrie = cabArchiveEntries[physicalIndex];
                                 var name = cabEntrie.Name;
-                                return GetImageAndDisposeOriginal(cabArchive.Unpack(stream, name), name);
+                                return GetImageAndDisposeOriginal(cabArchive.Unpack(stream, name), name, cabEntrie.Length);
                         }
                     }
 
@@ -1841,11 +1849,11 @@ namespace ZipPla
             }
         }
 
-        private Bitmap GetImageAndDisposeOriginal(Stream stream, string fileNameForType)
+        private Bitmap GetImageAndDisposeOriginal(Stream stream, string fileNameForType, long streamLength = -1)
         {
             try
             {
-                return ImageFromStream(stream, fileNameForType, animation);
+                return ImageFromStream(stream, fileNameForType, animation, streamLength);
             }
             finally
             {
@@ -1858,7 +1866,7 @@ namespace ZipPla
             try
             {
                 var entry = zipArchiveEntries[physicalIndex];
-                return GetImageAndDisposeOriginal(entry.Open(), entry.Name);
+                return GetImageAndDisposeOriginal(entry.Open(), entry.Name, entry.Length);
             }
             catch (InvalidDataException)
             {
@@ -1913,49 +1921,55 @@ namespace ZipPla
                     try
                     {
                         //return GetImageAndDisposeOriginal(SeekableStream.Seekablize(entry.OpenEntryStream(), entry.Size), entry.Key);
-                        return GetImageAndDisposeOriginal(entry.OpenEntryStream(), entry.Key);
+                        return GetImageAndDisposeOriginal(entry.OpenEntryStream(), entry.Key, entry.Size);
                     }
                     catch (InvalidOperationException)
                     {
                         OpenInnerImageStreamSharpCompress_IsSolid = true;
+                        initializeSolidEntryOccurrences();
                     }
                 }
 
-                if (entriesStreamListForImage == null)
+                var solidEntry = iArchiveEntries[physicalIndex];
+                byte[] cached;
+                if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached))
                 {
-                    entriesStreamListForImage = new List<Stream>();
-                    entriesImageList = new List<Bitmap>();
-                    iReader = iArchive.ExtractAllEntries();
+                    solidImageCacheOrder.Remove(physicalIndex);
+                    solidImageCacheOrder.AddLast(physicalIndex);
+                    using (var cachedStream = new MemoryStream(cached, 0, cached.Length, writable: false, publiclyVisible: true))
+                    {
+                        return ImageFromStream(cachedStream, solidEntry.Key, animation, cached.Length);
+                    }
                 }
-                for (var i = entriesStreamListForImage.Count; i <= physicalIndex && iReader.MoveToNextEntry(); i++)
+
+                var entrySize = solidEntry.Size;
+                using (var imageStream = entrySize >= 0 && entrySize <= int.MaxValue ? new MemoryStream((int)entrySize) : new MemoryStream())
+                using (var entryStream = openSolidEntryStream(physicalIndex))
                 {
-                    var entry = iArchiveEntries[i];
-                    if (ImageLoader.SupportsFullReading(entry.Key, ffmpegExists: true))
+                    entryStream.CopyTo(imageStream);
+                    imageStream.Position = 0;
+                    var image = ImageFromStream(imageStream, solidEntry.Key, animation, imageStream.Length);
+                    if (imageStream.Length <= SolidImageCacheLimit / 2)
                     {
-                        entriesStreamListForImage.Add(iReader.OpenEntryStream());
+                        var bytes = imageStream.Capacity == imageStream.Length ? imageStream.GetBuffer() : imageStream.ToArray();
+                        if (solidImageCache == null)
+                        {
+                            solidImageCache = new Dictionary<int, byte[]>();
+                            solidImageCacheOrder = new LinkedList<int>();
+                        }
+                        while (solidImageCacheOrder.Count >= 8 || solidImageCacheBytes + bytes.Length > SolidImageCacheLimit)
+                        {
+                            var oldest = solidImageCacheOrder.First.Value;
+                            solidImageCacheBytes -= solidImageCache[oldest].Length;
+                            solidImageCache.Remove(oldest);
+                            solidImageCacheOrder.RemoveFirst();
+                        }
+                        solidImageCache[physicalIndex] = bytes;
+                        solidImageCacheOrder.AddLast(physicalIndex);
+                        solidImageCacheBytes += bytes.Length;
                     }
-                    else
-                    {
-                        entriesStreamListForImage.Add(null);
-                    }
-                    entriesImageList.Add(null);
+                    return image;
                 }
-                
-                var image = entriesImageList[physicalIndex];
-                if (image == null)
-                {
-                    var entry = iArchiveEntries[physicalIndex];
-                    using (var stream = entriesStreamListForImage[physicalIndex])
-                    {
-                        image = ImageFromStream(stream, entry.Key, animation);
-                        entriesImageList[physicalIndex] = image;
-                        stream.Close();
-                    }
-                    entriesStreamListForImage[physicalIndex] = null;
-                }
-                
-                return image.Clone() as Bitmap;
-                //return ViewerForm.Clone(entriesImageList[physicalIndex]); // BitmapResizer でエラーが生じる
             }
             catch (Exception e)
             {
@@ -1984,32 +1998,29 @@ namespace ZipPla
                     catch (InvalidOperationException)
                     {
                         OpenInnerImageStreamSharpCompress_IsSolid = true;
+                        initializeSolidEntryOccurrences();
                     }
                 }
 
-                if (entriesStreamList == null)
+                byte[] cached;
+                if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached))
                 {
-                    entriesStreamList = new List<Stream>();
-                    iReaderForStream = iArchive.ExtractAllEntries();
-                }
-                for (var i = entriesStreamList.Count; i <= physicalIndex && iReaderForStream.MoveToNextEntry(); i++)
-                {
-                    var stream = iReaderForStream.OpenEntryStream();
-                    try
-                    {
-                        entriesStreamList.Add(stream);
-                    }
-                    catch
-                    {
-                        stream.Dispose();
-                        throw;
-                    }
+                    solidImageCacheOrder.Remove(physicalIndex);
+                    solidImageCacheOrder.AddLast(physicalIndex);
+                    var cachedCopy = new MemoryStream(cached.Length);
+                    cachedCopy.Write(cached, 0, cached.Length);
+                    cachedCopy.Position = 0;
+                    return cachedCopy;
                 }
 
-                var result = new MemoryStream();
+                var size = iArchiveEntries[physicalIndex].Size;
+                var result = size >= 0 && size <= int.MaxValue ? new MemoryStream((int)size) : new MemoryStream();
                 try
                 {
-                    entriesStreamList[physicalIndex].CopyTo(result);
+                    using (var entryStream = openSolidEntryStream(physicalIndex))
+                    {
+                        entryStream.CopyTo(result);
+                    }
                     result.Seek(0, SeekOrigin.Begin);
                     return result;
                 }
@@ -2032,12 +2043,71 @@ namespace ZipPla
             }
         }
 
+        private void initializeSolidEntryOccurrences()
+        {
+            if (solidEntryOccurrences != null) return;
+            solidEntryOccurrences = new int[iArchiveEntries.Length];
+            var occurrences = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (var i = 0; i < iArchiveEntries.Length; i++)
+            {
+                if (iArchiveEntries[i].IsDirectory) continue;
+                var key = iArchiveEntries[i].Key ?? string.Empty;
+                int count;
+                occurrences.TryGetValue(key, out count);
+                solidEntryOccurrences[i] = count;
+                occurrences[key] = count + 1;
+            }
+        }
+
+        private void resetSolidReader()
+        {
+            if (iReader != null)
+            {
+                iReader.Dispose();
+                iReader = null;
+                if (stream == null)
+                {
+                    iArchive.Dispose();
+                    iArchive = ArchiveFactory.Open(path);
+                    iArchiveEntries = iArchive.Entries.ToArray();
+                }
+            }
+            iReader = iArchive.ExtractAllEntries();
+            solidReaderOccurrences = new Dictionary<string, int>(StringComparer.Ordinal);
+            solidLastRequestedIndex = -1;
+        }
+
+        private Stream openSolidEntryStream(int physicalIndex)
+        {
+            if (iReader == null || physicalIndex <= solidLastRequestedIndex) resetSolidReader();
+
+            // The 7z reader can enumerate entries in a different order from the archive index.
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                while (iReader.MoveToNextEntry())
+                {
+                    if (iReader.Entry.IsDirectory) continue;
+                    var key = iReader.Entry.Key ?? string.Empty;
+                    int occurrence;
+                    solidReaderOccurrences.TryGetValue(key, out occurrence);
+                    solidReaderOccurrences[key] = occurrence + 1;
+                    if (key == (iArchiveEntries[physicalIndex].Key ?? string.Empty) && occurrence == solidEntryOccurrences[physicalIndex])
+                    {
+                        solidLastRequestedIndex = physicalIndex;
+                        return iReader.OpenEntryStream();
+                    }
+                }
+                if (attempt == 0) resetSolidReader();
+            }
+            throw new InvalidDataException("The archive entry could not be found during solid extraction.");
+        }
+
         private Bitmap OpenInnerImageStreamSevenZip(int physicalIndex)
         {
             var entry = sevenZipArchiveEntries[physicalIndex];
             using (var ms = GetInnerImageStreamSevenZip(physicalIndex, entry, seekToBegin: true, callback: false))
             {
-                return ImageFromStream(ms, entry.FileName, animation);
+                return ImageFromStream(ms, entry.FileName, animation, entry.Size);
             }
         }
 
@@ -2049,7 +2119,7 @@ namespace ZipPla
         private MemoryStream GetInnerImageStreamSevenZip(int physicalIndex, Entry entry, bool seekToBegin, bool callback)
         {
             // 7z 自体がキャッシュ機構を備えている
-            var ms = new MemoryStream();
+            var ms = entry.Size >= 0 && entry.Size <= int.MaxValue ? new MemoryStream((int)entry.Size) : new MemoryStream();
             try
             {
                 if(callback)
@@ -2298,13 +2368,13 @@ namespace ZipPla
             }
         }
 
-        private static Bitmap ImageFromStream(Stream stream, string filePathForGetFileType, bool animation)
+        private static Bitmap ImageFromStream(Stream stream, string filePathForGetFileType, bool animation, long streamLength = -1)
         {
             Bitmap result;
             try
             {
                 //result = Image.FromStream(stream);
-                result = ImageLoader.GetFullBitmap(stream, filePathForGetFileType, animation);
+                result = ImageLoader.GetFullBitmap(stream, filePathForGetFileType, animation, streamLength);
             }
             catch (Exception e)
             {
@@ -2602,66 +2672,15 @@ namespace ZipPla
         {
             if (!Disposed)
             {
-                if (entriesImageList != null)
+                if (iReader != null)
                 {
-                    foreach (var s in entriesImageList)
-                    {
-                        if (s != null)
-                        {
-                            try
-                            {
-                                s.Dispose();
-                            }
-                            catch { }
-                        }
-                    }
-                }
-
-                if (entriesStreamList != null)
-                {
-                    foreach (var s in entriesStreamList)
-                    {
-                        if (s != null)
-                        {
-                            try
-                            {
-                                s.Close();
-                                s.Dispose();
-                            }
-                            catch { }
-                        }
-                    }
-                }
-
-                if (entriesStreamListForImage != null)
-                {
-                    foreach (var s in entriesStreamListForImage)
-                    {
-                        if (s != null)
-                        {
-                            try
-                            {
-                                s.Close();
-                                s.Dispose();
-                            }
-                            catch { }
-                        }
-                    }
+                    try { iReader.Dispose(); } catch { }
                 }
 
                 if (zipArchive != null) zipArchive.Dispose();
                 if (iArchive != null) iArchive.Dispose();
                 if (sevenZipArchive != null) sevenZipArchive.Dispose();
                 if (pdfArchive != null) pdfArchive.Dispose();
-
-                if (iReader != null)
-                {
-                    try
-                    {
-                        iReader.Dispose();
-                    }
-                    catch { }
-                }
 
                 if (stream != null)
                 {

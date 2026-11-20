@@ -150,7 +150,7 @@ namespace SharpCompress.Archives.SevenZip
             return new SevenZipReader(this);
         }
 
-        public override bool IsSolid { get { return Entries.Where(x => !x.IsDirectory).GroupBy(x => x.FilePart.Folder).Count() > 1; } }
+        public override bool IsSolid { get { return Entries.Where(x => !x.IsDirectory).GroupBy(x => x.FilePart.Folder).Any(group => group.Key != null && group.Count() > 1); } }
 
         public override long TotalSize
         {
