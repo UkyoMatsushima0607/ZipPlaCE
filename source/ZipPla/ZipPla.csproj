@@ -2857,14 +2857,14 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>cscript //nologo "$(ProjectDir)Properties\PostprocessorForPerformance.js" "$(ProjectDir)"
-if $(ConfigurationName) == AutoBuild (
+if $(ConfigurationName) == AutoBuild if exist "$(SolutionDir)..\FullyAutomatedBuilding" (
   if exist "$(TargetPath)" (
     if exist "$(TargetPath).bak" (
-      fc "$(TargetPath)" "$(TargetPath).bak"
-      if %25ERRORLEVEL%25 == 0 (
-        set aBuild=false
-      ) else (
+      fc /b "$(TargetPath)" "$(TargetPath).bak" > nul
+      if errorlevel 1 (
         set aBuild=true
+      ) else (
+        set aBuild=false
       )
       del "$(TargetPath).bak"
     ) else (
@@ -2881,7 +2881,7 @@ if %25aBuild%25==true if exist "$(SolutionDir)..\FullyAutomatedBuilding" (
 )</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>if $(ConfigurationName) == AutoBuild if exist "$(TargetPath)" copy "$(TargetPath)" "$(TargetPath).bak"
+    <PreBuildEvent>if $(ConfigurationName) == AutoBuild if exist "$(SolutionDir)..\FullyAutomatedBuilding" if exist "$(TargetPath)" copy "$(TargetPath)" "$(TargetPath).bak"
 cscript //nologo "$(ProjectDir)Properties\PreprocessorForPerformance.js" "$(ProjectDir)"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
