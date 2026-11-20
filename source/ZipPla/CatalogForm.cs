@@ -1872,6 +1872,9 @@ namespace ZipPla
 #endif
 
             bmwMakePreview.ThreadCount = Math.Max(1, Environment.ProcessorCount / 2);
+            // ジョブ番号は 2*i がヘッダ取得、2*i+1 がサムネイル生成。サムネイルは ThumbViewerItem.LoadAsync が
+            // 表示中のアイテムだけ読み込むので、奇数番のジョブはスレッドを起動せず完了扱いにする（A1）。
+            bmwMakePreview.WorkSkipper = workNumber => (workNumber & 1) == 1;
             Program.SetPriority(ProcessPriorityClass.Normal);
             PrepareLookAheadProcess(/*Configuration.GetLastWriteTime()*/);
             //menuStripForTagFilter.Location = new Point(menuStrip.Right - menuStripForTagFilter.Width, menuStrip.Top);
@@ -8839,6 +8842,9 @@ namespace ZipPla
         //private static readonly Color sorColor = Color.LightGreen;
         private void bmwMakePreview_RunWorkerStarting(object sender, BackgroundMultiWorker.RunWorkerStartingEventArgs e)
         {
+#if PERFLOG
+            MakePreviewPerfLog.Start(e.Arguments?.Cast<object>().Count() ?? -1);
+#endif
             //var sw = new Stopwatch();
             //var ss = "";
 
@@ -9002,10 +9008,48 @@ namespace ZipPla
 
         private void bmwMakePreview_DoWork(object sender, BackgroundMultiWorker.EachDoWorkEventArgs e)
         {
-            //ThumbViewerItem内でサムネイルを読み込むため、ここの関数は丸々削除した。
-            //本来この関数内（+bmwMakePreview_EachRunWorkerCompleted）で行われていたサムネイルの読み込み完了処理も削除しているため、内部状態が常にサムネイルの読み込み中になっている点に注意。
-            //この関数をすぐに抜けるとUIスレッドがブロックされファイル数の多いフォルダを開くとスクロール時に残像が発生するため、2フレーム分Sleepさせている。
-            Thread.Sleep(33);
+            // ジョブ番号 2*i はヘッダ（ページ数・解像度・動画情報など）の取得。
+            // サムネイル（2*i+1）は ThumbViewerItem.LoadAsync が表示中のアイテムだけ読み込むため、
+            // WorkSkipper で実行されないようにしている（A1）。
+            e.Result = null;
+
+            var index = e.WorkNumber;
+            if ((index & 1) == 1) return;
+            var index2 = index / 2;
+
+            var zpa = ZipPathArray;
+
+            if (loadingGuid != e.WorkSetGuid || zpa == null || zpa.Length <= index2) return;
+
+            var zipPath = zpa[index2];
+
+            var isDir = false;
+            try
+            {
+                isDir = Directory.Exists(zipPath);
+            }
+            catch { }
+
+            if (bmwMakePreview.CancellationPending) return;
+
+            var task = Task.Run(() =>
+            {
+                try
+                {
+                    var done = GetHeader(zipPath, isDir, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
+                    e.Result = done ? Tuple.Create(zipPath, null as Bitmap, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
+                }
+                catch { }
+            });
+
+            while (!bmwMakePreview.CancellationPending && !CatalogForm_FormClosing_FormClosed)
+            {
+                if (task.Wait(50))
+                {
+                    task.Dispose(); // task の Dispose は必須ではないが可能なら行う
+                    break;
+                }
+            }
         }
 
 
@@ -9020,14 +9064,77 @@ namespace ZipPla
             ResultTuple?.Item2?.Dispose();
         }
 
+#if PERFLOG
+        // 計測用（PERFLOG 定数を付けたビルドのみ）。bmwMakePreview の1回の実行（フォルダを開く→全ジョブ完了）ごとに
+        // exe と同じフォルダの perf.log へ1行追記する。
+        private static class MakePreviewPerfLog
+        {
+            private static readonly Stopwatch wall = new Stopwatch();
+            private static long eachCount, eachTicks, sbmCalls, sbmOrderCalls, sbmTicks, headerResults, withPageCount, withImageInfo;
+            public static void AddHeaderResult(int fileCount, bool hasImageInfo)
+            {
+                headerResults++; if (fileCount >= 0) withPageCount++; if (hasImageInfo) withImageInfo++;
+            }
+            private static double ToMs(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+            public static void Start(int works)
+            {
+                wall.Restart();
+                eachCount = eachTicks = sbmCalls = sbmOrderCalls = sbmTicks = headerResults = withPageCount = withImageInfo = 0;
+                Write($"{DateTime.Now:HH:mm:ss}\tRunWorkerStarting\tworks={works}");
+            }
+            public static void AddEach(long ticks)
+            {
+                eachCount++; eachTicks += ticks;
+                if (eachCount % 1000 == 0) Write($"{DateTime.Now:HH:mm:ss}\tprogress\teachCompleted={eachCount}\twallMs={wall.Elapsed.TotalMilliseconds:F0}");
+            }
+            private static void Write(string line)
+            {
+                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "perf-detail.log"), line + Environment.NewLine); } catch { }
+            }
+            public static void AddSetBackgroundMode(bool checkOrder, long ticks)
+            {
+                sbmCalls++; if (checkOrder) sbmOrderCalls++; sbmTicks += ticks;
+            }
+            public static void Finish(int works, int items)
+            {
+                if (!wall.IsRunning) return;
+                wall.Stop();
+                var line = $"{DateTime.Now:HH:mm:ss}\tAllRunWorkersCompleted\titems={items}\tworks={works}\twallMs={wall.Elapsed.TotalMilliseconds:F0}" +
+                    $"\teachCompleted={eachCount}\teachHandlerMs={ToMs(eachTicks):F1}" +
+                    $"\tsetBackgroundMode={sbmCalls}\t(withOrder={sbmOrderCalls})\tsetBackgroundModeMs={ToMs(sbmTicks):F1}" +
+                    $"\theaderResults={headerResults}\twithPageCount={withPageCount}\twithImageInfo={withImageInfo}";
+                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "perf.log"), line + Environment.NewLine); } catch { }
+            }
+        }
+#endif
+
         Point bmwMakePreview_EachRunWorkerCompleted_CursorPosition = Point.Empty;
         private void bmwMakePreview_EachRunWorkerCompleted(object sender, BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
         {
+#if PERFLOG
+            var perfStart = Stopwatch.GetTimestamp();
+            try
+            {
+                bmwMakePreview_EachRunWorkerCompletedCore(e);
+            }
+            finally
+            {
+                MakePreviewPerfLog.AddEach(Stopwatch.GetTimestamp() - perfStart);
+            }
+#else
+            bmwMakePreview_EachRunWorkerCompletedCore(e);
+#endif
+        }
+
+        private void bmwMakePreview_EachRunWorkerCompletedCore(BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
+        {
             Program.AlertError(e.Error);
-            var hasThumbnail = (e.WorkNumber & 1) == 1;
-            var newPhase = bmwMakePreview.GetWorkState(e.WorkNumber ^ 1) != BackgroundMultiWorker.WorkState.Finished;
             var ResultTuple = e.Result as Tuple<string, Bitmap, bool, int, LoadResult, long, ImageInfo, Tuple<MovieInfo>>; // Tuple.Create は要素が 8 以上の時こういう挙動になる
-            var show = ResultTuple != null && !e.Cancelled && (hasThumbnail || newPhase) && e.WorkSetGuid == loadingGuid;
+            // 結果が来るのはヘッダ取得のジョブだけ（サムネイルのジョブは WorkSkipper で実行されない）
+            var show = ResultTuple != null && !e.Cancelled && e.WorkSetGuid == loadingGuid;
+#if PERFLOG
+            if (show) MakePreviewPerfLog.AddHeaderResult(ResultTuple.Item4, ResultTuple.Item7 != null);
+#endif
             if (!show && ResultTuple != null)
             {
                 var image = ResultTuple.Item2;
@@ -9114,16 +9221,13 @@ namespace ZipPla
                     item.Text = name;
                     tvCatalog[index] = item;
                     */
-                    //if (hasThumbnail)
                     {
                         // 一度消えて同じパスが再設定された場合を考慮する必要がある
+                        // サムネイルは ThumbViewerItem が自分で読み込むので、既存のアイテムの Image には触らない
+                        // （null にすると読み込み済みのサムネイルが消えて再生成される）。
+                        // パスが変わっていれば FilePath の setter が Image を破棄する。
                         var item = tvCatalog[index];
-                        if (item != null)
-                        {
-                            // 再設定後の読み込みに先を越される可能性も否定はできない
-                            item.Image = null;
-                        }
-                        else
+                        if (item == null)
                         {
                             item = new ThumbViewerItem(){ OwnerCatalog = this };
                             item.Text = name;
@@ -9209,10 +9313,14 @@ namespace ZipPla
                 }
             }
 
+            // 実行順の並べ替え（全件 O(N)）はマウスが動いたときだけ、かつ 100ms に1回までにする。
+            // 間引いた回はカーソル位置を記録しないので、次の完了時に改めて並べ替える。
+            var now = Environment.TickCount;
             var cp = Cursor.Position;
-            if (cp != bmwMakePreview_EachRunWorkerCompleted_CursorPosition)
+            if (cp != bmwMakePreview_EachRunWorkerCompleted_CursorPosition && unchecked(now - bmwMakePreview_EachRunWorkerCompleted_LastOrderTick) >= 100)
             {
                 bmwMakePreview_EachRunWorkerCompleted_CursorPosition = cp;
+                bmwMakePreview_EachRunWorkerCompleted_LastOrderTick = now;
                 SetBackgroundMode(true, 1);
             }
             else
@@ -9220,8 +9328,15 @@ namespace ZipPla
                 SetBackgroundMode(false, 1);
             }
 
-            loadCountToolStripMenuItem.Text = bmwMakePreview.CurrentThreadCount + "   " + e.CompletedWorksCount + " / " + ZipPathArray.Length;
+            // 進捗表示も 100ms に1回まで（最終値は AllRunWorkersCompleted で設定される）
+            if (unchecked(now - bmwMakePreview_EachRunWorkerCompleted_LastCountTick) >= 100)
+            {
+                bmwMakePreview_EachRunWorkerCompleted_LastCountTick = now;
+                loadCountToolStripMenuItem.Text = bmwMakePreview.CurrentThreadCount + "   " + e.CompletedWorksCount + " / " + ZipPathArray.Length;
+            }
         }
+        private int bmwMakePreview_EachRunWorkerCompleted_LastOrderTick = Environment.TickCount - 1000;
+        private int bmwMakePreview_EachRunWorkerCompleted_LastCountTick = Environment.TickCount - 1000;
 
         private void getSelectedPathArray(int clickedIndex, out string[] selectedPaths, out int[] pages, out bool[] isDirs, bool pageReset = false)
         {
@@ -9591,6 +9706,9 @@ namespace ZipPla
                             */
 
                             loadCountToolStripMenuItem.Text = bmwMakePreview.CurrentThreadCount + "   " + e.Results.Count + " / " + ZipPathArray.Length;
+#if PERFLOG
+                            MakePreviewPerfLog.Finish(e.Results.Count, ZipPathArray.Length);
+#endif
                         }
                     })));
                 }
@@ -10912,6 +11030,23 @@ namespace ZipPla
 
         // サムネヘッダ→リストヘッダ→サムネサムネ→残りヘッダ→残りサムネ
         private void SetBackgroundMode(bool checkOrder, int processDecrease, bool DoEvenIfNotBusy = false)
+        {
+#if PERFLOG
+            var perfStart = Stopwatch.GetTimestamp();
+            try
+            {
+                SetBackgroundModeCore(checkOrder, processDecrease, DoEvenIfNotBusy);
+            }
+            finally
+            {
+                MakePreviewPerfLog.AddSetBackgroundMode(checkOrder, Stopwatch.GetTimestamp() - perfStart);
+            }
+#else
+            SetBackgroundModeCore(checkOrder, processDecrease, DoEvenIfNotBusy);
+#endif
+        }
+
+        private void SetBackgroundModeCore(bool checkOrder, int processDecrease, bool DoEvenIfNotBusy)
         {
             if (CreatingZipPathArray) return;
             if (RenameShownArchive_MakePreviewSleepRequest) return;

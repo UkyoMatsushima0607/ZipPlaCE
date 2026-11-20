@@ -131,11 +131,11 @@ namespace GenerarClasses
                     {
                         if (WorksOrderChanged) NextWork = 0;
                         WorksOrderChanged = false;
-                        while (NextWork < WorksOrder.Length && WorksStarted[WorksOrder[NextWork]]) NextWork++;
+                        while (NextWork < WorksOrder.Length && IsStartedOrSkipped(WorksOrder[NextWork])) NextWork++;
 
                         for (var newThread = CurrentThreadCount; newThread < InternalThreadCount; newThread++)
                         {
-                            while (NextWork < WorksOrder.Length && WorksStarted[WorksOrder[NextWork]]) NextWork++;
+                            while (NextWork < WorksOrder.Length && IsStartedOrSkipped(WorksOrder[NextWork])) NextWork++;
                             if (NextWork == WorksOrder.Length) break;
 
                             BackgroundWorker nextWorker;
@@ -211,6 +211,23 @@ namespace GenerarClasses
         }
 
         public bool SelfClosing { get; set; } = true;
+
+        /// <summary>
+        /// true を返したジョブはスレッドを起動せず、結果 null で完了したものとして扱います（EachRunWorkerCompleted は発生しません）。
+        /// RunWorkerAsync の開始時に評価されるため、実行中に変更した場合は次回の開始から反映されます。
+        /// すべてのジョブが対象になる場合は、ワーカーが1つも起動せず完了しなくなるのを避けるためスキップしません。
+        /// </summary>
+        public Func<int, bool> WorkSkipper { get; set; }
+        private Func<int, bool> activeWorkSkipper;
+
+        private bool IsStartedOrSkipped(int workNumber)
+        {
+            if (WorksStarted[workNumber]) return true;
+            if (activeWorkSkipper == null || !activeWorkSkipper(workNumber)) return false;
+            WorksStarted[workNumber] = true;
+            ResultArgs[workNumber] = new EachRunWorkerCompletedEventArgs(null, null, false, workNumber, ++CompletedWorksCount, WorkSetGuid);
+            return true;
+        }
 
         public event EachDoWorkEventHandler DoWork;
         private event DoWorkEventHandler GetDoWorkEventHandlerDoWork;
@@ -297,7 +314,7 @@ namespace GenerarClasses
 
             if (WorksOrderChanged) NextWork = 0;
             WorksOrderChanged = false;
-            while (NextWork < WorksOrder.Length && WorksStarted[WorksOrder[NextWork]]) NextWork++;
+            while (NextWork < WorksOrder.Length && IsStartedOrSkipped(WorksOrder[NextWork])) NextWork++;
 
             if (e.Error == null && !CancellationPending && NextWork < Works.Length)
             {
@@ -306,7 +323,7 @@ namespace GenerarClasses
                     var CurrentThreadCount0 = CurrentThreadCount;
                     for (var newThread = CurrentThreadCount0 - 1; newThread < InternalThreadCount; newThread++)
                     {
-                        while (NextWork < WorksOrder.Length && WorksStarted[WorksOrder[NextWork]]) NextWork++;
+                        while (NextWork < WorksOrder.Length && IsStartedOrSkipped(WorksOrder[NextWork])) NextWork++;
                         if (NextWork == WorksOrder.Length) break;
 
 
@@ -434,13 +451,24 @@ namespace GenerarClasses
                 for (var i = 0; i < Works.Length; i++) WorksOrder[i] = i;
             }
             WorksOrderChanged = false;
-            NextWork = Math.Min(CurrentThreadCount, Works.Length);
+            NextWork = 0;
             NextResult = 0;
             CompletedWorksCount = 0;
             GetDoWorkEventHandlerDoWork = GetDoWorkEventHandler(DoWork);
-            for (var initialWork = 0; initialWork < CurrentThreadCount && initialWork < Works.Length; initialWork++)
+            var skipper = WorkSkipper;
+            activeWorkSkipper = null;
+            if (skipper != null)
             {
-                var wn = WorksOrder[initialWork];
+                for (var i = 0; i < Works.Length; i++)
+                {
+                    if (!skipper(i)) { activeWorkSkipper = skipper; break; }
+                }
+            }
+            for (var initialWork = 0; initialWork < CurrentThreadCount; initialWork++)
+            {
+                while (NextWork < WorksOrder.Length && IsStartedOrSkipped(WorksOrder[NextWork])) NextWork++;
+                if (NextWork == WorksOrder.Length) break;
+                var wn = WorksOrder[NextWork++];
 
                 var worker = new BackgroundWorker();
                 AllWorkerCount++;
