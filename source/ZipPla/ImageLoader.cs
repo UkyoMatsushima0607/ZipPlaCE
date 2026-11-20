@@ -444,9 +444,101 @@ namespace ZipPla
             using (var seekable = SeekableStream.Seekablize(stream, long.MaxValue, leaveOpen: true))
             {
                 var orientation = GetJpegOrientation(seekable);
+                var request = ReducedJpegDecodeRequest.Current;
+                if (request != null)
+                {
+                    var reduced = TryDecodeReducedJpeg(seekable, orientation, request);
+                    if (reduced != null) return reduced;
+                }
                 (seekable as SeekableStream)?.StopBuffering();
                 return ViewerFormImageFilter.Rotate(new Bitmap(seekable), orientation);
             }
+        }
+
+        /// <summary>
+        /// ビューアの先読み用に JPEG を 1/2・1/4・1/8 で縮小デコードする（C5）。WIC の JPEG デコーダは DCT の段階で縮小できる。
+        /// 縮小後（回転後）のサイズが request の求める最小サイズ以上になる範囲で一番小さく読む。
+        /// 縮小できない（1/2 でも足りない）、グレースケール・カラー以外（CMYK など）、読めない場合は
+        /// ストリームの位置を戻して null を返す（呼び出し側は従来どおり原寸で読む）。
+        /// </summary>
+        private static Bitmap TryDecodeReducedJpeg(Stream stream, DihedralFraction orientation, ReducedJpegDecodeRequest request)
+        {
+            var start = stream.Position;
+            System.Drawing.Bitmap result = null;
+            try
+            {
+                var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(stream,
+                    System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile | System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation,
+                    System.Windows.Media.Imaging.BitmapCacheOption.None);
+                var frame = decoder.Frames[0];
+                int width = frame.PixelWidth, height = frame.PixelHeight;
+                var swap = orientation == new DihedralFraction(1, 4) || orientation == new DihedralFraction(3, 4) ||
+                    orientation == new DihedralFraction(1, -4) || orientation == new DihedralFraction(3, -4);
+                var originalSize = swap ? new Size(height, width) : new Size(width, height);
+                var minSize = request.MinimumSizeProvider(originalSize);
+                if (minSize.Width <= 0 || minSize.Height <= 0) return rewind(stream, start);
+                int needW = swap ? minSize.Height : minSize.Width, needH = swap ? minSize.Width : minSize.Height;
+                var denom = 1;
+                while (denom < 8 && (width + denom * 2 - 1) / (denom * 2) >= needW && (height + denom * 2 - 1) / (denom * 2) >= needH) denom *= 2;
+                if (denom == 1) return rewind(stream, start);
+
+                stream.Position = start;
+                var image = new System.Windows.Media.Imaging.BitmapImage();
+                image.BeginInit();
+                image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
+                image.DecodePixelWidth = (width + denom - 1) / denom;
+                image.StreamSource = stream;
+                image.EndInit();
+
+                // 縮小すると Bgr32 で返ることがある。CMYK などは GDI+ と色の扱いが違うかもしれないので従来どおり原寸で読む
+                System.Windows.Media.Imaging.BitmapSource source = image;
+                var gray = source.Format == System.Windows.Media.PixelFormats.Gray8;
+                if (!gray)
+                {
+                    if (source.Format != System.Windows.Media.PixelFormats.Bgr24 && source.Format != System.Windows.Media.PixelFormats.Bgr32) return rewind(stream, start);
+                    if (source.Format != System.Windows.Media.PixelFormats.Bgr24)
+                    {
+                        source = new System.Windows.Media.Imaging.FormatConvertedBitmap(source, System.Windows.Media.PixelFormats.Bgr24, null, 0);
+                    }
+                }
+                if (source.PixelWidth < needW || source.PixelHeight < needH) return rewind(stream, start);
+
+                // GDI+ と同じく、グレースケールは恒等パレットの 8bppIndexed、カラーは 24bpp にする
+                result = new System.Drawing.Bitmap(source.PixelWidth, source.PixelHeight,
+                    gray ? System.Drawing.Imaging.PixelFormat.Format8bppIndexed : System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                if (gray)
+                {
+                    var palette = result.Palette;
+                    for (var i = 0; i < 256; i++) palette.Entries[i] = Color.FromArgb(i, i, i);
+                    result.Palette = palette;
+                }
+                var data = result.LockBits(new Rectangle(0, 0, result.Width, result.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, result.PixelFormat);
+                try
+                {
+                    source.CopyPixels(System.Windows.Int32Rect.Empty, data.Scan0, data.Stride * data.Height, data.Stride);
+                }
+                finally
+                {
+                    result.UnlockBits(data);
+                }
+                var rotated = ViewerFormImageFilter.Rotate(new Bitmap(result), orientation);
+                result = null; // Rotate に渡した
+                request.OriginalSize = originalSize;
+                request.Reduced = true;
+                return rotated;
+            }
+            catch
+            {
+                result?.Dispose();
+                return rewind(stream, start);
+            }
+        }
+
+        private static Bitmap rewind(Stream stream, long position)
+        {
+            try { stream.Position = position; } catch { }
+            return null;
         }
 
         private static Bitmap GetFullBitmap(string filePath, bool setImageInfo, out ImageInfo imageInfo, bool animation)
@@ -2162,6 +2254,27 @@ namespace ZipPla
                 }
                 disposed = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// JPEG を縮小デコードしてよいことを、同じスレッドの ImageLoader に伝える（C5）。
+    /// ビューアは先読みのページを読む間だけ Current に設定する。書庫・フォルダなど読み込み経路によらず、
+    /// JPEG のデコード（LoadRotateBitmap）がこれを見る。縮小したら Reduced と回転後の原寸 OriginalSize が入る。
+    /// </summary>
+    public sealed class ReducedJpegDecodeRequest
+    {
+        [ThreadStatic] private static ReducedJpegDecodeRequest current;
+        public static ReducedJpegDecodeRequest Current { get { return current; } set { current = value; } }
+
+        /// <summary>回転後の原寸を受け取り、縮小後に必要な最小サイズを返す。縮小しないなら Size.Empty。</summary>
+        public readonly Func<Size, Size> MinimumSizeProvider;
+        public Size OriginalSize { get; internal set; }
+        public bool Reduced { get; internal set; }
+
+        public ReducedJpegDecodeRequest(Func<Size, Size> minimumSizeProvider)
+        {
+            MinimumSizeProvider = minimumSizeProvider ?? throw new ArgumentNullException(nameof(minimumSizeProvider));
         }
     }
 

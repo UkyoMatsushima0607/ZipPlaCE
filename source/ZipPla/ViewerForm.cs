@@ -46,6 +46,8 @@ namespace ZipPla
         // Reloading: 読み直しを依頼済みで、新しい縮小画像が登録されるまで（拡大画像はそれまで作らない）
         private byte[] OriginalStateArray = null;
         private const byte OriginalState_Kept = 0, OriginalState_Trimmed = 1, OriginalState_Reloading = 2;
+        // 直近の読み込みで JPEG を縮小デコードし、原寸を持っていないページ（C5）。登録時に原寸の状態を Trimmed にする
+        private bool[] ReducedDecodedArray = null;
         private int currentPage_field = -1;
         private bool onePageModeForNext = false;
         private int pageDirection = -1;
@@ -2921,6 +2923,7 @@ namespace ZipPla
             ResizedSizeArray = null;
             AccountedSizeArray = null;
             OriginalStateArray = null;
+            ReducedDecodedArray = null;
             usedMemory = 0;
         }
 
@@ -3001,6 +3004,7 @@ namespace ZipPla
             ResizedSizeArray = new Size[EntryArray.Length];
             AccountedSizeArray = new ulong[EntryArray.Length];
             OriginalStateArray = new byte[EntryArray.Length];
+            ReducedDecodedArray = new bool[EntryArray.Length];
             ViewSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size : PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
             SetBackgroundMode();
             bmwLoadEachPage_EachRunWorkerCompleted_PrevPage = currentPage; // 無駄な優先順位変更を防止
@@ -3181,6 +3185,10 @@ namespace ZipPla
             return target.Substring(i + 1);
         }
 
+#if PERFLOG
+        // 計測用: ページ読み込みの時間（exe のフォルダの viewer-load.log）。読み込みスレッドは 1 本
+        private long perfLoadStart, perfDecodeEnd;
+#endif
         private int bmwLoadEachPage_DoWork_DEBUG_WorkNumber = -1;
         private int bmwLoadEachPage_DoWork_DEBUG_Phase;
 
@@ -3191,6 +3199,9 @@ namespace ZipPla
             {
                 return;
             }
+
+            var reducedFlags = ReducedDecodedArray;
+            if (reducedFlags != null && e.WorkNumber < reducedFlags.Length) reducedFlags[e.WorkNumber] = false;
 
             System.Diagnostics.Stopwatch sw = null;
             bmwLoadEachPage_DoWork_DEBUG_WorkNumber = e.WorkNumber;
@@ -3204,12 +3215,41 @@ namespace ZipPla
                     bmwLoadEachPage_DoWork_DEBUG_Phase = 1;
                     BitmapEx bmp;
                     ViewerFormImageInfo imageInfo;
+                    // 縮小デコードしたページ（C5）では bmp は原寸ではない。表示サイズは原寸から求め、bmp は保持しない
+                    var reducedDecoded = false;
+                    var layoutSize = Size.Empty;
                     if (item == null)
                     {
                         bmwLoadEachPage_DoWork_DEBUG_Phase = 2;
                         //var sw = new System.Diagnostics.Stopwatch(); sw.Start();
                         //var img = loader.OpenImageStream(EntryNumberArray[e.WorkNumber]);
-                        var img = BitmapEx.ConvertToBitmapEx(loader.OpenImageStream(EntryArray[e.WorkNumber]));
+                        var reduceRequest = CanDecodeReduced(e.WorkNumber) ? new ReducedJpegDecodeRequest(originalSize =>
+                        {
+                            // 縮小後が表示サイズより大きければよい（等しいと縮小せずに原寸と共有する経路に入るので 1 画素多く求める）
+                            var resized = GetResizedSize(originalSize);
+                            return new Size(resized.Width + 1, resized.Height + 1);
+                        }) : null;
+                        BitmapEx img;
+#if PERFLOG
+                        perfLoadStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                        ReducedJpegDecodeRequest.Current = reduceRequest;
+                        try
+                        {
+                            img = BitmapEx.ConvertToBitmapEx(loader.OpenImageStream(EntryArray[e.WorkNumber]));
+                        }
+                        finally
+                        {
+                            ReducedJpegDecodeRequest.Current = null;
+                        }
+#if PERFLOG
+                        perfDecodeEnd = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                        if (reduceRequest != null && reduceRequest.Reduced)
+                        {
+                            reducedDecoded = true;
+                            layoutSize = reduceRequest.OriginalSize;
+                        }
                         ImageInfo imageInfo0;
                         int? maxColorDiff = 0;
                         try
@@ -3287,6 +3327,7 @@ namespace ZipPla
                             }
 
                             imageInfo0 = ImageLoader.GetImageInfo(img); // img がピクセルフォーマット変換で Dispose される前に行う
+                            if (reducedDecoded) imageInfo0 = new ImageInfo(layoutSize, imageInfo0.BitPerPixel);
 
                             //var sw = new System.Diagnostics.Stopwatch();
                             //sw.Start();
@@ -3322,7 +3363,7 @@ namespace ZipPla
                         }
                         bmp = img;
 
-                        PreFilteredImageArray[e.WorkNumber] = bmp;
+                        if (!reducedDecoded) PreFilteredImageArray[e.WorkNumber] = bmp;
                         imageInfo = new ViewerFormImageInfo(imageInfo0, maxColorDiff);
                         OriginalImageInfoArray[e.WorkNumber] = imageInfo;
                     }
@@ -3349,7 +3390,7 @@ namespace ZipPla
                         // img が Dispose された場合エラーになるが想定内
 
                         bmwLoadEachPage_DoWork_DEBUG_Phase = 5;
-                        var resizedSize = GetResizedSize(bmp.Size);
+                        var resizedSize = GetResizedSize(reducedDecoded ? layoutSize : bmp.Size);
                         //var result = new Bitmap((int)Math.Round(zoom * img.Width), (int)Math.Round(zoom * img.Height));
 
                         rsa[e.WorkNumber] = resizedSize;
@@ -3536,7 +3577,7 @@ namespace ZipPla
                             //ピクセルオフセット確認用
                             //QuickGraphic.DrawImage(result, rect, img, null);
 
-                            result = new VirtualBitmapEx(entity, bmp.GetDataSizeInBytes());
+                            result = new VirtualBitmapEx(entity, reducedDecoded ? 0 : bmp.GetDataSizeInBytes());
                         }
                         else
                         {
@@ -3561,7 +3602,37 @@ namespace ZipPla
                         
                         e.Result = result;// new Bitmap(img, (int)Math.Round(zoom * img.Width), (int)Math.Round(zoom * img.Height));
                     };
-                    if (item == bmp)
+                    var reducedArray = ReducedDecodedArray;
+                    if (reducedArray != null && e.WorkNumber < reducedArray.Length) reducedArray[e.WorkNumber] = reducedDecoded;
+#if PERFLOG
+                    if (item == null)
+                    {
+                        var perfSize = bmp.Size;
+                        try { lock (bmp) body(); } finally { if (reducedDecoded) bmp.Dispose(); }
+                        double f = System.Diagnostics.Stopwatch.Frequency;
+                        var end = System.Diagnostics.Stopwatch.GetTimestamp();
+                        try
+                        {
+                            File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
+                                $"page={e.WorkNumber}\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms" + Environment.NewLine);
+                        }
+                        catch { }
+                        return;
+                    }
+#endif
+                    if (reducedDecoded)
+                    {
+                        // 縮小デコードした画像はどこにも登録していないので、縮小画像を作ったら捨てる
+                        try
+                        {
+                            body();
+                        }
+                        finally
+                        {
+                            bmp.Dispose();
+                        }
+                    }
+                    else if (item == bmp)
                     {
                         body();
                     }
@@ -5565,8 +5636,15 @@ namespace ZipPla
                 ResizedImageArray[idx] = image;
                 usedMemory += size;
                 if (AccountedSizeArray != null) AccountedSizeArray[idx] = size;
-                if (OriginalStateArray != null) OriginalStateArray[idx] = OriginalState_Kept;
+                // 縮小デコードしたページは原寸を持っていないので、原寸を捨てたのと同じ扱いにする（表示の近くに来たら原寸を読み直す）（C5）
+                var reduced = ReducedDecodedArray != null && idx < ReducedDecodedArray.Length && ReducedDecodedArray[idx];
+                if (OriginalStateArray != null) OriginalStateArray[idx] = reduced ? OriginalState_Trimmed : OriginalState_Kept;
                 TrimOriginals();
+                // 読んでいる間に表示の近くに来ていた場合は、すぐに原寸を読み直させる
+                if (reduced && TryGetOriginalProtectedRange(out var protectStart, out var protectStop) && protectStart <= idx && idx < protectStop)
+                {
+                    ReloadTrimmedOriginalsNearCurrent();
+                }
                 return true;
             }
             else
@@ -5639,6 +5717,21 @@ namespace ZipPla
         {
             var accounted = AccountedSizeArray;
             return accounted != null && idx < accounted.Length ? accounted[idx] : GetImageSizeInByte(image);
+        }
+
+        /// <summary>
+        /// このページを JPEG の縮小デコードで読んでよいか（C5）。原寸を残す範囲の外（読んでもすぐ原寸を捨てるページ）だけ。
+        /// 原寸に作用するフィルタ（PreFilter）がある場合と表紙設定モードでは使わない。ワーカースレッドから呼ばれる。
+        /// </summary>
+        private bool CanDecodeReduced(int idx)
+        {
+            if (ViewerMode == ViewerModeEnum.CoverSetting) return false;
+            if (imageFilter.PreFilterExists()) return false;
+            var states = OriginalStateArray;
+            var flags = ReducedDecodedArray;
+            if (states == null || flags == null || idx >= states.Length || idx >= flags.Length) return false;
+            if (!TryGetOriginalProtectedRange(out var start, out var stop)) return false;
+            return idx < start || stop <= idx;
         }
 
         // 原寸を残すページの範囲（表示中＋前後1見開き分）。拡大鏡と前後のページ送りで原寸を使うため（C1）
