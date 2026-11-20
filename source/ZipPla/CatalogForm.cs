@@ -30551,6 +30551,13 @@ namespace ZipPla
         {
             if (disposed || filePath == null || OwnerCatalog == null || loading || queueNode != null || loadFailed || Image != null)
                 return Task.CompletedTask;
+            // 少し前まで表示していたサムネイルがメモリに残っていれば、作り直さずに使う（A3）
+            var cached = owner?.ThumbnailMemoryCache.Take(filePath, owner.ThumbnailSize);
+            if (cached != null)
+            {
+                Image = cached;
+                return Task.CompletedTask;
+            }
             queueNode = loadQueue.AddLast(this);
 #if PERFLOG
             PerfTrace.ThumbnailQueued();
@@ -30648,6 +30655,18 @@ namespace ZipPla
 #endif
             }
             if (loading) loadCancelled = true;
+            // 表示範囲から外れただけなら、画像は捨てずにメモリのキャッシュへ移す（範囲に戻ったら使う、A3）
+            if (!disposed && owner != null && filePath != null && image != null)
+            {
+                Bitmap detached;
+                lock (imageLocker)
+                {
+                    detached = image;
+                    image = null;
+                }
+                if (detached != null) owner.ThumbnailMemoryCache.Put(filePath, detached);
+                return;
+            }
             Image = null;
         }
 
@@ -30705,6 +30724,82 @@ namespace ZipPla
         }
     }
 
+    /// <summary>
+    /// 表示範囲から外れたサムネイルを、容量の上限まで残しておくキャッシュ（A3）。古く使われたものから捨てる。
+    /// UI スレッドだけで使う。一覧が作り直される（ThumbViewer.Clear）と丸ごと捨てる。
+    /// </summary>
+    public sealed class ThumbnailMemoryCache
+    {
+        private readonly Dictionary<string, LinkedListNode<KeyValuePair<string, Bitmap>>> map = new Dictionary<string, LinkedListNode<KeyValuePair<string, Bitmap>>>(StringComparer.OrdinalIgnoreCase);
+        private readonly LinkedList<KeyValuePair<string, Bitmap>> order = new LinkedList<KeyValuePair<string, Bitmap>>(); // 先頭が古い
+        private long bytes;
+        private static readonly long Budget = getBudget();
+        private static long getBudget()
+        {
+            try
+            {
+                var total = (long)new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory;
+                return Math.Max(32L << 20, Math.Min(128L << 20, total / 64)); // 物理メモリの 1/64（32MB〜128MB）
+            }
+            catch
+            {
+                return 64L << 20;
+            }
+        }
+        private static long sizeOf(Bitmap b) => (long)b.Width * b.Height * (Image.GetPixelFormatSize(b.PixelFormat) / 8);
+
+        public int Count => map.Count;
+
+        public void Put(string path, Bitmap image)
+        {
+            Remove(path);
+            var size = sizeOf(image);
+            if (size > Budget / 4) { image.Dispose(); return; }
+            map[path] = order.AddLast(new KeyValuePair<string, Bitmap>(path, image));
+            bytes += size;
+            while (bytes > Budget && order.First != null)
+            {
+                var oldest = order.First.Value;
+                Remove(oldest.Key);
+            }
+        }
+
+        /// <summary>キャッシュから取り出す（取り出したものの所有権は呼び出し側に移る）。大きさが違えば捨てて null</summary>
+        public Bitmap Take(string path, Size requiredSize)
+        {
+            LinkedListNode<KeyValuePair<string, Bitmap>> node;
+            if (path == null || !map.TryGetValue(path, out node)) return null;
+            map.Remove(path);
+            order.Remove(node);
+            var image = node.Value.Value;
+            bytes -= sizeOf(image);
+            if (image.Size != requiredSize)
+            {
+                image.Dispose();
+                return null;
+            }
+            return image;
+        }
+
+        public void Remove(string path)
+        {
+            LinkedListNode<KeyValuePair<string, Bitmap>> node;
+            if (path == null || !map.TryGetValue(path, out node)) return;
+            map.Remove(path);
+            order.Remove(node);
+            bytes -= sizeOf(node.Value.Value);
+            node.Value.Value.Dispose();
+        }
+
+        public void Clear()
+        {
+            foreach (var pair in order) pair.Value.Dispose();
+            order.Clear();
+            map.Clear();
+            bytes = 0;
+        }
+    }
+
     public enum ThumbViewerAligningMode { TotallyUniformedGrid, HorizontallyUniformedGrid, LeftAlignedGrid, CenteredGrid }
     public enum ThumbViewerScrollUnit { AbsolutePixel, GridCeiling }
 
@@ -30715,6 +30810,8 @@ namespace ZipPla
         public static readonly FieldInfo thumbViewerItemSelectedFieldInfo = typeof(ThumbViewerItem).GetField("selected", BindingFlags.NonPublic | BindingFlags.Instance);
 
         readonly List<ThumbViewerItem> items = new List<ThumbViewerItem>(); // サムネイル保存用
+        // 表示範囲から外れたサムネイルを残しておくキャッシュ（A3）
+        internal readonly ThumbnailMemoryCache ThumbnailMemoryCache = new ThumbnailMemoryCache();
 
         public int MouseWheelScrollAmount = 120;
         public ThumbViewerScrollUnit MouseWheelScrollUnit = ThumbViewerScrollUnit.AbsolutePixel;
@@ -31157,7 +31254,12 @@ namespace ZipPla
                 if (index < items.Count)
                 {
                     var item = items[index];
-                    if (item != null) item.Dispose();
+                    if (item != null)
+                    {
+                        // 項目の差し替え（ファイルの変更による再読み込みなど）なので、残しておいた古いサムネイルも捨てる（A3）
+                        ThumbnailMemoryCache.Remove(item.FilePath);
+                        item.Dispose();
+                    }
                     if (value != null)
                     {
                         thumbViewerItemOwnerFieldInfo.SetValue(value, this);
@@ -31190,7 +31292,11 @@ namespace ZipPla
             if (index < items.Count)
             {
                 var oldItem = items[index];
-                if (oldItem != null) oldItem.Dispose();
+                if (oldItem != null)
+                {
+                    ThumbnailMemoryCache.Remove(oldItem.FilePath); // 差し替えなので古いサムネイルも捨てる（A3）
+                    oldItem.Dispose();
+                }
                 if (item != null)
                 {
                     thumbViewerItemOwnerFieldInfo.SetValue(item, this);
@@ -32720,6 +32826,8 @@ namespace ZipPla
             //sw.Restart();
 
             Clearing = true;
+            // 一覧を作り直すときは、表示設定（クリップ方式など）が変わっている可能性があるので残しておいたサムネイルを捨てる（A3）
+            ThumbnailMemoryCache.Clear();
             var imagesCount = items.Count;
             for (var i = 0; i < imagesCount; i++)
             {
