@@ -1876,7 +1876,12 @@ namespace ZipPla
             // 表示中のアイテムだけ読み込むので、奇数番のジョブはスレッドを起動せず完了扱いにする（A1）。
             bmwMakePreview.WorkSkipper = workNumber => (workNumber & 1) == 1;
             Program.SetPriority(ProcessPriorityClass.Normal);
-            PrepareLookAheadProcess(/*Configuration.GetLastWriteTime()*/);
+            // ビューア用の待機プロセスは、カタログの表示が終わってから起動する（起動中に 2 つのプロセスが同時に JIT して CPU を取り合うのを避ける）。
+            // それまでに必要になった場合は CheckAndRecoverWaitingProcess が起動する。
+            Shown += (sender, e) => BeginInvoke((Action)(() =>
+            {
+                if (waitingProcess == null && !IsDisposed) PrepareLookAheadProcess(/*Configuration.GetLastWriteTime()*/);
+            }));
             //menuStripForTagFilter.Location = new Point(menuStrip.Right - menuStripForTagFilter.Width, menuStrip.Top);
             menuStripForTagFilter.Top = menuStrip.Top;
             menuStripForTagFilter.Height = menuStrip.Size.Height;

@@ -147,6 +147,37 @@ namespace ZipPla
 #endif
 
         /// <summary>
+        /// マルチコア JIT: JIT したメソッドを exe と同じフォルダのプロファイルに記録し（正常終了時に保存される）、
+        /// 次回からは記録に沿って別スレッドで先にコンパイルさせる。書き込めないフォルダでは何もしない（例外も出ない）。
+        /// カタログとビューアでは使うメソッドが違うので、引数がファイルならビューア用、それ以外はカタログ用のプロファイルを使う。
+        /// </summary>
+#if PERFLOG
+        // 調査用: プロセス開始からの経過時間を exe のフォルダの startup-trace.log に書く
+        internal static void StartupTrace(string label)
+        {
+            try
+            {
+                var ms = (DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime).TotalMilliseconds;
+                File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "startup-trace.log"), $"{ms,7:F0}\t{label}" + Environment.NewLine);
+            }
+            catch { }
+        }
+#endif
+
+        private static void StartMulticoreJit(string[] rawCommands)
+        {
+            try
+            {
+                // カタログから開くビューアは -LookAheadMode… 付きの別プロセス
+                var viewer = rawCommands.Length >= 2 &&
+                    (rawCommands[1].StartsWith("-LookAheadMode", StringComparison.Ordinal) || File.Exists(rawCommands[rawCommands.Length - 1]));
+                System.Runtime.ProfileOptimization.SetProfileRoot(Path.GetDirectoryName(Application.ExecutablePath));
+                System.Runtime.ProfileOptimization.StartProfile(viewer ? "ZipPla.viewer.jitprofile" : "ZipPla.catalog.jitprofile");
+            }
+            catch { }
+        }
+
+        /// <summary>
         /// アプリケーションのメイン エントリ ポイントです。
         /// </summary>
         [STAThread]
@@ -180,6 +211,10 @@ namespace ZipPla
             //LongVectorImageResizer.fastSinErrorTest(); return;
 
             var rawCommands = Environment.GetCommandLineArgs();
+            StartMulticoreJit(rawCommands);
+#if PERFLOG
+            StartupTrace("Main 開始");
+#endif
 
             if (NgenManager.CommandLineAcceptor("ZipPla", rawCommands, out var exitCode))
             {
@@ -365,6 +400,14 @@ namespace ZipPla
 
 #if RUNTIME
             RunTimeMeasure.Block("AfterFormCreated");
+#endif
+#if PERFLOG
+            StartupTrace("フォーム作成後");
+            StartForm.Load += (s, e) => StartupTrace("Load 開始");
+            StartForm.Shown += (s, e) => StartupTrace("Shown");
+            EventHandler idle = null;
+            idle = (s, e) => { Application.Idle -= idle; StartupTrace("最初のアイドル"); };
+            Application.Idle += idle;
 #endif
 
             multiLangForm = StartForm as IMultipleLanguages;
