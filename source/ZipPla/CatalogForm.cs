@@ -5459,6 +5459,22 @@ namespace ZipPla
 
         // サムネイル用の縮小デコードで確保する大きさ。キャッシュ（GPSizeThumbnail）は表示サイズの √2 倍を最大に作り、
         // 渡された画像がその 2 倍に満たないと作り方が変わるので、余裕を見て表示サイズの 3 倍にする（A2）
+        /// <summary>
+        /// ThumbViewerItem が作ったサムネイルの読み込み結果を LoadResultArray に戻す（UI スレッドで呼ぶ）（A11）。
+        /// これでサムネイルのない項目（読めないファイルなど）にアイコンが描かれ、読めた項目には重ならない。
+        /// </summary>
+        internal void ReportThumbnailLoadResult(int dataIndex, string path, LoadResult result)
+        {
+            lock (ZipPathArrayLocker)
+            {
+                var zpa = ZipPathArray;
+                var lra = LoadResultArray;
+                if (zpa == null || lra == null || dataIndex < 0 || dataIndex >= zpa.Length || dataIndex >= lra.Length) return;
+                if (zpa[dataIndex] != path) return;
+                lra[dataIndex] = result;
+            }
+        }
+
         private Size ThumbnailReducedDecodeSize()
         {
             var size = tvCatalog.ThumbnailSize;
@@ -6598,9 +6614,8 @@ namespace ZipPla
 
         private static void drawFileImage(Graphics g, Rectangle rect, Font font, Brush foreBrush, string text, string iconPath, DateTime lastWriteTime, Brush backBrush, bool isDir, bool isExist)
         {
-            //サムネイル読み込み処理を雑に書き換えたため、内部状態ではサムネイル読み込みが完了していないことになっている。
-            //サムネイルの上にファイルアイコンが重なって表示されてしまうため、ファイルアイコンそのものを描画しないように変更した。
-            return;
+            // 8ea4928 ではサムネイルの読み込み結果が LoadResultArray に戻らず、常に NotYet のままだったため、
+            // サムネイルの上にアイコンが重ならないよう描画自体を止めていた。読み込み結果を戻すようにしたので元に戻した（A11）
             try
             {
                 //var icon = iconPath != null ? FileTypeManager.GetLargeIconBitmap(iconPath, useFileAttrinutes: !isExist) : null;
@@ -9224,7 +9239,11 @@ namespace ZipPla
                         }
 
                         FileCountArray[index] = ResultTuple.Item4;
-                        LoadResultArray[index] = ResultTuple.Item5;
+                        // ヘッダの結果（通常は NotYet）で、サムネイル側が先に設定した Success などを上書きしない（A11）
+                        if (ResultTuple.Item5 != LoadResult.NotYet || LoadResultArray[index] == LoadResult.NotYet)
+                        {
+                            LoadResultArray[index] = ResultTuple.Item5;
+                        }
                         if (ResultTuple.Item6 >= 0) ZipSizeArray[index] = ResultTuple.Item6;
                         if (ResultTuple.Item7 != null) ImageInfoArray[index] = ResultTuple.Item7;
                         if (ResultTuple.Rest.Item1 != null) MovieInfoArray[index] = ResultTuple.Rest.Item1;
@@ -30634,13 +30653,16 @@ namespace ZipPla
             PerfTrace.ThumbnailStarted();
 #endif
             Bitmap result = null;
+            var loadResult = CatalogForm.LoadResult.LoadError;
             try
             {
                 MovieInfo info = null;
 #if PERFLOG
                 var perfStart = Stopwatch.GetTimestamp();
 #endif
-                result = await Task.Run(() => catalog.GetThumbnail(path, Directory.Exists(path), null, out _, out _, out _, out _, out _, ref info, false));
+                CatalogForm.LoadResult taskLoadResult = CatalogForm.LoadResult.LoadError;
+                result = await Task.Run(() => catalog.GetThumbnail(path, Directory.Exists(path), null, out _, out _, out taskLoadResult, out _, out _, ref info, false));
+                loadResult = taskLoadResult;
 #if PERFLOG
                 PerfTrace.AddGenerate(Stopwatch.GetTimestamp() - perfStart);
 #endif
@@ -30660,9 +30682,12 @@ namespace ZipPla
                 result?.Dispose();
                 return;
             }
+            // 読み込み結果を戻す（アイコンを描くかどうかに使われる、A11）。画像をセットすると再描画されるので、その前に戻す
+            catalog.ReportThumbnailLoadResult(index, path, loadResult);
             if (result == null)
             {
                 loadFailed = true;
+                DrawItem(onlyFrame: false); // アイコンなどの代わりの表示を描き直す
                 return;
             }
             Image = result;
