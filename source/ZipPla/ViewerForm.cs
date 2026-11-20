@@ -40,6 +40,12 @@ namespace ZipPla
         private ViewerFormImageInfo[] OriginalImageInfoArray = null;
         private Size[] ResizedSizeArray = null;
         private VirtualBitmapEx[] ResizedImageArray = null;
+        // ResizedImageArray[i] を登録したときに usedMemory へ計上した量（原寸を捨てたら減らす）（C1）
+        private ulong[] AccountedSizeArray = null;
+        // 原寸（PreFilteredImageArray[i]）の状態（C1）。Trimmed: 縮小画像を残したまま原寸を捨てた（表示の近くに来たら読み直す）。
+        // Reloading: 読み直しを依頼済みで、新しい縮小画像が登録されるまで（拡大画像はそれまで作らない）
+        private byte[] OriginalStateArray = null;
+        private const byte OriginalState_Kept = 0, OriginalState_Trimmed = 1, OriginalState_Reloading = 2;
         private int currentPage_field = -1;
         private bool onePageModeForNext = false;
         private int pageDirection = -1;
@@ -2913,6 +2919,8 @@ namespace ZipPla
                 ResizedImageArray = null;
             }
             ResizedSizeArray = null;
+            AccountedSizeArray = null;
+            OriginalStateArray = null;
             usedMemory = 0;
         }
 
@@ -2991,6 +2999,8 @@ namespace ZipPla
             //ResizedSizeArray = new Size[EntryNumberArray.Length];
             ResizedImageArray = new VirtualBitmapEx[EntryArray.Length];
             ResizedSizeArray = new Size[EntryArray.Length];
+            AccountedSizeArray = new ulong[EntryArray.Length];
+            OriginalStateArray = new byte[EntryArray.Length];
             ViewSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size : PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
             SetBackgroundMode();
             bmwLoadEachPage_EachRunWorkerCompleted_PrevPage = currentPage; // 無駄な優先順位変更を防止
@@ -5454,10 +5464,21 @@ namespace ZipPla
             var size = GetImageSizeInByte(image);
             var existingImageCount = ReduceUsingMemory(usedMemoryUBound - Math.Min(usedMemoryUBound, size), idx); // 符号なしなので値が負になる計算を含まないように注意
             //var existingImageCount = ReduceUsingMemory(0, idx); // テスト用
-            if (ResizedImageArray != null && (usedMemory + size <= usedMemoryUBound || existingImageCount < MaxPageCountInWindow * 4)) // 今＋前後それぞれ 1 ページ分は読んでおかないとページ送りチェックができない。後トラックバー。
+
+            // 原寸を読み直したページ（C1）では縮小画像が既にあるので差し替える。差し替えは常に受け入れる（拒否すると読み直しが繰り返される）
+            var old = ResizedImageArray?[idx];
+            if (ResizedImageArray != null && (old != null || usedMemory + size <= usedMemoryUBound || existingImageCount < MaxPageCountInWindow * 4)) // 今＋前後それぞれ 1 ページ分は読んでおかないとページ送りチェックができない。後トラックバー。
             {
+                if (old != null)
+                {
+                    usedMemory -= Math.Min(usedMemory, GetAccountedSize(idx, old));
+                    old.Dispose();
+                }
                 ResizedImageArray[idx] = image;
                 usedMemory += size;
+                if (AccountedSizeArray != null) AccountedSizeArray[idx] = size;
+                if (OriginalStateArray != null) OriginalStateArray[idx] = OriginalState_Kept;
+                TrimOriginals();
                 return true;
             }
             else
@@ -5492,7 +5513,7 @@ namespace ZipPla
                 var image = ResizedImageArray[idx];
                 if (image == null) return existingImageCount;
 
-                var newUsedMemory = usedMemory - GetImageSizeInByte(image);
+                var newUsedMemory = usedMemory - Math.Min(usedMemory, GetAccountedSize(idx, image));
 
                 if (disposeTarget <= protectedOrder)
                 {
@@ -5508,6 +5529,8 @@ namespace ZipPla
                 image.Dispose();
                 ResizedImageArray[idx] = null;
                 ResizedSizeArray[idx] = default(Size);
+                if (AccountedSizeArray != null) AccountedSizeArray[idx] = 0;
+                if (OriginalStateArray != null) OriginalStateArray[idx] = OriginalState_Kept;
                 existingImageCount--;
                 bmwLoadEachPage.ReworkOrder(idx);
 
@@ -5522,6 +5545,103 @@ namespace ZipPla
                 });
             }
             return existingImageCount;
+        }
+
+        private ulong GetAccountedSize(int idx, VirtualBitmapEx image)
+        {
+            var accounted = AccountedSizeArray;
+            return accounted != null && idx < accounted.Length ? accounted[idx] : GetImageSizeInByte(image);
+        }
+
+        // 原寸を残すページの範囲（表示中＋前後1見開き分）。拡大鏡と前後のページ送りで原寸を使うため（C1）
+        private bool TryGetOriginalProtectedRange(out int start, out int stop)
+        {
+            start = stop = 0;
+            var cPage = currentPage;
+            if (cPage < 0) return false;
+            var window = Math.Max(1, MaxPageCountInWindow);
+            start = cPage - window;
+            stop = Math.Max(NextPage, cPage + window) + window;
+            return true;
+        }
+
+        /// <summary>
+        /// 縮小画像ができていて、表示の近くにないページの原寸を捨てる（C1）。
+        /// 先読みしたページの原寸（例: 3000x4300 のカラーで 38MB）を全部持たないようにする。
+        /// 原寸を共有する等倍表示のページ（Clone）や、原寸を参照して描画するアニメーションなどは対象外。
+        /// </summary>
+        private void TrimOriginals()
+        {
+            var resized = ResizedImageArray;
+            var originals = PreFilteredImageArray;
+            var accounted = AccountedSizeArray;
+            var states = OriginalStateArray;
+            if (resized == null || originals == null || accounted == null || states == null) return;
+            if (resized.Length != originals.Length || resized.Length != accounted.Length || resized.Length != states.Length) return;
+            if (ViewerMode == ViewerModeEnum.CoverSetting) return;
+            // 拡大画像の作成はロックなしで原寸の参照を取るので、その間は捨てない（完了時にもう一度呼ばれる）
+            if (bwMagnifierMaker.IsBusy) return;
+            if (!TryGetOriginalProtectedRange(out var protectStart, out var protectStop)) return;
+
+            for (var i = 0; i < resized.Length; i++)
+            {
+                if (protectStart <= i && i < protectStop) continue;
+                var image = resized[i];
+                if (image == null || !image.isEntity || image.FrameCount != 1) continue;
+                if (originals[i] == null) continue;
+                LockManager.ForIReadOnlyList(originals, i, item =>
+                {
+                    if (item == null || item.FrameCount != 1 || item.Size == image.Size) return;
+                    var bytes = (ulong)item.GetDataSizeInBytes();
+                    item.Dispose();
+                    originals[i] = null;
+                    var reduce = Math.Min(bytes, accounted[i]);
+                    accounted[i] -= reduce;
+                    usedMemory -= Math.Min(usedMemory, reduce);
+                    states[i] = OriginalState_Trimmed;
+                });
+            }
+        }
+
+        /// <summary>
+        /// 原寸を捨てたページが表示の近くに来たら、原寸を読み直させる（C1）。
+        /// 縮小画像はそのまま表示に使い、読み直しが終わったら SetNewResizedImage で差し替える。
+        /// </summary>
+        private void ReloadTrimmedOriginalsNearCurrent()
+        {
+            var resized = ResizedImageArray;
+            var states = OriginalStateArray;
+            if (resized == null || states == null || resized.Length != states.Length) return;
+            if (!TryGetOriginalProtectedRange(out var start, out var stop)) return;
+            var requested = false;
+            for (var i = Math.Max(0, start); i < Math.Min(stop, resized.Length); i++)
+            {
+                if (states[i] == OriginalState_Trimmed && resized[i] != null)
+                {
+                    // 読み直しが終わる（SetNewResizedImage）まで Reloading のままにする。
+                    // ReworkOrder は前回の結果を消さないので、GetWorkState では読み直し中かどうか判定できない
+                    states[i] = OriginalState_Reloading;
+                    bmwLoadEachPage.ReworkOrder(i);
+                    requested = true;
+                }
+            }
+            // 読み込みが止まっている（ThreadCount == 0 や全ワーカー終了）場合もあるので、実行順を作り直して再開させる
+            if (requested) SetBackgroundMode();
+        }
+
+        // 表示中のページで、原寸を捨てたあと読み直し中のものがあるか（拡大画像はそれが終わってから作る）
+        private bool IsCurrentOriginalReloading(int startPage, int stopPage)
+        {
+            var originals = PreFilteredImageArray;
+            var resized = ResizedImageArray;
+            var states = OriginalStateArray;
+            if (originals == null || resized == null || resized.Length != originals.Length) return false;
+            for (var i = Math.Max(0, startPage); i < Math.Min(stopPage, originals.Length); i++)
+            {
+                // 縮小画像はあるのに原寸がなく、捨てたか読み直し中のページ（読み込みエラーのページは原寸が最初から無いが、状態は Kept のまま）
+                if (resized[i] != null && originals[i] == null && states != null && i < states.Length && states[i] != OriginalState_Kept) return true;
+            }
+            return false;
         }
 
         private ulong GetImageSizeInByte(VirtualBitmapEx image)
@@ -6444,6 +6564,10 @@ namespace ZipPla
 
             if (pbView_SizeChanged_SizeChanging) return;
 
+            // 表示の近くに来たページの原寸を読み直し、遠ざかったページの原寸を捨てる（C1）
+            ReloadTrimmedOriginalsNearCurrent();
+            TrimOriginals();
+
             var magNotMaked = !MagnifierCanvasPrepared();
             
             if (MagnifierPhase1_Q)
@@ -6576,6 +6700,8 @@ namespace ZipPla
             if (nextPage < cPage || nextPage == cPage && (MaxDivision <= 1 || getCurrentPageDivison() <= 1)) return;
 
             if (nextPage == cPage) nextPage++;
+            // 原寸を読み直している途中なら、終わってから作る（読み直しの完了時に showCurrentPage からもう一度呼ばれる）（C1）
+            if (IsCurrentOriginalReloading(cPage, nextPage)) return;
              var totalWidth = 0;
             var pageCount = nextPage - cPage;
             var zoomedSizeArray = new Size[pageCount];
@@ -8016,6 +8142,9 @@ namespace ZipPla
                 bwMagnifierMaker.RunWorkerAsync(bwMagnifierMaker_Q);
                 bwMagnifierMaker_Q = null;
             }
+
+            // 拡大画像の作成中は原寸を捨てずにおいたので、ここで捨てる（C1）
+            TrimOriginals();
         }
 
         private void IfTouchModifyingThenMoveOrigin(bool inverse)
