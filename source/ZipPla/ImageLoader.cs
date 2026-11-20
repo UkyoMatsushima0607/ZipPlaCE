@@ -85,7 +85,9 @@ namespace ZipPla
                 susieSupportsExtensionWithoutPeriodInLowerCaseToSpiName = GetSusieSupports(supportsFullReadingWithoutSusieFfmpeg, allowUntested, searchInstallationFolder);
             }
             var list = supportsFullReadingWithoutSusieFfmpeg.Concat(susieSupportsExtensionWithoutPeriodInLowerCaseToSpiName.Keys);
-            
+            // libwebp のデコーダ DLL があれば WebP は ffmpeg なしで読める
+            if (WebPDecoder.Available) list = list.Concat(new[] { "webp" }).Distinct();
+
             supportsFullReadingWithoutFfmpeg = list.ToArray();
             supportsFullReadingStringWithoutFfmpeg = "*." + string.Join(";*.", supportsFullReadingWithoutFfmpeg);
             var onlyFfmpegSupports = ffmpegSupportsWithoutPeriod.Where(e => !list.Contains(e));
