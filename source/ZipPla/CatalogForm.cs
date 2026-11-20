@@ -30363,6 +30363,38 @@ namespace ZipPla
     }
 
 
+#if PERFLOG
+    // 調査用（PERFLOG 定数を付けたビルドのみ）。カタログのサムネイル読み込みの範囲と件数を exe のフォルダの perf-trace.log に書く
+    internal static class PerfTrace
+    {
+        private static readonly Stopwatch clock = Stopwatch.StartNew();
+        private static int queued, started, cancelled;
+        private static int lastStart = -1, lastStop = -1;
+        private static readonly object fileLock = new object();
+        public static void Write(string line)
+        {
+            lock (fileLock)
+            {
+                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "perf-trace.log"), $"{clock.ElapsedMilliseconds,7}\t{line}" + Environment.NewLine); } catch { }
+            }
+        }
+        // 読み込み範囲が変わったときだけ記録する
+        public static void LoadRange(int start, int stop, string detail)
+        {
+            if (start == lastStart && stop == lastStop) return;
+            lastStart = start; lastStop = stop;
+            Write($"range [{start}, {stop}) count={Math.Max(0, stop - start)} {detail} queued={queued} started={started} cancelled={cancelled}");
+        }
+        public static void ThumbnailQueued() { Interlocked.Increment(ref queued); }
+        public static void ThumbnailCancelled() { Interlocked.Increment(ref cancelled); }
+        public static void ThumbnailStarted()
+        {
+            var s = Interlocked.Increment(ref started);
+            if (s % 100 == 0) Write($"thumbnails started={s} queued={queued} cancelled={cancelled}");
+        }
+    }
+#endif
+
     public class ThumbViewerItem : IDisposable
     {
         static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
@@ -30415,15 +30447,26 @@ namespace ZipPla
         public async Task LoadAsync()
         {
             var path = FilePath;
-            if (path == null || OwnerCatalog == null || source != null || Image != null) 
+            if (path == null || OwnerCatalog == null || source != null || Image != null)
                 return;
             source = new CancellationTokenSource();
             MovieInfo info = null;
+#if PERFLOG
+            PerfTrace.ThumbnailQueued();
+#endif
             await semaphore.WaitAsync();
             try
             {
                 if (source.IsCancellationRequested)
+                {
+#if PERFLOG
+                    PerfTrace.ThumbnailCancelled();
+#endif
                     return;
+                }
+#if PERFLOG
+                PerfTrace.ThumbnailStarted();
+#endif
                 Image = await Task.Run(() => OwnerCatalog.GetThumbnail(path, Directory.Exists(path), null, out _, out _, out _, out _, out _, ref info, false));
                 if (FilePath != path)
                     Image = null;
@@ -32638,6 +32681,10 @@ namespace ZipPla
             //表示中のアイテム+前後1列のアイテムのBitmapを読み込み、それ以外を破棄する
             var clearBefore = -AutoScrollPosition.Y / gridSizeV - 1;
             var clearAfter = (-AutoScrollPosition.Y + Height) / gridSizeV + 2;
+#if PERFLOG
+            PerfTrace.LoadRange(Math.Max(0, clearBefore * cols), Math.Min(clearAfter * cols, ShowIndexToDataIndex.Length),
+                $"scrollY={AutoScrollPosition.Y} height={Height} gridV={gridSizeV} cols={cols} clip={clipRectangle} paintY={autoScrollPositionY} items={ShowIndexToDataIndex.Length}");
+#endif
             for(int i=0;i<clearBefore*cols;i++)
             {
                 var dataIndex = ShowIndexToDataIndex[i];
