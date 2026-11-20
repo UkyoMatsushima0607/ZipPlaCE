@@ -2166,7 +2166,14 @@ namespace ZipPla
 
         private MemoryStream GetInnerImageStreamSevenZip(int physicalIndex, Entry entry, bool seekToBegin, bool callback)
         {
-            // 7z 自体がキャッシュ機構を備えている
+            // solid 書庫（RAR5 など）は、7z.dll に1件ずつ展開させるとブロックの先頭から毎回展開し直すので、
+            // 前後のページもまとめて展開してキャッシュする（B1）
+            if (sevenZipArchive != null && sevenZipArchiveEntries != null && entry == sevenZipArchiveEntries[physicalIndex] && isSevenZipSolid())
+            {
+                var bytes = getSevenZipSolidEntryBytes(physicalIndex, callback);
+                return new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+            }
+
             var ms = entry.Size >= 0 && entry.Size <= int.MaxValue ? new MemoryStream((int)entry.Size) : new MemoryStream();
             try
             {
@@ -2187,6 +2194,70 @@ namespace ZipPla
                 ms.Dispose();
                 throw;
             }
+        }
+
+        private bool? sevenZipSolid;
+        private bool isSevenZipSolid()
+        {
+            if (sevenZipSolid == null) sevenZipSolid = sevenZipArchive.IsSolid;
+            return (bool)sevenZipSolid;
+        }
+
+        // まとめて展開する範囲（要求されたページの前後）
+        private const int SevenZipSolidBatchBehind = 16, SevenZipSolidBatchAhead = 16;
+        private int sevenZipSolidExtractCount = 0;
+
+        private byte[] getSevenZipSolidEntryBytes(int physicalIndex, bool inTask)
+        {
+            byte[] cached;
+            if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached)) return cached;
+
+            // 要求されたページと、前後のまだキャッシュにない画像エントリをまとめて展開する。
+            // ただしこの書庫で最初の展開は1件だけにする（サムネイル作成のように1ページしか読まない場合に無駄が出ないように）
+            var targets = new List<int>();
+            var batch = sevenZipSolidExtractCount++ > 0;
+            var start = batch ? Math.Max(0, physicalIndex - SevenZipSolidBatchBehind) : physicalIndex;
+            var stop = batch ? Math.Min(sevenZipArchiveEntries.Length, physicalIndex + SevenZipSolidBatchAhead + 1) : physicalIndex + 1;
+            for (var i = start; i < stop; i++)
+            {
+                if (i != physicalIndex)
+                {
+                    var e = sevenZipArchiveEntries[i];
+                    if (e.IsFolder || (solidImageCache != null && solidImageCache.ContainsKey(i))) continue;
+                    if (!ImageLoader.SupportsFullReading(e.FileName, ffmpegExists: true)) continue;
+                    var s = e.Size;
+                    if (s < 0 || s > SolidCacheBudget / 4) continue;
+                }
+                targets.Add(i);
+            }
+            var streams = new MemoryStream[targets.Count];
+            Action extract = () => Entry.ExtractMany(targets.Select(i => sevenZipArchiveEntries[i]).ToList(), k =>
+            {
+                var size = sevenZipArchiveEntries[targets[k]].Size;
+                return streams[k] = size >= 0 && size <= int.MaxValue ? new MemoryStream((int)size) : new MemoryStream();
+            });
+            if (inTask)
+            {
+                using (var task = Task.Run(extract))
+                {
+                    task.Wait();
+                }
+            }
+            else
+            {
+                extract();
+            }
+
+            byte[] result = null;
+            for (var k = 0; k < targets.Count; k++)
+            {
+                var ms = streams[k];
+                if (ms == null) continue;
+                var bytes = ms.Capacity == ms.Length ? ms.GetBuffer() : ms.ToArray();
+                if (targets[k] == physicalIndex) result = bytes;
+                addToSolidCache(targets[k], bytes, physicalIndex);
+            }
+            return result ?? new byte[0];
         }
 
         private static void SevenZipEntryExtractInTask(Entry entry, Stream dst)

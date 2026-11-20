@@ -2141,6 +2141,7 @@
     </Compile>
     <Compile Include="SevenZipExtractor\ArchiveFile.cs" />
     <Compile Include="SevenZipExtractor\ArchiveFileCallback.cs" />
+    <Compile Include="SevenZipExtractor\ArchiveMultiStreamCallback.cs" />
     <Compile Include="SevenZipExtractor\ArchiveStreamCallback.cs" />
     <Compile Include="SevenZipExtractor\Entry.cs" />
     <Compile Include="SevenZipExtractor\Formats.cs" />

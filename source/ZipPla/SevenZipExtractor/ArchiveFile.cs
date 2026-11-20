@@ -60,6 +60,29 @@ namespace SevenZipExtractor
             this.archiveStream = new InStreamWrapper(archiveStream);
         }
 
+        /// <summary>
+        /// 書庫が solid かどうか（ZipPla CE 追記、B1）。Entries を取得して書庫を開いたあとで使う。
+        /// 取得できない形式では false。
+        /// </summary>
+        public bool IsSolid
+        {
+            get
+            {
+                try
+                {
+                    var value = new PropVariant();
+                    this.archive.GetArchiveProperty((uint)ItemPropId.kpidSolid, ref value);
+                    var solid = value.VarType == VarEnum.VT_BOOL && (value.longValue & 0xFFFF) != 0;
+                    value.Clear();
+                    return solid;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         public IList<Entry> Entries
         {
             get
