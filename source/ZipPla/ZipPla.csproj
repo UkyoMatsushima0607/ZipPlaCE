@@ -2697,6 +2697,7 @@
       <DependentUpon>ViewerFormMakeShortcutDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="VirtualFolder.cs" />
+    <Compile Include="WebPDecoder.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="DataGridViewSorter.cs" />
     <Compile Include="GenerarClasses.cs">

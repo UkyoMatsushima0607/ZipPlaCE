@@ -593,7 +593,8 @@ namespace ZipPla
                         if (MovieThumbnailLoader.SupportedImageExtensionsWithPeriodInLowerCase.Contains(extension))// && MovieThumbnailLoader.ffmpegExists())
                         {
                             needToRefresh = false;
-                            var result = MovieThumbnailLoader.GetImageByFfmpeg(filePath);
+                            var result = extension == ".webp" && WebPDecoder.Available ? decodeWebPFile(filePath) : null;
+                            if (result == null) result = MovieThumbnailLoader.GetImageByFfmpeg(filePath);
                             imageInfo = GetImageInfo(result);
                             return result;
                         }
@@ -710,6 +711,21 @@ namespace ZipPla
                             }
                         }
 
+                        if (extension == ".webp" && WebPDecoder.Available)
+                        {
+                            // libwebp で読めなければ（アニメーションなど）同じバイト列を ffmpeg に渡す
+                            var buf = ReadImageBytes(stream, streamLength);
+                            var result = WebPDecoder.TryDecode(buf, buf.Length);
+                            if (result == null)
+                            {
+                                using (var ms = new MemoryStream(buf, writable: false))
+                                {
+                                    result = MovieThumbnailLoader.GetWebPImageByFfmpeg(ms, buf.Length);
+                                }
+                            }
+                            imageInfo = GetImageInfo(result);
+                            return result;
+                        }
                         if (MovieThumbnailLoader.SupportedImageExtensionsWithPeriodInLowerCase.Contains(extension))// && MovieThumbnailLoader.ffmpegExists())
                         {
                             var result = extension == ".webp" ? MovieThumbnailLoader.GetWebPImageByFfmpeg(stream, streamLength) : MovieThumbnailLoader.GetImageByFfmpeg(stream);
@@ -722,6 +738,20 @@ namespace ZipPla
                 }
                 throw new NotSupportedException();
             }
+        }
+
+        private static Bitmap decodeWebPFile(string filePath)
+        {
+            byte[] buf;
+            try
+            {
+                buf = File.ReadAllBytes(filePath);
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is OutOfMemoryException)
+            {
+                return null; // ffmpeg に任せる
+            }
+            return WebPDecoder.TryDecode(buf, buf.Length);
         }
 
         private static byte[] ReadImageBytes(Stream stream, long streamLength)
