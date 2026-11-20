@@ -687,7 +687,7 @@ namespace ZipPla
                         if (MovieThumbnailLoader.SupportedImageExtensionsWithPeriodInLowerCase.Contains(extension))// && MovieThumbnailLoader.ffmpegExists())
                         {
                             needToRefresh = false;
-                            var result = extension == ".webp" && WebPDecoder.Available ? decodeWebPFile(filePath) : null;
+                            var result = extension == ".webp" && WebPDecoder.Available ? decodeWebPFile(filePath, animation) : null;
                             if (result == null) result = MovieThumbnailLoader.GetImageByFfmpeg(filePath);
                             imageInfo = GetImageInfo(result);
                             return result;
@@ -807,9 +807,9 @@ namespace ZipPla
 
                         if (extension == ".webp" && WebPDecoder.Available)
                         {
-                            // libwebp で読めなければ（アニメーションなど）同じバイト列を ffmpeg に渡す
+                            // 静止画は libwebpdecoder、アニメーションは libwebpdemux で読む。読めなければ（DLL がないなど）同じバイト列を ffmpeg に渡す
                             var buf = ReadImageBytes(stream, streamLength);
-                            var result = WebPDecoder.TryDecode(buf, buf.Length);
+                            var result = WebPDecoder.TryDecode(buf, buf.Length) ?? WebPDecoder.TryDecodeAnimation(buf, buf.Length, animation);
                             if (result == null)
                             {
                                 using (var ms = new MemoryStream(buf, writable: false))
@@ -834,7 +834,7 @@ namespace ZipPla
             }
         }
 
-        private static Bitmap decodeWebPFile(string filePath)
+        private static Bitmap decodeWebPFile(string filePath, bool animation)
         {
             byte[] buf;
             try
@@ -845,7 +845,7 @@ namespace ZipPla
             {
                 return null; // ffmpeg に任せる
             }
-            return WebPDecoder.TryDecode(buf, buf.Length);
+            return WebPDecoder.TryDecode(buf, buf.Length) ?? WebPDecoder.TryDecodeAnimation(buf, buf.Length, animation);
         }
 
         private static byte[] ReadImageBytes(Stream stream, long streamLength)

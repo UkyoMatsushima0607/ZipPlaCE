@@ -71,7 +71,7 @@ Microsoft Deployment Compression Cab 1.0.0
 Copyright (c) Outercurve Foundation. All rights reserved.
 https://www.nuget.org/packages/MSFTCompressionCab/
 
-libwebp 1.6.0 (libwebpdecoder.dll, optional; used for WebP decoding when present)
+libwebp 1.6.0 (libwebpdecoder.dll, libwebpdemux.dll, libwebp.dll, libsharpyuv.dll; optional; used for WebP decoding when present)
 Copyright (c) 2010, Google Inc. All rights reserved.
 BSD 3-Clause License: see libwebp-COPYING.txt and libwebp-PATENTS.txt
 https://chromium.googlesource.com/webm/libwebp
