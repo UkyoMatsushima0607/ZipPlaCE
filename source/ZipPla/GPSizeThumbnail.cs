@@ -100,6 +100,105 @@ namespace ZipPla
         private const byte JXR_QUALITY = 30; // 大きい方が高圧縮、JPEG の 90 の半分程度に調整、255 まで設定できるが 100 程度を超えると正常に圧縮されない
         private const int DATA_UBOUND = 128; // 安全のため。増やしてもバージョンを変える必要はない
         private const uint VERSION = 2;
+
+        // キャッシュの画像の形式（P4）。以前は JPEG XR（品質 30）だけだったが、WPF での展開が 1 枚 3.6〜7.3 ms かかり、
+        // キャッシュに当たっても作り直すのと変わらなかった。透明度のない画像は JPEG（品質 90）で保存し、GDI+ で展開する（0.4 ms 前後）。
+        // 透明度のある画像は従来どおり JPEG XR。読むときはデータの先頭で見分けるので、既存のキャッシュもそのまま使える
+        // （古い版は WPF で読むが、WPF は JPEG も読めるので、新しいキャッシュも読める）。ヘッダの版は変えない
+        private const long CACHE_JPEG_QUALITY = 90;
+        private static readonly ImageCodecInfo CacheJpegCodec = ImageCodecInfo.GetImageEncoders().First(c => c.FormatID == ImageFormat.Jpeg.Guid);
+
+        private static void SaveCacheImage(Stream stream, Bitmap img)
+        {
+            var pf = img.PixelFormat;
+            // 透明度を持つ形式でも、実際にはすべて不透明なら JPEG にする（GDI+ はグレーの PNG なども 32bppArgb で読むため）
+            if (((pf & PixelFormat.Alpha) == PixelFormat.Alpha || (pf & PixelFormat.PAlpha) == PixelFormat.PAlpha) && !IsOpaque32(img))
+            {
+                WindowsMediaPhoto.Save(stream, img, JXR_QUALITY);
+                return;
+            }
+            using (var parameters = new EncoderParameters(1))
+            {
+                parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, CACHE_JPEG_QUALITY);
+                if (pf == PixelFormat.Format24bppRgb || pf == PixelFormat.Format32bppRgb)
+                {
+                    ((Image)img).Save(stream, CacheJpegCodec, parameters);
+                }
+                else
+                {
+                    // 8bpp（グレー）などは 24bpp にしてから保存する（GDI+ に 24bpp としてロックさせて写す。DrawImage は DPI で拡大縮小されうる）
+                    using (var converted = new System.Drawing.Bitmap(img.Width, img.Height, PixelFormat.Format24bppRgb))
+                    {
+                        var rect = new Rectangle(0, 0, img.Width, img.Height);
+                        var src = img.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+                        try
+                        {
+                            var dst = converted.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+                            try
+                            {
+                                var rowBytes = img.Width * 3;
+                                var row = new byte[rowBytes];
+                                for (var y = 0; y < img.Height; y++)
+                                {
+                                    System.Runtime.InteropServices.Marshal.Copy(src.Scan0 + y * src.Stride, row, 0, rowBytes);
+                                    System.Runtime.InteropServices.Marshal.Copy(row, 0, dst.Scan0 + y * dst.Stride, rowBytes);
+                                }
+                            }
+                            finally
+                            {
+                                converted.UnlockBits(dst);
+                            }
+                        }
+                        finally
+                        {
+                            img.UnlockBits(src);
+                        }
+                        converted.Save(stream, CacheJpegCodec, parameters);
+                    }
+                }
+            }
+        }
+
+        // 32bppArgb / PArgb で、すべての画素が不透明か（それ以外の形式は false）
+        private static unsafe bool IsOpaque32(Bitmap img)
+        {
+            var pf = img.PixelFormat;
+            if (pf != PixelFormat.Format32bppArgb && pf != PixelFormat.Format32bppPArgb) return false;
+            var rect = new Rectangle(0, 0, img.Width, img.Height);
+            var data = img.LockBits(rect, ImageLockMode.ReadOnly, pf);
+            try
+            {
+                for (var y = 0; y < data.Height; y++)
+                {
+                    var row = (byte*)data.Scan0 + (long)y * data.Stride;
+                    for (var x = 3; x < data.Width * 4; x += 4)
+                    {
+                        if (row[x] != 255) return false;
+                    }
+                }
+                return true;
+            }
+            finally
+            {
+                img.UnlockBits(data);
+            }
+        }
+
+        private static Bitmap LoadCacheImage(byte[] buf)
+        {
+            using (var stream = new MemoryStream(buf))
+            {
+                if (buf.Length >= 2 && buf[0] == 0xFF && buf[1] == 0xD8) // JPEG
+                {
+                    using (var decoded = new System.Drawing.Bitmap(stream))
+                    {
+                        // ストリームから切り離すため 24bpp に複製する
+                        return new Bitmap(decoded.Clone(new Rectangle(0, 0, decoded.Width, decoded.Height), PixelFormat.Format24bppRgb));
+                    }
+                }
+                return WindowsMediaPhoto.Load(stream);
+            }
+        }
         // バージョン(uint)、更新日時(long)、インデックス(int)、
         // 汎用データ長(int)、汎用データ、
         // 以下縮小後幅(uint)、拡大縮小後高さ(uint)、縮小後ピクセル比横（int）、縮小後ピクセル比縦（int）、ファイルサイズ(long)、実体、の繰り返し
@@ -451,10 +550,7 @@ namespace ZipPla
                             )
                         {
                             var buf = r.ReadBytes(length);
-                            using (var m = new MemoryStream(buf))
-                            {
-                                thumbnail = WindowsMediaPhoto.Load(m); //new Bitmap(m);
-                            }
+                            thumbnail = LoadCacheImage(buf); // JPEG（P4）と JPEG XR（従来）の両方を読む
                             pixelRatio = new Fraction(numerator, denominator);
                             break;
                         }
@@ -1129,7 +1225,7 @@ namespace ZipPla
                         {
                             var m = new MemoryStream();
                             //img.Save(m, TrySet_ImageCodecInfo, TrySet_EncoderParameters);
-                            WindowsMediaPhoto.Save(m, img, JXR_QUALITY);
+                            SaveCacheImage(m, img);
 
                             if (sizeBound < long.MaxValue / 2)
                             {
