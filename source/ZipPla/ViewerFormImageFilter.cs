@@ -480,13 +480,36 @@ namespace ZipPla
             return dMax;
         }
 
+        // トーンカーブのファイル（ToneCurve.cur）の解析結果を、更新日時とサイズをキーに使い回す（V12）。
+        // 以前はページを読み込むたび・ルーペを作るたびにファイルを解析していた。ToneCurves は読み取り専用なので共有してよい
+        private static readonly object TryGetPseudoColoringToneCurves_Locker = new object();
+        private static ToneCurves TryGetPseudoColoringToneCurves_Cache = null;
+        private static DateTime TryGetPseudoColoringToneCurves_CacheTime;
+        private static long TryGetPseudoColoringToneCurves_CacheLength = -1; // -1: キャッシュなし
         private static ToneCurves TryGetPseudoColoringToneCurves()
         {
             try
             {
-                if (File.Exists(PseudoColoringToneCurvesFile))
+                var info = new FileInfo(PseudoColoringToneCurvesFile);
+                if (!info.Exists) return null;
+                var time = info.LastWriteTimeUtc;
+                var length = info.Length;
+                lock (TryGetPseudoColoringToneCurves_Locker)
                 {
-                    return ToneCurves.FromFile(PseudoColoringToneCurvesFile);
+                    if (TryGetPseudoColoringToneCurves_CacheLength == length && TryGetPseudoColoringToneCurves_CacheTime == time)
+                    {
+                        return TryGetPseudoColoringToneCurves_Cache;
+                    }
+                    ToneCurves result = null;
+                    try
+                    {
+                        result = ToneCurves.FromFile(PseudoColoringToneCurvesFile);
+                    }
+                    catch { } // 解析できないファイルも、変わるまでは読み直さない（null を覚える）
+                    TryGetPseudoColoringToneCurves_Cache = result;
+                    TryGetPseudoColoringToneCurves_CacheTime = time;
+                    TryGetPseudoColoringToneCurves_CacheLength = length;
+                    return result;
                 }
             }
             catch { }

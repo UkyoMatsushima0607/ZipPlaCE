@@ -4445,6 +4445,7 @@ namespace ZipPla
         [DllImport("kernel32.dll")]
         public static extern void CopyMemory(IntPtr dst, IntPtr src, int size);
         
+        // 色のある画素が見つかったら loop.Stop() で残りの行を打ち切る（V11。Break は前の行をすべて処理し終えるまで止まらない）
         private static unsafe bool IsGrayScaleBitmap(Bitmap bmp)
         {
             if (bmp == null) throw new ArgumentNullException("bmp");
@@ -4510,7 +4511,7 @@ namespace ZipPla
                                     if (b != buffIn[v++] || b != buffIn[v++])
                                     {
                                         result = false;
-                                        loop.Break();
+                                        loop.Stop();
                                         return;
                                     }
                                 }
@@ -4531,7 +4532,7 @@ namespace ZipPla
                                     if (b != buffIn[v++] || b != buffIn[v])
                                     {
                                         result = false;
-                                        loop.Break();
+                                        loop.Stop();
                                         return;
                                     }
                                     v += 2;
@@ -4552,7 +4553,7 @@ namespace ZipPla
                                         if (b != ((0xFF8 & (s >> 2)) | 4) || b != ((0xFF8 & (s >> 7)) | 4))
                                         {
                                             result = false;
-                                            loop.Break();
+                                            loop.Stop();
                                             return;
                                         }
                                     }
@@ -4571,7 +4572,7 @@ namespace ZipPla
                                     if (b != (0xFF8 & (s >> 2)) || b != (0xFF8 & (s >> 7)))
                                     {
                                         result = false;
-                                        loop.Break();
+                                        loop.Stop();
                                         return;
                                     }
                                 }
@@ -4589,7 +4590,7 @@ namespace ZipPla
                                     if (b != (0xFFC & (s >> 3)) || b != (0xFF8 & (s >> 8)))
                                     {
                                         result = false;
-                                        loop.Break();
+                                        loop.Stop();
                                         return;
                                     }
                                 }
@@ -4608,7 +4609,7 @@ namespace ZipPla
                                     if (b != buffIn[u++] || b != buffIn[u++])
                                     {
                                         result = false;
-                                        loop.Break();
+                                        loop.Stop();
                                         return;
                                     }
                                 }
@@ -4624,13 +4625,11 @@ namespace ZipPla
                                 int v = 0;
                                 while (v < buffInLength)
                                 {
-                                    var a = (buffIn[v + 3] + 16) >> 5;
-                                    var ar = (255 - a) * 255 + 127;
                                     var b = buffIn[v++];
-                                    if (h != buffIn[v++] || b != buffIn[v])
+                                    if (b != buffIn[v++] || b != buffIn[v]) // 以前は b ではなく高さ h と比べていて、常にカラーと判定していた（B1）
                                     {
                                         result = false;
-                                        loop.Break();
+                                        loop.Stop();
                                         return;
                                     }
                                     v += 2;
