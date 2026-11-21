@@ -3098,7 +3098,7 @@ namespace ZipPla
                 updatedLoader = loader != next.Loader;
                 if (updatedLoader)
                 {
-                    loader?.Dispose();
+                    lock (loaderLock) loader?.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
                     if (TryUpdateLastAccessTimeAfterLoaderDisposed != null)
                     {
                         Program.TryUpdateLastAccessTime(TryUpdateLastAccessTimeAfterLoaderDisposed);
@@ -3340,14 +3340,102 @@ namespace ZipPla
 
 #if PERFLOG
         // 計測用: ページ読み込みの時間（exe のフォルダの viewer-load.log）。読み込みスレッドは 1 本
-        private long perfLoadStart, perfDecodeEnd, perfJobStart;
+        [ThreadStatic] private static long perfLoadStart, perfDecodeEnd, perfJobStart; // 読み込みは並列（V1）なのでスレッドごと
         // ジョブの開始・終了と完了イベントの時刻（ms、Stopwatch のタイムスタンプから）。ジョブのあいだの空き時間を調べる（V1）
         private static double PerfMs(long timestamp) => timestamp * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
 #endif
         private int bmwLoadEachPage_DoWork_DEBUG_WorkNumber = -1;
         private int bmwLoadEachPage_DoWork_DEBUG_Phase;
 
+        // 読み込みは複数のスレッドで並列に行う（V1）。書庫からの取り出しは loaderLock で直列にし、デコード・色判定・縮小は並列。
+        // 同じページのジョブ（原寸の読み直しの ReworkOrder など）が重ならないように、ページごとのロック（剰余で共有）を取る
+        private readonly object loaderLock = new object();
+        private static readonly object[] loadPageLocks = Enumerable.Range(0, 64).Select(_ => new object()).ToArray();
+        private static int LoadThreadCount
+        {
+            get
+            {
+#if PERFLOG
+                // 計測用: 環境変数 ZIPPLA_VIEWER_THREADS で読み込みのスレッド数を指定する
+                if (int.TryParse(Environment.GetEnvironmentVariable("ZIPPLA_VIEWER_THREADS"), out var forced) && forced > 0) return forced;
+#endif
+                return Math.Max(1, Math.Min(4, Environment.ProcessorCount - 1));
+            }
+        }
+
         private void bmwLoadEachPage_DoWork(object sender, GenerarClasses.BackgroundMultiWorker.EachDoWorkEventArgs e)
+        {
+            lock (loadPageLocks[e.WorkNumber & 63])
+            {
+                // 原寸でデコードするページ（表示の近く。3000x4300 のカラーで 1 枚 38MB）は同時に読む数を絞る。
+                // 4 本とも原寸を読むと最大メモリが 1.6〜1.8 倍になった。縮小デコードのページ（小さい）は制限しない
+                var full = !CanDecodeReduced(e.WorkNumber);
+                if (full) FullDecodeSemaphore.Wait();
+                try
+                {
+                    bmwLoadEachPage_DoWorkCore(sender, e);
+                }
+                finally
+                {
+                    if (full) FullDecodeSemaphore.Release();
+                }
+            }
+        }
+
+        private static int FullDecodeConcurrency
+        {
+            get
+            {
+#if PERFLOG
+                if (int.TryParse(Environment.GetEnvironmentVariable("ZIPPLA_VIEWER_FULL_DECODES"), out var forced) && forced > 0) return forced;
+#endif
+                return 1;
+            }
+        }
+        private readonly System.Threading.SemaphoreSlim FullDecodeSemaphore = new System.Threading.SemaphoreSlim(FullDecodeConcurrency);
+
+        // GDI+ などで並列にデコードしてよい形式か。Susie プラグインや PDF などは従来どおり書庫のロックの中で読む
+        private static bool CanDecodeInParallel(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".gif" || ext == ".tif" || ext == ".tiff";
+        }
+
+        // ページの画像を読む（V1）。並列にデコードできる形式は、書庫からの取り出しだけをロックの中で行い、デコードはロックの外で行う
+        private Bitmap OpenPageImage(PackedImageLoader.PackedImageEntry entry)
+        {
+            var l = loader;
+            if (l == null) throw new ObjectDisposedException(nameof(loader));
+            if (CanDecodeInParallel(entry.Path))
+            {
+                if (l.Type == PackedImageLoader.PackType.Directory)
+                {
+                    return l.OpenImageStream(entry); // ファイルを直接読むので書庫のロックは要らない
+                }
+                MemoryStream stream;
+                string name;
+                long length;
+                bool extracted;
+                lock (loaderLock)
+                {
+                    extracted = l.TryExtractEntry(entry, out stream, out name, out length);
+                }
+                if (extracted)
+                {
+                    using (stream)
+                    {
+                        return PackedImageLoader.DecodeExtracted(stream, name, l.Animation, length);
+                    }
+                }
+            }
+            lock (loaderLock)
+            {
+                return l.OpenImageStream(entry);
+            }
+        }
+
+        private void bmwLoadEachPage_DoWorkCore(object sender, GenerarClasses.BackgroundMultiWorker.EachDoWorkEventArgs e)
         {
 #if PERFLOG
             perfJobStart = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -3375,8 +3463,7 @@ namespace ZipPla
             System.Diagnostics.Stopwatch sw = null;
             bmwLoadEachPage_DoWork_DEBUG_WorkNumber = e.WorkNumber;
             bmwLoadEachPage_DoWork_DEBUG_Phase = 0;
-            // 読み込みが遅いファイルの主要項は排他処理しないといけない loader.OpenImageStream なのでマルチスレッドは有効ではない。
-            // リソースの節約を度外視して高速化を目指すならスレッド分ストリームのコピーをメモリに展開する方法が想定される。
+            // 書庫からの取り出しは OpenPageImage の中で loaderLock により直列にし、デコード以降は複数のスレッドで並列に行う（V1）
             try
             {
                 LockManager.ForIReadOnlyList(PreFilteredImageArray, e.WorkNumber, item =>
@@ -3405,7 +3492,7 @@ namespace ZipPla
                         ReducedJpegDecodeRequest.Current = reduceRequest;
                         try
                         {
-                            img = BitmapEx.ConvertToBitmapEx(loader.OpenImageStream(EntryArray[e.WorkNumber]));
+                            img = BitmapEx.ConvertToBitmapEx(OpenPageImage(EntryArray[e.WorkNumber]));
                         }
                         finally
                         {
@@ -5729,6 +5816,8 @@ namespace ZipPla
         private void bmwLoadEachPage_EachRunWorkerCompletedCore(object sender, GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
         {
 #endif
+            loadedPagesSinceGc++;
+            lastPageLoadedTick = Environment.TickCount;
             Program.AlertError(e.Error);
             VirtualBitmapEx result;
             if (!e.Cancelled && (result = e.Result as VirtualBitmapEx) != null)
@@ -6152,7 +6241,7 @@ namespace ZipPla
             });
             bmwLoadEachPage.SetWorksOrder(order);
             ReduceUsingMemory(usedMemoryUBound);
-            bmwLoadEachPage.ThreadCount = 1;
+            bmwLoadEachPage.ThreadCount = LoadThreadCount;
         }
 
         private int priorityLevel(int x, int stopPage)
@@ -10894,7 +10983,7 @@ namespace ZipPla
                                             editToolStripMenuItem.Enabled = false;
                                         }
                                         
-                                        loader?.Release();
+                                        lock (loaderLock) loader?.Release();
                                         nextData?.Loader.Release();
 
                                         var tempPrevSize = prevSize;
@@ -13420,7 +13509,7 @@ namespace ZipPla
             //tmMemoryReducer.Enabled = false;
             SetMemoryUBound();
             ReduceUsingMemory(usedMemoryUBound);
-            bmwLoadEachPage.ThreadCount = 1;
+            bmwLoadEachPage.ThreadCount = LoadThreadCount;
         }
         
         /*
@@ -15934,7 +16023,7 @@ namespace ZipPla
         {
             if (loader != null)
             {
-                loader.Dispose();
+                lock (loaderLock) loader.Dispose();
                 loader = null;
             }
             if (!string.IsNullOrEmpty(currentArchiveFilePath))
@@ -15990,6 +16079,8 @@ namespace ZipPla
             ToggleForceFirstPageToBeSingle();
         }
 
+        private int loadedPagesSinceGc = 0; // 前回の GC からの読み込み完了の数（V1）
+        private int lastPageLoadedTick;
         // メモリの確認は 0.5 秒ごと。タイマーは通常 100ms ごと（下の UI の処理のため）で、待機ビューアでは 500ms ごと（V6）
         private int tiMemoryReducer_Tick_LastReduce = Environment.TickCount;
         private void tiMemoryReducer_Tick(object sender, EventArgs e)
@@ -15997,6 +16088,14 @@ namespace ZipPla
             if (!ViewerForm_Shown_Called) return;
 
             var now = Environment.TickCount;
+            // 並列に読み込むと（V1）、デコードの一時的なメモリ（WIC のネイティブメモリや取り出したバイト列）が GC が回るまで残り、
+            // 読み込みが終わって落ち着いたあとのワーキングセットが 1 本のときの 1.5〜2 倍になった。
+            // 読み込みが 0.5 秒途切れたら、まとめて読んだ（8 ページ以上）ときだけ GC を 1 回走らせて返す
+            if (loadedPagesSinceGc >= 8 && unchecked(now - lastPageLoadedTick) > 500)
+            {
+                loadedPagesSinceGc = 0;
+                GC.Collect();
+            }
             var elapsed = unchecked(now - tiMemoryReducer_Tick_LastReduce);
             if (elapsed >= 450 || elapsed < 0)
             {

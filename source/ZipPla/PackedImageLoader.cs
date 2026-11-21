@@ -1860,6 +1860,160 @@ namespace ZipPla
             }
         }
 
+        /// <summary>アニメーションを読むか（取り出したエントリを呼び出し側でデコードするとき用）</summary>
+        public bool Animation => animation;
+
+        /// <summary>
+        /// エントリを書庫からメモリに取り出すだけで、デコードはしない（V1）。デコードは DecodeExtracted で書庫のロックの外で行える。
+        /// 取り出しとデコードを分けられない形式（フォルダ・PDF・CAB）は false を返す（従来どおり OpenImageStream を使う）。
+        /// このクラスはスレッド安全ではないので、呼び出し側が OpenImageStream と同じく直列にすること
+        /// </summary>
+        public bool TryExtractEntry(PackedImageEntry entry, out MemoryStream stream, out string fileNameForType, out long length)
+        {
+            var cIndex = entry.ChildIndex;
+            if (cIndex < 0)
+            {
+                return TryExtractEntry(entry.Index, out stream, out fileNameForType, out length);
+            }
+            else
+            {
+                var t = children[cIndex];
+                return t.Item1.TryExtractEntry(t.Item2[entry.Index], out stream, out fileNameForType, out length);
+            }
+        }
+
+        private bool TryExtractEntry(int physicalIndex, out MemoryStream stream, out string fileNameForType, out long length)
+        {
+            stream = null;
+            fileNameForType = null;
+            length = -1;
+            switch (Type)
+            {
+                case PackType.Directory:
+                case PackType.Pdf:
+                case PackType.Cab:
+                    return false;
+                case PackType.ZipM:
+                case PackType.Rar5:
+                case PackType.Lha:
+                    ExtractSevenZip(physicalIndex, out stream, out fileNameForType, out length);
+                    return true;
+                default:
+                    if (sevenZipArchive != null)
+                    {
+                        ExtractSevenZip(physicalIndex, out stream, out fileNameForType, out length);
+                        return true;
+                    }
+                    switch (Type)
+                    {
+                        case PackType.Zip:
+                            if (zipArchive != null)
+                            {
+                                ExtractZip(physicalIndex, out stream, out fileNameForType, out length);
+                            }
+                            else
+                            {
+                                ExtractSharpCompress(physicalIndex, out stream, out fileNameForType, out length);
+                            }
+                            return true;
+                        case PackType.Rar:
+                        case PackType.Tar:
+                        case PackType.SevenZip:
+                            ExtractSharpCompress(physicalIndex, out stream, out fileNameForType, out length);
+                            return true;
+                    }
+                    return false;
+            }
+        }
+
+        private void ExtractSevenZip(int physicalIndex, out MemoryStream stream, out string fileNameForType, out long length)
+        {
+            var entry = sevenZipArchiveEntries[physicalIndex];
+            stream = GetInnerImageStreamSevenZip(physicalIndex, entry, seekToBegin: true, callback: false);
+            fileNameForType = entry.FileName;
+            length = entry.Size;
+        }
+
+        private static MemoryStream CopyToMemory(Stream source, long length)
+        {
+            var result = length >= 0 && length <= int.MaxValue ? new MemoryStream((int)length) : new MemoryStream();
+            try
+            {
+                source.CopyTo(result);
+                result.Position = 0;
+                return result;
+            }
+            catch
+            {
+                result.Dispose();
+                throw;
+            }
+        }
+
+        private void ExtractZip(int physicalIndex, out MemoryStream stream, out string fileNameForType, out long length)
+        {
+            try
+            {
+                var entry = zipArchiveEntries[physicalIndex];
+                using (var s = entry.Open())
+                {
+                    stream = CopyToMemory(s, entry.Length);
+                }
+                fileNameForType = entry.Name;
+                length = entry.Length;
+            }
+            catch (InvalidDataException)
+            {
+                throw new PasswordLockedException();
+            }
+        }
+
+        private void ExtractSharpCompress(int physicalIndex, out MemoryStream stream, out string fileNameForType, out long length)
+        {
+            try
+            {
+                var entry = iArchiveEntries[physicalIndex];
+                fileNameForType = entry.Key;
+                length = entry.Size;
+                if (!OpenInnerImageStreamSharpCompress_IsSolid)
+                {
+                    try
+                    {
+                        using (var s = entry.OpenEntryStream())
+                        {
+                            stream = CopyToMemory(s, entry.Size);
+                        }
+                        return;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        OpenInnerImageStreamSharpCompress_IsSolid = true;
+                        initializeSolidEntryOccurrences();
+                    }
+                }
+                var bytes = getSolidEntryBytes(physicalIndex);
+                stream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+                length = bytes.Length;
+            }
+            catch (Exception e)
+            {
+                if (e.ToString().Contains("Crypto"))
+                {
+                    throw new PasswordLockedException();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>TryExtractEntry で取り出したエントリをデコードする（OpenImageStream と同じ処理。書庫のロックは不要）（V1）</summary>
+        public static Bitmap DecodeExtracted(Stream stream, string fileNameForType, bool animation, long length)
+        {
+            return ImageFromStream(stream, fileNameForType, animation, length);
+        }
+
         private Bitmap GetImageAndDisposeOriginal(Stream stream, string fileNameForType, long streamLength = -1)
         {
             try
