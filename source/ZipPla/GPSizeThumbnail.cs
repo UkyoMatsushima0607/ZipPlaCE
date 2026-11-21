@@ -1578,6 +1578,7 @@ namespace ZipPla
 
 #region Win32 API宣言
 
+        [System.Security.SuppressUnmanagedCodeSecurity] // 呼び出しごとのセキュリティのスタックウォークを省く（K5）
         [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         private static extern IntPtr CreateFile(
             string lpFileName, // ファイル名
@@ -1589,17 +1590,20 @@ namespace ZipPla
             IntPtr hTemplateFile // テンプレートファイルのハンドル
             );
 
+        [System.Security.SuppressUnmanagedCodeSecurity] // 呼び出しごとのセキュリティのスタックウォークを省く（K5）
         [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         private static extern bool DeleteFile(
             string lpFileName // ファイル名
             );
 
+        [System.Security.SuppressUnmanagedCodeSecurity] // 呼び出しごとのセキュリティのスタックウォークを省く（K5）
         [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         private static extern unsafe bool CloseHandle
         (
             IntPtr hObject // handle to object
         );
 
+        [System.Security.SuppressUnmanagedCodeSecurity] // 呼び出しごとのセキュリティのスタックウォークを省く（K5）
         [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         private static extern bool WriteFile(
          IntPtr hFile,

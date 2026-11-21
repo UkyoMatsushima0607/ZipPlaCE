@@ -354,6 +354,7 @@ namespace WilsonProgramming
             return CompareTo(obj as ShellItem);
         }
 
+        [System.Security.SuppressUnmanagedCodeSecurity]
         [System.Runtime.InteropServices.DllImport("shlwapi.dll",
             CharSet = System.Runtime.InteropServices.CharSet.Unicode,
             ExactSpelling = true)]

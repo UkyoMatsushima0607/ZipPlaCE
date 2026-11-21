@@ -2866,6 +2866,7 @@ namespace ZipPla
         System.Collections.IComparer,
         System.Collections.Generic.IComparer<string>
     {
+        [System.Security.SuppressUnmanagedCodeSecurity] // 呼び出しごとのセキュリティのスタックウォークを省く（K5）
         [System.Runtime.InteropServices.DllImport("shlwapi.dll",
             CharSet = System.Runtime.InteropServices.CharSet.Unicode,
             ExactSpelling = true)]
