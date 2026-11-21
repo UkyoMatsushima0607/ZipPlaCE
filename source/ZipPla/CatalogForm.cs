@@ -6354,7 +6354,13 @@ namespace ZipPla
                                 //var zHalf = z / 2;
                                 var rectWidth = z * canvas.Width;// - zHalf;
                                 var rectHeight = z * canvas.Height;// - zHalf;
+#if PERFLOG
+                                var perfArchiveFocus = PerfTrace.Now();
+#endif
                                 focusPoint = BitmapAnalyzer.GetFocus(MaxPointImage, MaxPointRectangleF, pixelRatio: 1);
+#if PERFLOG
+                                PerfTrace.AddStage("archiveClipFocus", PerfTrace.Now() - perfArchiveFocus);
+#endif
                                 var newRect = new RectangleF(focusPoint.X - rectWidth / 2, focusPoint.Y - rectHeight / 2, rectWidth, rectHeight);
                                 if (newRect.Left < MaxPointRectangleF.Left) newRect.X = MaxPointRectangleF.Left;
                                 else if (newRect.Right > MaxPointRectangleF.Right) newRect.X = MaxPointRectangleF.Right - rectWidth;
@@ -6368,8 +6374,19 @@ namespace ZipPla
                                 g.FillRectangle(SystemBrushes.Window/*Brushes.White*/, new RectangleF(new PointF(), canvas.Size));
                             }
                             var pOffset = (z - 1) / 2;
-                            g.DrawImage(MaxPointImage, new RectangleF(new PointF(), canvas.Size),
-                                new RectangleF(MaxPointRectangleF.X, MaxPointRectangleF.Y, MaxPointRectangleF.Width - pOffset, MaxPointRectangleF.Height - pOffset), GraphicsUnit.Pixel);
+#if PERFLOG
+                            var perfArchiveDraw = PerfTrace.Now();
+#endif
+                            // 縮小は GDI+ を使わない面積平均で（GDI+ の DrawImage はスレッドをまたいで直列になる）。GDI+ 用の補正をする前の範囲を渡す（P4）
+                            g.Flush();
+                            if (!AreaAverageResizer.TryDraw(MaxPointImage, MaxPointRectangleF, canvas, new Rectangle(0, 0, canvas.Width, canvas.Height)))
+                            {
+                                g.DrawImage(MaxPointImage, new RectangleF(new PointF(), canvas.Size),
+                                    new RectangleF(MaxPointRectangleF.X, MaxPointRectangleF.Y, MaxPointRectangleF.Width - pOffset, MaxPointRectangleF.Height - pOffset), GraphicsUnit.Pixel);
+                            }
+#if PERFLOG
+                            PerfTrace.AddStage("archiveClipDraw", PerfTrace.Now() - perfArchiveDraw);
+#endif
 #if DEBUG
                             var p = new PointF((focusPoint.X - MaxPointRectangleF.X) / z, (focusPoint.Y - MaxPointRectangleF.Y) / z);
                             var r = (float)Math.Sqrt(canvas.Width * canvas.Height) / 10;
