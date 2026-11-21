@@ -16885,6 +16885,31 @@ namespace ZipPla
 
             if (cbFilter_TextChanged_StopResort) return; // ブックマーク読み込み用
 
+            // ユーザーが入力しているあいだ（欄にフォーカスがある）は、最後の入力から少し待ってまとめて 1 回だけ絞り込む（K3）。
+            // 以前は 1 文字ごとに全件の並べ替えと一覧の作り直しをしていた（3 万件で 1 文字 100〜180 ms）。
+            // プログラムから文字列を設定した場合（タグのクリックなど）は従来どおりすぐ
+            if (cbFilter.Focused)
+            {
+                if (cbFilter_TextChanged_Timer == null)
+                {
+                    cbFilter_TextChanged_Timer = new System.Windows.Forms.Timer { Interval = 150 };
+                    cbFilter_TextChanged_Timer.Tick += (s2, e2) =>
+                    {
+                        cbFilter_TextChanged_Timer.Stop();
+                        ResortForFilter();
+                    };
+                }
+                cbFilter_TextChanged_Timer.Stop();
+                cbFilter_TextChanged_Timer.Start();
+                return;
+            }
+            ResortForFilter();
+        }
+
+        private System.Windows.Forms.Timer cbFilter_TextChanged_Timer;
+        private void ResortForFilter()
+        {
+            cbFilter_TextChanged_Timer?.Stop();
             lock (ZipPathArrayLocker)
             {
                 if (ZipPathArray != null && ZipPathArray.Length > 0)
@@ -16947,6 +16972,7 @@ namespace ZipPla
 
         private void cbFilter_Leave(object sender, EventArgs e)
         {
+            if (cbFilter_TextChanged_Timer?.Enabled == true) ResortForFilter(); // 入力中で待っていた絞り込みを済ませる（K3）
             SetBackgroundMode(false, 0);
             setCurrentFilterToHistory(bringToTop: true);
         }
@@ -25967,7 +25993,7 @@ namespace ZipPla
 #if PERFLOG
                 var perfT2 = System.Diagnostics.Stopwatch.GetTimestamp();
                 double perfF = System.Diagnostics.Stopwatch.Frequency;
-                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "quick-reload.log"), $"sort={(perfT1 - perfT0) * 1000 / perfF:F1}ms	fileList={(perfT2 - perfT1) * 1000 / perfF:F1}ms" + Environment.NewLine); } catch { }
+                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "quick-reload.log"), $"sort={(perfT1 - perfT0) * 1000 / perfF:F1}ms\tfileList={(perfT2 - perfT1) * 1000 / perfF:F1}ms" + Environment.NewLine); } catch { }
 #endif
             }
             exitQuickReload_LastSortTick = Environment.TickCount; // 並べ替えが終わった時刻から数える
