@@ -2012,7 +2012,41 @@ namespace ZipPla
         public InitialFullscreenMode InitialFullscreenMode;
         public bool AlwaysHideUI;
         public ReadOnMemoryMode ReadOnMemoryMode;
-        public bool Accept = true;
+
+        // カタログが依頼を書いて false にしたら、待機ビューアを起こすイベントを立てる（V6）。
+        // 待機ビューアは以前 10ms ごとにプロセス間通信で Accept を読みに来ていた
+        private bool accept = true;
+        public bool Accept
+        {
+            get => accept;
+            set
+            {
+                accept = value;
+                if (!value)
+                {
+                    try { wakeEvent?.Set(); } catch { }
+                }
+            }
+        }
+
+        // 待機ビューアを起こすための名前付きイベントの名前。カタログ側で作る（CreateWakeEvent）。null ならイベントなし
+        public string WakeEventName;
+        private System.Threading.EventWaitHandle wakeEvent;
+
+        public void CreateWakeEvent()
+        {
+            var name = @"Local\ZipPla_LookAhead_" + Guid.NewGuid().ToString("N");
+            wakeEvent = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, name);
+            WakeEventName = name;
+        }
+
+        public void DisposeWakeEvent()
+        {
+            var e = wakeEvent;
+            wakeEvent = null;
+            WakeEventName = null;
+            e?.Dispose();
+        }
 
         public static string ChannelName = "ipcZipPla";
 
@@ -2085,6 +2119,30 @@ namespace ZipPla
             public bool RequestToReloadTags;
         }
         public List<OldAndNewString> PathRequiredReload = new List<OldAndNewString>();
+
+        // ビューアからの追加とカタログでの取り出しを、カタログのプロセス内で排他して行う（V7）。
+        // 以前はビューアがリスト全体を読んで書き戻していた（プロセス間の呼び出し 2 回、取り出しと重なると報告が消えうる）
+        private readonly object locker = new object();
+        public void AddReports(OldAndNewString[] reports)
+        {
+            if (reports == null || reports.Length == 0) return;
+            lock (locker)
+            {
+                var list = PathRequiredReload.Where(x => x != null).ToList();
+                list.AddRange(reports);
+                PathRequiredReload = list;
+            }
+        }
+        public OldAndNewString[] TakeReports()
+        {
+            lock (locker)
+            {
+                if (PathRequiredReload.Count == 0) return null;
+                var result = PathRequiredReload.ToArray();
+                PathRequiredReload = new List<OldAndNewString>();
+                return result;
+            }
+        }
 
         /// <summary>
         /// 自動的に切断されるのを回避する

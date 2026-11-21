@@ -17900,9 +17900,11 @@ namespace ZipPla
             if (lookAheadInfo != null)
             {
                 RemotingServices.Disconnect(lookAheadInfo);
+                lookAheadInfo.DisposeWakeEvent();
                 lookAheadInfo = null;
             }
             lookAheadInfo = new IpcLookAheadInfo();
+            lookAheadInfo.CreateWakeEvent(); // 依頼を書いたら待機ビューアを起こす（V6）
 
             var guid = Guid.NewGuid().ToString();
             RemotingServices.Marshal(lookAheadInfo, guid, typeof(IpcLookAheadInfo));
@@ -18223,6 +18225,7 @@ namespace ZipPla
                     if (lookAheadInfo != null)
                     {
                         RemotingServices.Disconnect(lookAheadInfo);
+                        lookAheadInfo.DisposeWakeEvent();
                         lookAheadInfo = null;
                     }
                     waitingProcess = null;
@@ -18305,6 +18308,7 @@ namespace ZipPla
                 if (lookAheadInfo != null)
                 {
                     RemotingServices.Disconnect(lookAheadInfo);
+                    lookAheadInfo.DisposeWakeEvent();
                     lookAheadInfo = null;
                 }
                 ChannelServices.UnregisterChannel(currentIpcChanne);
@@ -18399,12 +18403,7 @@ namespace ZipPla
             IpcReportFromViewerToCatalog.OldAndNewString[] tmWatchIpc_Tick_GotData = null;
             try
             {
-                if (reportFromViewerToCatalog.PathRequiredReload.Count > 0)
-                {
-                    tmWatchIpc_Tick_GotData = reportFromViewerToCatalog.PathRequiredReload.ToArray();
-                    //reportFromViewerToCatalog.PathRequiredReload.Clear(); // サーバー側は書き換え用のメソッドが直接実行可能だがその途中でクライアントに読み出されることがある
-                    reportFromViewerToCatalog.PathRequiredReload = new List<IpcReportFromViewerToCatalog.OldAndNewString>();
-                }
+                tmWatchIpc_Tick_GotData = reportFromViewerToCatalog.TakeReports();
             }
             catch { }
 

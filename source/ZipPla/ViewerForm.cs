@@ -974,6 +974,7 @@ namespace ZipPla
             Constructor(info);
             //Constructor(initialFullscreenMode, alwaysHideUI, backColor: Color.Black, aia: ArchivesInArchiveMode.Ignore);
 
+            StartWatchIpcWakeEvent();
             tmWatchIpc.Start();
 
             //tmMemoryReducer.Enabled = true; // Start() と同じ
@@ -5592,13 +5593,34 @@ namespace ZipPla
         //private bool is32bit = IntPtr.Size < 8;
         Microsoft.VisualBasic.Devices.ComputerInfo computerInfo = new Microsoft.VisualBasic.Devices.ComputerInfo();
         //private Process currentProcess = Process.GetCurrentProcess();
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PROCESS_MEMORY_COUNTERS
+        {
+            public uint cb, PageFaultCount;
+            public UIntPtr PeakWorkingSetSize, WorkingSetSize, QuotaPeakPagedPoolUsage, QuotaPagedPoolUsage,
+                QuotaPeakNonPagedPoolUsage, QuotaNonPagedPoolUsage, PagefileUsage, PeakPagefileUsage;
+        }
+        [System.Security.SuppressUnmanagedCodeSecurity]
+        [DllImport("kernel32.dll")]
+        private static extern bool K32GetProcessMemoryInfo(IntPtr hProcess, out PROCESS_MEMORY_COUNTERS counters, uint cb);
+        [System.Security.SuppressUnmanagedCodeSecurity]
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetCurrentProcess();
+
+        // 自分のワーキングセット。Process.GetCurrentProcess().WorkingSet64 は全プロセスの情報を集めるので 1 回 0.7ms 前後かかる。
+        // こちらは 1µs 未満（V5）。1 ページ読むたびと 0.5 秒ごとに呼ばれる
+        private static long GetCurrentWorkingSet()
+        {
+            if (K32GetProcessMemoryInfo(GetCurrentProcess(), out var counters, (uint)Marshal.SizeOf(typeof(PROCESS_MEMORY_COUNTERS))))
+            {
+                return (long)counters.WorkingSetSize.ToUInt64();
+            }
+            return Environment.WorkingSet;
+        }
+
         private void SetMemoryUBound()
         {
-            long memory;
-            using (var mySelf = System.Diagnostics.Process.GetCurrentProcess())
-            {
-                memory = mySelf.WorkingSet64;
-            }
+            var memory = Math.Max(1, GetCurrentWorkingSet());
             //optionToolStripMenuItem.Text = $"{memory}";
             var available = computerInfo.AvailablePhysicalMemory;
             //var userUbound = is32bit ? Math.Min(BuiltInViewerMemoryLimit, 3UL << 30) : BuiltInViewerMemoryLimit;
@@ -5881,8 +5903,10 @@ namespace ZipPla
             return center - range <= page && page < center + spread + range;
         }
 
+        private int SetBackgroundMode_CallCount = 0;
         private void SetBackgroundMode()
         {
+            SetBackgroundMode_CallCount++;
             if (ResizedImageArray == null) return;
             var length = ResizedImageArray.Length;
             var clientCursorPosition = mtbPage.PointToClient(Cursor.Position);
@@ -6664,6 +6688,7 @@ namespace ZipPla
 
         private void ViewerForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            FlushReportsToCatalog(); // 最後のページの選択変更の依頼を確実に届ける（V7）
             if (ipcLookAheadInfo == null && !DoNotSaveSetting)
             {
                 SaveSettings();
@@ -9220,12 +9245,7 @@ namespace ZipPla
                     rep.Old = prevArchiveFilePath;
                     rep.New = newArchiveFilePath;
 
-                    // フィールドとして作った PathRequiredReload が MarshalByRefObject の継承によってプロパティのように振る舞うのでこの方法は使えない。
-                    //ipcReportFromViewerToCatalog.PathRequiredReload.Add(rep);
-
-                    var repList = ipcReportFromViewerToCatalog.PathRequiredReload;
-                    repList.Add(rep);
-                    ipcReportFromViewerToCatalog.PathRequiredReload = repList;
+                    SendReportsToCatalog(rep);
                 }
                 catch (RemotingException)
                 {
@@ -9247,10 +9267,7 @@ namespace ZipPla
                 {
                     var rep = new IpcReportFromViewerToCatalog.OldAndNewString();
                     rep.RequestToReloadTags = true;
-
-                    var repList = ipcReportFromViewerToCatalog.PathRequiredReload;
-                    repList.Add(rep);
-                    ipcReportFromViewerToCatalog.PathRequiredReload = repList;
+                    SendReportsToCatalog(rep);
                 }
                 catch (RemotingException)
                 {
@@ -9290,12 +9307,7 @@ namespace ZipPla
                         reps[i] = rep;
                     }
 
-                    // フィールドとして作った PathRequiredReload が MarshalByRefObject の継承によってプロパティのように振る舞うのでこの方法は使えない。
-                    //ipcReportFromViewerToCatalog.PathRequiredReload.Add(rep);
-
-                    var repList = ipcReportFromViewerToCatalog.PathRequiredReload;
-                    repList.AddRange(reps);
-                    ipcReportFromViewerToCatalog.PathRequiredReload = repList;
+                    SendReportsToCatalog(reps);
                 }
                 catch (RemotingException)
                 {
@@ -9338,6 +9350,97 @@ namespace ZipPla
                 }
             }
         }
+        // カタログへの報告（V7）。
+        // 選択変更の依頼（ページ送りのたび）は UI スレッドで同期のプロセス間通信をしないように、最新の 1 件だけを背景で送る。
+        // それ以外の報告（リネーム・履歴・タグ）は従来どおり同期で送るが、先にまだ送っていない選択変更の依頼を送って順番を保つ
+        private readonly object reportToCatalog_SendLocker = new object(); // プロセス間通信の呼び出しを直列にする
+        private readonly object reportToCatalog_PendingLocker = new object(); // 下の 2 つを守る（短時間だけ取る）
+        private IpcReportFromViewerToCatalog.OldAndNewString reportToCatalog_PendingSelection = null;
+        private bool reportToCatalog_SenderRunning = false;
+
+        /// <summary>報告を同期で送る。RemotingException などは呼び出し側で処理する</summary>
+        private void SendReportsToCatalog(params IpcReportFromViewerToCatalog.OldAndNewString[] reports)
+        {
+            var ipc = ipcReportFromViewerToCatalog;
+            if (ipc == null) return;
+            lock (reportToCatalog_SendLocker)
+            {
+                IpcReportFromViewerToCatalog.OldAndNewString pending;
+                lock (reportToCatalog_PendingLocker)
+                {
+                    pending = reportToCatalog_PendingSelection;
+                    reportToCatalog_PendingSelection = null;
+                }
+                if (pending != null) reports = new[] { pending }.Concat(reports).ToArray();
+                ipc.AddReports(reports);
+            }
+        }
+
+        /// <summary>まだ送っていない選択変更の依頼を同期で送る（閉じるとき）</summary>
+        private void FlushReportsToCatalog()
+        {
+            try
+            {
+                SendReportsToCatalog();
+            }
+            catch (RemotingException)
+            {
+                ipcReportFromViewerToCatalog = null;
+            }
+            catch { }
+        }
+
+        private void SendRequestToChangeSelectionAsync(IpcReportFromViewerToCatalog.OldAndNewString rep)
+        {
+            var ipc = ipcReportFromViewerToCatalog;
+            lock (reportToCatalog_PendingLocker)
+            {
+                reportToCatalog_PendingSelection = rep; // 古い依頼は送らずに捨てる（最新のページだけでよい）
+                if (reportToCatalog_SenderRunning) return;
+                reportToCatalog_SenderRunning = true;
+            }
+            Task.Run(() =>
+            {
+                try
+                {
+                    while (true)
+                    {
+                        lock (reportToCatalog_SendLocker)
+                        {
+                            IpcReportFromViewerToCatalog.OldAndNewString r;
+                            lock (reportToCatalog_PendingLocker)
+                            {
+                                r = reportToCatalog_PendingSelection;
+                                reportToCatalog_PendingSelection = null;
+                                if (r == null)
+                                {
+                                    reportToCatalog_SenderRunning = false;
+                                    return;
+                                }
+                            }
+                            ipc.AddReports(new[] { r });
+                        }
+                    }
+                }
+                catch (Exception error)
+                {
+                    lock (reportToCatalog_PendingLocker)
+                    {
+                        reportToCatalog_PendingSelection = null;
+                        reportToCatalog_SenderRunning = false;
+                    }
+                    if (error is RemotingException)
+                    {
+                        if (ipcReportFromViewerToCatalog == ipc) ipcReportFromViewerToCatalog = null;
+                    }
+                    else
+                    {
+                        try { BeginInvoke((MethodInvoker)(() => Program.AlertError(error))); } catch { }
+                    }
+                }
+            });
+        }
+
         private void SendRequestToChangeSelection(string path, SortMode? viewerFormSortMode = null)
         {
             if (path != null && ipcReportFromViewerToCatalog != null && ipcLookAheadInfo == null && Visible)
@@ -9348,10 +9451,7 @@ namespace ZipPla
                     rep.New = path;
                     rep.RequestToChangeSelection = true;
                     rep.ViewerFormSortMode = viewerFormSortMode ?? (currentSortModeDetails == null ? SortMode.NameInAsc : currentSortModeDetails.SortMode);
-                    var repList = ipcReportFromViewerToCatalog.PathRequiredReload;
-                    repList = repList.Where(x => x != null).ToList();
-                    repList.Add(rep);
-                    ipcReportFromViewerToCatalog.PathRequiredReload = repList;
+                    SendRequestToChangeSelectionAsync(rep);
                 }
                 catch (RemotingException)
                 {
@@ -10192,6 +10292,48 @@ namespace ZipPla
         // private bool tmWatchIpc_MaximizedMemory = false;
         //private bool tmWatchIpc_Tick_MemoryOriginalFullscreen = false;
         private bool tmWatchIpc_Stopped = false;
+
+        // 待機ビューアは、カタログが依頼を書いたときに立つ名前付きイベントで起きる（V6）。
+        // 以前は 10ms ごとにプロセス間通信で依頼の有無を読みに行っていた。タイマーは、カタログの終了の検出（RemotingException）と
+        // 取りこぼしの保険として 500ms ごとに残す。イベントが使えないときは従来どおり 10ms ごと
+        private RegisteredWaitHandle tmWatchIpc_WakeRegistration;
+        private EventWaitHandle tmWatchIpc_WakeEvent;
+        private void StartWatchIpcWakeEvent()
+        {
+            try
+            {
+                var name = ipcLookAheadInfo.WakeEventName;
+                if (name == null) return;
+                tmWatchIpc_WakeEvent = EventWaitHandle.OpenExisting(name);
+                tmWatchIpc_WakeRegistration = ThreadPool.RegisterWaitForSingleObject(tmWatchIpc_WakeEvent, (state, timedOut) =>
+                {
+                    try
+                    {
+                        if (tmWatchIpc_Stopped || IsDisposed || !IsHandleCreated) return;
+                        BeginInvoke((MethodInvoker)(() => tmWatchIpc_Tick(this, EventArgs.Empty))); // e が null でないこと（カタログからの依頼として扱う）
+                    }
+                    catch (ObjectDisposedException) { }
+                    catch (InvalidOperationException) { }
+                }, null, Timeout.Infinite, executeOnlyOnce: false);
+                tmWatchIpc.Interval = 500;
+                tmMemoryReducer.Interval = 500;
+                // Shown より前に届いた依頼は tmWatchIpc_Tick が無視するので、Shown の直後に一度見る
+                Shown += (sender, e) => tmWatchIpc_Tick(sender, EventArgs.Empty);
+            }
+            catch
+            {
+                StopWatchIpcWakeEvent();
+            }
+        }
+
+        private void StopWatchIpcWakeEvent()
+        {
+            tmWatchIpc_WakeRegistration?.Unregister(null);
+            tmWatchIpc_WakeRegistration = null;
+            tmWatchIpc_WakeEvent?.Dispose();
+            tmWatchIpc_WakeEvent = null;
+            tmMemoryReducer.Interval = 100; // 表示を始めたら通常の間隔に戻す
+        }
         private void tmWatchIpc_Tick(object sender, EventArgs e)
         {
             if (!ViewerForm_Shown_Called) return;
@@ -10229,6 +10371,7 @@ namespace ZipPla
                         {
                             tmWatchIpc_Stopped = true;
                             tmWatchIpc.Stop();
+                            StopWatchIpcWakeEvent();
                             //tmMemoryReducer.Enabled = false; // Stop() と同じ
                         }
 
@@ -10670,6 +10813,7 @@ namespace ZipPla
 #endif
                     tmWatchIpc_Stopped = true;
                     tmWatchIpc.Stop();
+                    StopWatchIpcWakeEvent();
                     try
                     {
                         Invoke((MethodInvoker)(() =>
@@ -12004,10 +12148,39 @@ namespace ZipPla
         }
         
 
+        // トラックバーの上でカーソルを動かすたびに SetBackgroundMode（全ページの走査・ソート・離れたページの破棄）を呼んでいた（V8）。
+        // カーソルの下のページが変わらず、ほかで SetBackgroundMode も呼ばれていなければ何もしない。呼ぶのは 50ms に 1 回まで（最後の位置は必ず反映する）
+        private const int mtbPage_MouseMove_Interval = 50;
+        private int mtbPage_MouseMove_LastValue = int.MinValue;
+        private int mtbPage_MouseMove_LastCallCount = -1;
+        private int mtbPage_MouseMove_LastTick;
+        private System.Windows.Forms.Timer mtbPage_MouseMove_Timer;
         private void mtbPage_MouseMove(object sender, MouseEventArgs e)
         {
             mtbPage.ValueCanChangedByMouseButton = true;
+            if (ResizedImageArray == null) return;
+            if (mtbPage.PointToValue(e.Location) == mtbPage_MouseMove_LastValue && SetBackgroundMode_CallCount == mtbPage_MouseMove_LastCallCount) return;
+            var elapsed = unchecked(Environment.TickCount - mtbPage_MouseMove_LastTick);
+            if (0 <= elapsed && elapsed < mtbPage_MouseMove_Interval)
+            {
+                if (mtbPage_MouseMove_Timer == null)
+                {
+                    mtbPage_MouseMove_Timer = new System.Windows.Forms.Timer(components) { Interval = mtbPage_MouseMove_Interval };
+                    mtbPage_MouseMove_Timer.Tick += (s, ev) => SetBackgroundModeForTrackbarHover();
+                }
+                if (!mtbPage_MouseMove_Timer.Enabled) mtbPage_MouseMove_Timer.Start();
+                return;
+            }
+            SetBackgroundModeForTrackbarHover();
+        }
+
+        private void SetBackgroundModeForTrackbarHover()
+        {
+            mtbPage_MouseMove_Timer?.Stop();
+            mtbPage_MouseMove_LastTick = Environment.TickCount;
+            mtbPage_MouseMove_LastValue = mtbPage.PointToValue(mtbPage.PointToClient(Cursor.Position));
             SetBackgroundMode();
+            mtbPage_MouseMove_LastCallCount = SetBackgroundMode_CallCount;
         }
 
         private bool MouseDownForCoverSettingExit = false;
@@ -15573,20 +15746,19 @@ namespace ZipPla
             ToggleForceFirstPageToBeSingle();
         }
 
-        private int tiMemoryReducer_Tick_100msCounter = 0;
+        // メモリの確認は 0.5 秒ごと。タイマーは通常 100ms ごと（下の UI の処理のため）で、待機ビューアでは 500ms ごと（V6）
+        private int tiMemoryReducer_Tick_LastReduce = Environment.TickCount;
         private void tiMemoryReducer_Tick(object sender, EventArgs e)
         {
             if (!ViewerForm_Shown_Called) return;
 
-            if (tiMemoryReducer_Tick_100msCounter >= 4)
+            var now = Environment.TickCount;
+            var elapsed = unchecked(now - tiMemoryReducer_Tick_LastReduce);
+            if (elapsed >= 450 || elapsed < 0)
             {
-                tiMemoryReducer_Tick_100msCounter = 0;
+                tiMemoryReducer_Tick_LastReduce = now;
                 SetMemoryUBound();
                 ReduceUsingMemory(usedMemoryUBound);
-            }
-            else
-            {
-                tiMemoryReducer_Tick_100msCounter++;
             }
 
             // ToolStripTextBox の MouseEnter の隙間を埋める
