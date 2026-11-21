@@ -2097,7 +2097,7 @@ namespace ZipPla
             var index = tvCatalog.PointToIndex(clientLocation);
             if (index >= 0)
             {
-                if (!tvCatalog.SelectedIndices.Contains(index)) tvCatalog.SelectedIndex = index;
+                if (!tvCatalog.IsSelected(index)) tvCatalog.SelectedIndex = index;
                 prepareAndShow(screenPoint, ModifierKeys);
                 return true;
             }
@@ -2850,7 +2850,7 @@ namespace ZipPla
                     var index = tvCatalog.PointToIndex(e.MouseOrbit[0]);
                     if (index >= 0)
                     {
-                        if (!tvCatalog.SelectedIndices.Contains(index)) tvCatalog.SelectedIndex = index;
+                        if (!tvCatalog.IsSelected(index)) tvCatalog.SelectedIndex = index;
                         //cmsRightClickPrepareAndShow(Cursor.Position);
                         rightClickContextMenuPrepareAndShow(Cursor.Position, mk);
                     }
@@ -9288,9 +9288,9 @@ namespace ZipPla
 
                         if (cmsRightClickPrepareAndShow_ZipPlaInfoReady)
                         {
-                            var selectedIndices = tvCatalog.SelectedIndices;
-                            if (selectedIndices.Contains(index))
+                            if (tvCatalog.IsSelected(index))
                             {
+                                var selectedIndices = tvCatalog.SelectedIndices;
                                 loadedIsSelected = true;
                                 //allSelectionLoaded = selectedIndices.All(s => s >= 0 && LoadResultArray != null && s < LoadResultArray.Length &&
                                 //    LoadResultArray[s] != LoadResult.NotYet);// && LoadResultArray[s] != LoadResult.FileNotFound);
@@ -9357,9 +9357,9 @@ namespace ZipPla
                         ShowStatusBar(index);
                     }
                     */
-                    if (tvCatalog.SelectedIndices?.Contains(index) == true)
+                    if (tvCatalog.IsSelected(index))
                     {
-                        ShowStatusBar();
+                        ShowStatusBarAfterItemLoaded();
                     }
 
                     if (cmsRightClickPrepareAndShow_ZipPlaInfoReady && loadedIsSelected)
@@ -11801,8 +11801,7 @@ namespace ZipPla
                             var selected = index == tvCatalog.SelectedIndexDelay;
                             if (!selected)
                             {
-                                var selectedIndices = tvCatalog.SelectedIndices;
-                                selected = selectedIndices.Length >= 2 && selectedIndices.Contains(index);
+                                selected = tvCatalog.SelectedIndicesCount >= 2 && tvCatalog.IsSelected(index);
                             }
                             dragStart = selected;
                         }
@@ -19010,9 +19009,9 @@ namespace ZipPla
                                     ShowStatusBar(index);
                                 }
                                 */
-                                if (tvCatalog.SelectedIndices?.Contains(index) == true)
+                                if (tvCatalog.IsSelected(index))
                                 {
-                                    ShowStatusBar();
+                                    ShowStatusBarAfterItemLoaded();
                                 }
                             }));
                         }
@@ -19058,6 +19057,34 @@ namespace ZipPla
         private long ShowStatusBar_NextID = 0;
         private long ShowStatusBar_CurrentID = 0;
         private void ShowStatusBar() { ShowStatusBar(tvCatalog.SelectedIndices); }
+
+        // 項目の読み込みが終わるたびに呼ぶ。複数選択中の ShowStatusBar は選択項目をすべて走査し、フォルダのサイズの集計もやり直すので、
+        // 全選択したまま読み込みが進むと O(n^2) になる。複数選択中はまとめて、更新にかかった時間の 4 倍（100ms〜1 秒）に 1 回にする（K4）。
+        // UI スレッドから呼ぶこと
+        private System.Windows.Forms.Timer ShowStatusBarAfterItemLoaded_Timer;
+        private void ShowStatusBarAfterItemLoaded()
+        {
+            if (tvCatalog.SelectedIndicesCount <= 1)
+            {
+                ShowStatusBarAfterItemLoaded_Timer?.Stop();
+                ShowStatusBar();
+                return;
+            }
+            if (ShowStatusBarAfterItemLoaded_Timer == null)
+            {
+                ShowStatusBarAfterItemLoaded_Timer = new System.Windows.Forms.Timer { Interval = 100 };
+                ShowStatusBarAfterItemLoaded_Timer.Tick += (sender, e) =>
+                {
+                    ShowStatusBarAfterItemLoaded_Timer.Stop();
+                    if (IsDisposed) return;
+                    var start = Environment.TickCount;
+                    ShowStatusBar();
+                    var elapsed = unchecked(Environment.TickCount - start);
+                    ShowStatusBarAfterItemLoaded_Timer.Interval = Math.Max(100, Math.Min(1000, elapsed * 4));
+                };
+            }
+            if (!ShowStatusBarAfterItemLoaded_Timer.Enabled) ShowStatusBarAfterItemLoaded_Timer.Start();
+        }
         private void ShowStatusBar(IEnumerable<int> selectedIndices)
         {
             var id = ShowStatusBar_NextID;
@@ -30999,7 +31026,7 @@ namespace ZipPla
 
                 for (var i = selectedIndices.Count - 1; i >= 0; i--)
                 {
-                    var index = SelectedIndices[i];
+                    var index = selectedIndices[i];
                     if (index >= dataIndexToShowIndex.Length || dataIndexToShowIndex[index] < 0)
                     {
                         if (oldIndex == -2) oldIndex = SelectedIndex;
@@ -31031,6 +31058,7 @@ namespace ZipPla
                     if (item != null) thumbViewerItemSelectedFieldInfo.SetValue(item, false);
                 }
                 selectedIndices.Clear();
+                selectedSet.Clear();
             }
         }
 
@@ -31039,6 +31067,7 @@ namespace ZipPla
             if (selectedIndices != null)
             {
                 selectedIndices.Add(index);
+                selectedSet.Add(index);
                 var item = items[index];
                 if (item != null) thumbViewerItemSelectedFieldInfo.SetValue(item, true);
             }
@@ -31050,6 +31079,7 @@ namespace ZipPla
             {
                 var index = selectedIndices[indexOnIndices];
                 selectedIndices.RemoveAt(indexOnIndices);
+                selectedSet.Remove(index);
                 var item = items[index];
                 if (item != null) thumbViewerItemSelectedFieldInfo.SetValue(item, false);
             }
@@ -31086,6 +31116,14 @@ namespace ZipPla
         bool showText = true;
         //int selectedIndex = -1; // 現在選択されているサムネイル、複数選択時は負に
         private readonly List<int> selectedIndices = new List<int>();
+        // selectedIndices と同じ内容の集合。選択されているかの判定を O(1) にする（K4）。selectedIndices を変えるときは必ず一緒に変える
+        private readonly HashSet<int> selectedSet = new HashSet<int>();
+
+        /// <summary>選択されているか（データのインデックス）。SelectedIndices の配列を作らずに判定する</summary>
+        public bool IsSelected(int index) => selectedSet.Contains(index);
+
+        // selectedIndices の中での位置。選択されていなければ線形探索せずに -1 を返す
+        private int IndexOnSelection(int index) => selectedSet.Contains(index) ? selectedIndices.IndexOf(index) : -1;
 
         public Color FrameColor
         {
@@ -31352,13 +31390,13 @@ namespace ZipPla
                     {
                         thumbViewerItemOwnerFieldInfo.SetValue(value, this);
                         thumbViewerItemIndexFieldInfo.SetValue(value, index);
-                        thumbViewerItemSelectedFieldInfo.SetValue(value, selectedIndices?.Contains(index) == true);
+                        thumbViewerItemSelectedFieldInfo.SetValue(value, selectedSet.Contains(index));
                     }
                     items[index] = value;
                     // 追加されたサムネイルを表示
                     using (Graphics g = this.CreateGraphics())
                     {
-                        DrawItem(g, index, selectedIndices != null && selectedIndices.Contains(index));
+                        DrawItem(g, index, selectedSet.Contains(index));
                     }
                 }
                 else
@@ -32451,7 +32489,7 @@ namespace ZipPla
                         /*
                         foreach (var index in showIndexToDataIndex)
                         {
-                            if (setSelectedWithoutEvent(index, value != null && value.Contains(index), selectedIndices.IndexOf(index), g))
+                            if (setSelectedWithoutEvent(index, value != null && value.Contains(index), IndexOnSelection(index), g))
                             {
                                 changed = true;
                             }
@@ -32459,11 +32497,11 @@ namespace ZipPla
                         */
                         foreach (var index in selectedToNoselected)
                         {
-                            if (setSelectedWithoutEvent(index, false, selectedIndices.IndexOf(index), g)) changed = true;
+                            if (setSelectedWithoutEvent(index, false, IndexOnSelection(index), g)) changed = true;
                         }
                         foreach (var index in noselectedToSelected)
                         {
-                            if (setSelectedWithoutEvent(index, true, selectedIndices.IndexOf(index), g)) changed = true;
+                            if (setSelectedWithoutEvent(index, true, IndexOnSelection(index), g)) changed = true;
                         }
                     }
                 }
@@ -32938,6 +32976,7 @@ namespace ZipPla
                 se = new SelectedIndexChangedEventArgs(SelectedIndex, -1);
                 //ClearAllSelection();
                 selectedIndices.Clear(); // items はクリア済みで item.Index を変える必要がなく、また変えようとすると IndexOutOfRangeExeption
+                selectedSet.Clear();
             }
             dataIndexToShowIndex = new int[initialImageCount];
             this.showIndexToDataIndex = showIndexToDataIndex;
@@ -33064,7 +33103,7 @@ namespace ZipPla
             {
                 var dataIndex = ShowIndexToDataIndex[i];
 
-                var selected = selectedIndices.Contains(dataIndex);
+                var selected = selectedSet.Contains(dataIndex);
                 DrawItem(g, dataIndex, selected, alreadyCheckedVisibleRegion: true, clipRectangle: clipRectangle, AutoScrollPositionY: autoScrollPositionY);
             }
 
@@ -33416,7 +33455,7 @@ namespace ZipPla
             */
             int newSelected = PointToIndex(e.Location);
 
-            var indexOnIndices = newSelected < 0 ? -1 : selectedIndices.IndexOf(newSelected);
+            var indexOnIndices = newSelected < 0 ? -1 : IndexOnSelection(newSelected);
             var alreadySelected = indexOnIndices >= 0;
 
             if (!DragOutSelection || !alreadySelected || !(e.Button == MouseButtons.Left || e.Button == MouseButtons.Right))
@@ -33479,14 +33518,14 @@ namespace ZipPla
                                     {
                                         foreach (var index in selectedToNoselected)
                                         {
-                                            setSelectedWithoutEvent(index, false, selectedIndices.IndexOf(index), g);
+                                            setSelectedWithoutEvent(index, false, IndexOnSelection(index), g);
                                         }
                                     }
 
                                     foreach (var dataIndex in noselectedToSelected)
                                     {
                                         //var dataIndex = showIndexToDataIndex[i];
-                                        setSelectedWithoutEvent(dataIndex, true, selectedIndices.IndexOf(dataIndex), g);
+                                        setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g);
                                     }
                                 }
                             }
@@ -33594,7 +33633,7 @@ namespace ZipPla
                                 //selectArray[i - minShow] = showIndexToDataIndex[i];
                                 var dataIndex = showIndexToDataIndex[i];
 
-                                if (setSelectedWithoutEvent(dataIndex, true, selectedIndices.IndexOf(dataIndex), g))
+                                if (setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g))
                                 {
                                     selectedIndexByDrag.Add(dataIndex);
                                     selectionChanged = true;
@@ -33610,7 +33649,7 @@ namespace ZipPla
                                     selectedIndexByDrag.Remove(i);
                                     //noselectList.Add(i);
                                     //drawNeeded = true;
-                                    if (setSelectedWithoutEvent(i, false, selectedIndices.IndexOf(i), g))
+                                    if (setSelectedWithoutEvent(i, false, IndexOnSelection(i), g))
                                     {
                                         selectionChanged = true;
                                     }
@@ -33687,7 +33726,7 @@ namespace ZipPla
                     {
                         case Keys.Control:
                             {
-                                var indexOnIndices = newSelected < 0 ? -1 : selectedIndices.IndexOf(newSelected);
+                                var indexOnIndices = newSelected < 0 ? -1 : IndexOnSelection(newSelected);
                                 if (indexOnIndices < 0)
                                 {
                                     var focused = FocusedIndex;
@@ -33736,13 +33775,13 @@ namespace ZipPla
                                             {
                                                 foreach (var index in selectedToNoselected)
                                                 {
-                                                    setSelectedWithoutEvent(index, false, selectedIndices.IndexOf(index), g);
+                                                    setSelectedWithoutEvent(index, false, IndexOnSelection(index), g);
                                                 }
 
                                                 foreach (var dataIndex in noselectedToSelected)
                                                 {
                                                     //var dataIndex = showIndexToDataIndex[i];
-                                                    setSelectedWithoutEvent(dataIndex, true, selectedIndices.IndexOf(dataIndex), g);
+                                                    setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g);
                                                 }
                                             }
                                         }
@@ -33762,7 +33801,7 @@ namespace ZipPla
                                                 for (var i = minShow; i <= maxShow; i++)
                                                 {
                                                     var dataIndex = showIndexToDataIndex[i];
-                                                    var indexindex = selectedIndices.IndexOf(dataIndex);
+                                                    var indexindex = IndexOnSelection(dataIndex);
                                                     //setSelectedWithoutEvent(dataIndex, indexindex < 0, indexindex); // 反転
                                                     //setSelectedWithoutEvent(dataIndex, true, indexindex); // 追加
                                                     setSelectedWithoutEvent(dataIndex, false, indexindex, g); // 取り除き
@@ -33868,7 +33907,7 @@ namespace ZipPla
                             for (var i = 0; i < showCount; i++)
                             {
                                 var dataIndex = showIndexToDataIndex[i];
-                                setSelectedWithoutEvent(dataIndex, true, selectedIndices.IndexOf(dataIndex), g);
+                                setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g);
                             }
                         }
                     }
@@ -33960,7 +33999,7 @@ namespace ZipPla
                                 var dir = nextShowIndex > currentShowIndex ? 1 : -1;
                                 var stop = nextShowIndex + dir;
                                 var nextDataIndex = showIndexToDataIndex[currentShowIndex];
-                                var nextIndexIndex = selectedIndices.IndexOf(nextDataIndex);
+                                var nextIndexIndex = IndexOnSelection(nextDataIndex);
                                 var deletePhase = nextIndexIndex >= 0;
                                 using (var g = CreateGraphics())
                                 {
@@ -33973,7 +34012,7 @@ namespace ZipPla
                                         if (i2 != stop)
                                         {
                                             nextDataIndex = showIndexToDataIndex[i2];
-                                            nextIndexIndex = selectedIndices.IndexOf(nextDataIndex);
+                                            nextIndexIndex = IndexOnSelection(nextDataIndex);
                                             deletePhase = nextIndexIndex >= 0;
                                         }
                                         else
@@ -33997,7 +34036,7 @@ namespace ZipPla
                                         for (var i = start; i <= stop; i++)
                                         {
                                             var dataIndex = showIndexToDataIndex[i];
-                                            setSelectedWithoutEvent(dataIndex, true, selectedIndices.IndexOf(dataIndex), g);
+                                            setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g);
                                         }
                                     }
                                 }
