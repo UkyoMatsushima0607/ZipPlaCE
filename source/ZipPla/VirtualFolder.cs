@@ -72,89 +72,78 @@ namespace ZipPla
 
         public static int GetPageFromBookmark(string path, bool isDir, string bmkPath)
         {
-            GetBookmarkFiles(out var bmkFilePaths, out var bmkFilePages, out var bmkFolderPaths, out var bmkFolderPages, bmkPath);
-            
-            if (isDir)
-            {
-                var index = Array.IndexOf(bmkFolderPaths, path);
-                return index >= 0 ? bmkFolderPages[index] : -1;
-            }
-            else
-            {
-                var index = Array.IndexOf(bmkFilePaths, path);
-                return index >= 0 ? bmkFilePages[index] : -1;
-            }
+            var pages = GetBookmarkPageDictionaries(bmkPath);
+            var dict = isDir ? pages.Folders : pages.Files;
+            return path != null && dict.TryGetValue(path, out var page) ? page : -1;
         }
 
         public static void GetPageFromBookmark(out int[] filePages, out int[] folderPages, string[] filePaths, string[] folderPaths, string bmkPath)
         {
-            GetBookmarkFiles(out var bmkFilePaths, out var bmkFilePages, out var bmkFolderPaths, out var bmkFolderPages, bmkPath);
+            // 以前はフォルダを開くたびに履歴ファイル全体を解析し、両方をカルチャ依存の比較で並べ替えて突き合わせていた（K10）。
+            // 解析結果をファイルの更新日時とサイズをキーに使い回し、パスの辞書（序数比較）で引く
+            var pages = GetBookmarkPageDictionaries(bmkPath);
+            filePages = LookUpPages(filePaths, pages.Files);
+            folderPages = LookUpPages(folderPaths, pages.Folders);
+        }
 
-            filePages = folderPages = null;
-            for (var i = 0; i < 2; i++)
+        private static int[] LookUpPages(string[] paths, Dictionary<string, int> dict)
+        {
+            var result = new int[paths.Length];
+            for (var i = 0; i < paths.Length; i++)
             {
-                string[] paths, bmkPaths;
-                int[] pages, bmkPages;
-                if (i == 0)
-                {
-                    paths = filePaths;
-                    bmkPaths = bmkFilePaths;
-                    pages = filePages = new int[paths.Length];
-                    bmkPages = bmkFilePages;
-                }
-                else
-                {
-                    paths = folderPaths;
-                    bmkPaths = bmkFolderPaths;
-                    pages = folderPages = new int[paths.Length];
-                    bmkPages = bmkFolderPages;
-                }
+                var path = paths[i];
+                result[i] = path != null && dict.TryGetValue(path, out var page) ? page : -1;
+            }
+            return result;
+        }
 
-                var indices = EetSortedIndices(paths);
-                var bmkIndices = EetSortedIndices(bmkPaths);
+        private sealed class BookmarkPages
+        {
+            public Dictionary<string, int> Files, Folders;
+        }
+        private static readonly object bookmarkPagesCacheLocker = new object();
+        private static string bookmarkPagesCachePath;
+        private static DateTime bookmarkPagesCacheTime;
+        private static long bookmarkPagesCacheLength = -1;
+        private static BookmarkPages bookmarkPagesCache;
 
-                var pos = 0;
-                var bmkPos = 0;
-                while (pos < indices.Length && bmkPos < bmkIndices.Length)
+        // 同じパスが複数あれば先のもの（以前の突き合わせは安定ソートで先のものを使っていた）
+        private static BookmarkPages GetBookmarkPageDictionaries(string bmkPath)
+        {
+            var info = new FileInfo(bmkPath);
+            if (!info.Exists) throw new FileNotFoundException(null, bmkPath);
+            var time = info.LastWriteTimeUtc;
+            var length = info.Length;
+            lock (bookmarkPagesCacheLocker)
+            {
+                if (bookmarkPagesCache != null && bookmarkPagesCacheLength == length && bookmarkPagesCacheTime == time &&
+                    string.Equals(bookmarkPagesCachePath, bmkPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    var index = indices[pos];
-                    var bmkIndex = bmkIndices[bmkPos];
-
-                    //var comp = string.Compare(paths[index], bmkPaths[bmkIndex]);
-                    var comp = paths[index].CompareTo(bmkPaths[bmkIndex]); // ICmmparable<string> のメソッドを直接利用するのが最も確実
-                    
-                    if (comp == 0)
-                    {
-                        pages[index] = bmkPages[bmkIndex];
-                        pos++;
-                        bmkPos++;
-                    }
-                    else if (comp < 0)
-                    {
-                        pages[index] = -1;
-                        pos++;
-                    }
-                    else
-                    {
-                        bmkPos++;
-                    }
-                }
-                while (pos < pages.Length)
-                {
-                    pages[indices[pos++]] = -1;
+                    return bookmarkPagesCache;
                 }
             }
-
+            GetBookmarkFiles(out var bmkFilePaths, out var bmkFilePages, out var bmkFolderPaths, out var bmkFolderPages, bmkPath);
+            var result = new BookmarkPages { Files = ToPageDictionary(bmkFilePaths, bmkFilePages), Folders = ToPageDictionary(bmkFolderPaths, bmkFolderPages) };
+            lock (bookmarkPagesCacheLocker)
+            {
+                bookmarkPagesCache = result;
+                bookmarkPagesCachePath = bmkPath;
+                bookmarkPagesCacheTime = time;
+                bookmarkPagesCacheLength = length;
+            }
+            return result;
         }
 
-        private static int[] EetSortedIndices<T>(IReadOnlyList<T> data) where T : IComparable<T>
+        private static Dictionary<string, int> ToPageDictionary(string[] paths, int[] pages)
         {
-            var count = data.Count;
-            var result = new int[count];
-            for (var i = 0; i < count; i++) result[i] = i;
-            return result.OrderBy(i => data[i]).ToArray();
+            var dict = new Dictionary<string, int>(paths.Length, StringComparer.Ordinal);
+            for (var i = 0; i < paths.Length; i++)
+            {
+                if (!dict.ContainsKey(paths[i])) dict.Add(paths[i], pages[i]);
+            }
+            return dict;
         }
-        
+
         public static void GetBookmarkFiles(out string[] filePaths, out int[] filePages, out string[] folderPaths, out int[] folderPages, string bmkPath)
         {
             var filePathList = new List<string>();
@@ -277,6 +266,10 @@ namespace ZipPla
             var delete = deleteOrReplace && replacePaths == null;
             var replace = deleteOrReplace && replacePaths != null;
 
+            // 追加・置換・削除するパスは開いたばかり（最終アクセス日時が更新されている）か状態が変わったので、覚えている結果を捨てる（K11）
+            ForgetCachedStates(paths);
+            if (replacePaths != null) ForgetCachedStates(replacePaths);
+
             if (File.Exists(bmkPath))
             {
                 GetBookmarkFiles(out var filePaths, out var filePages, out var folderPaths, out var folderPages, bmkPath);
@@ -285,7 +278,7 @@ namespace ZipPla
                     var fileCount = filePaths.Length;
                     for(var i = 0; i < fileCount; i++)
                     {
-                        if (EntityFileExists(filePaths[i]))
+                        if (CachedExists(filePaths[i], isDir: false))
                         {
                             filePathList.Add(filePaths[i]);
                             filePageList.Add(filePages[i]);
@@ -295,7 +288,7 @@ namespace ZipPla
                     var folderCount = folderPaths.Length;
                     for (var i = 0; i < folderCount; i++)
                     {
-                        if (Directory.Exists(folderPaths[i]))
+                        if (CachedExists(folderPaths[i], isDir: true))
                         {
                             folderPathList.Add(folderPaths[i]);
                             folderPageList.Add(folderPages[i]);
@@ -515,8 +508,8 @@ namespace ZipPla
             {
                 edited = true;
                 var AccessDates = new List<DateTime>();
-                AccessDates.AddRange(from path in filePathList select newPathSet.Contains(path) ? DateTime.MaxValue : Program.GetLastAccessTimeOfFile(path));//  File.GetLastAccessTime(path));
-                AccessDates.AddRange(from path in folderPathList select newPathSet.Contains(path) ? DateTime.MaxValue : Program.GetLastAccessTimeOfDirectory(path));//File.GetLastAccessTime(path));
+                AccessDates.AddRange(from path in filePathList select newPathSet.Contains(path) ? DateTime.MaxValue : CachedLastAccessTime(path, isDir: false));//  File.GetLastAccessTime(path));
+                AccessDates.AddRange(from path in folderPathList select newPathSet.Contains(path) ? DateTime.MaxValue : CachedLastAccessTime(path, isDir: true));//File.GetLastAccessTime(path));
                 while (AccessDates.Count > limitOfItemsCount)
                 {
                     var targetAccessDate = DateTime.MaxValue;
@@ -531,13 +524,16 @@ namespace ZipPla
                         }
                     }
                     AccessDates.RemoveAt(targetIndex);
+                    // ページのリストからも消す（以前はパスだけ消していたので、それより後ろの項目のページがずれて保存されていた）
                     if(targetIndex < filePathList.Count)
                     {
                         filePathList.RemoveAt(targetIndex);
+                        filePageList.RemoveAt(targetIndex);
                     }
                     else
                     {
                         folderPathList.RemoveAt(targetIndex - filePathList.Count);
+                        folderPageList.RemoveAt(targetIndex - filePathList.Count);
                     }
                 }
             }
@@ -556,6 +552,78 @@ namespace ZipPla
             return false;
         }
         */
+
+        // 履歴に追加するたびに全項目の存在確認と（上限に達していれば）最終アクセス日時の取得をしていた（K11）。
+        // 履歴が 1 万件でネットワークドライブの項目があると、追加のたびに数秒かかりうる。結果を短い時間だけ覚えておく。
+        // 存在しないという結果は覚えない（その項目はすぐ履歴から消える）
+        private const int PathStateCacheMilliseconds = 5 * 60 * 1000;
+        private sealed class PathState
+        {
+            public int ExistsTick;
+            public bool ExistsKnown;
+            public int AccessTick;
+            public bool AccessKnown;
+            public DateTime LastAccessTime;
+        }
+        private static readonly Dictionary<string, PathState> pathStateCache = new Dictionary<string, PathState>(StringComparer.OrdinalIgnoreCase);
+
+        private static string PathStateKey(string path, bool isDir) => (isDir ? "D|" : "F|") + path;
+
+        private static bool CachedExists(string path, bool isDir)
+        {
+            var key = PathStateKey(path, isDir);
+            var now = Environment.TickCount;
+            lock (pathStateCache)
+            {
+                if (pathStateCache.TryGetValue(key, out var state) && state.ExistsKnown && unchecked(now - state.ExistsTick) < PathStateCacheMilliseconds) return true;
+            }
+            var exists = isDir ? Directory.Exists(path) : EntityFileExists(path);
+            lock (pathStateCache)
+            {
+                if (exists)
+                {
+                    if (!pathStateCache.TryGetValue(key, out var state)) pathStateCache[key] = state = new PathState();
+                    state.ExistsKnown = true;
+                    state.ExistsTick = now;
+                }
+                else pathStateCache.Remove(key);
+            }
+            return exists;
+        }
+
+        private static DateTime CachedLastAccessTime(string path, bool isDir)
+        {
+            var key = PathStateKey(path, isDir);
+            var now = Environment.TickCount;
+            lock (pathStateCache)
+            {
+                if (pathStateCache.TryGetValue(key, out var state) && state.AccessKnown && unchecked(now - state.AccessTick) < PathStateCacheMilliseconds) return state.LastAccessTime;
+            }
+            var time = isDir ? Program.GetLastAccessTimeOfDirectory(path) : Program.GetLastAccessTimeOfFile(path);
+            lock (pathStateCache)
+            {
+                if (!pathStateCache.TryGetValue(key, out var state)) pathStateCache[key] = state = new PathState();
+                state.AccessKnown = true;
+                state.AccessTick = now;
+                state.LastAccessTime = time;
+            }
+            return time;
+        }
+
+        private static void ForgetCachedStates(IReadOnlyList<string> paths)
+        {
+            lock (pathStateCache)
+            {
+                if (pathStateCache.Count == 0) return;
+                foreach (var path in paths)
+                {
+                    if (path == null) continue;
+                    var p = path.TrimEnd(Path.DirectorySeparatorChar);
+                    pathStateCache.Remove(PathStateKey(p, isDir: false));
+                    pathStateCache.Remove(PathStateKey(p, isDir: true));
+                }
+            }
+        }
 
         private static void SaveBookmarkData(string bmkPath, string[] filePaths, int[] filePages, string[] folderPaths, int[] folderPages)
         {

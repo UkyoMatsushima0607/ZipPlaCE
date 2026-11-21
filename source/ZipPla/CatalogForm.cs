@@ -4901,22 +4901,52 @@ namespace ZipPla
                         }
                         try
                         {
-                            var entry = loader.Entries.First(e => e.Path == innerName);
-                            Bitmap img;
+                            var entry = loader.FindEntry(innerName) ?? throw new FileNotFoundException(); // 名前の辞書で探す（K9）
+                            // 大きな JPEG は縮小してデコードする（画像ファイルの A2 と同じくサムネイルの 3 倍以上）（K9）
+                            var request = new ReducedJpegDecodeRequest(originalSize => ThumbnailReducedDecodeSize());
+                            Bitmap img = null;
                             if (commonLoader)
                             {
+                                // 書庫からの取り出しだけを共有のローダーのロックの中で行い、デコードはロックの外で並列にする（K9、ビューアの V1 と同じ）
+                                MemoryStream extracted = null;
+                                string fileNameForType = null;
+                                long length = -1;
+                                var animation = false;
                                 lock (loadingPackedImageLoaderLocker)
                                 {
-                                    img = loader.PackedImageLoader.OpenImageStream(entry);
+                                    var packedImageLoader = loader.PackedImageLoader;
+                                    if (packedImageLoader == null) throw new ObjectDisposedException(nameof(PackedImageLoader));
+                                    animation = packedImageLoader.Animation;
+                                    if (!packedImageLoader.TryExtractEntry(entry, out extracted, out fileNameForType, out length))
+                                    {
+                                        img = OpenArchiveImageForThumbnail(packedImageLoader, entry, request);
+                                    }
+                                }
+                                if (img == null)
+                                {
+                                    using (extracted)
+                                    {
+                                        ReducedJpegDecodeRequest.Current = request;
+                                        try
+                                        {
+                                            img = PackedImageLoader.DecodeExtracted(extracted, fileNameForType, animation, length);
+                                        }
+                                        finally
+                                        {
+                                            ReducedJpegDecodeRequest.Current = null;
+                                        }
+                                    }
                                 }
                             }
                             else
                             {
-                                img = loader.PackedImageLoader.OpenImageStream(entry);
+                                img = OpenArchiveImageForThumbnail(loader.PackedImageLoader, entry, request);
                             }
                             try
                             {
                                 imageInfo = ImageLoader.GetImageInfo(img);
+                                // 縮小してデコードした場合も、画像の情報は原寸の大きさにする
+                                if (request.Reduced && imageInfo != null) imageInfo = new ImageInfo(request.OriginalSize, imageInfo.BitPerPixel);
                                 return DoJustClipping(img, needToResize: true);
                             }
                             finally
@@ -5482,7 +5512,12 @@ namespace ZipPla
         private Bitmap OpenArchiveImageForThumbnail(PackedImageLoader loader, PackedImageLoader.PackedImageEntry entry, Size minSize)
         {
             if (minSize.IsEmpty) return loader.OpenImageStream(entry);
-            ReducedJpegDecodeRequest.Current = new ReducedJpegDecodeRequest(originalSize => minSize);
+            return OpenArchiveImageForThumbnail(loader, entry, new ReducedJpegDecodeRequest(originalSize => minSize));
+        }
+
+        private Bitmap OpenArchiveImageForThumbnail(PackedImageLoader loader, PackedImageLoader.PackedImageEntry entry, ReducedJpegDecodeRequest request)
+        {
+            ReducedJpegDecodeRequest.Current = request;
             try
             {
                 return loader.OpenImageStream(entry);
@@ -7276,6 +7311,24 @@ namespace ZipPla
             public PackedImageLoader PackedImageLoader;
             public PackedImageLoader.PackedImageEntry[] Entries;
 
+            // 書庫の中を表示するとき、サムネイルごとに Entries を先頭から探していた（K9）。同じ名前が複数あれば先のもの（First と同じ）
+            private Dictionary<string, PackedImageLoader.PackedImageEntry> entryByPath;
+            public PackedImageLoader.PackedImageEntry FindEntry(string path)
+            {
+                var dict = entryByPath;
+                if (dict == null)
+                {
+                    var entries = Entries;
+                    dict = new Dictionary<string, PackedImageLoader.PackedImageEntry>(entries.Length, StringComparer.Ordinal);
+                    foreach (var e in entries)
+                    {
+                        if (e.Path != null && !dict.ContainsKey(e.Path)) dict.Add(e.Path, e);
+                    }
+                    entryByPath = dict; // 複数のスレッドが同時に作っても結果は同じ
+                }
+                return dict.TryGetValue(path, out var found) ? found : null;
+            }
+
             public void Dispose()
             {
                 if (PackedImageLoader != null)
@@ -8324,6 +8377,20 @@ namespace ZipPla
                     {
                         fileInfos = Program.GetFilesInAllDirectoriesOnErrorResumeNext(dirInfo, searchPatternForFiles, bwMakePreviewPrepare);
                     }
+                    else if (IsDisplay(subfolderMode))
+                    {
+                        // ファイルとフォルダを 1 回の列挙で取る（以前は GetFiles と GetDirectories で 2 回列挙していた、K10）
+                        var all = dirInfo.GetFileSystemInfos(searchPatternForFiles, SearchOption.TopDirectoryOnly);
+                        var fileList = new List<FileInfo>(all.Length);
+                        var dirList = new List<DirectoryInfo>();
+                        foreach (var info in all)
+                        {
+                            if (info is FileInfo fi) fileList.Add(fi);
+                            else if (info is DirectoryInfo di) dirList.Add(di);
+                        }
+                        fileInfos = fileList.ToArray();
+                        dirInfos = dirList.ToArray();
+                    }
                     else
                     {
                         fileInfos = dirInfo.GetFiles(searchPatternForFiles, SearchOption.TopDirectoryOnly);
@@ -8344,7 +8411,7 @@ namespace ZipPla
                         {
                             dirInfos = Program.GetDirectoriesInAllDirectoriesOnErrorResumeNext(dirInfo, "*", bwMakePreviewPrepare);
                         }
-                        else
+                        else if (dirInfos == null) // 上でファイルと一緒に取っていなければ
                         {
                             dirInfos = dirInfo.GetDirectories("*", SearchOption.TopDirectoryOnly);
                         }
