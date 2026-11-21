@@ -474,6 +474,15 @@ namespace ZipPla
             }
         }
 
+        // フォルダ方式でサムネイルを作るたびに、以前の ADS 方式で残ったキャッシュを消していた（ストリームの存在確認が毎回 0.1〜0.3ms）。
+        // 同じファイルはこのセッションで 1 回だけ確認する（K7 (b)）。ADS 方式で書いたファイルは確認済みから外す
+        private static readonly ConcurrentDictionary<string, byte> leftoverAdsChecked = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+        public static void TryDeleteLeftoverAlternateDataStream(string fileName)
+        {
+            if (!leftoverAdsChecked.TryAdd(fileName, 0)) return;
+            TryDeleteAlternateDataStream(fileName);
+        }
+
         public static bool TryDeleteAlternateDataStream(string fileName)
         {
             if (!NTFSMultiStream.Exists(fileName, STREAM_NAME)) return false;
@@ -796,6 +805,197 @@ namespace ZipPla
         private static bool TrySet(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, bool fullSizeCache, Bitmap thumbnail,
             Fraction pixelRatio, byte[] gpData, bool getBiggest, out Bitmap biggestBitmap, out Fraction biggestBitmapPixelRatio)
         {
+            if (getBiggest)
+            {
+                return TrySetDeferred(cacheRoot, fileName, index, requiredSize, letterBox, fullSizeCache, thumbnail, pixelRatio, gpData, out biggestBitmap, out biggestBitmapPixelRatio);
+            }
+            return TrySetCore(cacheRoot, fileName, index, requiredSize, letterBox, fullSizeCache, thumbnail, pixelRatio, gpData, getBiggest, out biggestBitmap, out biggestBitmapPixelRatio, pending: null);
+        }
+
+        // キャッシュの書き込みを後回しにする（K7 (a)）。
+        // 表示に使う最大サイズの縮小画像だけをここで作って返し、残りのサイズの縮小・JPEG XR のエンコード・書き込みは
+        // 低優先度の 1 本のスレッドで行う。キャッシュの中身は従来と同じ（最大サイズの画像から順に縮小する手順も同じ）。
+        // 書き込むまでのあいだは TrySet_Creating に入れておき、同じファイルの TrySet は false を返す。
+        private sealed class PendingWrite
+        {
+            public string CacheRoot, FileName;
+            public int Index;
+            public Size RequiredSize;
+            public bool LetterBox, FullSizeCache;
+            public Fraction PixelRatio;
+            public byte[] GpData;
+            public Size[] ResizedSize;
+            public Fraction[] ResizedPixelRatio;
+            public bool MaxSizeIsFullSize;
+            public Bitmap Biggest; // 最大サイズの縮小画像の複製。書き込み処理が持ち、使い終わったら Dispose する
+            public DateTime ExpectedLastWriteTime; // サムネイルを作ったときの元ファイルの更新日時。書くときに変わっていたら書かない
+        }
+
+        private static bool TrySetDeferred(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, bool fullSizeCache, Bitmap thumbnail,
+            Fraction pixelRatio, byte[] gpData, out Bitmap biggestBitmap, out Fraction biggestBitmapPixelRatio)
+        {
+            if (pixelRatio == 0) pixelRatio = 1;
+            biggestBitmap = null;
+            biggestBitmapPixelRatio = 0;
+
+            lock (TrySet_Creating)
+            {
+                if (TrySet_Creating.Contains(fileName)) return false;
+                TrySet_Creating.Add(fileName);
+            }
+            var queued = false;
+            Bitmap biggest = null, copy = null;
+            try
+            {
+                var dataLength = gpData != null ? gpData.Length : 0;
+                if (dataLength > DATA_UBOUND) return false;
+                if (cacheRoot == AlternateDataStream && SupportADSSize(fileName, checkNew: false) - ((4 + 8 + 4 + 4) + dataLength) <= 0) return false;
+                if (!GetResizedInfo(requiredSize, letterBox, thumbnail.Size, pixelRatio, fullSizeCache, out var resizedSize, out var resizedPixelRatio)) return false;
+                var maxSizeIndex = resizedSize.Length - 1;
+                var expectedLastWriteTime = File.GetLastWriteTime(fileName); // フォルダでも取れる
+                var maxSize = resizedSize[maxSizeIndex];
+                biggest = BitmapResizer.CreateNew(thumbnail, maxSize.Width, maxSize.Height);
+                copy = DeepCopy(biggest);
+                EnqueuePendingWrite(new PendingWrite
+                {
+                    CacheRoot = cacheRoot, FileName = fileName, Index = index, RequiredSize = requiredSize, LetterBox = letterBox, FullSizeCache = fullSizeCache,
+                    PixelRatio = pixelRatio, GpData = gpData, ResizedSize = resizedSize, ResizedPixelRatio = resizedPixelRatio,
+                    MaxSizeIsFullSize = maxSize == thumbnail.Size, Biggest = copy, ExpectedLastWriteTime = expectedLastWriteTime,
+                });
+                queued = true;
+                biggestBitmap = biggest;
+                biggestBitmapPixelRatio = resizedPixelRatio[maxSizeIndex];
+                return true;
+            }
+            catch
+            {
+                if (!queued)
+                {
+                    copy?.Dispose();
+                    biggest?.Dispose();
+                }
+                biggestBitmap = null;
+                return false;
+            }
+            finally
+            {
+                if (!queued)
+                {
+                    lock (TrySet_Creating) TrySet_Creating.Remove(fileName);
+                }
+            }
+        }
+
+        // 画素をすべて複製する（GDI+ の Clone は元と画素を共有することがあり、別スレッドで使うと危険なため）
+        private static unsafe Bitmap DeepCopy(Bitmap src)
+        {
+            var w = src.Width;
+            var h = src.Height;
+            var pf = src.PixelFormat;
+            var dst = new Bitmap(w, h, pf);
+            try
+            {
+                if ((pf & PixelFormat.Indexed) == PixelFormat.Indexed) dst.Palette = src.Palette;
+                var rect = new Rectangle(0, 0, w, h);
+                var s = src.LockBits(rect, ImageLockMode.ReadOnly, pf);
+                try
+                {
+                    var d = dst.LockBits(rect, ImageLockMode.WriteOnly, pf);
+                    try
+                    {
+                        var rowBytes = (Image.GetPixelFormatSize(pf) * w + 7) / 8;
+                        for (var y = 0; y < h; y++)
+                        {
+                            Buffer.MemoryCopy((byte*)s.Scan0 + (long)y * s.Stride, (byte*)d.Scan0 + (long)y * d.Stride, rowBytes, rowBytes);
+                        }
+                    }
+                    finally
+                    {
+                        dst.UnlockBits(d);
+                    }
+                }
+                finally
+                {
+                    src.UnlockBits(s);
+                }
+                return dst;
+            }
+            catch
+            {
+                dst.Dispose();
+                throw;
+            }
+        }
+
+        private static readonly Queue<PendingWrite> pendingWrites = new Queue<PendingWrite>();
+        private static int pendingWriteCount = 0; // 順番待ち＋処理中。pendingWrites で lock する
+        private static Thread pendingWriteThread = null;
+
+        private static void EnqueuePendingWrite(PendingWrite job)
+        {
+            lock (pendingWrites)
+            {
+                pendingWrites.Enqueue(job);
+                pendingWriteCount++;
+                if (pendingWriteThread == null)
+                {
+                    pendingWriteThread = new Thread(PendingWriteLoop) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "ThumbnailCacheWriter" };
+                    pendingWriteThread.Start();
+                }
+                Monitor.PulseAll(pendingWrites);
+            }
+        }
+
+        private static void PendingWriteLoop()
+        {
+            while (true)
+            {
+                PendingWrite job;
+                lock (pendingWrites)
+                {
+                    while (pendingWrites.Count == 0) Monitor.Wait(pendingWrites);
+                    job = pendingWrites.Dequeue();
+                }
+                try
+                {
+                    TrySetCore(job.CacheRoot, job.FileName, job.Index, job.RequiredSize, job.LetterBox, job.FullSizeCache, null, job.PixelRatio, job.GpData,
+                        getBiggest: false, biggestBitmap: out var dummy, biggestBitmapPixelRatio: out var dummy2, pending: job);
+                }
+                catch { }
+                finally
+                {
+                    job.Biggest?.Dispose();
+                    job.Biggest = null;
+                    lock (pendingWrites)
+                    {
+                        pendingWriteCount--;
+                        Monitor.PulseAll(pendingWrites);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 後回しにしたキャッシュの書き込みが終わるまで待つ（カタログを閉じるとき）。終わったら true
+        /// </summary>
+        public static bool FlushPendingWrites(int millisecondsTimeout)
+        {
+            var limit = Environment.TickCount + millisecondsTimeout;
+            lock (pendingWrites)
+            {
+                while (pendingWriteCount > 0)
+                {
+                    var rest = limit - Environment.TickCount;
+                    if (rest <= 0) return false;
+                    Monitor.Wait(pendingWrites, rest);
+                }
+                return true;
+            }
+        }
+
+        private static bool TrySetCore(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, bool fullSizeCache, Bitmap thumbnail,
+            Fraction pixelRatio, byte[] gpData, bool getBiggest, out Bitmap biggestBitmap, out Fraction biggestBitmapPixelRatio, PendingWrite pending)
+        {
             if (pixelRatio == 0) pixelRatio = 1;
 
             biggestBitmap = null;
@@ -803,10 +1003,13 @@ namespace ZipPla
             //MemoryStream memoryStream = null;
 
 
-            lock (TrySet_Creating) // 一番最初に
+            if (pending == null) // 後回しの書き込みでは TrySetDeferred で登録済み
             {
-                if (TrySet_Creating.Contains(fileName)) return false;
-                TrySet_Creating.Add(fileName);
+                lock (TrySet_Creating) // 一番最初に
+                {
+                    if (TrySet_Creating.Contains(fileName)) return false;
+                    TrySet_Creating.Add(fileName);
+                }
             }
             var readOnly = false;
             FileAttributes att = default(FileAttributes);
@@ -831,11 +1034,16 @@ namespace ZipPla
                 
                 Size[] resizedSize;
                 Fraction[] resizedPixelRatio;
-                if (!GetResizedInfo(requiredSize, letterBox, thumbnail.Size, pixelRatio, fullSizeCache, out resizedSize, out resizedPixelRatio)) return false;
+                if (pending != null)
+                {
+                    resizedSize = pending.ResizedSize;
+                    resizedPixelRatio = pending.ResizedPixelRatio;
+                }
+                else if (!GetResizedInfo(requiredSize, letterBox, thumbnail.Size, pixelRatio, fullSizeCache, out resizedSize, out resizedPixelRatio)) return false;
                 
                 var maxSizeIndex = resizedSize.Length - 1;
 
-                var maxSizeIsFullSize = resizedSize[maxSizeIndex] == thumbnail.Size;
+                var maxSizeIsFullSize = pending != null ? pending.MaxSizeIsFullSize : resizedSize[maxSizeIndex] == thumbnail.Size;
 
                 
                 MemoryStream[] compressed = new MemoryStream[maxSizeIndex + 1];
@@ -906,7 +1114,17 @@ namespace ZipPla
                         var width = resizedSizei.Width;
                         var height = resizedSizei.Height;
 
-                        var img = BitmapResizer.CreateNew(prevBitmap, width, height);
+                        Bitmap img;
+                        if (pending != null && i == maxSizeIndex)
+                        {
+                            // 最大サイズは TrySetDeferred で作った画像の複製を使う（ここで所有を引き取る）
+                            img = pending.Biggest;
+                            pending.Biggest = null;
+                        }
+                        else
+                        {
+                            img = BitmapResizer.CreateNew(prevBitmap, width, height);
+                        }
                         try
                         {
                             var m = new MemoryStream();
@@ -994,6 +1212,8 @@ namespace ZipPla
                             {
                                 if (lastWriteTime != lastWriteTime0) throw new Exception(); // biggestBitmap などの処理があるので例外を投げる
                             }
+                            // 後回しの書き込みでは、サムネイルを作ったあとに元ファイルが変わっていたら書かない（古い画像に新しい日時を付けてしまうため）
+                            if (pending != null && lastWriteTime != pending.ExpectedLastWriteTime) throw new Exception();
                             //var fileInfo = new FileInfo(fileName);
                             //var lastWriteTime = fileInfo.LastWriteTime;
                             //fileInfo = null;
@@ -1093,6 +1313,7 @@ namespace ZipPla
                                         var buf = new byte[memoryStream.Length];
                                         memoryStream.Read(buf, 0, buf.Length);
                                         result = NTFSMultiStream.WriteFile(fileName, STREAM_NAME, buf);
+                                        leftoverAdsChecked.TryRemove(fileName, out var dummy);
                                     }
                                     finally
                                     {

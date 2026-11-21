@@ -4970,7 +4970,7 @@ namespace ZipPla
 #if PERFLOG
                     var perfAds = PerfTrace.Now();
 #endif
-                    GPSizeThumbnail.TryDeleteAlternateDataStream(zipPath);
+                    GPSizeThumbnail.TryDeleteLeftoverAlternateDataStream(zipPath);
 #if PERFLOG
                     PerfTrace.AddStage("deleteADS", PerfTrace.Now() - perfAds);
 #endif
@@ -18303,6 +18303,7 @@ namespace ZipPla
 
         private void CatalogForm_FormClosed(object sender, FormClosedEventArgs e)
         {
+            GPSizeThumbnail.FlushPendingWrites(10000); // 後回しにしたサムネイルキャッシュの書き込みを済ませる（K7 (a)）
             if (currentIpcChanne != null)
             {
                 if (lookAheadInfo != null)
