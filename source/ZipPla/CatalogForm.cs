@@ -5760,7 +5760,13 @@ namespace ZipPla
                                                                 var r = (float)Math.Sqrt(result.Width * result.Height) / 10;
 #endif
                                 */
+#if PERFLOG
+                                var perfFocus = PerfTrace.Now();
+#endif
                                 var focusPoint = BitmapAnalyzer.GetFocus(src, pixelRatio);
+#if PERFLOG
+                                PerfTrace.AddStage("clipFocus", PerfTrace.Now() - perfFocus);
+#endif
                                 var resultSize2 = (Size)((Fraction)result.Size / pixelRatio);
                                 var zoom = Math.Max(resultSize2.Width / (float)src.Width, resultSize2.Height / (float)src.Height);
                                 var iw = src.Width;
@@ -5790,10 +5796,22 @@ namespace ZipPla
 
                                     var zoom2 = Math.Max(result.Width / (float)src.Width, result.Height / (float)src.Height);
 
+                                    var areaRect = plaRectP; // 自前の縮小には GDI+ 用の補正をする前の範囲を渡す
                                     var pOffset = 0.5f * (1 / zoom2 - 1);
                                     plaRectP.Width -= pOffset;
                                     plaRectP.Height -= pOffset;
-                                    g.DrawImage(src, new Rectangle(new Point(), result.Size), plaRectP, GraphicsUnit.Pixel);
+#if PERFLOG
+                                    var perfDraw = PerfTrace.Now();
+#endif
+                                    // 縮小は GDI+ を使わない面積平均で（GDI+ の DrawImage はスレッドをまたいで直列になる）（P4）
+                                    g.Flush();
+                                    if (!AreaAverageResizer.TryDraw(src, areaRect, result, new Rectangle(new Point(), result.Size)))
+                                    {
+                                        g.DrawImage(src, new Rectangle(new Point(), result.Size), plaRectP, GraphicsUnit.Pixel);
+                                    }
+#if PERFLOG
+                                    PerfTrace.AddStage("clipDraw", PerfTrace.Now() - perfDraw);
+#endif
                                 }
                                 else
                                 {

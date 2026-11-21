@@ -202,6 +202,7 @@
     </Compile>
     <Compile Include="AssociationManager.cs" />
     <Compile Include="BetterFormRestoreBounds.cs" />
+    <Compile Include="AreaAverageResizer.cs" />
     <Compile Include="BitmapAnalyzer.cs" />
     <Compile Include="BitmapResizer.cs" />
     <Compile Include="ClipboardViewer.cs" />

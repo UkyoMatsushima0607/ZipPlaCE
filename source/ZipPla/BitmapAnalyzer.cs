@@ -107,12 +107,18 @@ namespace ZipPla
             var orgH = rectangle.Height;
             int[] grayLinearArray;
             int wh;
-            var workingBmp = new Bitmap(workingWidth, workingHeight);
+            // 縮小は GDI+ を使わない面積平均で（GDI+ の DrawImage はスレッドをまたいで直列になる）。拡大・透明な画素があるときは従来どおり（P4）
+            var workingBmp = new Bitmap(workingWidth, workingHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
             try
             {
-                using (var g = Graphics.FromImage(workingBmp))
+                if (!AreaAverageResizer.TryDraw(bmp, rectangle, workingBmp, new Rectangle(0, 0, workingWidth, workingHeight)))
                 {
-                    g.DrawImage(bmp, new Rectangle(0, 0, workingWidth, workingHeight), rectangle, GraphicsUnit.Pixel);
+                    workingBmp.Dispose();
+                    workingBmp = new Bitmap(workingWidth, workingHeight);
+                    using (var g = Graphics.FromImage(workingBmp))
+                    {
+                        g.DrawImage(bmp, new Rectangle(0, 0, workingWidth, workingHeight), rectangle, GraphicsUnit.Pixel);
+                    }
                 }
 
                 wh = workingWidth * workingHeight;
