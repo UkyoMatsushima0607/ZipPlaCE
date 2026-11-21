@@ -336,9 +336,19 @@ namespace ZipPla
             SupportedVideoFileFilter = "*" + string.Join(";*", supportedExtensions);
         }
 
+        // ヘッダ取得・書庫の一覧・監視イベントなど多くの箇所から呼ばれるので、File.Exists の結果を短い時間だけ使い回す（K14）。
+        // 実行中に ffmpeg.exe を置いたり消したりしても、この時間が過ぎれば反映される。
+        // 上位を確認した時刻（Environment.TickCount）、下位 2 ビットを結果（1: あり、2: なし）にして 1 つの long で持つ（0 は未確認）
+        private const int ffmpegExistsCacheMilliseconds = 2000;
+        private static long ffmpegExists_State = 0;
         public static bool ffmpegExists()
         {
-            return File.Exists(ffmpegPath);
+            var now = Environment.TickCount;
+            var state = System.Threading.Interlocked.Read(ref ffmpegExists_State);
+            if (state != 0 && unchecked(now - (int)(state >> 2)) < ffmpegExistsCacheMilliseconds) return (state & 3) == 1;
+            var exists = File.Exists(ffmpegPath);
+            System.Threading.Interlocked.Exchange(ref ffmpegExists_State, ((long)now << 2) | (exists ? 1L : 2L));
+            return exists;
         }
 
         public static bool Supports(string path)
