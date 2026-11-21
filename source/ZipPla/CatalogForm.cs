@@ -5480,6 +5480,24 @@ namespace ZipPla
             }
         }
 
+        /// <summary>
+        /// 書庫のサムネイル用にページを読む。minSize が空でなければ、JPEG をその大きさ以上の範囲で縮小デコードしてよいことにする。
+        /// 表紙用の画像ファイル（画像の大きさを画像情報として使う）はここを通さない。
+        /// </summary>
+        private Bitmap OpenArchiveImageForThumbnail(PackedImageLoader loader, PackedImageLoader.PackedImageEntry entry, Size minSize)
+        {
+            if (minSize.IsEmpty) return loader.OpenImageStream(entry);
+            ReducedJpegDecodeRequest.Current = new ReducedJpegDecodeRequest(originalSize => minSize);
+            try
+            {
+                return loader.OpenImageStream(entry);
+            }
+            finally
+            {
+                ReducedJpegDecodeRequest.Current = null;
+            }
+        }
+
         private Size ThumbnailReducedDecodeSize()
         {
             var size = tvCatalog.ThumbnailSize;
@@ -5947,6 +5965,18 @@ namespace ZipPla
                     data = null;
                 }
 
+                // サムネイル用に JPEG を縮小デコードするときに確保する大きさ。キャッシュ（GPSizeThumbnail）は requiredSize の √2 倍を
+                // 最大に作るので、サムネイルとキャッシュの requiredSize の大きい方の √2 倍を縦横とも確保すれば、作られるキャッシュの大きさは変わらない
+                // （画素は縮小の経路が変わる分だけわずかに変わる。テスト画像で平均 1.5、見た目では区別できない）
+                var reducedDecodeSize = Size.Empty;
+                if (givenSize)
+                {
+                    var thumbnailSize = tvCatalog.ThumbnailSize;
+                    var baseWidth = Math.Max(thumbnailSize.Width, requiredSize.Width);
+                    var baseHeight = Math.Max(thumbnailSize.Height, requiredSize.Height);
+                    reducedDecodeSize = new Size((int)Math.Ceiling(baseWidth * Math.Sqrt(2)) + 1, (int)Math.Ceiling(baseHeight * Math.Sqrt(2)) + 1);
+                }
+
                 if (!fromCache)
                 {
                     List<PackedImageLoader.PackedImageEntry> entries;
@@ -6000,7 +6030,7 @@ namespace ZipPla
                             }
                             try
                             {
-                                var image = loader.OpenImageStream(entries[index]);
+                                var image = OpenArchiveImageForThumbnail(loader, entries[index], reducedDecodeSize);
                                 try
                                 {
                                     MaxPointImage = image;
@@ -6133,7 +6163,7 @@ namespace ZipPla
                                     }
                                     try
                                     {
-                                        var image = loader.OpenImageStream(entry);
+                                        var image = OpenArchiveImageForThumbnail(loader, entry, reducedDecodeSize);
                                         if (localClipMode != ClipMode.PlaClip)
                                         {
                                             if (MaxPointImage != null) MaxPointImage.Dispose();
