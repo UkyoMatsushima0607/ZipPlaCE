@@ -18,10 +18,43 @@ namespace Common
         private static readonly string XmlBack = Path.ChangeExtension(XmlPath, "bak");
         private static readonly string RootName =
             ((AssemblyProductAttribute)Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyProductAttribute))).Product.Replace(" ", "_") + "Config";
+        // xmlFile・xmlNode はプロセス全体で共有するキャッシュ（cachedRoot）の木を指すことがあるので、書き換えてはいけない。
+        // 保存するときは、その時点のファイルを複製して自分の要素だけ差し替える（Save）
         private XElement xmlFile = null;
         private XElement xmlNode = null;
-        private static bool loaded = false;
+
+        // 再入防止（XmlSerializer の逆シリアル化がこのコンストラクタを呼ぶため）。
+        // スレッドごとに持つ。static だと、別スレッドで読み込み中に構築したものが既定値のまま返っていた（B2）
+        [ThreadStatic]
+        private static bool loaded;
         private Exception lastException = null;
+
+        // 解析済みの config.xml を、更新日時とサイズをキーにプロセス全体で持つ（K1）。中身は読み取り専用として扱う。
+        // 読み書きは cacheLocker の中で行う（LINQ to XML の木はスレッド安全ではないため、読むときも lock する）
+        private static readonly object cacheLocker = new object();
+        private static XElement cachedRoot = null;
+        private static DateTime cachedLastWriteTimeUtc;
+        private static long cachedLength = -1;
+
+        /// <summary>
+        /// config.xml を解析した木を返す。ファイルが変わっていなければキャッシュを返す。
+        /// ファイルがないか、ルート要素の名前が違うときは空の木を返す（キャッシュしない）。cacheLocker の中で呼ぶこと。
+        /// </summary>
+        private static XElement GetCachedRoot()
+        {
+            var info = new FileInfo(XmlPath);
+            if (!info.Exists) return new XElement(RootName);
+            var time = info.LastWriteTimeUtc;
+            var length = info.Length;
+            if (cachedRoot != null && time == cachedLastWriteTimeUtc && length == cachedLength) return cachedRoot;
+            cachedRoot = null;
+            var root = XElement.Load(XmlPath);
+            if (root.Name != RootName) return new XElement(RootName);
+            cachedRoot = root;
+            cachedLastWriteTimeUtc = time;
+            cachedLength = length;
+            return root;
+        }
 
         public Configuration()
         {
@@ -29,48 +62,37 @@ namespace Common
             loaded = true;
             try
             {
+                var prepared = null as Dictionary<Type, Configuration>;
                 if (prepareMode)
                 {
+                    // 準備タスクの完了前に別スレッドから構築された場合は、完了を待って準備済みの値を使う
+                    PrepareXmlSerializer_Task?.Wait();
+                    prepared = GetPreparedConfigration_Dictionary;
+                }
+                if (prepared != null)
+                {
                     var thisType = GetType();
-                    SetXElementToThis(thisType, GetPreparedConfigration(thisType));
+                    SetXElementToThis(thisType, GetPreparedConfigration(prepared, thisType));
                 }
                 else
                 {
-                    xmlFile = null;
-                    if (File.Exists(XmlPath))
+                    var thisType = GetType();
+                    lock (cacheLocker)
                     {
-                        xmlFile = XElement.Load(XmlPath);
-                        if (xmlFile != null && xmlFile.Name != RootName) xmlFile = null;
-                    }
-                    if (xmlFile == null)
-                    {
-                        xmlFile = new XElement(RootName);
-                    }
-                    else
-                    {
-                        var thisType = GetType();
-                        var first = true;
-                        foreach (var xElement in xmlFile.Elements(thisType.Name))
-                        //foreach (var xElement in xmlFile.Elements(thisName))
+                        xmlFile = null;
+                        var root = GetCachedRoot();
+                        // 同じ名前の要素が複数あるときは最初の 1 つを使う（残りは Save で消す）
+                        var xElement = root.Element(thisType.Name);
+                        if (xElement != null)
                         {
-                            //if (xElement.Name == thisName)
+                            try
                             {
-                                if (first)
-                                {
-                                    try
-                                    {
-                                        SetXElementToThis(thisType, xElement);
-                                    }
-                                    catch { }
-                                    if (!prepareMode) xmlNode = xElement;
-                                    first = false;
-                                }
-                                else
-                                {
-                                    xElement.Remove();
-                                }
+                                SetXElementToThis(thisType, xElement);
                             }
+                            catch { }
+                            xmlNode = xElement;
                         }
+                        xmlFile = root;
                     }
                 }
             }
@@ -114,15 +136,58 @@ namespace Common
             {
                 try
                 {
-                    if (xmlNode == null)
+                    // シリアル化はプロパティの getter から別の設定を構築することがあるので lock の外で行う
+                    var newNode = GetXElementFromThis();
+                    lock (cacheLocker)
                     {
-                        xmlFile.Add(GetXElementFromThis());
-                    }
-                    else
-                    {
-                        xmlNode.ReplaceWith(GetXElementFromThis());
+                        // 読み込んだときから内容が変わっていなければ書き込まない（K1）
+                        if (xmlNode != null && XNode.DeepEquals(xmlNode, newNode)) return null;
+
+                        // その時点のファイルを複製して自分の要素だけ差し替える。
+                        // 構築したときの木をそのまま書くと、そのあと他のウインドウやプロセスが保存した別の節を古い内容で上書きしてしまう
+                        XElement file;
+                        try
+                        {
+                            file = new XElement(GetCachedRoot());
+                        }
+                        catch
+                        {
+                            // 今のファイルが読めないときは、従来どおり構築したときの内容に自分の要素を入れて書く
+                            file = new XElement(xmlFile);
+                        }
+                        var olds = file.Elements(GetType().Name).ToArray();
+                        if (olds.Length == 0)
+                        {
+                            file.Add(newNode);
+                        }
+                        else
+                        {
+                            olds[0].ReplaceWith(newNode);
+                            for (var i = 1; i < olds.Length; i++) olds[i].Remove();
+                        }
+
+                        // 書き込み中に他のプロセスに変えられた場合に備え、キャッシュは捨てて次の読み込みで読み直す
+                        cachedRoot = null;
+                        WriteFile(file);
+                        xmlFile = file;
+                        xmlNode = newNode;
                     }
 
+                    return null;
+                }
+                catch (Exception exception)
+                {
+                    return lastException = exception;
+                }
+            }
+            else
+            {
+                return lastException;
+            }
+        }
+
+        private static void WriteFile(XElement xmlFile)
+        {
                     // 設定ファイルの保存
                     using (var ms = new MemoryStream())
                     {
@@ -180,18 +245,6 @@ namespace Common
                     }
 
                     //xmlFile.Save(XmlPath);
-
-                    return null;
-                }
-                catch (Exception exception)
-                {
-                    return lastException = exception;
-                }
-            }
-            else
-            {
-                return lastException;
-            }
         }
 
         public static DateTime GetLastWriteTime()
@@ -220,26 +273,36 @@ namespace Common
                 var serializer = GetXmlSerializer(GetType());
                 serializer.Serialize(stream, this);
                 stream.Position = 0;
-                using (var reader = XmlReader.Create(stream))
+                // ファイルから読んだ木（XElement.Load(path) は空白だけのテキストを捨てる）と比べられるように、空白を捨てて読む
+                using (var reader = XmlReader.Create(stream, new XmlReaderSettings { IgnoreWhitespace = true }))
                 {
                     return XElement.Load(reader);
                 }
             }
         }
 
-        //private static readonly Dictionary<Type, XmlSerializer> setXElementToThis_XmlSerializer = new Dictionary<Type, XmlSerializer>();
+        // 準備タスクと UI スレッドなど、複数のスレッドから使うので lock する
         private static readonly Dictionary<Type, XmlSerializer> setXElementToThis_XmlSerializer = new Dictionary<Type, XmlSerializer>();
         private static XmlSerializer GetXmlSerializer(Type type)
         {
-            if (!setXElementToThis_XmlSerializer.TryGetValue(type, out var serializer))
+            lock (setXElementToThis_XmlSerializer)
             {
-                var temp = loaded;
-                loaded = true;
-                serializer = new XmlSerializer(type);
-                loaded = temp;
-                setXElementToThis_XmlSerializer[type] = serializer;
+                if (!setXElementToThis_XmlSerializer.TryGetValue(type, out var serializer))
+                {
+                    var temp = loaded;
+                    loaded = true;
+                    try
+                    {
+                        serializer = new XmlSerializer(type);
+                    }
+                    finally
+                    {
+                        loaded = temp;
+                    }
+                    setXElementToThis_XmlSerializer[type] = serializer;
+                }
+                return serializer;
             }
-            return serializer;
         }
 
         public class NotPreparedException : Exception
@@ -248,9 +311,9 @@ namespace Common
         }
 
         private static Dictionary<Type, Configuration> GetPreparedConfigration_Dictionary = null;
-        private static Configuration GetPreparedConfigration(Type type)
+        private static Configuration GetPreparedConfigration(Dictionary<Type, Configuration> prepared, Type type)
         {
-            if (GetPreparedConfigration_Dictionary.TryGetValue(type, out var resultFromDictionary))
+            if (prepared.TryGetValue(type, out var resultFromDictionary))
             {
                 return resultFromDictionary;
             }
@@ -273,41 +336,46 @@ namespace Common
             prepareMode = true;
             GetPreparedConfigration_Dictionary = new Dictionary<Type, Configuration>();
             if (configrationTypes.Length == 0) return;
-            var nextTask = null as Task;
-
-            loaded = true;
+            var dictionary = GetPreparedConfigration_Dictionary;
 
             PrepareXmlSerializer_Task = Task.Run(() =>
             {
-                XElement xmlFile = null;
-                Exception lastException = null;
-                for (var i = 0; i < configrationTypes.Length; i++)
+                // loaded はスレッドごとなので、このタスクのスレッドで立てる
+                loaded = true;
+                try
                 {
-                    var type = configrationTypes[i];
-                    var serializer = GetXmlSerializer(type);
-                    Configuration configration = null;
-                    try
+                    XElement xmlFile = null;
+                    Exception lastException = null;
+                    for (var i = 0; i < configrationTypes.Length; i++)
                     {
-                        if (lastException != null) throw lastException;
-                        if (i == 0 && File.Exists(XmlPath))
+                        var type = configrationTypes[i];
+                        var serializer = GetXmlSerializer(type);
+                        Configuration configration = null;
+                        try
                         {
-                            xmlFile = XElement.Load(XmlPath);
-                            if (xmlFile != null && xmlFile.Name != RootName) xmlFile = null;
+                            if (lastException != null) throw lastException;
+                            lock (cacheLocker)
+                            {
+                                if (i == 0) xmlFile = GetCachedRoot();
+                                configration = GetConfigration(serializer, type, xmlFile);
+                            }
                         }
-                        configration = GetConfigration(serializer, type, xmlFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        lastException = ex;
-                        if (configration == null)
+                        catch (Exception ex)
                         {
-                            configration = GetEmptyConfigration(type);
+                            lastException = ex;
+                            if (configration == null)
+                            {
+                                configration = GetEmptyConfigration(type);
+                            }
+                            configration.lastException = ex;
                         }
-                        configration.lastException = ex;
+                        dictionary.Add(type, configration);
                     }
-                    GetPreparedConfigration_Dictionary.Add(type, configration);
                 }
-                loaded = false;
+                finally
+                {
+                    loaded = false;
+                }
             });
         }
 
