@@ -101,6 +101,132 @@ namespace ZipPla
         private const int DATA_UBOUND = 128; // 安全のため。増やしてもバージョンを変える必要はない
         private const uint VERSION = 2;
 
+        // 注目点の記録（P4）。ピラミッドの後ろに、幅・高さ 0、分子・分母 FOCUS_MAGIC のエントリとして足す。
+        // 幅・高さが 0 なので以前の版は選ばずに読み飛ばし、以前の版が書き直すと消える（ヘッダの版は変えない）
+        private const int FOCUS_MAGIC = 0x46435A50; // "PZCF"
+        private const int FOCUS_ENTRY_VERSION = 1;
+        private const int FOCUS_PAYLOAD_LENGTH = 4 + 4 * 4 + 4 + 4 + 2 * 4;
+        private const int MAX_FOCUS_MEMOS = 4;
+
+        /// <summary>注目点（BitmapAnalyzer.FocusCell）と、それを計算した範囲（元画像に対する割合）・画素の縦横比</summary>
+        internal sealed class FocusMemo
+        {
+            public float RectX, RectY, RectWidth, RectHeight;
+            public int PixelRatioNumerator, PixelRatioDenominator;
+            public BitmapAnalyzer.FocusCell Cell;
+
+            public bool SameKey(float x, float y, float w, float h, Fraction pixelRatio)
+            {
+                const float eps = 1e-4f;
+                return Math.Abs(RectX - x) < eps && Math.Abs(RectY - y) < eps && Math.Abs(RectWidth - w) < eps && Math.Abs(RectHeight - h) < eps &&
+                    new Fraction(PixelRatioNumerator, PixelRatioDenominator) == pixelRatio;
+            }
+
+            public static FocusMemo Read(byte[] buf, int offset, int length)
+            {
+                if (length < FOCUS_PAYLOAD_LENGTH || BitConverter.ToInt32(buf, offset) != FOCUS_ENTRY_VERSION) return null;
+                var m = new FocusMemo
+                {
+                    RectX = BitConverter.ToSingle(buf, offset + 4),
+                    RectY = BitConverter.ToSingle(buf, offset + 8),
+                    RectWidth = BitConverter.ToSingle(buf, offset + 12),
+                    RectHeight = BitConverter.ToSingle(buf, offset + 16),
+                    PixelRatioNumerator = BitConverter.ToInt32(buf, offset + 20),
+                    PixelRatioDenominator = BitConverter.ToInt32(buf, offset + 24),
+                    Cell = new BitmapAnalyzer.FocusCell
+                    {
+                        WorkingWidth = BitConverter.ToInt16(buf, offset + 28),
+                        WorkingHeight = BitConverter.ToInt16(buf, offset + 30),
+                        X = BitConverter.ToInt16(buf, offset + 32),
+                        Y = BitConverter.ToInt16(buf, offset + 34),
+                    },
+                };
+                if (m.PixelRatioNumerator <= 0 || m.PixelRatioDenominator <= 0) return null;
+                var c = m.Cell;
+                if (c.WorkingWidth <= 0 || c.WorkingHeight <= 0 || c.X < 0 || c.Y < 0 || c.X >= c.WorkingWidth || c.Y >= c.WorkingHeight) return null;
+                return m;
+            }
+
+            public void WriteEntry(BinaryWriter w)
+            {
+                w.Write(0u);
+                w.Write(0u);
+                w.Write(FOCUS_MAGIC);
+                w.Write(FOCUS_MAGIC);
+                w.Write((long)FOCUS_PAYLOAD_LENGTH);
+                w.Write(FOCUS_ENTRY_VERSION);
+                w.Write(RectX);
+                w.Write(RectY);
+                w.Write(RectWidth);
+                w.Write(RectHeight);
+                w.Write(PixelRatioNumerator);
+                w.Write(PixelRatioDenominator);
+                w.Write((short)Cell.WorkingWidth);
+                w.Write((short)Cell.WorkingHeight);
+                w.Write((short)Cell.X);
+                w.Write((short)Cell.Y);
+            }
+        }
+
+        /// <summary>
+        /// 1 つのキャッシュファイルの注目点の記録（P4）。PlaClip の切り抜きで注目点の計算（1 件 2〜3 ms）を省く。
+        /// 注目点は作業用の縮小画像（長い辺 128）のマスで決まり、元画像の解像度によらないので、表示サイズが変わっても使える
+        /// </summary>
+        public sealed class FocusCache
+        {
+            internal readonly string CacheRoot, FileName;
+            internal readonly int Index;
+            internal readonly List<FocusMemo> Memos = new List<FocusMemo>();
+
+            internal FocusCache(string cacheRoot, string fileName, int index)
+            {
+                CacheRoot = cacheRoot;
+                FileName = fileName;
+                Index = index;
+            }
+
+            private static void Normalize(Size imageSize, Rectangle rectangle, out float x, out float y, out float w, out float h)
+            {
+                x = (float)rectangle.X / imageSize.Width;
+                y = (float)rectangle.Y / imageSize.Height;
+                w = (float)rectangle.Width / imageSize.Width;
+                h = (float)rectangle.Height / imageSize.Height;
+            }
+
+            public bool TryGetFocus(Size imageSize, Rectangle rectangle, Fraction pixelRatio, out Point focus)
+            {
+                focus = Point.Empty;
+                if (imageSize.Width <= 0 || imageSize.Height <= 0 || rectangle.Width <= 0 || rectangle.Height <= 0) return false;
+                Normalize(imageSize, rectangle, out var x, out var y, out var w, out var h);
+                var workingSize = BitmapAnalyzer.GetFocusWorkingSize(rectangle.Size, pixelRatio);
+                foreach (var m in Memos)
+                {
+                    if (m.SameKey(x, y, w, h, pixelRatio) && m.Cell.WorkingWidth == workingSize.Width && m.Cell.WorkingHeight == workingSize.Height)
+                    {
+                        focus = BitmapAnalyzer.FocusCellToPoint(m.Cell, rectangle);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /// <summary>計算した注目点を記録し、キャッシュファイルへの追記を後回しの書き込みに登録する</summary>
+            public void Add(Size imageSize, Rectangle rectangle, Fraction pixelRatio, BitmapAnalyzer.FocusCell cell)
+            {
+                if (imageSize.Width <= 0 || imageSize.Height <= 0 || rectangle.Width <= 0 || rectangle.Height <= 0) return;
+                if (cell.WorkingWidth > short.MaxValue || cell.WorkingHeight > short.MaxValue) return;
+                Normalize(imageSize, rectangle, out var x, out var y, out var w, out var h);
+                Memos.RemoveAll(m => m.SameKey(x, y, w, h, pixelRatio));
+                Memos.Add(new FocusMemo
+                {
+                    RectX = x, RectY = y, RectWidth = w, RectHeight = h,
+                    PixelRatioNumerator = pixelRatio.Numerator, PixelRatioDenominator = pixelRatio.Denominator, Cell = cell,
+                });
+                while (Memos.Count > MAX_FOCUS_MEMOS) Memos.RemoveAt(0);
+                EnqueuePendingWrite(new PendingWrite { CacheRoot = CacheRoot, FileName = FileName, Index = Index, Focus = Memos.ToArray() });
+            }
+        }
+
         // キャッシュの画像の形式（P4）。以前は JPEG XR（品質 30）だけだったが、WPF での展開が 1 枚 3.6〜7.3 ms かかり、
         // キャッシュに当たっても作り直すのと変わらなかった。透明度のない画像は JPEG（品質 90）で保存し、GDI+ で展開する（0.4 ms 前後）。
         // 透明度のある画像は従来どおり JPEG XR。読むときはデータの先頭で見分けるので、既存のキャッシュもそのまま使える
@@ -470,6 +596,18 @@ namespace ZipPla
             }
         }
 
+        public static bool TryGet(string cacheRoot, string fileName, Size requiredSize, bool letterBox, out Bitmap thumbnail, out byte[] gpData, out FocusCache focusCache)
+        {
+            return TryGet(cacheRoot, fileName, -1, requiredSize, letterBox, out thumbnail, out gpData, out focusCache);
+        }
+
+        /// <summary>focusCache には、ファイルにあった注目点の記録が入る。ファイルがない・合わないときは空（あとで計算した注目点を追記するのに使う）</summary>
+        public static bool TryGet(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, out Bitmap thumbnail, out byte[] gpData, out FocusCache focusCache)
+        {
+            focusCache = new FocusCache(cacheRoot, fileName, index);
+            return TryGet(cacheRoot, fileName, index, requiredSize, letterBox, out thumbnail, out Fraction dummy, true, out gpData, focusCache);
+        }
+
         public static bool TryGet(string cacheRoot, string fileName, Size requiredSize, bool letterBox, out Bitmap thumbnail, out byte[] gpData)
         {
             return TryGet(cacheRoot, fileName, -1, requiredSize, letterBox, out thumbnail, out gpData);
@@ -488,6 +626,11 @@ namespace ZipPla
 
         private static bool TryGet(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, out Bitmap thumbnail, out Fraction pixelRatio, bool pixelRatioMustBe1, out byte[] gpData)
         {
+            return TryGet(cacheRoot, fileName, index, requiredSize, letterBox, out thumbnail, out pixelRatio, pixelRatioMustBe1, out gpData, focusCache: null);
+        }
+
+        private static bool TryGet(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, out Bitmap thumbnail, out Fraction pixelRatio, bool pixelRatioMustBe1, out byte[] gpData, FocusCache focusCache)
+        {
             thumbnail = null;
             gpData = null;
             pixelRatio = 0;
@@ -501,30 +644,18 @@ namespace ZipPla
             try
             {
                 var lastWriteTime = File.GetLastWriteTime(fileName);
+                byte[] all;
                 using (var s = ads ? new NTFSMultiStream(fileName, STREAM_NAME, FileAccess.Read) : new FileStream(cachePath, FileMode.Open, FileAccess.Read) as Stream)
+                {
+                    all = ReadAllBytes(s); // 1 回で読む（シークのたびに読み直さない）
+                }
+                using (var s = new MemoryStream(all, writable: false))
                 using (var r = new BinaryReader(s))
                 {
-                    var fileSize = s.Length;
+                    long fileSize = all.Length;
 
                     getHeaderData(r, index, lastWriteTime, out gpData);
 
-                    /*
-                    //MessageBox.Show($"{fileSize}");
-                    var dataVersion = r.ReadUInt32();
-                    if (dataVersion != VERSION) return false;
-                    if (r.ReadInt64() != lastWriteTime.Ticks) return false;
-                    if (r.ReadInt32() != index) return false;
-                    var dataLength = r.ReadInt32();
-                    if (dataLength < 0 || dataLength > DATA_UBOUND) return false;
-
-                    gpData = r.ReadBytes(dataLength);
-                    if (gpData.Length != dataLength)
-                    {
-                        gpData = null;
-                        return false;
-                    }
-                    */
-                    
                     fileSize -= (4 + 8 + 4 + 4) + gpData.Length;
 
                     var requiredWidthWithMargin = (int)Math.Round(requiredSize.Width * SIZE_MARGIN);
@@ -534,25 +665,37 @@ namespace ZipPla
                     {
                         var width = r.ReadUInt32();
                         var height = r.ReadUInt32();
-                        var numerator = r.ReadInt32(); if (numerator <= 0) return false;
-                        var denominator = r.ReadInt32(); if (denominator <= 0) return false;
-                        if (pixelRatioMustBe1 && numerator != denominator) return false;
+                        var numerator = r.ReadInt32();
+                        var denominator = r.ReadInt32();
                         var length = (int)r.ReadInt64();
-                        if (length <= 0) return false;
-                        if (
+                        if (numerator <= 0 || denominator <= 0 || length <= 0 || pixelRatioMustBe1 && numerator != denominator)
+                        {
+                            if (thumbnail != null) break; // 画像は取れている。後ろの注目点の記録を読めなかっただけ
+                            return false;
+                        }
+                        if (width == 0 && height == 0 && numerator == FOCUS_MAGIC && denominator == FOCUS_MAGIC)
+                        {
+                            if (focusCache != null && s.Position + length <= all.Length)
+                            {
+                                var memo = FocusMemo.Read(all, (int)s.Position, length);
+                                if (memo != null) focusCache.Memos.Add(memo);
+                            }
+                            s.Seek(length, SeekOrigin.Current);
+                        }
+                        else if (thumbnail == null && (
                             // pixelRatio が 1 でないのは width と height が MaxValue のときに限るので考慮する必要はない
                             // pixelRatio が 1 でないモニタなどを想定して縮小された異方性キャッシュを考える場合は
                             // width と height の一方を減らして実効的な解像度を取得すればよいが、
                             // その際は TrySet で作成されるものが TryGet で受け入れられるようによく検討する必要がある
                             // TrySet に失敗するのは良いが、成功したのに TryGet が受け入れないと無限ループの危険がある
-                            letterBox && (width >= requiredWidthWithMargin || height >= requiredHeightWithMargin) || 
+                            letterBox && (width >= requiredWidthWithMargin || height >= requiredHeightWithMargin) ||
                             !letterBox && width >= requiredWidthWithMargin && height >= requiredHeightWithMargin
-                            )
+                            ))
                         {
                             var buf = r.ReadBytes(length);
                             thumbnail = LoadCacheImage(buf); // JPEG（P4）と JPEG XR（従来）の両方を読む
                             pixelRatio = new Fraction(numerator, denominator);
-                            break;
+                            if (focusCache == null) break; // 注目点の記録が要らなければ後ろは読まない
                         }
                         else
                         {
@@ -561,13 +704,32 @@ namespace ZipPla
                         fileSize -= (4 + 4 + 4 + 4 + 8) + length;
                     }
                 }
-                //MessageBox.Show($"{thumbnail.Width}x{thumbnail.Height}");
                 return thumbnail != null;
             }
             catch
             {
+                if (thumbnail != null)
+                {
+                    thumbnail.Dispose();
+                    thumbnail = null;
+                }
                 return false;
             }
+        }
+
+        private static byte[] ReadAllBytes(Stream s)
+        {
+            var length = (int)s.Length;
+            var all = new byte[length];
+            var offset = 0;
+            while (offset < length)
+            {
+                var n = s.Read(all, offset, length - offset);
+                if (n <= 0) break;
+                offset += n;
+            }
+            if (offset != length) Array.Resize(ref all, offset);
+            return all;
         }
 
         // フォルダ方式でサムネイルを作るたびに、以前の ADS 方式で残ったキャッシュを消していた（ストリームの存在確認が毎回 0.1〜0.3ms）。
@@ -925,6 +1087,7 @@ namespace ZipPla
             public bool MaxSizeIsFullSize;
             public Bitmap Biggest; // 最大サイズの縮小画像の複製。書き込み処理が持ち、使い終わったら Dispose する
             public DateTime ExpectedLastWriteTime; // サムネイルを作ったときの元ファイルの更新日時。書くときに変わっていたら書かない
+            public FocusMemo[] Focus; // null でなければ、画像は書かずに注目点の記録だけを書き換える（P4）
         }
 
         private static bool TrySetDeferred(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, bool fullSizeCache, Bitmap thumbnail,
@@ -983,6 +1146,116 @@ namespace ZipPla
         }
 
         // 画素をすべて複製する（GDI+ の Clone は元と画素を共有することがあり、別スレッドで使うと危険なため）
+        /// <summary>
+        /// キャッシュファイルの注目点の記録を書き換える（P4）。ヘッダ（版・元の更新日時・インデックス）が合わなければ何もしない。
+        /// 画像のエントリはそのまま写し、注目点の記録だけを入れ替える。ADS の場合は TrySetCore と同じく元ファイルの更新日時を保つ
+        /// </summary>
+        private static void WriteFocusMemos(PendingWrite job)
+        {
+            var fileName = job.FileName;
+            var cacheRoot = job.CacheRoot;
+            lock (TrySet_Creating)
+            {
+                if (TrySet_Creating.Contains(fileName)) return;
+                TrySet_Creating.Add(fileName);
+            }
+            var readOnly = false;
+            var att = default(FileAttributes);
+            try
+            {
+                var ads = cacheRoot == AlternateDataStream;
+                var cachePath = ads ? null : GetCachePath(fileName, cacheRoot);
+                if (ads ? !NTFSMultiStream.Exists(fileName, STREAM_NAME) : !File.Exists(cachePath)) return;
+                var isFile = File.Exists(fileName);
+                var lastWriteTime = isFile ? File.GetLastWriteTime(fileName) : Directory.GetLastWriteTime(fileName);
+                byte[] all;
+                using (var s = ads ? new NTFSMultiStream(fileName, STREAM_NAME, FileAccess.Read) : new FileStream(cachePath, FileMode.Open, FileAccess.Read) as Stream)
+                {
+                    all = ReadAllBytes(s);
+                }
+                byte[] newBytes;
+                using (var s = new MemoryStream(all, writable: false))
+                using (var r = new BinaryReader(s))
+                using (var o = new MemoryStream())
+                using (var w = new BinaryWriter(o))
+                {
+                    getHeaderData(r, job.Index, lastWriteTime, out var gpData); // 合わなければ例外
+                    var headerLength = (int)s.Position;
+                    o.Write(all, 0, headerLength);
+                    while (s.Position < all.Length)
+                    {
+                        var start = (int)s.Position;
+                        if (all.Length - start < 4 + 4 + 4 + 4 + 8) return;
+                        var width = r.ReadUInt32();
+                        var height = r.ReadUInt32();
+                        var numerator = r.ReadInt32();
+                        var denominator = r.ReadInt32();
+                        var length = r.ReadInt64();
+                        if (length <= 0 || s.Position + length > all.Length) return;
+                        var end = (int)(s.Position + length);
+                        if (!(width == 0 && height == 0 && numerator == FOCUS_MAGIC && denominator == FOCUS_MAGIC))
+                        {
+                            o.Write(all, start, end - start);
+                        }
+                        s.Position = end;
+                    }
+                    foreach (var memo in job.Focus) memo.WriteEntry(w);
+                    w.Flush();
+                    newBytes = o.ToArray();
+                }
+
+                if (ads)
+                {
+                    if (SupportADSSize(fileName, checkNew: false) < newBytes.Length) return;
+                    att = File.GetAttributes(fileName);
+                    if ((att & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                    {
+                        File.SetAttributes(fileName, att & ~FileAttributes.ReadOnly);
+                        readOnly = true;
+                    }
+                    editFile(fileName, () =>
+                    {
+                        var current = isFile ? File.GetLastWriteTime(fileName) : Directory.GetLastWriteTime(fileName);
+                        if (current != lastWriteTime) return; // 元ファイルが変わった
+                        try
+                        {
+                            if (NTFSMultiStream.Exists(fileName, STREAM_NAME))
+                            {
+                                try { NTFSMultiStream.Delete(fileName, STREAM_NAME); } catch { }
+                            }
+                            NTFSMultiStream.WriteFile(fileName, STREAM_NAME, newBytes);
+                            leftoverAdsChecked.TryRemove(fileName, out var dummy);
+                        }
+                        finally
+                        {
+                            // ストリームの書き換えで元ファイルの更新日時が変わるので戻す
+                            if (isFile) File.SetLastWriteTime(fileName, lastWriteTime);
+                            else Directory.SetLastWriteTime(fileName, lastWriteTime);
+                        }
+                    });
+                }
+                else
+                {
+                    using (var fileStream = new FileStream(cachePath, FileMode.Create, FileAccess.Write))
+                    {
+                        fileStream.Write(newBytes, 0, newBytes.Length);
+                    }
+                }
+            }
+            catch { }
+            finally
+            {
+                if (readOnly)
+                {
+                    try { File.SetAttributes(fileName, att); } catch { }
+                }
+                lock (TrySet_Creating)
+                {
+                    TrySet_Creating.Remove(fileName);
+                }
+            }
+        }
+
         private static unsafe Bitmap DeepCopy(Bitmap src)
         {
             var w = src.Width;
@@ -1054,8 +1327,15 @@ namespace ZipPla
                 }
                 try
                 {
-                    TrySetCore(job.CacheRoot, job.FileName, job.Index, job.RequiredSize, job.LetterBox, job.FullSizeCache, null, job.PixelRatio, job.GpData,
-                        getBiggest: false, biggestBitmap: out var dummy, biggestBitmapPixelRatio: out var dummy2, pending: job);
+                    if (job.Focus != null)
+                    {
+                        WriteFocusMemos(job);
+                    }
+                    else
+                    {
+                        TrySetCore(job.CacheRoot, job.FileName, job.Index, job.RequiredSize, job.LetterBox, job.FullSizeCache, null, job.PixelRatio, job.GpData,
+                            getBiggest: false, biggestBitmap: out var dummy, biggestBitmapPixelRatio: out var dummy2, pending: job);
+                    }
                 }
                 catch { }
                 finally

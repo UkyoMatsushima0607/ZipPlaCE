@@ -43,10 +43,32 @@ namespace ZipPla
         {
             return GetFocus(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height), pixelRatio);
         }
+        /// <summary>注目点の計算結果。作業用の縮小画像（長い辺 128）のどのマスか。元画像の解像度によらず、範囲の縦横比だけで作業用の大きさが決まる（P4）</summary>
+        public struct FocusCell
+        {
+            public int WorkingWidth, WorkingHeight, X, Y;
+        }
+
         public static Point GetFocus(Bitmap bmp, Rectangle rectangle, Fraction pixelRatio)
+        {
+            return FocusCellToPoint(GetFocusCell(bmp, rectangle, pixelRatio), rectangle);
+        }
+
+        /// <summary>範囲と画素の縦横比から決まる作業用の大きさ。保存してある FocusCell が使えるかの確認に使う</summary>
+        public static Size GetFocusWorkingSize(Size rectangleSize, Fraction pixelRatio)
+        {
+            return GetWorkignSize(rectangleSize, pixelRatio);
+        }
+
+        public static Point FocusCellToPoint(FocusCell cell, Rectangle rectangle)
         {
             var orgW = rectangle.Width;
             var orgH = rectangle.Height;
+            return new Point(((cell.X * 2 + 1) * orgW / (2 * cell.WorkingWidth)) + rectangle.X, ((cell.Y * 2 + 1) * orgH / (2 * cell.WorkingHeight)) + rectangle.Y);
+        }
+
+        public static FocusCell GetFocusCell(Bitmap bmp, Rectangle rectangle, Fraction pixelRatio)
+        {
             var workingSize = GetWorkignSize(rectangle.Size, pixelRatio);
             var workingWidth = workingSize.Width;
             var workingHeight = workingSize.Height;
@@ -71,9 +93,7 @@ namespace ZipPla
                 }
             }
             
-            var resultX = result % workingWidth;
-            var resultY = result / workingWidth;
-            return new Point(((resultX * 2 + 1) * orgW / (2 * workingWidth)) + rectangle.X, ((resultY * 2 + 1) * orgH / (2 * workingHeight)) + rectangle.Y);
+            return new FocusCell { WorkingWidth = workingWidth, WorkingHeight = workingHeight, X = result % workingWidth, Y = result / workingWidth };
         }
 
         public static Bitmap GetIntensiveLines(Bitmap bmp, Fraction pixelRatio)

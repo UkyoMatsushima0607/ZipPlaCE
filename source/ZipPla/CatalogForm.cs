@@ -5360,6 +5360,7 @@ namespace ZipPla
             try
             {
                 Bitmap img;
+                GPSizeThumbnail.FocusCache focusCache = null; // キャッシュファイルの注目点の記録（P4）
                 //if (thumbnailCache != null && ImageLoader.SupportsFullReading(zipPath, ffmpegExists: true) && ImageInfo.Supports(zipPath))
                 if (thumbnailCache != null && ImageLoader.SupportsFullReading(zipPath, ffmpegExists: true))
                 {
@@ -5368,7 +5369,7 @@ namespace ZipPla
 #if PERFLOG
                     var perfT = PerfTrace.Now();
 #endif
-                    var cacheHit = GPSizeThumbnail.TryGet(thumbnailCache, zipPath, tvCatalog.ThumbnailSize, currentClipMode == ClipMode.Letterbox, out img, out data) && ImageInfo.TryParseData(data, out imageInfo);
+                    var cacheHit = GPSizeThumbnail.TryGet(thumbnailCache, zipPath, tvCatalog.ThumbnailSize, currentClipMode == ClipMode.Letterbox, out img, out data, out focusCache) && ImageInfo.TryParseData(data, out imageInfo);
 #if PERFLOG
                     PerfTrace.AddStage(cacheHit ? "cacheGetHit" : "cacheGetMiss", PerfTrace.Now() - perfT);
 #endif
@@ -5424,7 +5425,7 @@ namespace ZipPla
 #if PERFLOG
                         var perfClip = PerfTrace.Now();
 #endif
-                        var result = DoJustClipping(img, needToResize: true);
+                        var result = DoJustClipping(img, needToResize: true, focusCache: focusCache);
 #if PERFLOG
                         PerfTrace.AddStage("clip", PerfTrace.Now() - perfClip);
 #endif
@@ -5615,18 +5616,28 @@ namespace ZipPla
             }
         }*/
 
-        private Bitmap DoJustClipping(Bitmap src, bool needToResize, ClipMode? localClipMode = null)
+        /// <summary>注目点。キャッシュファイルに記録があれば使い、なければ計算して記録する（P4）</summary>
+        private static Point getFocusWithCache(Bitmap src, Rectangle rectangle, Fraction pixelRatio, GPSizeThumbnail.FocusCache focusCache)
         {
-            return DoJustClipping(src, needToResize, 1, localClipMode);
+            if (focusCache != null && focusCache.TryGetFocus(src.Size, rectangle, pixelRatio, out var cached)) return cached;
+            var cell = BitmapAnalyzer.GetFocusCell(src, rectangle, pixelRatio);
+            focusCache?.Add(src.Size, rectangle, pixelRatio, cell);
+            return BitmapAnalyzer.FocusCellToPoint(cell, rectangle);
         }
-        private Bitmap DoJustClipping(Bitmap src, bool needToResize, Fraction pixelRatio, ClipMode? localClipMode = null)
+
+        private Bitmap DoJustClipping(Bitmap src, bool needToResize, ClipMode? localClipMode = null, GPSizeThumbnail.FocusCache focusCache = null)
+        {
+            return DoJustClipping(src, needToResize, 1, localClipMode, focusCache);
+        }
+        /// <param name="focusCache">キャッシュファイルの注目点の記録。あれば PlaClip の注目点の計算を省き、なければ計算した結果を記録する（P4）</param>
+        private Bitmap DoJustClipping(Bitmap src, bool needToResize, Fraction pixelRatio, ClipMode? localClipMode = null, GPSizeThumbnail.FocusCache focusCache = null)
         {
             if (pixelRatio == 0) pixelRatio = 1;
 
             var tvCatalogThumbnailSize = tvCatalog.ThumbnailSize;
             if (needToResize && pixelRatio == 1 && src != null && src.Size == tvCatalogThumbnailSize)
             {
-                return DoJustClipping(src, needToResize: false, pixelRatio: 1, localClipMode: localClipMode);
+                return DoJustClipping(src, needToResize: false, pixelRatio: 1, localClipMode: localClipMode, focusCache: focusCache);
             }
 
             var clipMode = localClipMode != null ? (ClipMode)localClipMode : currentClipMode;
@@ -5755,7 +5766,7 @@ namespace ZipPla
 #if PERFLOG
                                 var perfFocus = PerfTrace.Now();
 #endif
-                                var focusPoint = BitmapAnalyzer.GetFocus(src, pixelRatio);
+                                var focusPoint = getFocusWithCache(src, new Rectangle(0, 0, src.Width, src.Height), pixelRatio, focusCache);
 #if PERFLOG
                                 PerfTrace.AddStage("clipFocus", PerfTrace.Now() - perfFocus);
 #endif
@@ -5866,6 +5877,7 @@ namespace ZipPla
             var givenSize = width > 0 && height > 0;
             loadError = LoadResult.Success;
             Bitmap MaxPointImage = null;
+            GPSizeThumbnail.FocusCache archiveFocusCache = null; // 書庫のキャッシュファイルの注目点の記録（P4）
             var isDirectory = false;
             fileSize = -1;
             try
@@ -5953,7 +5965,7 @@ namespace ZipPla
                     Bitmap got;
                     byte[] data;
                     if (GPSizeThumbnail.TryGet(thumbnailCache, zipPath, indexWithAIAInfo,
-                        requiredSize, localClipMode == ClipMode.Letterbox, out got, out data))
+                        requiredSize, localClipMode == ClipMode.Letterbox, out got, out data, out archiveFocusCache))
                     {
                         try
                         {
@@ -6349,7 +6361,7 @@ namespace ZipPla
 #if PERFLOG
                                 var perfArchiveFocus = PerfTrace.Now();
 #endif
-                                focusPoint = BitmapAnalyzer.GetFocus(MaxPointImage, MaxPointRectangleF, pixelRatio: 1);
+                                focusPoint = getFocusWithCache(MaxPointImage, Rectangle.Round(MaxPointRectangleF), 1, archiveFocusCache);
 #if PERFLOG
                                 PerfTrace.AddStage("archiveClipFocus", PerfTrace.Now() - perfArchiveFocus);
 #endif
