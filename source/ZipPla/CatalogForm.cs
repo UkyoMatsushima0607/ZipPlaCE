@@ -25882,19 +25882,95 @@ namespace ZipPla
             QuickReloadProcessingCount++;
         }
 
-        private void exitQuickReload(Guid startingGuid)
+        private void exitQuickReload(Guid startingGuid, bool coalesce = false)
         {
             QuickReloadProcessingCount--;
             if (QuickReloadProcessingCount <= 0 && loadingGuid == startingGuid)
             {
-                lock (loadingPackedImageLoaderLocker)
+                // 削除のイベントが続けて届くと、1 件ごとに全件の並べ替えと一覧の作り直しをしていた
+                // （3 万件のフォルダから 300 ファイルを消すと 1 件 0.4 秒 × 300 回で 2 分）。
+                // 削除では、前回の並べ替えから間がないときは、重い一覧（DataGridView）の作り直しと並べ替えを少し待ってまとめて 1 回にする。
+                // 単発の削除は従来どおりすぐ（K2）。計測では一覧の作り直しが 1 回 125〜318 ms、並べ替えが 28 ms
+                // 追加はサムネイルの作成を待つ間に自然にまとまるので従来どおり（まとめると応答がかえって遅れた）
+                var elapsed = unchecked(Environment.TickCount - exitQuickReload_LastSortTick);
+                if (coalesce && 0 <= elapsed && elapsed < QuickReloadCoalesceMilliseconds)
                 {
-                    var sp = tvCatalog.ScrollBarPercentage;
-                    tvCatalog.ShowIndexToDataIndex = GetSortArray(preSortArray: tvCatalog.ShowIndexToDataIndex);
-                    tvCatalog.ScrollBarPercentage = sp;
-                    setFileListFromThumbnailViewer(tryToKeepScroll: true);
+                    // サムネイル一覧の表示順からは消えた項目をすぐに除く（残りの順番は変わらないので並べ替えは要らない）。
+                    // 除かずに後回しにすると、消えた項目を描こうとしてサムネイル一覧が描画中に例外を出す
+                    lock (loadingPackedImageLoaderLocker)
+                    {
+                        var s2d = tvCatalog.ShowIndexToDataIndex;
+                        var zpa = ZipPathArray;
+                        var zma = ZipMaskArray;
+                        if (s2d != null && zpa != null && zma != null && zpa.Length == zma.Length)
+                        {
+                            var kept = Array.FindAll(s2d, i => i < 0 || i >= zpa.Length || zpa[i] != null && zma[i]);
+                            if (kept.Length != s2d.Length)
+                            {
+                                var sp = tvCatalog.ScrollBarPercentage;
+                                tvCatalog.ShowIndexToDataIndex = kept;
+                                tvCatalog.ScrollBarPercentage = sp;
+                            }
+                        }
+                    }
+                    exitQuickReload_PendingGuid = startingGuid;
+                    exitQuickReload_Pending = true;
+                    if (exitQuickReload_Timer == null)
+                    {
+                        exitQuickReload_Timer = new System.Windows.Forms.Timer { Interval = QuickReloadDelayMilliseconds };
+                        exitQuickReload_Timer.Tick += exitQuickReload_Timer_Tick;
+                    }
+                    if (!exitQuickReload_Timer.Enabled) exitQuickReload_Timer.Start();
+                    return;
                 }
+                SortForQuickReload();
             }
+        }
+
+        private const int QuickReloadCoalesceMilliseconds = 300;
+        private const int QuickReloadDelayMilliseconds = 200;
+        private int exitQuickReload_LastSortTick = Environment.TickCount - 1000000;
+        private bool exitQuickReload_Pending = false;
+        private Guid exitQuickReload_PendingGuid;
+        private System.Windows.Forms.Timer exitQuickReload_Timer;
+
+        private void exitQuickReload_Timer_Tick(object sender, EventArgs e)
+        {
+            exitQuickReload_Timer.Stop();
+            if (!exitQuickReload_Pending) return;
+            if (loadingGuid != exitQuickReload_PendingGuid)
+            {
+                exitQuickReload_Pending = false; // 別のフォルダに移った
+                return;
+            }
+            if (QuickReloadProcessingCount > 0) return; // 処理中のものが終わったとき（exitQuickReload）にもう一度判断する
+            SortForQuickReload();
+            SelectUserAddedFiles(); // まとめた並べ替えのあとに、ユーザーが追加したファイルを選択する
+        }
+
+        private void SortForQuickReload()
+        {
+            exitQuickReload_Pending = false;
+            exitQuickReload_Timer?.Stop();
+            lock (loadingPackedImageLoaderLocker)
+            {
+#if PERFLOG
+                var perfT0 = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                var sp = tvCatalog.ScrollBarPercentage;
+                tvCatalog.ShowIndexToDataIndex = GetSortArray(preSortArray: tvCatalog.ShowIndexToDataIndex);
+                tvCatalog.ScrollBarPercentage = sp;
+#if PERFLOG
+                var perfT1 = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                setFileListFromThumbnailViewer(tryToKeepScroll: true);
+#if PERFLOG
+                var perfT2 = System.Diagnostics.Stopwatch.GetTimestamp();
+                double perfF = System.Diagnostics.Stopwatch.Frequency;
+                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "quick-reload.log"), $"sort={(perfT1 - perfT0) * 1000 / perfF:F1}ms	fileList={(perfT2 - perfT1) * 1000 / perfF:F1}ms" + Environment.NewLine); } catch { }
+#endif
+            }
+            exitQuickReload_LastSortTick = Environment.TickCount; // 並べ替えが終わった時刻から数える
         }
 
         private void removeItem(string path)
@@ -25934,7 +26010,7 @@ namespace ZipPla
                             }
                         }
                     }
-                    exitQuickReload(loadingGuid);
+                    exitQuickReload(loadingGuid, coalesce: true);
                 }
             }
         }
@@ -26186,6 +26262,13 @@ namespace ZipPla
             });
             exitQuickReload(startingGuid);
             if (startingGuid != loadingGuid) return;
+            // 並べ替えをまとめるために後回しにした場合は、その並べ替えのあとで選択する（K2）
+            if (!exitQuickReload_Pending) SelectUserAddedFiles();
+        }
+
+        // ユーザーが追加（貼り付けなど）したファイルが一覧に現れたら選択する
+        private void SelectUserAddedFiles()
+        {
             if (QuickReloadProcessingCount <= 0 && addOrReloadItem_UserAddFileInLower != null)
             {
                 if (CreatingZipPathArray) return;
