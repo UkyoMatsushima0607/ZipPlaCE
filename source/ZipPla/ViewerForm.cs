@@ -3778,8 +3778,8 @@ namespace ZipPla
 #if PERFLOG
                     if (item == null)
                     {
-                        var perfSize = bmp.Size;
-                        try { lock (bmp) body(); } finally { if (reducedDecoded) bmp.Dispose(); }
+                        var perfSize = Size.Empty;
+                        try { lock (bmp) { perfSize = bmp.Size; body(); } } finally { if (reducedDecoded) bmp.Dispose(); } // bmp は登録済みなのでロックの中で触る
                         double f = System.Diagnostics.Stopwatch.Frequency;
                         var end = System.Diagnostics.Stopwatch.GetTimestamp();
                         try
@@ -6001,6 +6001,9 @@ namespace ZipPla
                 var image = resized[i];
                 if (image == null || !image.isEntity || image.FrameCount != 1) continue;
                 if (originals[i] == null) continue;
+                // 原寸を読み直している途中のページは捨てない。読み込みジョブは原寸を登録してから自分のロックを取るまでに隙間があり、
+                // そこで捨てると読み込み中の原寸を壊す（V2 で原寸を残す範囲を空にしてから起こりうるようになった）。登録後（SetNewResizedImage）にもう一度呼ばれる
+                if (states[i] == OriginalState_Reloading) continue;
                 LockManager.ForIReadOnlyList(originals, i, item =>
                 {
                     if (item == null || item.FrameCount != 1 || item.Size == image.Size) return;
