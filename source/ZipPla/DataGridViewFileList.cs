@@ -37,6 +37,67 @@ namespace ZipPla
 
         public SimplifiedKeyBoard SimplifiedKeyBoard;
 
+        // K6: 仮想モードで行を共有したまま選択を扱う。Rows[i] で行を取り出すと、その行のセルが作られてメモリを使う
+        private int selectionBatchDepth = 0;
+        private bool selectionChangedInBatch = false;
+
+        public bool IsRowSelected(int rowIndex)
+        {
+            return (Rows.GetRowState(rowIndex) & DataGridViewElementStates.Selected) != 0;
+        }
+
+        public void SetRowSelected(int rowIndex, bool selected)
+        {
+            if (IsRowSelected(rowIndex) != selected) SetSelectedRowCore(rowIndex, selected);
+        }
+
+        public int[] GetSelectedRowIndices()
+        {
+            var result = new List<int>();
+            var count = Rows.Count;
+            for (var i = 0; i < count; i++)
+            {
+                if ((Rows.GetRowState(i) & DataGridViewElementStates.Selected) != 0) result.Add(i);
+            }
+            return result.ToArray();
+        }
+
+        /// <summary>EndSelectionBatch まで SelectionChanged を止め、変化があれば最後に 1 回だけ起こす</summary>
+        public void BeginSelectionBatch() { selectionBatchDepth++; }
+
+        public void EndSelectionBatch()
+        {
+            if (selectionBatchDepth > 0 && --selectionBatchDepth == 0 && selectionChangedInBatch)
+            {
+                selectionChangedInBatch = false;
+                base.OnSelectionChanged(EventArgs.Empty);
+            }
+        }
+
+        protected override void OnSelectionChanged(EventArgs e)
+        {
+            if (selectionBatchDepth > 0)
+            {
+                selectionChangedInBatch = true;
+                return;
+            }
+            base.OnSelectionChanged(e);
+        }
+
+        private static bool IsRowSelected(DataGridView dataGridView, int rowIndex)
+        {
+            return (dataGridView.Rows.GetRowState(rowIndex) & DataGridViewElementStates.Selected) != 0;
+        }
+
+        private static void SetRowSelected(DataGridView dataGridView, int rowIndex, bool selected)
+        {
+            if (dataGridView is DataGridViewFileList fileList) fileList.SetRowSelected(rowIndex, selected);
+            else dataGridView.Rows[rowIndex].Selected = selected;
+        }
+
+        private static void BeginSelectionBatch(DataGridView dataGridView) { (dataGridView as DataGridViewFileList)?.BeginSelectionBatch(); }
+        private static void EndSelectionBatch(DataGridView dataGridView) { (dataGridView as DataGridViewFileList)?.EndSelectionBatch(); }
+
         public bool DragOutSelection = false;
         public bool DragOutSingle = false;
 
@@ -160,7 +221,7 @@ namespace ZipPla
                 case Keys.Control:
                     if (e.Button == MouseButtons.Left)
                     {
-                        if (index >= 0) dataGridView.Rows[index].Selected = !dataGridView.Rows[index].Selected;
+                        if (index >= 0) SetRowSelected(dataGridView, index, !IsRowSelected(dataGridView, index));
                         InvokeMouseDownWithoutBaseFunctions(dataGridView, mouseDown, setCurrentCellAddressCore, e, hit);
                     }
                     else
@@ -178,10 +239,18 @@ namespace ZipPla
                             var f2 = (int)f;
                             var min = Math.Min(index, f2);
                             var max = Math.Max(index, f2);
-                            for (var i = 0; i < min; i++) dataGridView.Rows[i].Selected = false;
-                            for (var i = min; i <= max; i++) dataGridView.Rows[i].Selected = true;
                             var count = dataGridView.Rows.Count;
-                            for (var i = max + 1; i < count; i++) dataGridView.Rows[i].Selected = false;
+                            BeginSelectionBatch(dataGridView);
+                            try
+                            {
+                                for (var i = 0; i < min; i++) SetRowSelected(dataGridView, i, false);
+                                for (var i = min; i <= max; i++) SetRowSelected(dataGridView, i, true);
+                                for (var i = max + 1; i < count; i++) SetRowSelected(dataGridView, i, false);
+                            }
+                            finally
+                            {
+                                EndSelectionBatch(dataGridView);
+                            }
                         }
                     }
                     InvokeMouseDownWithoutBaseFunctions(dataGridView, mouseDown, setCurrentCellAddressCore, e, hit);
@@ -198,7 +267,15 @@ namespace ZipPla
                             var f2 = (int)f;
                             var min = Math.Min(index, f2);
                             var max = Math.Max(index, f2);
-                            for (var i = min; i <= max; i++) dataGridView.Rows[i].Selected = newSelect;
+                            BeginSelectionBatch(dataGridView);
+                            try
+                            {
+                                for (var i = min; i <= max; i++) SetRowSelected(dataGridView, i, newSelect);
+                            }
+                            finally
+                            {
+                                EndSelectionBatch(dataGridView);
+                            }
                         }
                     }
                     InvokeMouseDownWithoutBaseFunctions(dataGridView, mouseDown, setCurrentCellAddressCore, e, hit);
@@ -312,7 +389,7 @@ namespace ZipPla
                     switch (modifier)
                     {
                         case Keys.Control:
-                            if (index >= 0) Rows[index].Selected = !Rows[index].Selected;
+                            if (index >= 0) SetRowSelected(index, !IsRowSelected(index));
                             break;
                         case Keys.Shift:
                             if (index >= 0)
@@ -324,10 +401,18 @@ namespace ZipPla
                                     var f2 = (int)f;
                                     var min = Math.Min(index, f2);
                                     var max = Math.Max(index, f2);
-                                    for (var i = 0; i < min; i++) Rows[i].Selected = false;
-                                    for (var i = min; i <= max; i++) Rows[i].Selected = true;
                                     var count = Rows.Count;
-                                    for (var i = max + 1; i < count; i++) Rows[i].Selected = false;
+                                    BeginSelectionBatch();
+                                    try
+                                    {
+                                        for (var i = 0; i < min; i++) SetRowSelected(i, false);
+                                        for (var i = min; i <= max; i++) SetRowSelected(i, true);
+                                        for (var i = max + 1; i < count; i++) SetRowSelected(i, false);
+                                    }
+                                    finally
+                                    {
+                                        EndSelectionBatch();
+                                    }
                                 }
                             }
                             break;
@@ -343,14 +428,30 @@ namespace ZipPla
                                     var max = Math.Max(index, f2);
                                     //for (var i = min; i <= max; i++) Rows[i].Selected = true; // 追加
                                     //for (var i = min; i <= max; i++) Rows[i].Selected = !Rows[i].Selected; // 反転
-                                    for (var i = min; i <= max; i++) Rows[i].Selected = false; // 取り除き
+                                    BeginSelectionBatch();
+                                    try
+                                    {
+                                        for (var i = min; i <= max; i++) SetRowSelected(i, false); // 取り除き
+                                    }
+                                    finally
+                                    {
+                                        EndSelectionBatch();
+                                    }
                                 }
                             }
                             break;
                         default:
                             {
                                 var count = Rows.Count;
-                                for (var i = 0; i < count; i++) Rows[i].Selected = i == index;
+                                BeginSelectionBatch();
+                                try
+                                {
+                                    for (var i = 0; i < count; i++) SetRowSelected(i, i == index);
+                                }
+                                finally
+                                {
+                                    EndSelectionBatch();
+                                }
                             }
                             break;
                     }
@@ -385,7 +486,15 @@ namespace ZipPla
                     var count = Rows.Count;
                     if (count > OnMouseDown_DragOutStartIndex)
                     {
-                        for (var i = 0; i < count; i++) Rows[i].Selected = i == OnMouseDown_DragOutStartIndex;
+                        BeginSelectionBatch();
+                        try
+                        {
+                            for (var i = 0; i < count; i++) SetRowSelected(i, i == OnMouseDown_DragOutStartIndex);
+                        }
+                        finally
+                        {
+                            EndSelectionBatch();
+                        }
                         DragReady?.Invoke(this, e);
                     }
                     OnMouseDown_DragOutStartIndex = -1;

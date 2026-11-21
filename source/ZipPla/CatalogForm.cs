@@ -1726,6 +1726,18 @@ namespace ZipPla
             tvCatalog.DragOutSingle = true;
             dgvFileList.DragOutSelection = true;
             dgvFileList.DragOutSingle = true;
+            // K6: 仮想モード。行は共有され、値は CellValueNeeded で表示する行の分だけ作る
+            // 独自のセルは行のテンプレートに入れる（tbcIcon は画像の列なので CellTemplate にはテキストのセルを入れられない）
+            var fileListRowTemplate = new DataGridViewRow();
+            fileListRowTemplate.CreateCells(dgvFileList);
+            fileListRowTemplate.Cells[tbcFileName.Index] = new RainbowDataGridViewTextBoxCell();
+            fileListRowTemplate.Cells[tbcRating.Index] = new RatingGridViewTextBoxCell();
+            fileListRowTemplate.Cells[tbcIcon.Index] = new DataGridViewIconCell();
+            fileListRowTemplate.Height = dgvFileList.RowTemplate.Height;
+            dgvFileList.RowTemplate = fileListRowTemplate;
+            dgvFileList.VirtualMode = true;
+            dgvFileList.CellValueNeeded += dgvFileList_CellValueNeeded;
+            dgvFileList.CellToolTipTextNeeded += dgvFileList_CellToolTipTextNeeded;
             //dgvFileList.GetCurrentIndex = GetCurrentShowIndex;
 
             cmsRightClick.Opening += OpenInFileInClipboardProvider.Owner_Opening;
@@ -2133,10 +2145,7 @@ namespace ZipPla
                 {
                     var temp = selectionSynchronizing;
                     selectionSynchronizing = true;
-                    foreach (DataGridViewRow row in (from DataGridViewRow r in dgvFileList.SelectedRows select r).ToArray())
-                    {
-                        row.Selected = false;
-                    }
+                    dgvFileList.ClearSelection(); // SelectedRows を使うと選択中の行が共有されなくなる
                     selectionSynchronizing = temp;
                     clickedRow.Selected = true;
                 }
@@ -2726,8 +2735,7 @@ namespace ZipPla
                     {
                         if (hit.RowIndex >= 0)
                         {
-                            var row = dgvFileList.Rows[hit.RowIndex];
-                            if (row.Selected) e.Cancel = true;
+                            if (dgvFileList.IsRowSelected(hit.RowIndex)) e.Cancel = true;
                         }
                     }
                 }
@@ -2802,10 +2810,7 @@ namespace ZipPla
                             {
                                 var temp = selectionSynchronizing;
                                 selectionSynchronizing = true;
-                                foreach (DataGridViewRow row in dgvFileList.SelectedRows.Cast<DataGridViewRow>().ToArray())
-                                {
-                                    row.Selected = false;
-                                }
+                                dgvFileList.ClearSelection(); // SelectedRows を使うと選択中の行が共有されなくなる
                                 selectionSynchronizing = temp;
                                 clickedRow.Selected = true;
                                 dgvFileList.CurrentCell = clickedRow.Cells[tbcFileName.Index];
@@ -3841,22 +3846,9 @@ namespace ZipPla
             {
                 if (ZipPathArray != null)
                 {
-                    var rows = dgvFileList.Rows;
-                    var rowsCount = rows.Count;
-                    var s2d = tvCatalog.ShowIndexToDataIndex;
-                    //var tbcAccessTimeIndex = tbcAccessTime.Index;
-                    var tbcRatingIndex = tbcRating.Index;
-                    //if (s2d.Length == rowsCount)
-                    if (!CreatingZipPathArray && s2d != null && s2d.Length == rowsCount)
-                    {
-                        for (var i = 0; i < rowsCount; i++)
-                        {
-                            setFileListRowInLock(s2d[i], dynamicOnly: false, localOnly: true, cultureForOnlyStatic: culture, volatilitySortCancelIfChanged: false);
-                            //var cells = rows[i].Cells;
-                            //cells[tbcRatingIndex].ToolTipText = Message.MiddleClickToResetRating;
-
-                        }
-                    }
+                    // 行の情報は表示するときに今の言語で作り直す
+                    clearFileListRowInfos();
+                    dgvFileList.Invalidate();
                 }
             }
 
@@ -8919,59 +8911,6 @@ namespace ZipPla
             }
         }
 
-        // パフォーマンス向上のために呼び出す。必須ではない。
-        private void prepareFileListRows(object itemCountIntObject)
-        {
-            var itemCount = (int)itemCountIntObject;
-            var recycleCount = setFileListFromThumbnailViewer_Recycle.Count;
-            if (recycleCount < itemCount)
-            {
-                var tbcFileNameIndex = tbcFileName.Index;
-                var tbcRatingIndex = tbcRating.Index;
-                var tbcIconIndex = tbcIcon.Index;
-                var addCount = itemCount - recycleCount;
-                setFileListFromThumbnailViewer_Recycle.AddRange(new DataGridViewRow[addCount]);
-
-                // 並列化で高速化されない
-                /*
-                const int blockSize = 100;
-                Parallel.For(0, (addCount + (blockSize - 1)) / blockSize, j =>
-                {
-                    var start = recycleCount + j * blockSize;
-                    var stop =  Math.Min(start + blockSize, itemCount);
-
-                    for (var i = start; i < stop; i++)
-                    {
-                        var row = new DataGridViewRow(); // ループ内の 4 割
-                        row.CreateCells(dgvFileList); // ループ内の 3 割
-                        setFileListFromThumbnailViewer_Recycle[i] = row;
-                        row.Cells[tbcFileNameIndex] = new RainbowDataGridViewTextBoxCell(null);
-                        var ratingGridViewTextBoxCell = new RatingGridViewTextBoxCell(activeStars: false, activeStarsFunc: fileListNotInGesturing);
-                        ratingGridViewTextBoxCell.RatingClick += RatingGridViewTextBoxCell_RatingClick;
-                        row.Cells[tbcRatingIndex] = ratingGridViewTextBoxCell;
-                        var iconCell = new DataGridViewIconCell();
-                        iconCell.GetMaskAlpha = GetMaskAlpha;
-                        row.Cells[tbcIconIndex] = iconCell;
-                    }
-                });
-                */
-
-                for (var i = recycleCount; i < itemCount; i++)
-                {
-                    var row = new DataGridViewRow(); // ループ内の 4 割
-                    row.CreateCells(dgvFileList); // ループ内の 3 割
-                    setFileListFromThumbnailViewer_Recycle[i] = row;
-                    row.Cells[tbcFileNameIndex] = new RainbowDataGridViewTextBoxCell(null);
-                    var ratingGridViewTextBoxCell = new RatingGridViewTextBoxCell(activeStars: false, activeStarsFunc: notNeedToIgnoreMouseMoveOnRating);
-                    ratingGridViewTextBoxCell.RatingClick += RatingGridViewTextBoxCell_RatingClick;
-                    row.Cells[tbcRatingIndex] = ratingGridViewTextBoxCell;
-                    var iconCell = new DataGridViewIconCell();
-                    iconCell.GetMaskAlpha = GetMaskAlpha;
-                    row.Cells[tbcIconIndex] = iconCell;
-                }
-            }
-        }
-
         //private readonly Dictionary<string, FileSystemWatcher> folderWatchers = new Dictionary<string, FileSystemWatcher>();
 
         //private static readonly Color sorColor = Color.LightGreen;
@@ -8985,15 +8924,6 @@ namespace ZipPla
 
             //sw.Restart();
 
-            var zpa = ZipPathArray;
-            var itemCount = zpa == null ? 0 : zpa.Length; // ロックしていないのでこのあとのロック時の数と異なる可能性があるが正確な値である必要はない
-            Task prepareFileListRowsTask = null;
-            if (itemCount > setFileListFromThumbnailViewer_Recycle.Count)
-            {
-                prepareFileListRowsTask = new Task(prepareFileListRows, itemCount);
-                prepareFileListRowsTask.Start();
-                //prepareFileListRows();
-            }
 
             /*
             lock(folderWatchers)
@@ -9071,14 +9001,6 @@ namespace ZipPla
                 GPSizeThumbnail.ClearBlackList();
 
                 //sw.Stop(); ss += $"waitStart:\t{sw.Elapsed}\n"; sw.Restart();
-                if (prepareFileListRowsTask != null)
-                {
-                    // 起動直後で Task の 25 % 程度は Wait
-                    // 
-                    prepareFileListRowsTask.Wait();
-                    prepareFileListRowsTask.Dispose();
-                    prepareFileListRowsTask = null;
-                }
                 //sw.Stop(); ss += $"waitStop:\t{sw.Elapsed}\n"; sw.Restart();
 
                 //sw.Stop(); ss += $"flStart:\t{sw.Elapsed}\n"; sw.Restart();
@@ -9549,7 +9471,7 @@ namespace ZipPla
                 if (pageReset)
                 {
                     pga[index] = -1;
-                    dgvFileList.Rows[d2s[index]].Cells[tbcPageIndex].Value = getPageString(-1, fca[index]);
+                    setFileListText(d2s[index], dgvFileList.Columns[tbcPageIndex], getPageString(-1, fca[index]));
                 }
                 else
                 {
@@ -9929,13 +9851,21 @@ namespace ZipPla
                         }
                     }
                 }
-                foreach (DataGridViewRow row in dgvFileList.Rows)
+                // 行を共有したまま選択を変える（Rows[i] で行を取り出すと、その行のセルが作られる）
+                var rowCount = dgvFileList.RowCount;
+                var shouldBeSelected = new bool[rowCount];
+                foreach (var showIndex in selectedIndices)
                 {
-                    var currentSelected = selectedIndices.Contains(row.Index);
-                    if (row.Selected != currentSelected)
-                    {
-                        row.Selected = currentSelected;
-                    }
+                    if (0 <= showIndex && showIndex < rowCount) shouldBeSelected[showIndex] = true;
+                }
+                dgvFileList.BeginSelectionBatch();
+                try
+                {
+                    for (var i = 0; i < rowCount; i++) dgvFileList.SetRowSelected(i, shouldBeSelected[i]);
+                }
+                finally
+                {
+                    dgvFileList.EndSelectionBatch();
                 }
                 if (changeScroll)
                 {
@@ -9999,7 +9929,7 @@ namespace ZipPla
             {
                 selectionSynchronizing = true;
 
-                var selectedIndices = (from DataGridViewRow row in dgvFileList.SelectedRows select row.Index).ToArray();
+                var selectedIndices = dgvFileList.GetSelectedRowIndices();
                 var selectedIndicesCount = selectedIndices.Length;
                 for (var i = 0; i < selectedIndicesCount; i++)
                 {
@@ -12032,10 +11962,7 @@ namespace ZipPla
                         {
                             var temp = selectionSynchronizing;
                             selectionSynchronizing = true;
-                            foreach (DataGridViewRow row in dgvFileList.SelectedRows.Cast<DataGridViewRow>().ToArray())
-                            {
-                                row.Selected = false;
-                            }
+                            dgvFileList.ClearSelection(); // SelectedRows を使うと選択中の行が共有されなくなる
                             selectionSynchronizing = temp;
                             clickedRow.Selected = true;
                             dgvFileList.CurrentCell = clickedRow.Cells[tbcFileName.Index];
@@ -12079,10 +12006,7 @@ namespace ZipPla
                     {
                         var temp = selectionSynchronizing;
                         selectionSynchronizing = true;
-                        foreach (DataGridViewRow row in dgvFileList.SelectedRows.Cast<DataGridViewRow>().ToArray())
-                        {
-                            row.Selected = false;
-                        }
+                        dgvFileList.ClearSelection(); // SelectedRows を使うと選択中の行が共有されなくなる
                         selectionSynchronizing = temp;
                         clickedRow.Selected = true;
                         dgvFileList.CurrentCell = clickedRow.Cells[tbcFileName.Index];
@@ -12143,7 +12067,7 @@ namespace ZipPla
                         if ((md & (Keys.Control | Keys.Shift)) == 0 && s2d != null && s2d.Length > hit.RowIndex)
                         {
                             var dcm = DoubleClickFileOpenMode;
-                            var clickedIndex = dcm == DoubleClickMode.SelectAndClick && !dgvFileList.Rows[hit.RowIndex].Selected ? -1 : s2d[hit.RowIndex];
+                            var clickedIndex = dcm == DoubleClickMode.SelectAndClick && !dgvFileList.IsRowSelected(hit.RowIndex) ? -1 : s2d[hit.RowIndex];
                             if (clickedIndex >= 0)
                             {
                                 var now = Environment.TickCount;
@@ -15090,97 +15014,246 @@ namespace ZipPla
 
         private bool notNeedToIgnoreMouseMoveOnRating() { return !mgFileList.InGesturing; }// 右クリックメニュー対応はクラス内で && (MouseButtons & MouseButtons.Right) != MouseButtons.Right && !cmsRightClick.Visible; }
 
-        private readonly List<DataGridViewRow> setFileListFromThumbnailViewer_Recycle = new List<DataGridViewRow>();
+        // K6: ファイル一覧は仮想モード。セルは値を持たず、表示する行の文字列だけをデータのインデックスごとに作って持つ（fileListRowInfos）
+        private sealed class FileListRowInfo
+        {
+            public readonly string[] Texts; // 列の Index ごとの文字列
+            public int Rating;
+            public string Path;
+            public bool IsDir;
+            public DateTime LastWriteTime;
+            public bool IconResolved;
+            public Bitmap Icon;
+            public string IconToolTip;
+            public string TagName;
+            public Tuple<int, int, string>[] TagTrios;
+            public string NameToolTip;
+            public FileListRowInfo(int columnCount) { Texts = new string[columnCount]; }
+        }
+
+        private sealed class FileListRatingHover
+        {
+            public int Row = -1;
+            public int TemporaryRating = -1;
+            public Rectangle StarsRectangle = Rectangle.Empty;
+            public bool ToolTipMaking = false;
+            public int ToolTipRow = -1;
+        }
+        private readonly FileListRatingHover fileListRatingHover = new FileListRatingHover();
+
+        private FileListRowInfo[] fileListRowInfos = new FileListRowInfo[0];
+        private string[] fileListRowInfosSource = null; // fileListRowInfos を作ったときの ZipPathArray
+        private int fileListEditingShowIndex = -1; // 名前の変更中に、ファイル名の列に拡張子を除いた名前を出す行
+        private string fileListEditingText = null;
+        // 揮発性の列（ページ数・解像度など）で並べ替えたときの、その列の値。値が変わったら並べ替えの矢印を消す（表示していない行の判定用）
+        private DataGridViewColumn fileListVolatileSortColumn = null;
+        private string[] fileListVolatileSortSnapshot = null;
+
+        private FileListRowInfo[] getFileListRowInfoArray(string[] zpa)
+        {
+            if (fileListRowInfosSource != zpa || fileListRowInfos.Length != zpa.Length)
+            {
+                fileListRowInfos = new FileListRowInfo[zpa.Length];
+                fileListRowInfosSource = zpa;
+            }
+            return fileListRowInfos;
+        }
+
+        private void clearFileListRowInfos()
+        {
+            fileListRowInfos = new FileListRowInfo[0];
+            fileListRowInfosSource = null;
+        }
+
+        /// <summary>表示上の行の情報。まだ作っていなければ作る。行がデータと対応していなければ null</summary>
+        private FileListRowInfo getFileListRowInfo(int showIndex)
+        {
+            if (CreatingZipPathArray) return null;
+            var s2d = tvCatalog.ShowIndexToDataIndex;
+            var zpa = ZipPathArray;
+            if (zpa == null || s2d == null || showIndex < 0 || showIndex >= s2d.Length) return null;
+            var index = s2d[showIndex];
+            if (index < 0 || index >= zpa.Length) return null;
+            var infos = getFileListRowInfoArray(zpa);
+            var info = infos[index];
+            if (info == null)
+            {
+                info = new FileListRowInfo(dgvFileList.Columns.Count);
+                try
+                {
+                    setFileListRowInLock(info, index, dynamicOnly: false, localOnly: false, cultureForOnlyStatic: Message.CurrentLanguage, volatilitySortCancelIfChanged: false);
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    return null; // 配列の差し替えの途中
+                }
+                infos[index] = info;
+            }
+            return info;
+        }
+
+        private int getFileListRating(int showIndex)
+        {
+            var info = getFileListRowInfo(showIndex);
+            return info == null ? 0 : info.Rating;
+        }
+
+        private void dgvFileList_CellValueNeeded(object sender, DataGridViewCellValueEventArgs e)
+        {
+            var columnIndex = e.ColumnIndex;
+            if (columnIndex == tbcRating.Index)
+            {
+                e.Value = RatingGridViewTextBoxCell.StarsText; // 幅の自動調整用。描画は RatingGridViewTextBoxCell が行う
+                return;
+            }
+            if (columnIndex == tbcFileName.Index && e.RowIndex == fileListEditingShowIndex && fileListEditingText != null)
+            {
+                e.Value = fileListEditingText;
+                return;
+            }
+            var info = getFileListRowInfo(e.RowIndex);
+            if (info == null) return;
+            if (columnIndex == tbcIcon.Index) e.Value = info.Path;
+            else if (columnIndex >= 0 && columnIndex < info.Texts.Length) e.Value = info.Texts[columnIndex];
+        }
+
+        private void dgvFileList_CellToolTipTextNeeded(object sender, DataGridViewCellToolTipTextNeededEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            if (e.ColumnIndex == tbcIcon.Index)
+            {
+                e.ToolTipText = getFileListRowInfo(e.RowIndex)?.IconToolTip ?? "";
+            }
+            else if (e.ColumnIndex == tbcFileName.Index)
+            {
+                e.ToolTipText = getFileListRowInfo(e.RowIndex)?.NameToolTip;
+            }
+        }
+
+        /// <summary>表示上の行の 1 つの列の文字列を差し替える。行の情報をまだ作っていなければ、表示するときに配列から作られるので何もしない</summary>
+        private void setFileListText(int showIndex, DataGridViewColumn column, string text)
+        {
+            var s2d = tvCatalog.ShowIndexToDataIndex;
+            var zpa = ZipPathArray;
+            if (zpa == null || s2d == null || showIndex < 0 || showIndex >= s2d.Length || showIndex >= dgvFileList.RowCount) return;
+            var index = s2d[showIndex];
+            if (index < 0 || index >= zpa.Length) return;
+            var info = getFileListRowInfoArray(zpa)[index];
+            if (info != null) info.Texts[column.Index] = text;
+            dgvFileList.InvalidateCell(column.Index, showIndex);
+        }
+
+        private bool isDynamicFileListColumn(DataGridViewColumn column)
+        {
+            return column == tbcPage || column == tbcResolution || column == tbcRatio || column == tbcWidth || column == tbcHeight || column == tbcLength || column == tbcFPS;
+        }
+
+        private bool setFileListRoDynamicPartForIndex(FileListRowInfo row, int index, bool volatilitySortCancelIfChanged)
+        {
+            return setFileListRoDynamicPart(row, ZipNameArray[index], ZipPageArray[index], FileCountArray[index], ImageInfoArray[index], MovieInfoArray[index], volatilitySortCancelIfChanged);
+        }
+
+        private void makeFileListVolatileSortSnapshot()
+        {
+            fileListVolatileSortColumn = null;
+            fileListVolatileSortSnapshot = null;
+            DataGridViewColumn column = null;
+            foreach (DataGridViewColumn c in dgvFileList.Columns)
+            {
+                if (c.HeaderCell.SortGlyphDirection != SortOrder.None && isDynamicFileListColumn(c))
+                {
+                    column = c;
+                    break;
+                }
+            }
+            var zpa = ZipPathArray;
+            if (column == null || zpa == null || CreatingZipPathArray) return;
+            var snapshot = new string[zpa.Length];
+            var temp = new FileListRowInfo(dgvFileList.Columns.Count);
+            try
+            {
+                for (var i = 0; i < snapshot.Length; i++)
+                {
+                    setFileListRoDynamicPartForIndex(temp, i, volatilitySortCancelIfChanged: false);
+                    snapshot[i] = temp.Texts[column.Index];
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return;
+            }
+            fileListVolatileSortColumn = column;
+            fileListVolatileSortSnapshot = snapshot;
+        }
+
+        /// <summary>行の情報を作っていない行の揮発性の値が、並べ替えたときから変わっていたら並べ替えの矢印を消す</summary>
+        private void checkFileListVolatileSortSnapshot(int index)
+        {
+            var column = fileListVolatileSortColumn;
+            var snapshot = fileListVolatileSortSnapshot;
+            if (column == null || snapshot == null) return;
+            if (column.HeaderCell.SortGlyphDirection == SortOrder.None || index >= snapshot.Length)
+            {
+                fileListVolatileSortColumn = null;
+                fileListVolatileSortSnapshot = null;
+                return;
+            }
+            var temp = new FileListRowInfo(dgvFileList.Columns.Count);
+            setFileListRoDynamicPartForIndex(temp, index, volatilitySortCancelIfChanged: false);
+            if ((temp.Texts[column.Index] ?? "") != (snapshot[index] ?? ""))
+            {
+                column.HeaderCell.SortGlyphDirection = SortOrder.None;
+                fileListVolatileSortColumn = null;
+                fileListVolatileSortSnapshot = null;
+            }
+        }
+
         private void setFileListFromThumbnailViewer(bool tryToKeepScroll = false, bool volatilitySort = false)
         {
-            //var sw = new Stopwatch();
-            //var ss = ""; sw.Start();
-
+#if PERFLOG
+            var perfFileListStart = Stopwatch.GetTimestamp();
+#endif
             var temp = selectionSynchronizing;
             selectionSynchronizing = true;
-            var showIndexToDataIndex = tvCatalog.ShowIndexToDataIndex;
-            var tbcFileNameIndex = tbcFileName.Index;
-            var tbcRatingIndex = tbcRating.Index;
-            var tbcIconIndex = tbcIcon.Index;
-            var culture = Message.CurrentLanguage;
-            //sw.Stop(); ss += $"roopStart:\t{sw.Elapsed}\n"; sw.Restart();
-            var recycleRowsCount = setFileListFromThumbnailViewer_Recycle.Count;
-            var recycleIndex = 0;
-            var itemsCount = showIndexToDataIndex.Length;
-            var lastItemsCount = dgvFileList.Rows.Count;
-            var needToClear = itemsCount < lastItemsCount;
-            var needToAdd = itemsCount != lastItemsCount;
-            var addedRows = needToAdd ? new DataGridViewRow[needToClear ? itemsCount : itemsCount - lastItemsCount] : null;
-            var addedRowsIndex = 0;
-            var addedStartIndex = needToClear ? 0 : lastItemsCount;
-            foreach (var index in showIndexToDataIndex)
+            var itemsCount = tvCatalog.ShowIndexToDataIndex.Length;
+            var lastItemsCount = dgvFileList.RowCount;
+            clearFileListRowInfos();
+            var val = dgvFileList.FirstDisplayedScrollingRowIndex;
+            if (itemsCount != lastItemsCount)
             {
-                //sw.Stop();
-                DataGridViewRow row;
-                if (recycleIndex < recycleRowsCount)
-                {
-                    row = setFileListFromThumbnailViewer_Recycle[recycleIndex++];
-                    (row.Cells[tbcFileNameIndex] as RainbowDataGridViewTextBoxCell).Tags = Tags;
-                    (row.Cells[tbcRatingIndex] as RatingGridViewTextBoxCell).activeStars = InDirectoryVirtualDirectoryOrSmartDirectory;
-
-                    setFileListRowInLock(row, index, dynamicOnly: false, localOnly: false, cultureForOnlyStatic: culture, volatilitySortCancelIfChanged: !volatilitySort);
-                    if (recycleIndex > addedStartIndex) addedRows[addedRowsIndex++] = row;
-                }
-                else
-                {
-                    recycleIndex++;
-                    row = new DataGridViewRow(); // ループ内の 4 割
-                    row.CreateCells(dgvFileList); // ループ内の 3 割
-                    setFileListFromThumbnailViewer_Recycle.Add(row);
-                    row.Cells[tbcFileNameIndex] = new RainbowDataGridViewTextBoxCell(Tags);
-                    var ratingGridViewTextBoxCell = new RatingGridViewTextBoxCell(activeStars: InDirectoryVirtualDirectoryOrSmartDirectory,
-                        activeStarsFunc: notNeedToIgnoreMouseMoveOnRating);
-                    ratingGridViewTextBoxCell.RatingClick += RatingGridViewTextBoxCell_RatingClick;
-                    row.Cells[tbcRatingIndex] = ratingGridViewTextBoxCell;
-                    var iconCell = new DataGridViewIconCell();
-                    iconCell.GetMaskAlpha = GetMaskAlpha;
-                    row.Cells[tbcIconIndex] = iconCell;
-
-                    setFileListRowInLock(row, index, dynamicOnly: false, localOnly: false, cultureForOnlyStatic: culture, volatilitySortCancelIfChanged: !volatilitySort);
-                    if (recycleIndex > addedStartIndex) addedRows[addedRowsIndex++] = row;
-                }
+                // 仮想モードで行数を減らすと 1 行ずつ消すので遅い（3 万行から 5000 行減らして 0.4 秒）。いったん空にしてから足す
+                if (itemsCount < lastItemsCount) dgvFileList.Rows.Clear();
+                dgvFileList.RowCount = itemsCount;
             }
-            int val = -1;
-            //if (tryToKeepScroll)
+            else
             {
-                val = dgvFileList.FirstDisplayedScrollingRowIndex;
+                dgvFileList.Invalidate();
             }
-            if (needToClear)
-            {
-                dgvFileList.Rows.Clear();
-            }
-            //sw.Stop(); ss += $"clEnd:\t{sw.Elapsed}\n"; sw.Restart();
-            if (needToAdd) dgvFileList.Rows.AddRange(addedRows);
-            //sw.Stop(); ss += $"addEnd:\t{sw.Elapsed}\n"; sw.Restart();
 
-            //if (tryToKeepScroll)
+            if (val >= 0 && val < itemsCount)
             {
-                //if (val >= 0 && val < rowsList.Count)
-                if (val >= 0 && val < itemsCount)
-                {
-                    dgvFileList.FirstDisplayedScrollingRowIndex = val;
-                }
+                dgvFileList.FirstDisplayedScrollingRowIndex = val;
             }
             if (!volatilitySort)
             {
+                fileListVolatileSortColumn = null;
+                fileListVolatileSortSnapshot = null;
                 setNonVolatilitySort();
+            }
+            else
+            {
+                makeFileListVolatileSortSnapshot();
             }
 
             selectionSynchronizing = temp;
 
-            //sw.Stop(); ss += $"sSncStart:\t{sw.Elapsed}\n"; sw.Restart();
             selectionSynchronizingFromThumbnailToFileList(changeScroll: !tryToKeepScroll);
 
             // サムネイル非表示の場合にヘッダ読み込みが終わるまで表示が更新されない問題の解消
             dgvFileList.Update();
-
-            //sw.Stop(); ss += $"fin:\t{sw.Elapsed}";
-            //MessageBox.Show(ss);
+#if PERFLOG
+            PerfTrace.Write($"fileList rebuild items={itemsCount} last={lastItemsCount} visible={dgvFileList.Visible} {(Stopwatch.GetTimestamp() - perfFileListStart) * 1000.0 / Stopwatch.Frequency:F1} ms");
+#endif
         }
 
         private bool setFileListRowInLock(int index, bool dynamicOnly, bool localOnly, CultureInfo cultureForOnlyStatic, bool volatilitySortCancelIfChanged)
@@ -15191,11 +15264,22 @@ namespace ZipPla
             if (index >= d2s.Length) return false;
             var showIndex = d2s[index];
             if (showIndex < 0 || showIndex >= dgvFileList.Rows.Count) return false;
-            var row = dgvFileList.Rows[showIndex];
-            return setFileListRowInLock(row, index, dynamicOnly, localOnly, cultureForOnlyStatic, volatilitySortCancelIfChanged);
+            var zpa = ZipPathArray;
+            if (zpa == null || index >= zpa.Length) return false;
+            var info = getFileListRowInfoArray(zpa)[index];
+            if (info == null)
+            {
+                // 表示したことのない行は表示するときに配列から作る。並べ替えの矢印を消すかの判定だけ行う
+                if (volatilitySortCancelIfChanged && !localOnly) checkFileListVolatileSortSnapshot(index);
+                return false;
+            }
+            if (cultureForOnlyStatic == null) cultureForOnlyStatic = Message.CurrentLanguage;
+            var result = setFileListRowInLock(info, index, dynamicOnly, localOnly, cultureForOnlyStatic, volatilitySortCancelIfChanged);
+            dgvFileList.InvalidateRow(showIndex);
+            return result;
         }
 
-        private bool setFileListRowInLock(DataGridViewRow row, int index, bool dynamicOnly, bool localOnly, CultureInfo cultureForOnlyStatic, bool volatilitySortCancelIfChanged)
+        private bool setFileListRowInLock(FileListRowInfo row, int index, bool dynamicOnly, bool localOnly, CultureInfo cultureForOnlyStatic, bool volatilitySortCancelIfChanged)
         {
             var name = ZipNameArray[index];
             var lwt = ModifiedTimeArray[index];
@@ -15227,73 +15311,27 @@ namespace ZipPla
             return result;
         }
 
-        private bool setFileListRowStaticGlobalPart(DataGridViewRow row, string path, string name, DateTime lastWriteTime)
+        private bool setFileListRowStaticGlobalPart(FileListRowInfo row, string path, string name, DateTime lastWriteTime)
         {
-            // var changed = false;
-
-            var iconCell = row.Cells[tbcIcon.Index] as DataGridViewIconCell;
-            iconCell.IsDir = name != null && name.Length > 0 && name.Last() == Path.DirectorySeparatorChar;
-            iconCell.lastWriteTime = lastWriteTime;
-            iconCell.ResetValue(path, staticImageDisposed: true);
-            //iconCell.Value = path;
-
-            var nameCell = row.Cells[tbcFileName.Index];
-            //if(nameCell.Value?.ToString() != name)
-            {
-                nameCell.Value = name;
-                // changed = true;
-            }
-            var rateCell = row.Cells[tbcRating.Index] as RatingGridViewTextBoxCell;
-            var rate = ZipPlaInfo.GetOnlyRating(name);
-            //if(rateCell.Rating != rate)
-            {
-                rateCell.Rating = rate;
-                // changed = true;
-            }
-
-            //return changed;
+            row.IsDir = name != null && name.Length > 0 && name.Last() == Path.DirectorySeparatorChar;
+            row.LastWriteTime = lastWriteTime;
+            row.Path = path;
+            row.IconResolved = false; // アイコンと種類の名前は描画するときに取得する
+            row.Icon = null;
+            row.IconToolTip = null;
+            row.Texts[tbcFileName.Index] = name;
+            row.TagName = null;
+            row.TagTrios = null;
+            row.Rating = Math.Max(0, Math.Min(5, ZipPlaInfo.GetOnlyRating(name)));
             return false;
         }
 
-        private bool setFileListRowStaticLocalPart(DataGridViewRow row, string name, long size, DateTime cTime, DateTime aTime, DateTime mTime, CultureInfo culture) // size ソートを揮発性にしたくないので static 扱い
+        private bool setFileListRowStaticLocalPart(FileListRowInfo row, string name, long size, DateTime cTime, DateTime aTime, DateTime mTime, CultureInfo culture) // size ソートを揮発性にしたくないので static 扱い
         {
-            //var changed = false;
-            DataGridViewCell cell;
-            string s;
-
-            cell = row.Cells[tbcCreateTime.Index];
-            s = getShortTimeString(cTime, culture);
-            // if(cell.Value?.ToString() != s)
-            {
-                // changed = true;
-                cell.Value = s;
-            }
-
-            cell = row.Cells[tbcAccessTime.Index];
-            s = getShortTimeString(aTime, culture);
-            // if(cell.Value?.ToString() != s)
-            {
-                // changed = true;
-                cell.Value = s;
-            }
-
-            cell = row.Cells[tbcWriteTime.Index];
-            s = getShortTimeString(mTime, culture);
-            // if (cell.Value?.ToString() != s)
-            {
-                // changed = true;
-                cell.Value = s;
-            }
-
-            cell = row.Cells[tbcSize.Index];
-            s = getFileSizeStringInFileListLocal(name, size);
-            // if (cell.Value?.ToString() != s)
-            {
-                //changed = true;
-                cell.Value = s;
-            }
-
-            // return changed;
+            row.Texts[tbcCreateTime.Index] = getShortTimeString(cTime, culture);
+            row.Texts[tbcAccessTime.Index] = getShortTimeString(aTime, culture);
+            row.Texts[tbcWriteTime.Index] = getShortTimeString(mTime, culture);
+            row.Texts[tbcSize.Index] = getFileSizeStringInFileListLocal(name, size);
             return false;
         }
 
@@ -15325,14 +15363,14 @@ namespace ZipPla
         */
 
         private const string setFileListRoDynamicPart_LengthFormat = @"h\:mm\:ss";
-        private delegate void setFileListRoDynamicPart_SetterDelegate(ref bool changed, DataGridViewCell dst, string src);
-        private bool setFileListRoDynamicPart(DataGridViewRow row, string name, int cPage, int tPage, ImageInfo iInfo, MovieInfo mInfo, bool volatilitySortCancelIfChanged)
+        private delegate void setFileListRoDynamicPart_SetterDelegate(ref bool changed, FileListRowInfo row, DataGridViewColumn column, string src);
+        private bool setFileListRoDynamicPart(FileListRowInfo row, string name, int cPage, int tPage, ImageInfo iInfo, MovieInfo mInfo, bool volatilitySortCancelIfChanged)
         {
             var changed = false;
 
             var setter = volatilitySortCancelIfChanged ? (setFileListRoDynamicPart_SetterDelegate)substitutionWithCheckForCellAndRemoveSortGlyphDirection : substitutionWithCheckForCell;
 
-            setter(ref changed, row.Cells[tbcPage.Index], getPageString(cPage, tPage));
+            setter(ref changed, row, tbcPage, getPageString(cPage, tPage));
             //if(InArchive || ImageLoader.SupportsAtLeastThumbnailReading(name))
             var ffmpegExists = null as bool?;
             var extensionWithPeriodInLower = null as string;
@@ -15341,28 +15379,28 @@ namespace ZipPla
                 Size size;
                 if (iInfo != null && !(size = iInfo.Size).IsEmpty)
                 {
-                    setter(ref changed, row.Cells[tbcResolution.Index], size.Width + "x" + size.Height);
-                    setter(ref changed, row.Cells[tbcRatio.Index], getRatioString(size));
-                    setter(ref changed, row.Cells[tbcWidth.Index], size.Width.ToString());
-                    setter(ref changed, row.Cells[tbcHeight.Index], size.Height.ToString());
+                    setter(ref changed, row, tbcResolution, size.Width + "x" + size.Height);
+                    setter(ref changed, row, tbcRatio, getRatioString(size));
+                    setter(ref changed, row, tbcWidth, size.Width.ToString());
+                    setter(ref changed, row, tbcHeight, size.Height.ToString());
                 }
                 else if (InArchive || ImageLoader.SupportsImageAtLeastThumbnailReadingByExtension(
                     extensionWithPeriodInLower ?? ImageLoader.GetExtensionWithPeriodInLowerSafety(name), ref ffmpegExists))
                 {
-                    setter(ref changed, row.Cells[tbcResolution.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcRatio.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcWidth.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcHeight.Index], QuestionPageString);
+                    setter(ref changed, row, tbcResolution, QuestionPageString);
+                    setter(ref changed, row, tbcRatio, QuestionPageString);
+                    setter(ref changed, row, tbcWidth, QuestionPageString);
+                    setter(ref changed, row, tbcHeight, QuestionPageString);
                 }
                 else
                 {
-                    setter(ref changed, row.Cells[tbcResolution.Index], EmptyPageString);
-                    setter(ref changed, row.Cells[tbcRatio.Index], EmptyPageString);
-                    setter(ref changed, row.Cells[tbcWidth.Index], EmptyPageString);
-                    setter(ref changed, row.Cells[tbcHeight.Index], EmptyPageString);
+                    setter(ref changed, row, tbcResolution, EmptyPageString);
+                    setter(ref changed, row, tbcRatio, EmptyPageString);
+                    setter(ref changed, row, tbcWidth, EmptyPageString);
+                    setter(ref changed, row, tbcHeight, EmptyPageString);
                 }
-                setter(ref changed, row.Cells[tbcLength.Index], EmptyPageString);
-                setter(ref changed, row.Cells[tbcFPS.Index], EmptyPageString);
+                setter(ref changed, row, tbcLength, EmptyPageString);
+                setter(ref changed, row, tbcFPS, EmptyPageString);
             }
             else if (InMovie || MovieThumbnailLoader.SupportsByExtension(extensionWithPeriodInLower ?? ImageLoader.GetExtensionWithPeriodInLowerSafety(name)))
             {
@@ -15371,91 +15409,92 @@ namespace ZipPla
                     var size = mInfo.SizeByPixel;
                     if (!size.IsEmpty)
                     {
-                        setter(ref changed, row.Cells[tbcResolution.Index], size.Width + "x" + size.Height);
-                        setter(ref changed, row.Cells[tbcRatio.Index], getRatioString(size, mInfo.SAR));
-                        setter(ref changed, row.Cells[tbcWidth.Index], size.Width.ToString());
-                        setter(ref changed, row.Cells[tbcHeight.Index], size.Height.ToString());
+                        setter(ref changed, row, tbcResolution, size.Width + "x" + size.Height);
+                        setter(ref changed, row, tbcRatio, getRatioString(size, mInfo.SAR));
+                        setter(ref changed, row, tbcWidth, size.Width.ToString());
+                        setter(ref changed, row, tbcHeight, size.Height.ToString());
                     }
                     else
                     {
-                        setter(ref changed, row.Cells[tbcResolution.Index], QuestionPageString);
-                        setter(ref changed, row.Cells[tbcRatio.Index], QuestionPageString);
-                        setter(ref changed, row.Cells[tbcWidth.Index], QuestionPageString);
-                        setter(ref changed, row.Cells[tbcHeight.Index], QuestionPageString);
+                        setter(ref changed, row, tbcResolution, QuestionPageString);
+                        setter(ref changed, row, tbcRatio, QuestionPageString);
+                        setter(ref changed, row, tbcWidth, QuestionPageString);
+                        setter(ref changed, row, tbcHeight, QuestionPageString);
                     }
                     var length = mInfo.Duration;
                     if (length != default(TimeSpan))
                     {
-                        setter(ref changed, row.Cells[tbcLength.Index], length.ToString(setFileListRoDynamicPart_LengthFormat));
+                        setter(ref changed, row, tbcLength, length.ToString(setFileListRoDynamicPart_LengthFormat));
                     }
                     else
                     {
-                        setter(ref changed, row.Cells[tbcLength.Index], QuestionPageString);
+                        setter(ref changed, row, tbcLength, QuestionPageString);
                     }
                     var fps = mInfo.FPSString;
                     if (!string.IsNullOrEmpty(fps))
                     {
-                        setter(ref changed, row.Cells[tbcFPS.Index], fps);
+                        setter(ref changed, row, tbcFPS, fps);
                     }
                     else
                     {
-                        setter(ref changed, row.Cells[tbcFPS.Index], QuestionPageString);
+                        setter(ref changed, row, tbcFPS, QuestionPageString);
                     }
                 }
                 else
                 {
-                    setter(ref changed, row.Cells[tbcResolution.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcRatio.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcWidth.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcHeight.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcLength.Index], QuestionPageString);
-                    setter(ref changed, row.Cells[tbcFPS.Index], QuestionPageString);
+                    setter(ref changed, row, tbcResolution, QuestionPageString);
+                    setter(ref changed, row, tbcRatio, QuestionPageString);
+                    setter(ref changed, row, tbcWidth, QuestionPageString);
+                    setter(ref changed, row, tbcHeight, QuestionPageString);
+                    setter(ref changed, row, tbcLength, QuestionPageString);
+                    setter(ref changed, row, tbcFPS, QuestionPageString);
                 }
             }
             else
             {
-                setter(ref changed, row.Cells[tbcResolution.Index], EmptyPageString);
-                setter(ref changed, row.Cells[tbcRatio.Index], EmptyPageString);
-                setter(ref changed, row.Cells[tbcWidth.Index], EmptyPageString);
-                setter(ref changed, row.Cells[tbcHeight.Index], EmptyPageString);
-                setter(ref changed, row.Cells[tbcLength.Index], EmptyPageString);
-                setter(ref changed, row.Cells[tbcFPS.Index], EmptyPageString);
+                setter(ref changed, row, tbcResolution, EmptyPageString);
+                setter(ref changed, row, tbcRatio, EmptyPageString);
+                setter(ref changed, row, tbcWidth, EmptyPageString);
+                setter(ref changed, row, tbcHeight, EmptyPageString);
+                setter(ref changed, row, tbcLength, EmptyPageString);
+                setter(ref changed, row, tbcFPS, EmptyPageString);
             }
             if (ffmpegExists != null) RecentFfmpegExists = (bool)ffmpegExists;
             return changed;
         }
 
-        private void substitutionWithCheckForCellAndRemoveSortGlyphDirection(ref bool changed, DataGridViewCell dst, string src)
+        private void substitutionWithCheckForCellAndRemoveSortGlyphDirection(ref bool changed, FileListRowInfo row, DataGridViewColumn column, string src)
         {
-            var dstString = dst.Value as string;
+            var dstString = row.Texts[column.Index];
             if (dstString == null) dstString = "";
             if (src == null) src = "";
             if (dstString != src)
             {
-                var column = dst.OwningColumn;
-                if (column != null)
+                var header = column.HeaderCell;
+                if (header.SortGlyphDirection != SortOrder.None)
                 {
-                    var header = column.HeaderCell;
-                    if (header.SortGlyphDirection != SortOrder.None)
+                    header.SortGlyphDirection = SortOrder.None;
+                    if (column == fileListVolatileSortColumn)
                     {
-                        header.SortGlyphDirection = SortOrder.None;
+                        fileListVolatileSortColumn = null;
+                        fileListVolatileSortSnapshot = null;
                     }
                 }
 
                 changed = true;
-                dst.Value = src;
+                row.Texts[column.Index] = src;
             }
         }
 
-        private void substitutionWithCheckForCell(ref bool changed, DataGridViewCell dst, string src)
+        private void substitutionWithCheckForCell(ref bool changed, FileListRowInfo row, DataGridViewColumn column, string src)
         {
-            var dstString = dst.Value as string;
+            var dstString = row.Texts[column.Index];
             if (dstString == null) dstString = "";
             if (src == null) src = "";
             if (dstString != src)
             {
                 changed = true;
-                dst.Value = src;
+                row.Texts[column.Index] = src;
             }
         }
 
@@ -15581,81 +15620,7 @@ namespace ZipPla
 
         class DataGridViewIconCell : DataGridViewTextBoxCell
         {
-            private bool valueEmpty = false;
-            private Bitmap iconImage = null;
-            public Func<string, int> GetMaskAlpha;
-
-
-            public DataGridViewIconCell()
-            {
-                ToolTipText = "";
-            }
-
-
-            // これは OnValueChanged ではない
-            /*
-            protected override bool SetValue(int rowIndex, object value)
-            {
-                var prevValue = Value;
-                if (value == null ? prevValue != null : value.Equals(prevValue))
-                {
-                    if (iconImage != null) iconImage.Dispose();
-                    iconImage = null;
-                    valueEmpty = false;
-                    ToolTipText = "";
-                }
-
-                return base.SetValue(rowIndex, value);
-            }
-            */
-
-            // OnValueChanged の代わり
-            public void ResetValue(object value, bool staticImageDisposed)
-            {
-                //base.Value = value;
-                //return;
-                var prevValue = base.Value;
-                if (staticImageDisposed || (value == null ? prevValue != null : (prevValue == null || !value.Equals(prevValue))))
-                {
-                    //if (iconImage != null) iconImage.Dispose(); アイコンは全て使いまわす
-                    iconImage = null;
-                    valueEmpty = false;
-                    ToolTipText = "";
-                    base.Value = value;
-                    //DataGridView?.InvalidateCell(this);
-                    //DataGridView?.Refresh();
-                }
-            }
-
-            // OnValueChanged の代わり（誤り）
-            /*
-            new object Value
-            {
-                get
-                {
-                    return base.Value;
-                }
-                set
-                {
-                    var prevValue = base.Value;
-                    if (value == null ? prevValue != null : value.Equals(prevValue))
-                    {
-                        if (iconImage != null) iconImage.Dispose();
-                        iconImage = null;
-                        valueEmpty = false;
-                        ToolTipText = "";
-                        base.Value = value;
-                        //DataGridView?.InvalidateCell(this);
-                        //DataGridView?.Refresh();
-                    }
-
-                }
-            }
-            */
-
-
-            public bool IsDir;
-            public DateTime lastWriteTime;
+            // K6: 行は共有されるので、セルは行ごとの状態を持たない。アイコンと種類の名前は FileListRowInfo に持ち、描画するときに取得する
 
             private static string fileFolderString = null;
             private static string GetFileFolderString()
@@ -15676,39 +15641,19 @@ namespace ZipPla
 
             protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, int rowIndex, DataGridViewElementStates elementState, object value, object formattedValue, string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, DataGridViewPaintParts paintParts)
             {
-                var path = base.Value as string;
-                if (iconImage == null && !valueEmpty)
+                var form = DataGridView?.FindForm() as CatalogForm;
+                var info = form?.getFileListRowInfo(rowIndex);
+                if (info != null && !info.IconResolved)
                 {
-                    if (path == null)
-                    {
-                        valueEmpty = true;
-                    }
-                    else
+                    info.IconResolved = true;
+                    var path = info.Path;
+                    if (path != null)
                     {
                         try
                         {
-                            string typeName;
-                            if (IsDir)
-                            {
-                                typeName = GetFileFolderString();
-                            }
-                            else
-                            {
-                                typeName = FileTypeManager.GetTypeName(path, useFileAttrinutes: true);
-                            }
-                            if (typeName == null) ToolTipText = "";
-                            else ToolTipText = typeName;
-
-                            iconImage = SmartStaticIconProvider.GetSmall(path, lastWriteTime, IsDir);
-
-                            /*
-                            var tuple = FileTypeManager.GetTypeNameAndSmallIconBitmap(path, useFileAttrinutes: path.Contains(Path.AltDirectorySeparatorChar));
-
-                            if (tuple.Item1 == null) ToolTipText = "";
-                            else ToolTipText = tuple.Item1;
-
-                            iconImage = tuple.Item2;
-                            */
+                            var typeName = info.IsDir ? GetFileFolderString() : FileTypeManager.GetTypeName(path, useFileAttrinutes: true);
+                            info.IconToolTip = typeName ?? "";
+                            info.Icon = SmartStaticIconProvider.GetSmall(path, info.LastWriteTime, info.IsDir);
                         }
                         catch { }
                     }
@@ -15716,11 +15661,12 @@ namespace ZipPla
 
                 base.Paint(graphics, clipBounds, cellBounds, rowIndex, elementState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts & ~DataGridViewPaintParts.ContentForeground);
 
+                var iconImage = info?.Icon;
                 if (iconImage != null)
                 {
                     DrawImageUnscaledCenteringAndCliped(graphics, iconImage, cellBounds);
 
-                    var maskAlpha = path == null ? 0 : GetMaskAlpha(path);
+                    var maskAlpha = info.Path == null ? 0 : form.GetMaskAlpha(info.Path);
                     if (maskAlpha > 0)
                     {
                         if ((elementState & DataGridViewElementStates.Selected) == DataGridViewElementStates.Selected)
@@ -15823,23 +15769,6 @@ namespace ZipPla
 
             }
 
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    // 管理（managed）リソースの破棄処理をここに記述します。
-                    if (iconImage != null)
-                    {
-                        //iconImage.Dispose(); // SmartStaticIconProvider を使っているので Dispose してはいけない
-                        iconImage = null;
-                    }
-                }
-
-                // 非管理（unmanaged）リソースの破棄処理をここに記述します。
-
-                // 元の Dispose
-                base.Dispose(disposing);
-            }
         }
 
 
@@ -15848,69 +15777,57 @@ namespace ZipPla
 
         class RatingGridViewTextBoxCell : DataGridViewTextBoxCell
         {
-            public event RatingClickEventHandler RatingClick;
+            public const string StarsText = "★★★★★";
 
-            public bool activeStars;
-            private Func<bool> activeStarsFunc;
-            private int rating;
-            private int temporaryRating = -1;
-            private Rectangle starsRectangle = Rectangle.Empty;
-            public int Rating
+            // K6: 行は共有され、セルは行ごとに作られないので、マウスを乗せている行と仮の評価はフォームの fileListRatingHover に持つ
+            private CatalogForm OwnerForm => DataGridView?.FindForm() as CatalogForm;
+
+            private static bool IsActive(CatalogForm form) => form != null && form.InDirectoryVirtualDirectoryOrSmartDirectory;
+
+            private void InvalidateRowCell(int rowIndex)
             {
-                set
-                {
-                    var newRating = Math.Max(0, Math.Min(5, value));
-                    if (newRating != rating)
-                    {
-                        rating = newRating;
-                        DataGridView?.InvalidateCell(this);
-                    }
-                }
+                var dataGridView = DataGridView;
+                if (dataGridView != null && rowIndex >= 0 && rowIndex < dataGridView.RowCount && ColumnIndex >= 0) dataGridView.InvalidateCell(ColumnIndex, rowIndex);
             }
-
-            /*
-            protected override void OnMouseClick(DataGridViewCellMouseEventArgs e)
-            {
-                if (activeStars && (activeStarsFunc == null || activeStarsFunc()))
-                {
-                    var newRating = e.Button == MouseButtons.Left ? temporaryRating : e.Button == MouseButtons.Middle ? 0 : -1;
-                    if (DataGridView != null && newRating >= 0 && newRating != rating)
-                    {
-
-                        RatingClick?.Invoke(this, new RatingClickEventArgs { NewRating = newRating, RowIndex = e.RowIndex });
-                    }
-                }
-
-                base.OnMouseClick(e);
-            }
-*/
 
             protected override void OnMouseMove(DataGridViewCellMouseEventArgs e)
             {
-                if (activeStars)
+                var form = OwnerForm;
+                if (IsActive(form))
                 {
-                    if ((activeStarsFunc == null || activeStarsFunc()))
+                    var h = form.fileListRatingHover;
+                    if (form.notNeedToIgnoreMouseMoveOnRating())
                     {
-                        if (!starsRectangle.IsEmpty)
+                        if (!h.StarsRectangle.IsEmpty)
                         {
-                            var s = e.X - starsRectangle.Left;
-                            var r = Math.Max(1, Math.Min(5, (5 * s / starsRectangle.Width) + 1));
-                            //MessageBox.Show($"{e.X} {starsRectangle.Left} {starsRectangle.Width} {r}");
-                            if (temporaryRating < 0 && r != rating || temporaryRating >= 0 && r != temporaryRating)
+                            if (h.Row != e.RowIndex)
                             {
-                                temporaryRating = r;
-                                DataGridView?.InvalidateCell(this);
+                                var oldRow = h.Row;
+                                h.Row = e.RowIndex;
+                                if (h.TemporaryRating >= 0)
+                                {
+                                    h.TemporaryRating = -1;
+                                    InvalidateRowCell(oldRow);
+                                }
+                            }
+                            var rating = form.getFileListRating(e.RowIndex);
+                            var s = e.X - h.StarsRectangle.Left;
+                            var r = Math.Max(1, Math.Min(5, (5 * s / h.StarsRectangle.Width) + 1));
+                            if (h.TemporaryRating < 0 && r != rating || h.TemporaryRating >= 0 && r != h.TemporaryRating)
+                            {
+                                h.TemporaryRating = r;
+                                InvalidateRowCell(e.RowIndex);
                             }
                             else
                             {
-                                temporaryRating = r;
+                                h.TemporaryRating = r;
                             }
                         }
                     }
-                    else if (temporaryRating != -1)
+                    else if (h.TemporaryRating != -1)
                     {
-                        temporaryRating = -1;
-                        DataGridView?.InvalidateCell(this);
+                        h.TemporaryRating = -1;
+                        InvalidateRowCell(h.Row);
                     }
                 }
 
@@ -15919,168 +15836,136 @@ namespace ZipPla
 
             protected override void OnMouseDown(DataGridViewCellMouseEventArgs e)
             {
+                var form = OwnerForm;
                 if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Middle)
                 {
-                    if (activeStars && (activeStarsFunc == null || activeStarsFunc()))
+                    if (IsActive(form) && form.notNeedToIgnoreMouseMoveOnRating())
                     {
-                        var newRating = e.Button == MouseButtons.Left ? temporaryRating : e.Button == MouseButtons.Middle ? 0 : -1;
-                        if (DataGridView != null && newRating >= 0 && newRating != rating)
+                        var h = form.fileListRatingHover;
+                        var temporaryRating = h.Row == e.RowIndex ? h.TemporaryRating : -1;
+                        var newRating = e.Button == MouseButtons.Left ? temporaryRating : 0;
+                        if (DataGridView != null && newRating >= 0 && newRating != form.getFileListRating(e.RowIndex))
                         {
-                            /*
-                            var clickedRow = DataGridView.Rows[e.RowIndex];
-                            if (!clickedRow.Selected)
-                            {
-                                //var temp = selectionSynchronizing;
-                                //selectionSynchronizing = true;
-                                foreach (DataGridViewRow row in (from DataGridViewRow r in DataGridView.SelectedRows select r).ToArray())
-                                {
-                                    row.Selected = row == clickedRow;
-                                }
-                                //selectionSynchronizing = temp;
-                                //clickedRow.Selected = true;
-                            }
-                            */
-
-                            RatingClick?.Invoke(this, new RatingClickEventArgs { NewRating = newRating, RowIndex = e.RowIndex });
+                            form.RatingGridViewTextBoxCell_RatingClick(this, new RatingClickEventArgs { NewRating = newRating, RowIndex = e.RowIndex });
                         }
                     }
-
-                    //base.OnMouseClick(e);
                 }
                 else if ((e.Button & MouseButtons.Right) == MouseButtons.Right)
                 {
-                    temporaryRating = -1;
-                    DataGridView?.InvalidateCell(this);
+                    if (form != null)
+                    {
+                        form.fileListRatingHover.TemporaryRating = -1;
+                        InvalidateRowCell(e.RowIndex);
+                    }
                 }
                 base.OnMouseDown(e);
             }
 
             protected override void OnMouseLeave(int rowIndex)
             {
-                if (activeStars)
+                var form = OwnerForm;
+                if (IsActive(form))
                 {
-                    if ((activeStarsFunc == null || activeStarsFunc()))
+                    var h = form.fileListRatingHover;
+                    if (form.notNeedToIgnoreMouseMoveOnRating())
                     {
-                        if (rating != temporaryRating)
+                        if (form.getFileListRating(rowIndex) != h.TemporaryRating)
                         {
-                            temporaryRating = -1;
-                            DataGridView?.InvalidateCell(this);
+                            h.TemporaryRating = -1;
+                            InvalidateRowCell(rowIndex);
                         }
                         else
                         {
-                            temporaryRating = -1;
+                            h.TemporaryRating = -1;
                         }
                     }
-                    else if (temporaryRating != -1)
+                    else if (h.TemporaryRating != -1)
                     {
-                        temporaryRating = -1;
-                        DataGridView?.InvalidateCell(this);
+                        h.TemporaryRating = -1;
+                        InvalidateRowCell(rowIndex);
                     }
+                    if (h.Row == rowIndex) h.Row = -1;
                 }
-                closeToolTip(onlyIfMouseLeave: true);
+                closeToolTip(form, DataGridView, ColumnIndex, onlyIfMouseLeave: true);
                 base.OnMouseLeave(rowIndex);
             }
 
-            public RatingGridViewTextBoxCell(bool activeStars, Func<bool> activeStarsFunc)
-            {
-                Value = "★★★★★";
-                this.activeStars = activeStars;
-                this.activeStarsFunc = activeStarsFunc;
-            }
-
-            bool toolTipMaking = false;
             protected override async void OnMouseEnter(int rowIndex)
             {
                 base.OnMouseEnter(rowIndex);
 
-                if (!toolTipMaking)
+                var dataGridView = DataGridView;
+                var cf = dataGridView?.FindForm() as CatalogForm;
+                if (cf == null) return;
+                var h = cf.fileListRatingHover;
+                if (!h.ToolTipMaking)
                 {
-                    var dataGridView = DataGridView;
-                    if (dataGridView != null)
+                    h.ToolTipMaking = true;
+                    h.ToolTipRow = rowIndex;
+                    var columnIndex = ColumnIndex;
+                    var toolTip = cf.toolTip;
+                    await Task.Delay(toolTip.InitialDelay);
+                    if (h.ToolTipMaking && rowIndex < dataGridView.RowCount)
                     {
-                        toolTipMaking = true;
-                        var cf = dataGridView.FindForm() as CatalogForm;
-                        var toolTip = cf.toolTip;
-                        await Task.Delay(toolTip.InitialDelay);
-                        if (toolTipMaking)
+                        var CursorPosition = Cursor.Position;
+                        var target = cf.pnlRight;
+                        var rectangle = target.RectangleToClient(dataGridView.RectangleToScreen(dataGridView.GetCellDisplayRectangle(columnIndex, rowIndex, cutOverflow: true)));
+                        var point = target.PointToClient(CursorPosition);
+                        if (Cursor.Current is Cursor cursor)
                         {
-                            // DataGridView は toolTip を表示できない
-                            // https://social.msdn.microsoft.com/Forums/ja-JP/25938714-cae3-4610-8a99-094b91de7b49/datagridviewtooltip?forum=vsgeneralja
-                            var CursorPosition = Cursor.Position;
-                            var target = cf.pnlRight;
-                            var rectangle = target.RectangleToClient(dataGridView.RectangleToScreen(dataGridView.GetCellDisplayRectangle(ColumnIndex, RowIndex, cutOverflow: true)));
-                            var point = target.PointToClient(CursorPosition);
-                            // if (DataGridView?.Cursor is Cursor cursor) // HotSpot が正しく取得できない
-                            if (Cursor.Current is Cursor cursor)
-                            {
-                                point.Y += cursor.Size.Height - cursor.HotSpot.Y; // 予め縦方向にずらす
-                            }
-                            if (rectangle.Contains(point))
-                            {
-                                // 右（右の列を隠す）
-                                //point.X = rectangle.Right;
-
-                                // 下（次の行を隠す、予め縦方向にずらしてないとマウスカーソルで先頭のほうが見えにくい）
-                                point.Y = rectangle.Bottom;
-                            }
-                            toolTip.Show(Message.MiddleClickLeftFlickToResetRating, target, point);
-                            await Task.Delay(toolTip.AutoPopDelay);
-                            closeToolTip(onlyIfMouseLeave: false);
+                            point.Y += cursor.Size.Height - cursor.HotSpot.Y; // 予め縦方向にずらす
                         }
+                        if (rectangle.Contains(point))
+                        {
+                            point.Y = rectangle.Bottom;
+                        }
+                        toolTip.Show(Message.MiddleClickLeftFlickToResetRating, target, point);
+                        await Task.Delay(toolTip.AutoPopDelay);
+                        closeToolTip(cf, dataGridView, columnIndex, onlyIfMouseLeave: false);
                     }
                 }
             }
+
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
-                    closeToolTip(onlyIfMouseLeave: false);
+                    try
+                    {
+                        closeToolTip(OwnerForm, DataGridView, ColumnIndex, onlyIfMouseLeave: false);
+                    }
+                    catch { }
                 }
                 base.Dispose(disposing);
             }
 
-
-            // MouseLeave がツールチップとカーソルが重なったときに発生することから
-            // ツールチップが点滅する問題を回避する
-            // ツールチップが領域を回避するなら不要だが
-            // 画面サイズの関係で必ず回避できるとは限らないので必要になる
-            private void closeToolTip(bool onlyIfMouseLeave)
+            private static void closeToolTip(CatalogForm cf, DataGridView dataGridView, int columnIndex, bool onlyIfMouseLeave)
             {
-                DataGridView dataGridView = null;
+                if (cf == null) return;
+                var h = cf.fileListRatingHover;
                 if (onlyIfMouseLeave)
                 {
-                    dataGridView = DataGridView;
                     if (dataGridView == null)
                     {
-                        toolTipMaking = false;
+                        h.ToolTipMaking = false;
                         return;
                     }
-                    else
-                    {
-                        onlyIfMouseLeave = dataGridView.GetCellDisplayRectangle(ColumnIndex, RowIndex, cutOverflow: true).Contains(dataGridView.PointToClient(Cursor.Position));
-                        //var dgvPoint = dataGridView.PointToClient(Cursor.Position);
-                        //var hit = dataGridView.HitTest(dgvPoint.X, dgvPoint.Y);
-                        //onlyIfMouseLeave = hit.RowIndex == RowIndex && hit.ColumnIndex == ColumnIndex;
-                    }
+                    var row = h.ToolTipRow;
+                    onlyIfMouseLeave = row >= 0 && row < dataGridView.RowCount && columnIndex >= 0 &&
+                        dataGridView.GetCellDisplayRectangle(columnIndex, row, cutOverflow: true).Contains(dataGridView.PointToClient(Cursor.Position));
                 }
-                if (!onlyIfMouseLeave)
+                if (!onlyIfMouseLeave && h.ToolTipMaking)
                 {
-                    if (toolTipMaking)
-                    {
-                        toolTipMaking = false;
-                        if (dataGridView == null) dataGridView = DataGridView;
-                        if (dataGridView != null)
-                        {
-                            var cf = dataGridView.FindForm() as CatalogForm;
-                            cf.toolTip.Hide(cf.pnlRight);
-                        }
-                    }
+                    h.ToolTipMaking = false;
+                    cf.toolTip.Hide(cf.pnlRight);
                 }
             }
 
             protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, int rowIndex, DataGridViewElementStates cellState, object value, object formattedValue, string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, DataGridViewPaintParts paintParts)
             {
-                var r = temporaryRating >= 0 ? temporaryRating : rating;
+                var form = OwnerForm;
+                var h = form?.fileListRatingHover;
+                var r = h != null && h.Row == rowIndex && h.TemporaryRating >= 0 ? h.TemporaryRating : form?.getFileListRating(rowIndex) ?? 0;
                 if (r < 0) r = 0;
 
 
@@ -16163,9 +16048,10 @@ namespace ZipPla
                     //paintRect.Inflate(-2, -2);
                     paintRect.X += (paintRect.Width - fullWidth) / 2;
                     paintRect.Y += (paintRect.Height - periodSize.Height + 1) / 2;
-                    starsRectangle = paintRect;
+                    var starsRectangle = paintRect;
                     starsRectangle.X += periodWidth - cellBounds.X;
                     starsRectangle.Width = fullWidth;
+                    if (h != null) h.StarsRectangle = starsRectangle;
                     TextRenderer.DrawText(graphics, preStr, cellStyle.Font, paintRect, gold, TextFormatFlags.NoPadding);
                     paintRect.X += TextRenderer.MeasureText(graphics, preStr, cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
                     TextRenderer.DrawText(graphics, sufStr, cellStyle.Font, paintRect, gray, TextFormatFlags.NoPadding);
@@ -16181,27 +16067,29 @@ namespace ZipPla
 
         class RainbowDataGridViewTextBoxCell : DataGridViewTextBoxCell
         {
-            string name;
-            public ZipTag[] Tags;
-            private Tuple<int, int, string>[] indexLengthTagTorios = null;
-            public RainbowDataGridViewTextBoxCell(ZipTag[] tags)
-            {
-                this.Tags = tags;
-            }
+            // K6: 行は共有されるので、タグの位置と省略したときのツールチップは FileListRowInfo に持つ
 
             protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, int rowIndex, DataGridViewElementStates cellState, object value, object formattedValue, string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, DataGridViewPaintParts paintParts)
             {
-                //base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts); return;
-
-                string newName;
-                if (Value == null) newName = "";
-                else newName = Value.ToString();
-                if (newName != name)
+                var name = value == null ? "" : value.ToString();
+                var form = DataGridView?.FindForm() as CatalogForm;
+                var Tags = form?.Tags;
+                var info = form?.getFileListRowInfo(rowIndex);
+                Tuple<int, int, string>[] indexLengthTagTorios = null;
+                if (Tags != null)
                 {
-                    name = newName;
-                    if (Tags != null)
+                    if (info == null)
                     {
                         indexLengthTagTorios = (new ZipPlaInfo(name)).GetIndexLengthTagTorios();
+                    }
+                    else
+                    {
+                        if (info.TagName != name)
+                        {
+                            info.TagName = name;
+                            info.TagTrios = (new ZipPlaInfo(name)).GetIndexLengthTagTorios();
+                        }
+                        indexLengthTagTorios = info.TagTrios;
                     }
                 }
 
@@ -16250,14 +16138,7 @@ namespace ZipPla
                     paintRect.Y += (paintRect.Height - charHeight + 1) / 2;
 
                     var nameTrimed = ThumbViewer.GetTextBaseNameEndEllipsis(name, cellStyle.Font, paintRect.Width, noPadding: false);
-                    if (nameTrimed == name)
-                    {
-                        ToolTipText = null;
-                    }
-                    else
-                    {
-                        ToolTipText = name;
-                    }
+                    if (info != null) info.NameToolTip = nameTrimed == name ? null : name;
                     var tLen = nameTrimed.Length;
                     var tLen0 = Math.Min(nameTrimed.Length, tLen); // 文字幅が均一でないので逆転もありうる
                     var tLen2 = 0;
@@ -18622,7 +18503,7 @@ namespace ZipPla
                                                             var showIndex = ds[index];
                                                             if (showIndex >= 0)
                                                             {
-                                                                dgvFileList.Rows[showIndex].Cells[tbcAccessTime.Index].Value = getShortTimeString(now, cul);
+                                                                setFileListText(showIndex, tbcAccessTime, getShortTimeString(now, cul));
 
                                                                 if (sortMode == SortMode.AccessedInAsc || sortMode == SortMode.AccessedInDesc)
                                                                 {
@@ -18707,7 +18588,7 @@ namespace ZipPla
                                                     var showIndex = d2s == null || d2s.Length <= index ? -1 : d2s[index];
                                                     if (showIndex >= 0 && dgvFileList.Rows.Count > showIndex)
                                                     {
-                                                        dgvFileList.Rows[showIndex].Cells[tbcPage.Index].Value = getPageString(newold.NewPage, total);
+                                                        setFileListText(showIndex, tbcPage, getPageString(newold.NewPage, total));
                                                         if (LoadLastViewedPageFromHistory && oldPage != newold.NewPage)
                                                         {
                                                             tvCatalog[index]?.DrawItem(onlyFrame: false);
@@ -20802,7 +20683,7 @@ namespace ZipPla
                 var stop = start + dataGridView.DisplayedRowCount(includePartialRow: true);
                 for (var i = start; i < stop; i++)
                 {
-                    if (dataGridView.Rows[i].Selected) return dataGridView.Rows[i];
+                    if ((dataGridView.Rows.GetRowState(i) & DataGridViewElementStates.Selected) != 0) return dataGridView.Rows[i];
                 }
             }
             catch
@@ -20854,12 +20735,16 @@ namespace ZipPla
             var d2s = tvCatalog.DataIndexToShowIndex;
             if (selectedIndex >= d2s.Length) return;
             var showIndex = d2s[selectedIndex];
-            var rows = dgvFileList.Rows;
-            if (showIndex < 0 || showIndex >= rows.Count) return;
-            var cell = rows[showIndex].Cells[tbcFileName.Index];
+            if (showIndex < 0 || showIndex >= dgvFileList.RowCount) return;
+            var info = getFileListRowInfo(showIndex);
+            if (info == null) return;
+            var cell = dgvFileList[tbcFileName.Index, showIndex];
 
-            var name = cell.Value.ToString();
-            cell.Value = getBaseName(name);
+            // 仮想モードなのでセルに値を入れられない。編集中は CellValueNeeded で拡張子を除いた名前を返す
+            var name = info.Texts[tbcFileName.Index] ?? "";
+            fileListEditingShowIndex = showIndex;
+            fileListEditingText = getBaseName(name);
+            dgvFileList.InvalidateCell(tbcFileName.Index, showIndex);
 
             renameToolStripMenuItem_Click_OldName = name;
             renameToolStripMenuItem_Click_Index = selectedIndex;
@@ -20895,6 +20780,10 @@ namespace ZipPla
         private bool dgvFileList_CellEndEdit_Edited = false;
         private void dgvFileList_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
+            var editingShowIndex = fileListEditingShowIndex;
+            fileListEditingShowIndex = -1;
+            fileListEditingText = null;
+            if (editingShowIndex >= 0 && editingShowIndex < dgvFileList.RowCount) dgvFileList.InvalidateRow(editingShowIndex);
             if (!dgvFileList.ReadOnly)
             {
                 dgvFileList.ReadOnly = true;
@@ -20910,7 +20799,7 @@ namespace ZipPla
                             var rows = dgvFileList.Rows;
                             if (showIndex < rows.Count)
                             {
-                                rows[showIndex].Cells[tbcFileName.Index].Value = renameToolStripMenuItem_Click_OldName;
+                                dgvFileList.InvalidateRow(showIndex); // 行の情報は元の名前のまま
                             }
                         }
                     }
@@ -26145,7 +26034,9 @@ namespace ZipPla
                     {
                         try
                         {
-                            setFileListRowStaticGlobalPart(dgvFileList.Rows[showIndex], newPath, name, mta[idx]);
+                            var info = getFileListRowInfoArray(zpa)[idx];
+                            if (info != null) setFileListRowStaticGlobalPart(info, newPath, name, mta[idx]);
+                            dgvFileList.InvalidateRow(showIndex);
                         }
                         catch (Exception e)
                         {
