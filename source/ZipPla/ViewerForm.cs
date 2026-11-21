@@ -49,6 +49,10 @@ namespace ZipPla
         private const byte OriginalState_Kept = 0, OriginalState_Trimmed = 1, OriginalState_Reloading = 2, OriginalState_Discarded = 3;
         // 直近の読み込みで JPEG を縮小デコードし、原寸を持っていないページ（C5）。登録時に原寸の状態を Trimmed にする
         private bool[] ReducedDecodedArray = null;
+        // 縮小画像を作ったときに縮小の基にした大きさ（GetResizedSize の引数）。ウィンドウの大きさを変えたとき、縮小後の大きさが変わらないページを残すのに使う（V4）
+        private Size[] LayoutSourceSizeArray = null;
+        // ウィンドウの大きさを変えたときに縮小画像を残したページ。読み込みジョブを 1 回だけ読み飛ばす（V4）
+        private bool[] KeptAfterResizeArray = null;
         private int currentPage_field = -1;
         private bool onePageModeForNext = false;
         private int pageDirection = -1;
@@ -1005,6 +1009,8 @@ namespace ZipPla
             InitializeComponent();
             // 先読みは表示中のページの前後だけ（SetBackgroundMode）
             bmwLoadEachPage.AllowPartialWorksOrder = true;
+            ResizeBegin += ViewerForm_ResizeBegin_V4;
+            ResizeEnd += ViewerForm_ResizeEnd_V4;
             // 完了イベント（縮小画像の登録・表示）を待たずに次のページの読み込みを始める（V1）
             bmwLoadEachPage.StartNextWorkBeforeCompletedEvent = true;
 #if PERFLOG
@@ -2897,13 +2903,16 @@ namespace ZipPla
         }
         */
 
-        private void Reload(bool force = false, bool updateOriginal = false)
+        private void Reload(bool force = false, bool updateOriginal = false, bool keepSameSizePages = false)
         {
             if (force || ViewSize != (FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size : PseudoMaximized ? PseudoMaximizedSize : pbView.Size))
             {
                 if (string.IsNullOrEmpty(currentArchiveFilePath)) return;
                 //nextLoader = loader;
                 //bmwLoadEachPage.RunWorkerAsyncWithInterrupt(EntryNumberArray.Length, true); // OriginalImageArray の問題があるからキャンセルを待たないわけにはいかない
+
+                // ウィンドウの大きさだけが変わった場合は、縮小後の大きさが変わらないページの縮小画像を残す（V4）
+                if (keepSameSizePages && !updateOriginal) StashPagesWithSameResizedSize();
 
                 // bmwLoadEachPage が動き出す前に Paint が動いて古い ResizedImage が使われることの無いように
                 clearResizedImageArray();
@@ -2915,6 +2924,134 @@ namespace ZipPla
 
                 //pbPaintInvalidate();
             }
+        }
+
+        // ウィンドウの大きさを変えたとき、縮小後の大きさが変わらないページの縮小画像を残す（V4）。
+        // Reload で取り分け、読み込み開始（bmwLoadEachPage_RunWorkerStarting）で新しい配列に戻す。
+        // 静止画で、原寸に作用するフィルタがない場合だけ。縮小デコードから作ったページ（Trimmed）も残す（表示の近くなら従来どおり原寸から読み直される）。
+        // 以前は大きさを変えるたびに全ページの縮小画像を捨てて、書庫からの取り出し・デコードからやり直していた
+        private sealed class ResizeKeepData
+        {
+            public VirtualBitmapEx[] Images;
+            public Size[] Sizes, LayoutSourceSizes;
+            public ulong[] Accounted;
+            public byte[] States;
+            public ViewerFormImageInfo[] Infos; // 読み直しでは原寸の情報も作り直されるので（ステータスバーの画像サイズなどに使う）
+        }
+        private ResizeKeepData resizeKeep = null;
+
+        private void StashPagesWithSameResizedSize()
+        {
+            DisposeResizeKeep();
+            var images = ResizedImageArray;
+            var sizes = ResizedSizeArray;
+            var sources = LayoutSourceSizeArray;
+            var accounted = AccountedSizeArray;
+            var states = OriginalStateArray;
+            var infos = OriginalImageInfoArray;
+            if (images == null || sizes == null || sources == null || accounted == null || states == null || infos == null) return;
+            var length = images.Length;
+            if (sizes.Length != length || sources.Length != length || accounted.Length != length || states.Length != length || infos.Length != length) return;
+            if (ViewerMode == ViewerModeEnum.CoverSetting || imageFilter.PreFilterExists()) return;
+
+            // 新しい表示サイズで縮小後の大きさを求める（読み込み開始時にも同じ値が設定される）
+            ViewSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size : PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
+            ResizeKeepData keep = null;
+            for (var i = 0; i < length; i++)
+            {
+                var image = images[i];
+                if (image == null || image.FrameCount != 1 || sources[i].IsEmpty) continue;
+                if (states[i] == OriginalState_Reloading) continue; // 原寸の読み直し中のページは作り直す
+                if (image.Size != sizes[i] || GetResizedSize(sources[i]) != sizes[i]) continue;
+                if (keep == null)
+                {
+                    keep = new ResizeKeepData
+                    {
+                        Images = new VirtualBitmapEx[length], Sizes = new Size[length], LayoutSourceSizes = new Size[length],
+                        Accounted = new ulong[length], States = new byte[length], Infos = new ViewerFormImageInfo[length],
+                    };
+                }
+                keep.Images[i] = image;
+                keep.Sizes[i] = sizes[i];
+                keep.LayoutSourceSizes[i] = sources[i];
+                keep.Accounted[i] = accounted[i];
+                keep.States[i] = states[i];
+                keep.Infos[i] = infos[i];
+                images[i] = null; // clearResizedImageArray で Dispose されないように
+            }
+            resizeKeep = keep;
+#if PERFLOG
+            try
+            {
+                var keptCount = keep == null ? 0 : keep.Images.Count(x => x != null);
+                var reasons = string.Join(",", Enumerable.Range(0, length).Where(i => images[i] != null || keep?.Images[i] != null)
+                    .Select(i => keep?.Images[i] != null ? "K" : states[i] == OriginalState_Trimmed ? "t" : states[i] == OriginalState_Reloading ? "r" : sources[i].IsEmpty ? "e" : images[i].Size != sizes[i] ? "s" : "z"));
+                File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
+                    $"resizeKeep={keptCount}\tview={ViewSize.Width}x{ViewSize.Height}\tpages={reasons}" + Environment.NewLine);
+            }
+            catch { }
+#endif
+        }
+
+        private void DisposeResizeKeep()
+        {
+            var keep = resizeKeep;
+            resizeKeep = null;
+            if (keep == null) return;
+            foreach (var image in keep.Images) image?.Dispose();
+        }
+
+        // 残したページを新しい配列に戻す（読み込み開始時）。戻したページは読み込みジョブを 1 回読み飛ばす
+        private void RestorePagesWithSameResizedSize(bool sameBook)
+        {
+            var keep = resizeKeep;
+            resizeKeep = null;
+            if (keep == null) return;
+            if (!sameBook || ResizedImageArray == null || keep.Images.Length != ResizedImageArray.Length)
+            {
+                foreach (var image in keep.Images) image?.Dispose();
+                return;
+            }
+            for (var i = 0; i < keep.Images.Length; i++)
+            {
+                var image = keep.Images[i];
+                if (image == null) continue;
+                ResizedImageArray[i] = image;
+                ResizedSizeArray[i] = keep.Sizes[i];
+                LayoutSourceSizeArray[i] = keep.LayoutSourceSizes[i];
+                AccountedSizeArray[i] = keep.Accounted[i];
+                // 読み直しでは原寸を捨てることがある（読み込み開始の updatedLoader）。原寸がなければ「原寸から作ったが捨てた」にする
+                var state = keep.States[i];
+                if (state == OriginalState_Kept && (PreFilteredImageArray == null || i >= PreFilteredImageArray.Length || PreFilteredImageArray[i] == null)) state = OriginalState_Discarded;
+                OriginalStateArray[i] = state;
+                if (OriginalImageInfoArray != null && i < OriginalImageInfoArray.Length && OriginalImageInfoArray[i] == null) OriginalImageInfoArray[i] = keep.Infos[i];
+                KeptAfterResizeArray[i] = true;
+                usedMemory += keep.Accounted[i];
+            }
+#if PERFLOG
+            try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"), $"resizeRestore={keep.Images.Count(x => x != null)}" + Environment.NewLine); } catch { }
+#endif
+            // 残したページは読み込みの完了イベントが来ないので、表示中のページを残した場合はここで表示する（読み込み開始の処理が終わってから）
+            var shown = currentPage;
+            if (shown >= 0 && Enumerable.Range(shown, Math.Max(1, MaxPageCountInWindow)).Any(i => i < keep.Images.Length && keep.Images[i] != null))
+            {
+                try
+                {
+                    BeginInvoke((MethodInvoker)(() =>
+                    {
+                        if (ResizedImageArray != null && currentPage == shown) showCurrentPage(false);
+                    }));
+                }
+                catch (InvalidOperationException) { } // ウィンドウハンドルがまだない
+            }
+        }
+
+        // 読み込みジョブをやり直させる。残したページの読み飛ばしの印も外す（V4）
+        private void ReworkPage(int idx)
+        {
+            var kept = KeptAfterResizeArray;
+            if (kept != null && idx < kept.Length) kept[idx] = false;
+            bmwLoadEachPage.ReworkOrder(idx);
         }
 
         private void clearResizedImageArray()
@@ -2934,6 +3071,8 @@ namespace ZipPla
             AccountedSizeArray = null;
             OriginalStateArray = null;
             ReducedDecodedArray = null;
+            LayoutSourceSizeArray = null;
+            KeptAfterResizeArray = null;
             usedMemory = 0;
         }
 
@@ -2951,6 +3090,7 @@ namespace ZipPla
             x[0] = null;
             clearResizedImageArray();
 
+            var hadNextData = nextData != null; // false なら同じ本の読み直し（Reload）（V4）
             bool updatedLoader;
             if (nextData != null)
             {
@@ -3015,7 +3155,10 @@ namespace ZipPla
             AccountedSizeArray = new ulong[EntryArray.Length];
             OriginalStateArray = new byte[EntryArray.Length];
             ReducedDecodedArray = new bool[EntryArray.Length];
+            LayoutSourceSizeArray = new Size[EntryArray.Length];
+            KeptAfterResizeArray = new bool[EntryArray.Length];
             ViewSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size : PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
+            RestorePagesWithSameResizedSize(sameBook: reload && !hadNextData && !updateOriginal);
             SetBackgroundMode();
             bmwLoadEachPage_EachRunWorkerCompleted_PrevPage = currentPage; // 無駄な優先順位変更を防止
 
@@ -3214,6 +3357,17 @@ namespace ZipPla
             {
                 return;
             }
+            // ウィンドウの大きさを変えたときに縮小画像を残したページ（V4）。結果なしで終わる（完了イベントは何もしない）
+            var keptAfterResize = KeptAfterResizeArray;
+            if (keptAfterResize != null && e.WorkNumber < keptAfterResize.Length && keptAfterResize[e.WorkNumber])
+            {
+                keptAfterResize[e.WorkNumber] = false;
+#if PERFLOG
+                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"), $"resizeSkip={e.WorkNumber}" + Environment.NewLine); } catch { }
+#endif
+                return;
+            }
+            var layoutSources = LayoutSourceSizeArray;
 
             var reducedFlags = ReducedDecodedArray;
             if (reducedFlags != null && e.WorkNumber < reducedFlags.Length) reducedFlags[e.WorkNumber] = false;
@@ -3405,10 +3559,12 @@ namespace ZipPla
                         // img が Dispose された場合エラーになるが想定内
 
                         bmwLoadEachPage_DoWork_DEBUG_Phase = 5;
-                        var resizedSize = GetResizedSize(reducedDecoded ? layoutSize : bmp.Size);
+                        var layoutSource = reducedDecoded ? layoutSize : bmp.Size;
+                        var resizedSize = GetResizedSize(layoutSource);
                         //var result = new Bitmap((int)Math.Round(zoom * img.Width), (int)Math.Round(zoom * img.Height));
 
                         rsa[e.WorkNumber] = resizedSize;
+                        if (layoutSources != null && e.WorkNumber < layoutSources.Length) layoutSources[e.WorkNumber] = layoutSource;
 
                         // DrawImage が Src と Dst のサイズが一致する場合としない場合で異なる挙動をする
                         //var outWidth = rect.Width == bmp.Width ? rect.Width : bmp.Width - 1;
@@ -5705,7 +5861,7 @@ namespace ZipPla
             else
             {
                 image.Dispose();
-                bmwLoadEachPage.ReworkOrder(idx);
+                ReworkPage(idx);
                 return false;
             }
         }
@@ -5765,7 +5921,7 @@ namespace ZipPla
             ResizedSizeArray[idx] = default(Size);
             if (AccountedSizeArray != null) AccountedSizeArray[idx] = 0;
             if (OriginalStateArray != null) OriginalStateArray[idx] = OriginalState_Kept;
-            bmwLoadEachPage.ReworkOrder(idx);
+            ReworkPage(idx);
 
             LockManager.ForIReadOnlyList(PreFilteredImageArray, idx, item =>
             {
@@ -5879,7 +6035,7 @@ namespace ZipPla
                     // 読み直しが終わる（SetNewResizedImage）まで Reloading のままにする。
                     // ReworkOrder は前回の結果を消さないので、GetWorkState では読み直し中かどうか判定できない
                     states[i] = OriginalState_Reloading;
-                    bmwLoadEachPage.ReworkOrder(i);
+                    ReworkPage(i);
                     requested = true;
                 }
             }
@@ -6774,8 +6930,32 @@ namespace ZipPla
                 if (!pbView_SizeChanged_SizeChanging && /*EntryNumberArray*/EntryArray != null && /*pbView.Width > 0 && pbView.Height > 0 &&*/
                     !FullScreen_pseudoFullScreen && !PseudoMaximized) // 最小化時にはリロードしない、擬似状態からの復帰時にはリロードしない
                 {
-                    Reload();
+                    // ウィンドウの枠をドラッグしている間は読み直さない（途中の大きさごとに全ページを読み直していた）。離したときに読み直す（V4）
+                    if (pbView_SizeChanged_UserResizing)
+                    {
+                        pbView_SizeChanged_ReloadPending = true;
+                    }
+                    else
+                    {
+                        Reload(keepSameSizePages: true);
+                    }
                 }
+            }
+        }
+
+        private bool pbView_SizeChanged_UserResizing = false;
+        private bool pbView_SizeChanged_ReloadPending = false;
+        private void ViewerForm_ResizeBegin_V4(object sender, EventArgs e)
+        {
+            pbView_SizeChanged_UserResizing = true;
+        }
+        private void ViewerForm_ResizeEnd_V4(object sender, EventArgs e)
+        {
+            pbView_SizeChanged_UserResizing = false;
+            if (pbView_SizeChanged_ReloadPending)
+            {
+                pbView_SizeChanged_ReloadPending = false;
+                pbView_SizeChanged(pbView, EventArgs.Empty);
             }
         }
 
