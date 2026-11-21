@@ -1004,6 +1004,12 @@ namespace ZipPla
             InitializeComponent();
             // 先読みは表示中のページの前後だけ（SetBackgroundMode）
             bmwLoadEachPage.AllowPartialWorksOrder = true;
+            // 完了イベント（縮小画像の登録・表示）を待たずに次のページの読み込みを始める（V1）
+            bmwLoadEachPage.StartNextWorkBeforeCompletedEvent = true;
+#if PERFLOG
+            // 計測用: 環境変数 ZIPPLA_V1_OFF=1 で従来の順番（完了イベントのあとに次のジョブ）にする
+            if (Environment.GetEnvironmentVariable("ZIPPLA_V1_OFF") == "1") bmwLoadEachPage.StartNextWorkBeforeCompletedEvent = false;
+#endif
 
             Configuration.WaitPrepareTask();
 
@@ -3190,13 +3196,18 @@ namespace ZipPla
 
 #if PERFLOG
         // 計測用: ページ読み込みの時間（exe のフォルダの viewer-load.log）。読み込みスレッドは 1 本
-        private long perfLoadStart, perfDecodeEnd;
+        private long perfLoadStart, perfDecodeEnd, perfJobStart;
+        // ジョブの開始・終了と完了イベントの時刻（ms、Stopwatch のタイムスタンプから）。ジョブのあいだの空き時間を調べる（V1）
+        private static double PerfMs(long timestamp) => timestamp * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
 #endif
         private int bmwLoadEachPage_DoWork_DEBUG_WorkNumber = -1;
         private int bmwLoadEachPage_DoWork_DEBUG_Phase;
 
         private void bmwLoadEachPage_DoWork(object sender, GenerarClasses.BackgroundMultiWorker.EachDoWorkEventArgs e)
         {
+#if PERFLOG
+            perfJobStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
             var rsa = ResizedSizeArray;
             if (rsa == null || rsa.Length <= e.WorkNumber)
             {
@@ -3617,7 +3628,7 @@ namespace ZipPla
                         try
                         {
                             File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
-                                $"page={e.WorkNumber}\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms" + Environment.NewLine);
+                                $"page={e.WorkNumber}\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms\tjobStart={PerfMs(perfJobStart):F2}\tjobEnd={PerfMs(end):F2}" + Environment.NewLine);
                         }
                         catch { }
                         return;
@@ -5541,6 +5552,26 @@ namespace ZipPla
         int bmwLoadEachPage_EachRunWorkerCompleted_PrevPage = -1;
         private void bmwLoadEachPage_EachRunWorkerCompleted(object sender, GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
         {
+#if PERFLOG
+            var perfHandlerStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            try
+            {
+                bmwLoadEachPage_EachRunWorkerCompletedCore(sender, e);
+            }
+            finally
+            {
+                var perfHandlerEnd = System.Diagnostics.Stopwatch.GetTimestamp();
+                try
+                {
+                    File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
+                        $"handler={e.WorkNumber}\thandlerStart={PerfMs(perfHandlerStart):F2}\thandlerEnd={PerfMs(perfHandlerEnd):F2}" + Environment.NewLine);
+                }
+                catch { }
+            }
+        }
+        private void bmwLoadEachPage_EachRunWorkerCompletedCore(object sender, GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
+        {
+#endif
             Program.AlertError(e.Error);
             VirtualBitmapEx result;
             if (!e.Cancelled && (result = e.Result as VirtualBitmapEx) != null)

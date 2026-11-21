@@ -301,7 +301,9 @@ namespace GenerarClasses
             var WorkNumber = WorkersWorks[WorkerNumber];
             //var e2 = new EachRunWorkerCompletedEventArgs(e, WorkNumber, ++CompletedWorksCount);
             var e2 = new EachRunWorkerCompletedEventArgs(e.Result, e.Error, e.Cancelled || CancellationPending, WorkNumber, ++CompletedWorksCount, workSetGuid); // Cancelled は強制的に設定する
+            var startedEarly = StartNextWorkBeforeCompletedEvent && TryStartNextWorkEarly(localWorker, WorkerNumber, workSetGuid, e.Error);
             if (EachRunWorkerCompleted != null) EachRunWorkerCompleted(sender, e2);
+            if (startedEarly && ResultArgs == null) return; // 念のため: 完了イベントの中で作業セットが片付けられた場合（始めたジョブは InconclusiveWorkerDisposing で処理される）
             ResultArgs[WorkNumber] = e2;
             while (NextResult < ResultArgs.Length && ResultArgs[NextResult] != null)
             {
@@ -311,6 +313,7 @@ namespace GenerarClasses
                 }
                 NextResult++;
             }
+            if (startedEarly) return; // 次のジョブは同じワーカーで始めてある
 
             if (WorksOrderChanged) NextWork = 0;
             WorksOrderChanged = false;
@@ -406,6 +409,29 @@ namespace GenerarClasses
         /// false（既定）のときは、開始時に長さが合わない順番を全ジョブの順番に置き換える（従来どおり）。
         /// </summary>
         public bool AllowPartialWorksOrder { get; set; }
+
+        /// <summary>
+        /// true のとき、ジョブが終わったら完了イベント（EachRunWorkerCompleted、UI スレッド）を呼ぶ前に次のジョブを始める（V1）。
+        /// UI スレッドが完了イベントや描画で忙しくても読み込みが止まらない。
+        /// 完了イベントの中で順番を変えた（SetWorksOrder・ReworkOrder）・スレッド数を変えた場合は、次のジョブが終わったときに反映される。
+        /// 同じワーカーを使い回すだけで、スレッドを増やす処理は従来どおり完了イベントのあとに行う
+        /// </summary>
+        public bool StartNextWorkBeforeCompletedEvent { get; set; }
+
+        private bool TryStartNextWorkEarly(BackgroundWorker localWorker, int workerNumber, Guid workSetGuid, Exception error)
+        {
+            if (error != null || CancellationPending || InternalThreadCount < CurrentThreadCount) return false;
+            if (WorksOrderChanged) NextWork = 0;
+            WorksOrderChanged = false;
+            while (NextWork < WorksOrder.Length && IsStartedOrSkipped(WorksOrder[NextWork])) NextWork++;
+            if (NextWork >= WorksOrder.Length) return false;
+            var workNumber = WorksOrder[NextWork++];
+            Workers[workerNumber] = localWorker;
+            WorkersWorks[workerNumber] = workNumber;
+            WorksStarted[workNumber] = true;
+            localWorker.RunWorkerAsync(Tuple.Create(Works[workNumber], workNumber, CompletedWorksCount, workSetGuid));
+            return true;
+        }
 
         public void ReworkOrder(int workNumber)
         {
