@@ -9064,7 +9064,7 @@ namespace ZipPla
                         FilePath = ZipPathArray[i],
                         Text = ZipNameArray[i],
                     };
-                    if (i == selectedIndex) ThumbViewer.thumbViewerItemSelectedFieldInfo.SetValue(item, true);
+                    if (i == selectedIndex) item.selected = true;
                     //tvCatalog[i] = item;
                     tvCatalog.SilentSet(i, item);
                 }
@@ -30727,11 +30727,12 @@ namespace ZipPla
         private bool disposed = false;
 
         public CatalogForm OwnerCatalog { get; set; }
-        private ThumbViewer owner = null;
+        // owner・index・selected は ThumbViewer が直接書く（以前はフォルダを開くたびに項目ごとにリフレクションで書いていた、K13）
+        internal ThumbViewer owner = null;
         public ThumbViewer Owner { get { return owner; } }
-        private int index = -1;
+        internal int index = -1;
         public int Index { get { return index; } }
-        private bool selected = false;
+        internal bool selected = false;
         public bool Selected { get { return selected; } }
         private Bitmap image;
         object imageLocker = new object();
@@ -31052,9 +31053,6 @@ namespace ZipPla
 
     public class ThumbViewer : ScrollableControl, IGraphicalList
     {
-        private static readonly FieldInfo thumbViewerItemOwnerFieldInfo = typeof(ThumbViewerItem).GetField("owner", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo thumbViewerItemIndexFieldInfo = typeof(ThumbViewerItem).GetField("index", BindingFlags.NonPublic | BindingFlags.Instance);
-        public static readonly FieldInfo thumbViewerItemSelectedFieldInfo = typeof(ThumbViewerItem).GetField("selected", BindingFlags.NonPublic | BindingFlags.Instance);
 
         readonly List<ThumbViewerItem> items = new List<ThumbViewerItem>(); // サムネイル保存用
         // 表示範囲から外れたサムネイルを残しておくキャッシュ（A3）
@@ -31187,7 +31185,7 @@ namespace ZipPla
                 foreach (var index in selectedIndices)
                 {
                     var item = items[index];
-                    if (item != null) thumbViewerItemSelectedFieldInfo.SetValue(item, false);
+                    if (item != null) item.selected = false;
                 }
                 selectedIndices.Clear();
                 selectedSet.Clear();
@@ -31201,7 +31199,7 @@ namespace ZipPla
                 selectedIndices.Add(index);
                 selectedSet.Add(index);
                 var item = items[index];
-                if (item != null) thumbViewerItemSelectedFieldInfo.SetValue(item, true);
+                if (item != null) item.selected = true;
             }
         }
 
@@ -31213,7 +31211,7 @@ namespace ZipPla
                 selectedIndices.RemoveAt(indexOnIndices);
                 selectedSet.Remove(index);
                 var item = items[index];
-                if (item != null) thumbViewerItemSelectedFieldInfo.SetValue(item, false);
+                if (item != null) item.selected = false;
             }
         }
 
@@ -31454,9 +31452,9 @@ namespace ZipPla
         {
             if (item != null)
             {
-                thumbViewerItemOwnerFieldInfo.SetValue(item, this);
-                thumbViewerItemIndexFieldInfo.SetValue(item, items.Count);
-                thumbViewerItemSelectedFieldInfo.SetValue(item, selectedIndices?.Contains(items.Count) == true);
+                item.owner = this;
+                item.index = items.Count;
+                item.selected = selectedIndices?.Contains(items.Count) == true;
             }
             items.Add(item);
             updateRowsCols();
@@ -31473,8 +31471,8 @@ namespace ZipPla
         {
             if (item != null)
             {
-                thumbViewerItemOwnerFieldInfo.SetValue(item, this);
-                thumbViewerItemIndexFieldInfo.SetValue(item, items.Count);
+                item.owner = this;
+                item.index = items.Count;
 
             }
             items.Add(item);
@@ -31520,9 +31518,9 @@ namespace ZipPla
                     }
                     if (value != null)
                     {
-                        thumbViewerItemOwnerFieldInfo.SetValue(value, this);
-                        thumbViewerItemIndexFieldInfo.SetValue(value, index);
-                        thumbViewerItemSelectedFieldInfo.SetValue(value, selectedSet.Contains(index));
+                        value.owner = this;
+                        value.index = index;
+                        value.selected = selectedSet.Contains(index);
                     }
                     items[index] = value;
                     // 追加されたサムネイルを表示
@@ -31557,8 +31555,8 @@ namespace ZipPla
                 }
                 if (item != null)
                 {
-                    thumbViewerItemOwnerFieldInfo.SetValue(item, this);
-                    thumbViewerItemIndexFieldInfo.SetValue(item, index);
+                    item.owner = this;
+                    item.index = index;
                 }
                 items[index] = item;
             }
@@ -32020,7 +32018,68 @@ namespace ZipPla
 
         private void wrapAndEndAllipsis(Graphics g, string text, Font font, Rectangle rect, Color foreColor, Color backColor)
         {
-            var width = rect.Width;
+#if PERFLOG
+            var perfT = PerfTrace.Now();
+            try
+            {
+                wrapAndEndAllipsisCore(g, text, font, rect, foreColor, backColor);
+            }
+            finally
+            {
+                PerfTrace.AddStage("nameText", PerfTrace.Now() - perfT);
+            }
+        }
+
+        private void wrapAndEndAllipsisCore(Graphics g, string text, Font font, Rectangle rect, Color foreColor, Color backColor)
+        {
+#endif
+            foreach (var line in getNameLayout(text, font, rect.Width, rect.Height))
+            {
+                var r = new Rectangle(rect.X, rect.Y + line.OffsetY, rect.Width, rect.Height - line.OffsetY);
+                TextRenderer.DrawText(g, line.Text, font, r, foreColor, backColor, line.Flags);
+            }
+        }
+
+        // 名前の折り返しと省略の結果（K12）。以前は項目を描くたびに TextRenderer.MeasureText を十数回呼んでいた（長い名前で 1 項目 0.7〜0.9ms）
+        private struct NameLayoutLine
+        {
+            public string Text;
+            public int OffsetY;
+            public TextFormatFlags Flags;
+        }
+        private readonly Dictionary<string, NameLayoutLine[]> nameLayoutCache = new Dictionary<string, NameLayoutLine[]>();
+        private Font nameLayoutCacheFont;
+        private int nameLayoutCacheWidth = -1, nameLayoutCacheHeight = -1;
+        private const int NameLayoutCacheLimit = 20000;
+
+        private NameLayoutLine[] getNameLayout(string text, Font font, int width, int height)
+        {
+            if (string.IsNullOrEmpty(text)) return new NameLayoutLine[0];
+            lock (nameLayoutCache)
+            {
+                // 幅・高さ・フォントが変わったら全部作り直す（サムネイルの大きさや行数の設定を変えたとき）
+                if (!ReferenceEquals(nameLayoutCacheFont, font) || nameLayoutCacheWidth != width || nameLayoutCacheHeight != height || nameLayoutCache.Count >= NameLayoutCacheLimit)
+                {
+                    nameLayoutCache.Clear();
+                    nameLayoutCacheFont = font;
+                    nameLayoutCacheWidth = width;
+                    nameLayoutCacheHeight = height;
+                }
+                if (nameLayoutCache.TryGetValue(text, out var cached)) return cached;
+            }
+            var layout = makeNameLayout(text, font, width, height);
+            lock (nameLayoutCache)
+            {
+                if (ReferenceEquals(nameLayoutCacheFont, font) && nameLayoutCacheWidth == width && nameLayoutCacheHeight == height) nameLayoutCache[text] = layout;
+            }
+            return layout;
+        }
+
+        // 以前の wrapAndEndAllipsis と同じ手順で、描く文字列・位置・書式だけを求める
+        private NameLayoutLine[] makeNameLayout(string text, Font font, int width, int height)
+        {
+            var lines = new List<NameLayoutLine>();
+            var offsetY = 0;
             var first = true;
             var lineCount = 0;
             while (!string.IsNullOrEmpty(text))
@@ -32029,29 +32088,26 @@ namespace ZipPla
                 var len = widthToStringLength(text, font, width);
                 if (first && len == text.Length)
                 {
-                    TextRenderer.DrawText(g, text, font, rect, foreColor, backColor,
-                        TextFormatFlags.NoPadding | TextFormatFlags.HorizontalCenter | TextFormatFlags.NoPrefix);
-                    return;
+                    lines.Add(new NameLayoutLine { Text = text, OffsetY = offsetY, Flags = TextFormatFlags.NoPadding | TextFormatFlags.HorizontalCenter | TextFormatFlags.NoPrefix });
+                    break;
                 }
                 first = false;
                 var current = text.Substring(0, len);
                 var currentHeight = TextRenderer.MeasureText(current, font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPrefix).Height;
-                if (currentHeight * 2 + bottomPadding <= rect.Height)
+                if (currentHeight * 2 + bottomPadding <= height - offsetY)
                 {
-                    TextRenderer.DrawText(g, current, font, rect, foreColor, backColor, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
+                    lines.Add(new NameLayoutLine { Text = current, OffsetY = offsetY, Flags = TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix });
                     text = text.Substring(len);
-                    rect.Y += currentHeight + bottomPadding;
-                    rect.Height -= currentHeight + bottomPadding;
+                    offsetY += currentHeight + bottomPadding;
                 }
                 else
                 {
-                    //TextRenderer.DrawText(g, text, font, rect, foreColor, TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
-                    //DrawTextNoPaddingBaseNameEndEllipsis(g, text, font, rect, ForeColor);
-                    TextRenderer.DrawText(g, GetTextBaseNameEndEllipsis(text, font, rect.Width, noPadding: true), font, rect, foreColor, backColor,
-                        TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | (lineCount == 1 ? TextFormatFlags.HorizontalCenter : 0));
-                    return;
+                    lines.Add(new NameLayoutLine { Text = GetTextBaseNameEndEllipsis(text, font, width, noPadding: true), OffsetY = offsetY,
+                        Flags = TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | (lineCount == 1 ? TextFormatFlags.HorizontalCenter : 0) });
+                    break;
                 }
             }
+            return lines.ToArray();
         }
 
         private int GetTextLines(string text)
