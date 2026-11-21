@@ -151,6 +151,8 @@ namespace ZipPla
         private static readonly Regex getOnlyRatingRegex = new Regex(@"\{zpi\$\s*(?:r|[^}\\\/]*;\s*r)\s*=\s*([1-5])\s*(?:;[^}\\\/]*)?\}[^\\\/]*[\\\/]?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         public static int GetOnlyRating(string path)
         {
+            // ほとんどの名前は情報を持たないので、正規表現の前に文字列の検索で除外する（K15）
+            if (path == null || path.IndexOf("{zpi$", StringComparison.OrdinalIgnoreCase) < 0) return -1;
             var m = getOnlyRatingRegex.Match(path);
             if(m.Success)
             {
@@ -215,6 +217,8 @@ namespace ZipPla
             fileNameRegex = new Regex(fileNameRegexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
 
+        private static readonly char[] pathSeparators = new char[] { '\\', '/' };
+
         public ZipPlaInfo(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -232,10 +236,10 @@ namespace ZipPla
 
             //if (path.EndsWith(Path.DirectorySeparatorChar.ToString())) path = path.Substring(0, path.Length - 1);
             //var m = fileNameRegex.Match(Path.GetFileName(path));
-            var pathArray = path.ToArray();
-            int sepPos;
-            for (sepPos = pathArray.Length - 2; sepPos >= 0; sepPos--) { var c = pathArray[sepPos]; if (c == '\\' || c == '/') break; }
-            sepPos++;
+            // 末尾の区切り文字は除いて、最後の区切り文字の次の位置（K15: 配列へのコピーをやめた）
+            var sepPos = path.Length >= 2 ? path.LastIndexOfAny(pathSeparators, path.Length - 2) + 1 : 0;
+            // 情報は "{" から始まるので、名前に "{" がなければ正規表現を使わない（K15）
+            if (path.IndexOf('{', sepPos) < 0) return;
             var m = fileNameRegex.Match(sepPos > 0 ? path.Substring(sepPos) : path);
             if (m.Success)
             {

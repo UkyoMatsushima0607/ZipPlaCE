@@ -1162,6 +1162,7 @@ namespace ZipPla
             //currentImageLongPathToolStripStatusLabel.Text = "";
             pageToolStripStatusLabel.Text = "";
             imageSizeToolStripStatusLabel.Text = "";
+            showCurrentPageToStatusBar_Shown = false;
 
             LoadSettingsAndSetMessages(info);
 
@@ -3662,6 +3663,7 @@ namespace ZipPla
                         if (bmp.FrameCount == 1/* || BitmapEx.GetDataSizeInBytes(bmp, resizedSize) < GetUserMemoryUBound() / 2*/)
                         {
                             BitmapEx entity;
+                            var sharesOriginal = false; // entity が原寸と画素のメモリを共有しているか（V14）
                             // リサイズが変更も不要なら Graphics は使わない
                             if (resizedSize.Width == bmp.Width && resizedSize.Height == bmp.Height)
                             {
@@ -3684,7 +3686,10 @@ namespace ZipPla
                                 //result = Clone(bmp);
                                 // Clone は原寸のメモリを共有する別名を作る。表示フィルタ（PostFilter）は画素をその場で書き換えるので、
                                 // フィルタがあるときは本当に複製する（共有したままだと原寸まで書き換わり、作り直すたびに重ねがけされる、C9）
-                                entity = ViewerMode != ViewerModeEnum.CoverSetting && imageFilter.PostFilterExists() ? bmp.CreateNew(DeepClone) : bmp.CreateNew(Clone);
+                                // ただし 8bpp でパレットだけが変わる場合は共有のままでよい（V13）
+                                sharesOriginal = !(ViewerMode != ViewerModeEnum.CoverSetting && imageFilter.PostFilterExists()
+                                    && !imageFilter.PostFilterChangesOnlyPalette(bmp.PixelFormat, imageInfo?.MaxColorDiff));
+                                entity = sharesOriginal ? bmp.CreateNew(Clone) : bmp.CreateNew(DeepClone);
                             }
                             else
                             {
@@ -3835,7 +3840,9 @@ namespace ZipPla
                             //ピクセルオフセット確認用
                             //QuickGraphic.DrawImage(result, rect, img, null);
 
-                            result = new VirtualBitmapEx(entity, reducedDecoded ? 0 : bmp.GetDataSizeInBytes());
+                            // 原寸と共有している（等倍の Clone）なら、原寸のぶんを足すと同じメモリを二重に数えてしまい、
+                            // ReduceUsingMemory が早く捨てすぎる（V14）。共有している原寸は TrimOriginals でも捨てない
+                            result = new VirtualBitmapEx(entity, reducedDecoded || sharesOriginal ? 0 : bmp.GetDataSizeInBytes());
                         }
                         else
                         {
@@ -7107,15 +7114,26 @@ namespace ZipPla
                 {
                     s = Size.Empty;
                 }
-                pageToolStripStatusLabel.Text =$" {i + 1} / {mtbPage.Maximum + 1}";
+                // 描画のたびに呼ばれるので、表示する値が変わったときだけ文字列を作る（V19）
+                var max = mtbPage.Maximum;
+                if (showCurrentPageToStatusBar_Shown && showCurrentPageToStatusBar_Page == i && showCurrentPageToStatusBar_Max == max && showCurrentPageToStatusBar_Size == s) return;
+                showCurrentPageToStatusBar_Shown = true;
+                showCurrentPageToStatusBar_Page = i;
+                showCurrentPageToStatusBar_Max = max;
+                showCurrentPageToStatusBar_Size = s;
+                pageToolStripStatusLabel.Text =$" {i + 1} / {max + 1}";
                 imageSizeToolStripStatusLabel.Text = s.Width <= 0 || s.Height <= 0 ? "?x?" : $"{s.Width}x{s.Height}";
             }
             else
             {
+                showCurrentPageToStatusBar_Shown = false;
                 pageToolStripStatusLabel.Text = null;
                 imageSizeToolStripStatusLabel.Text = null;
             }
         }
+        private bool showCurrentPageToStatusBar_Shown = false;
+        private int showCurrentPageToStatusBar_Page, showCurrentPageToStatusBar_Max;
+        private Size showCurrentPageToStatusBar_Size;
 
         Tuple<int, int, int, int, Size[]> bwMagnifierMaker_Q = null;
         bool showCurrentPage_PagePrepared = false;
@@ -7446,9 +7464,12 @@ namespace ZipPla
 #if DEBUG
             var data = (byte*)dataAdr; var stop = size / 3 * 3; for (var i = 0; i < stop; i++) data[i] = i % 3 == 2 ? (byte)255 : (byte)0;
 #else
-            var data = (byte*)dataAdr; var stop = size / 3 * 3; for (var i = 0; i < stop; i++) data[i] = (byte)((160 * 128 + (255 - 160) * data[i] + 127) / 255);
+            var table = HalfGrayTable;
+            var data = (byte*)dataAdr; var stop = size / 3 * 3; for (var i = 0; i < stop; i++) data[i] = table[data[i]];
 #endif
         }
+        // HalfGrayBrusher の 1 バイトごとの整数除算を表にしたもの（V19）
+        private static readonly byte[] HalfGrayTable = Enumerable.Range(0, 256).Select(v => (byte)((160 * 128 + (255 - 160) * v + 127) / 255)).ToArray();
         
 
         const bool parallelInPaint = false;

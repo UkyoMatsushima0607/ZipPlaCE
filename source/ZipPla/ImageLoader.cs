@@ -399,11 +399,23 @@ namespace ZipPla
         /// </summary>
         public static Bitmap TryLoadReducedJpeg(string filePath, Size minSize)
         {
+            return TryLoadReducedJpeg(filePath, minSize, out _);
+        }
+
+        /// <summary>
+        /// 上と同じ。開いたファイルからヘッダの情報（ImageInfo(string) と同じもの）も読んで返す（K19: 同じファイルを 2 回開かない）。
+        /// 戻り値が null でも、ヘッダが読めていれば imageInfo は null でない
+        /// </summary>
+        public static Bitmap TryLoadReducedJpeg(string filePath, Size minSize, out ImageInfo imageInfo)
+        {
+            imageInfo = null;
             if (!IsJpegPath(filePath) || minSize.Width <= 0 || minSize.Height <= 0) return null;
             try
             {
                 using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
+                    try { imageInfo = new ImageInfo(s); } catch { } // 読めなければ呼び出し側が従来どおり ImageInfo(string) を使う
+                    s.Position = 0;
                     var orientation = GetJpegOrientation(s);
                     s.Position = 0;
                     var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(s,

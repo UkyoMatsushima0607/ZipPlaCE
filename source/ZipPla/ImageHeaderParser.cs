@@ -115,9 +115,20 @@ namespace ZipPla
         }
         */
         
-        public ImageInfo (string path)
+        public ImageInfo (string path) : this(new FileStream(path, FileMode.Open, FileAccess.Read), disposeStream: true)
         {
-            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+        }
+
+        /// <summary>
+        /// 現在の位置（ファイルの先頭）からヘッダを読む。ストリームは閉じない（K19: 縮小デコードと同じストリームを使う）
+        /// </summary>
+        public ImageInfo(Stream stream) : this(stream, disposeStream: false)
+        {
+        }
+
+        private ImageInfo(Stream fs, bool disposeStream)
+        {
+            try
             {
                 var buf16 = new byte[16];
                 if (fs.Read(buf16, 0, 2) < 2) throw new NotSupportedException();
@@ -349,6 +360,10 @@ namespace ZipPla
                         }
                     default: throw new NotSupportedException();
                 }
+            }
+            finally
+            {
+                if (disposeStream) fs.Dispose();
             }
         }
 

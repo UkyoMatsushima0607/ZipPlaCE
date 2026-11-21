@@ -955,7 +955,8 @@ namespace ZipPla
             return result;
         }
 
-        // Dictionary はスレッドセーフでないため HashSet を使う
+        // 複数のスレッド（サムネイルの並列読み込み・後回しの書き込み）から呼ばれるので、2 つの集合は GetDriveFormatString_Lock の中で読み書きする（B4）
+        private static readonly object GetDriveFormatString_Lock = new object();
         private static HashSet<string> GetDriveFormatString_NTFSSet = new HashSet<string>();
         private static HashSet<string> GetDriveFormatString_NoNTFSSet = new HashSet<string>();
         private static string GetDriveFormatString(string driveName, bool checkNew = false)
@@ -963,21 +964,24 @@ namespace ZipPla
             var commonFolderRoot = GetCommonFolderRoot(driveName);
             if (commonFolderRoot != null)
             {
-                if (!checkNew)
+                lock (GetDriveFormatString_Lock)
                 {
-                    if (GetDriveFormatString_NTFSSet.Contains(commonFolderRoot))
+                    if (!checkNew)
                     {
-                        return "NTFS";
+                        if (GetDriveFormatString_NTFSSet.Contains(commonFolderRoot))
+                        {
+                            return "NTFS";
+                        }
+                        else if (GetDriveFormatString_NoNTFSSet.Contains(commonFolderRoot))
+                        {
+                            return "UNKNOWN";
+                        }
                     }
-                    else if (GetDriveFormatString_NoNTFSSet.Contains(commonFolderRoot))
+                    else
                     {
-                        return "UNKNOWN";
+                        GetDriveFormatString_NTFSSet.Remove(commonFolderRoot);
+                        GetDriveFormatString_NoNTFSSet.Remove(commonFolderRoot);
                     }
-                }
-                else
-                {
-                    GetDriveFormatString_NTFSSet.Remove(commonFolderRoot);
-                    GetDriveFormatString_NoNTFSSet.Remove(commonFolderRoot);
                 }
 
                 // commonFolderRoot が ADS を持たないがその子が持つケースが存在する場合
@@ -988,16 +992,22 @@ namespace ZipPla
 
                 var testTarget = commonFolderRoot;
                 
-                if (TryTestAdsSave(testTarget))
+                // 書き込みの試験はロックの外で行う（同時に試験が走っても結果は同じ）
+                var supported = TryTestAdsSave(testTarget);
+                lock (GetDriveFormatString_Lock)
                 {
-                    GetDriveFormatString_NTFSSet.Add(commonFolderRoot);
-                    return "NTFS";
+                    if (supported)
+                    {
+                        GetDriveFormatString_NoNTFSSet.Remove(commonFolderRoot);
+                        GetDriveFormatString_NTFSSet.Add(commonFolderRoot);
+                    }
+                    else
+                    {
+                        GetDriveFormatString_NTFSSet.Remove(commonFolderRoot);
+                        GetDriveFormatString_NoNTFSSet.Add(commonFolderRoot);
+                    }
                 }
-                else
-                {
-                    GetDriveFormatString_NoNTFSSet.Add(commonFolderRoot);
-                    return "UNKNOWN";
-                }
+                return supported ? "NTFS" : "UNKNOWN";
             }
             return new DriveInfo(driveName).DriveFormat;
         }

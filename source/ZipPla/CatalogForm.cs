@@ -5381,9 +5381,10 @@ namespace ZipPla
 #endif
                         // 大きな JPEG は縮小してデコードする（A2）。キャッシュの作り方が変わらないよう、
                         // サムネイルの 3 倍以上の大きさを確保できる場合だけ（画像情報は元ファイルのヘッダから取る）
-                        img = ImageInfo.Supports(zipPath) ? ImageLoader.TryLoadReducedJpeg(zipPath, ThumbnailReducedDecodeSize()) : null;
+                        ImageInfo headerInfo = null; // 縮小デコードで開いたときに読んだヘッダ（K19）
+                        img = ImageInfo.Supports(zipPath) ? ImageLoader.TryLoadReducedJpeg(zipPath, ThumbnailReducedDecodeSize(), out headerInfo) : null;
                         if (img == null) img = ImageLoader.GetFullBitmap(zipPath);
-                        imageInfo = ImageInfo.Supports(zipPath) ? new ImageInfo(zipPath) : ImageLoader.GetImageInfo(img);
+                        imageInfo = ImageInfo.Supports(zipPath) ? (headerInfo ?? new ImageInfo(zipPath)) : ImageLoader.GetImageInfo(img);
 #if PERFLOG
                         PerfTrace.AddStage("decodeFull", PerfTrace.Now() - perfT);
                         perfT = PerfTrace.Now();
@@ -5408,8 +5409,9 @@ namespace ZipPla
                     var perfT = PerfTrace.Now();
 #endif
                     // 大きな JPEG は縮小してデコードする（A2）
-                    img = ImageInfo.Supports(zipPath) ? ImageLoader.TryLoadReducedJpeg(zipPath, ThumbnailReducedDecodeSize()) : null;
-                    if (img != null) imageInfo = new ImageInfo(zipPath);
+                    ImageInfo headerInfo = null; // 縮小デコードで開いたときに読んだヘッダ（K19）
+                    img = ImageInfo.Supports(zipPath) ? ImageLoader.TryLoadReducedJpeg(zipPath, ThumbnailReducedDecodeSize(), out headerInfo) : null;
+                    if (img != null) imageInfo = headerInfo ?? new ImageInfo(zipPath);
                     else img = ImageLoader.GetAtLeastThumbnailBitmap(zipPath, tvCatalog.ThumbnailSize, true, out imageInfo);
 #if PERFLOG
                     PerfTrace.AddStage("decodeNoCache", PerfTrace.Now() - perfT);
@@ -25942,7 +25944,7 @@ namespace ZipPla
             var zma = ZipMaskArray;
             if (zpa != null && zma != null && zpa.Length == zma.Length && zpa.Length == tvCatalog.Count)
             {
-                var idx = Array.IndexOf(zpa, path);
+                var idx = indexOfWatchedPath(zpa, path);
                 if (idx >= 0)
                 {
                     enterQuickReload();
@@ -26009,7 +26011,7 @@ namespace ZipPla
                 zpa.Length == tvCatalog.Count && d2s != null && d2s.Length == zpa.Length
                 && lra != null && lra.Length == zpa.Length)
             {
-                var idx = Array.IndexOf(zpa, oldPath);
+                var idx = indexOfWatchedPath(zpa, oldPath);
                 var needNotToReload = idx >= 0;
                 bool? thumbnailChanged = null;
                 if (needNotToReload)
@@ -26096,8 +26098,24 @@ namespace ZipPla
 
             if (ShouldBeSkippedForFileAndDirWithCheckAttributes(path, ffmpeExists: null)) return;
 
-            var idx = Array.IndexOf(zpa, path);
+            var idx = indexOfWatchedPath(zpa, path);
             addOrReloadItem(path, zpa, zma, lra, idx, thumbnailChanged, startingGuid);
+        }
+
+        /// <summary>
+        /// 監視イベントのパスを一覧から探す。まず完全一致（大文字小文字だけが違う 2 つの項目がある場合に備える）、
+        /// なければ大文字小文字を区別せずに探す（イベントのパスと列挙したパスで大文字小文字が違うことがある、B5）
+        /// </summary>
+        private static int indexOfWatchedPath(string[] zpa, string path)
+        {
+            if (path == null) return -1;
+            var idx = Array.IndexOf(zpa, path);
+            if (idx >= 0) return idx;
+            for (var i = 0; i < zpa.Length; i++)
+            {
+                if (string.Equals(zpa[i], path, StringComparison.OrdinalIgnoreCase)) return i;
+            }
+            return -1;
         }
         
         private HashSet<string> addOrReloadItem_UserAddFileInLower = null;

@@ -342,6 +342,15 @@ namespace ZipPla
             //return src;
         }
 
+        /// <summary>
+        /// PostFilter が画素を書き換えずパレットだけを変えるか（8bpp で色の差が分かっているグレー画像）。
+        /// パレットは GDI+ のオブジェクトごとに持つので、そのときは原寸と画素を共有する複製で足りる（V13）
+        /// </summary>
+        public bool PostFilterChangesOnlyPalette(PixelFormat pixelFormat, int? maxColorDiff)
+        {
+            return ToneCurveEnabled && maxColorDiff != null && maxColorDiff <= GrayScaleThreshold && pixelFormat == PixelFormat.Format8bppIndexed;
+        }
+
         public void PostFilter(Bitmap src, ref int? maxColorDiff, BackgroundWorker bw = null)
         {
             PostFilter(src, new Rectangle(0, 0, src.Width, src.Height), ref maxColorDiff, bw);
