@@ -42,10 +42,11 @@ namespace ZipPla
         private VirtualBitmapEx[] ResizedImageArray = null;
         // ResizedImageArray[i] を登録したときに usedMemory へ計上した量（原寸を捨てたら減らす）（C1）
         private ulong[] AccountedSizeArray = null;
-        // 原寸（PreFilteredImageArray[i]）の状態（C1）。Trimmed: 縮小画像を残したまま原寸を捨てた（表示の近くに来たら読み直す）。
-        // Reloading: 読み直しを依頼済みで、新しい縮小画像が登録されるまで（拡大画像はそれまで作らない）
+        // 原寸（PreFilteredImageArray[i]）の状態（C1）。Trimmed: 原寸を持たず、縮小画像は縮小デコードから作った（表示の近くに来たら読み直す）。
+        // Reloading: 読み直しを依頼済みで、新しい縮小画像が登録されるまで（拡大画像はそれまで作らない）。
+        // Discarded: 縮小画像は原寸から作ったが、原寸は捨てた（画質のための読み直しは不要。ルーペで原寸が要るときだけ読み直す）（V2）
         private byte[] OriginalStateArray = null;
-        private const byte OriginalState_Kept = 0, OriginalState_Trimmed = 1, OriginalState_Reloading = 2;
+        private const byte OriginalState_Kept = 0, OriginalState_Trimmed = 1, OriginalState_Reloading = 2, OriginalState_Discarded = 3;
         // 直近の読み込みで JPEG を縮小デコードし、原寸を持っていないページ（C5）。登録時に原寸の状態を Trimmed にする
         private bool[] ReducedDecodedArray = null;
         private int currentPage_field = -1;
@@ -5798,7 +5799,8 @@ namespace ZipPla
             return idx < start || stop <= idx;
         }
 
-        // 原寸を残すページの範囲（表示中＋前後1見開き分）。拡大鏡と前後のページ送りで原寸を使うため（C1）
+        // 原寸からデコードして縮小するページの範囲（表示中＋前後1見開き分）。この範囲では縮小デコード（C5）を使わず、
+        // 縮小デコードで読んだページが入ってきたら原寸から読み直す（表示の画質を保つ）（C1・C5）
         private bool TryGetOriginalProtectedRange(out int start, out int stop)
         {
             start = stop = 0;
@@ -5807,6 +5809,15 @@ namespace ZipPla
             var window = Math.Max(1, MaxPageCountInWindow);
             start = cPage - window;
             stop = Math.Max(NextPage, cPage + window) + window;
+            return true;
+        }
+
+        // 原寸を残すページの範囲（V2）。原寸は縮小画像を作ったあとは拡大画像（ルーペ）にしか使わないので、
+        // ルーペを一度も開いていなければ空（縮小したらすぐ捨てる）。開いたあとは従来どおり TryGetOriginalProtectedRange と同じ
+        private bool TryGetOriginalKeepRange(out int start, out int stop)
+        {
+            if (!TryGetOriginalProtectedRange(out start, out stop)) return false;
+            if (!magnifierWanted) stop = start;
             return true;
         }
 
@@ -5826,7 +5837,7 @@ namespace ZipPla
             if (ViewerMode == ViewerModeEnum.CoverSetting) return;
             // 拡大画像の作成はロックなしで原寸の参照を取るので、その間は捨てない（完了時にもう一度呼ばれる）
             if (bwMagnifierMaker.IsBusy) return;
-            if (!TryGetOriginalProtectedRange(out var protectStart, out var protectStop)) return;
+            if (!TryGetOriginalKeepRange(out var protectStart, out var protectStop)) return;
 
             for (var i = 0; i < resized.Length; i++)
             {
@@ -5843,7 +5854,7 @@ namespace ZipPla
                     var reduce = Math.Min(bytes, accounted[i]);
                     accounted[i] -= reduce;
                     usedMemory -= Math.Min(usedMemory, reduce);
-                    states[i] = OriginalState_Trimmed;
+                    states[i] = OriginalState_Discarded; // 縮小画像は原寸から作ってあるので、画質のための読み直しは要らない（V2）
                 });
             }
         }
@@ -5858,10 +5869,12 @@ namespace ZipPla
             var states = OriginalStateArray;
             if (resized == null || states == null || resized.Length != states.Length) return;
             if (!TryGetOriginalProtectedRange(out var start, out var stop)) return;
+            if (!TryGetOriginalKeepRange(out var keepStart, out var keepStop)) return;
             var requested = false;
             for (var i = Math.Max(0, start); i < Math.Min(stop, resized.Length); i++)
             {
-                if (states[i] == OriginalState_Trimmed && resized[i] != null)
+                // 縮小デコードのページ（Trimmed）は画質のため、原寸を捨てたページ（Discarded）はルーペのために原寸が要る範囲だけ（V2）
+                if ((states[i] == OriginalState_Trimmed || states[i] == OriginalState_Discarded && keepStart <= i && i < keepStop) && resized[i] != null)
                 {
                     // 読み直しが終わる（SetNewResizedImage）まで Reloading のままにする。
                     // ReworkOrder は前回の結果を消さないので、GetWorkState では読み直し中かどうか判定できない
@@ -6886,8 +6899,8 @@ namespace ZipPla
 
             shownImegesPage = currentPage;
             
-            // 拡大モードの作成
-            if (magNotMaked)
+            // 拡大モードの作成。ルーペを一度も使っていなければ作らない（ページ送りのたびに全コアで数十 ms 使い、見開きで 20〜80MB 持っていた）（V2）
+            if (magNotMaked && magnifierWanted)
             {
                 resetMagnifier();
             }
@@ -8498,6 +8511,24 @@ namespace ZipPla
             GetMagnifierRectangle_LastCursorPosition = initialCenterLocation;
             ShwoMagnifierRectangle();
             Program.HideCursor();
+            EnsureMagnifierCanvas();
+        }
+
+        // ルーペを一度でも開いたら true（V2）。以後は従来どおりページごとに拡大画像を先に作り、原寸を表示中＋前後1見開き分残す
+        private bool magnifierWanted = false;
+
+        // ルーペを開くときに拡大画像がなければ作り始める（V2）。
+        // 原寸がなければ先に読み直させる。読み直しが終わると showCurrentPage から resetMagnifier が呼ばれる
+        private void EnsureMagnifierCanvas()
+        {
+            if (!magnifierWanted)
+            {
+                magnifierWanted = true;
+                ReloadTrimmedOriginalsNearCurrent();
+            }
+            if (MagnifierCanvasPrepared()) return;
+            if (bwMagnifierMaker.IsBusy && Magnifier_ZoomedPage_StartPage == currentPage) return; // 作成中
+            resetMagnifier();
         }
 
         bool MagnifierPhase2_Q = false;
