@@ -18,7 +18,7 @@ namespace ZipPla
 
         public static Bitmap GetThumbnail(string filePath, Func<Fraction, Size, Size> sizeProvider, Func<TimeSpan, TimeSpan> positionProvider, BackgroundWorker backgroundWorker, TimeSpan timeOut, ref MovieInfo movieInfo)
         {
-            if(movieInfo == null) movieInfo = MovieInfo.FromFile(filePath);
+            if(movieInfo == null) movieInfo = MovieInfo.FromFileCached(filePath);
             var size = movieInfo.SizeByPixel;
             if (size.IsEmpty) throw new Exception();
             bool originalSize;
@@ -409,6 +409,38 @@ namespace ZipPla
                 return m.ToArray();
             }
         }
+
+        // FromFile（ffmpeg の起動 1 回、約 40ms）の結果を、ファイルのサイズと更新日時が変わらない間だけ覚えておく。
+        // カタログはヘッダ取得とサムネイル作成でそれぞれ動画の情報を取っていたので、2 回目を省く
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Tuple<long, DateTime, MovieInfo>> fromFileCache =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, Tuple<long, DateTime, MovieInfo>>(StringComparer.OrdinalIgnoreCase);
+        private const int FromFileCacheCapacity = 4096;
+
+        public static MovieInfo FromFileCached(string path)
+        {
+            long length;
+            DateTime lastWrite;
+            try
+            {
+                var fileInfo = new FileInfo(path);
+                length = fileInfo.Length;
+                lastWrite = fileInfo.LastWriteTimeUtc;
+            }
+            catch
+            {
+                return FromFile(path);
+            }
+            if (fromFileCache.TryGetValue(path, out var cached) && cached.Item1 == length && cached.Item2 == lastWrite)
+            {
+                return cached.Item3.Clone();
+            }
+            var result = FromFile(path);
+            if (fromFileCache.Count >= FromFileCacheCapacity) fromFileCache.Clear();
+            fromFileCache[path] = Tuple.Create(length, lastWrite, result.Clone());
+            return result;
+        }
+
+        public MovieInfo Clone() => new MovieInfo { SAR = SAR, SizeByPixel = SizeByPixel, FPS = FPS, FPSString = FPSString, Duration = Duration };
 
         public static MovieInfo FromFile(string path)
         {

@@ -4733,7 +4733,7 @@ namespace ZipPla
 
             if (movieInfo == null)
             {
-                movieInfo = MovieInfo.FromFile(zipPath);
+                movieInfo = MovieInfo.FromFileCached(zipPath); // サムネイル作成（MovieThumbnailLoader.GetThumbnail）と結果を共有する
             }
         }
 
