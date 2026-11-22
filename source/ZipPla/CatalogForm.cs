@@ -8416,7 +8416,10 @@ namespace ZipPla
                     var subfolderIsSearched = SubfolderIsSearched(subfolderMode);
                     if (subfolderIsSearched)
                     {
-                        fileInfos = Program.GetFilesInAllDirectoriesOnErrorResumeNext(dirInfo, searchPatternForFiles, bwMakePreviewPrepare);
+                        // フォルダも表示する場合は、ファイルと一緒にサブフォルダも 1 回の列挙で取る
+                        var dirList = IsDisplay(subfolderMode) ? new List<DirectoryInfo>() : null;
+                        fileInfos = Program.GetFilesInAllDirectoriesOnErrorResumeNext(dirInfo, bwMakePreviewPrepare, dirList);
+                        if (dirList != null) dirInfos = dirList.ToArray();
                     }
                     else if (IsDisplay(subfolderMode))
                     {
@@ -8448,11 +8451,7 @@ namespace ZipPla
 
                     if (IsDisplay(subfolderMode))
                     {
-                        if (subfolderIsSearched)
-                        {
-                            dirInfos = Program.GetDirectoriesInAllDirectoriesOnErrorResumeNext(dirInfo, "*", bwMakePreviewPrepare);
-                        }
-                        else if (dirInfos == null) // 上でファイルと一緒に取っていなければ
+                        if (dirInfos == null) // 上でファイルと一緒に取っていなければ
                         {
                             dirInfos = dirInfo.GetDirectories("*", SearchOption.TopDirectoryOnly);
                         }
