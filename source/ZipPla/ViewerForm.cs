@@ -1004,6 +1004,7 @@ namespace ZipPla
                 timer.Stop();
                 timer.Dispose();
                 if (IsDisposed || !tmWatchIpc_Waiting) return; // もう表示を始めている
+                if (waitingRequestArrived) return; // 先読みの依頼を受けて読んでいる（Y20。返すと先読みしたページを表示するときにページフォールトが起きる）
                 try
                 {
                     System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
@@ -3965,6 +3966,7 @@ namespace ZipPla
                                 })));
                             }
                         }
+                        result.ReducedDecoded = reducedDecoded; // 完了イベントへは結果と一緒に渡す（Y21）
                         
                         e.Result = result;// new Bitmap(img, (int)Math.Round(zoom * img.Width), (int)Math.Round(zoom * img.Height));
                     };
@@ -6092,7 +6094,9 @@ namespace ZipPla
                     if (l != null && cPage >= 0 && cPage < entries.Length) l.SetViewPosition(entries[cPage]);
                 }
                 // 縮小デコードしたページは原寸を持っていないので、原寸を捨てたのと同じ扱いにする（表示の近くに来たら原寸を読み直す）（C5）
-                var reduced = ReducedDecodedArray != null && idx < ReducedDecodedArray.Length && ReducedDecodedArray[idx];
+                // 縮小デコードしたかは結果と一緒に受け取る（Y21。以前は共有の配列から読んだので、完了イベントの前に始まった同じページの次のジョブが
+                // false に戻すと、縮小デコードの画質のまま原寸ありの扱いになり、原寸で読み直されなかった）
+                var reduced = image.ReducedDecoded;
                 if (OriginalStateArray != null) OriginalStateArray[idx] = reduced ? OriginalState_Trimmed : OriginalState_Kept;
                 TrimOriginals();
                 // 読んでいる間に表示の近くに来ていた場合は、すぐに原寸を読み直させる
@@ -7829,6 +7833,7 @@ namespace ZipPla
                 if (pbView_Paint_Canvas == null)
                 {
                     pbView_Paint_Canvas = BitmapEx.ConvertToBitmapEx(new Bitmap(pbViewSize.Width, pbViewSize.Height, PixelFormat.Format24bppRgb));
+                    pbView_Paint_PrevWidth = pbView_Paint_PrevHeight = 0; // 新しいキャンバスは黒なので、下で表示の全体を背景色で塗る（Y22）
                     pbView_Paint_OnlyDrawMeasure = false;
                 }
                 else if (/*pbView_Paint_Canvas == null ||*/ pbView_Paint_Canvas.Width < pbViewSize.Width || pbView_Paint_Canvas.Height < pbViewSize.Height)
@@ -7839,6 +7844,7 @@ namespace ZipPla
                     var height = Math.Max(pbView_Paint_Canvas.Height, pbViewSize.Height);
                     pbView_Paint_Canvas.Dispose();
                     pbView_Paint_Canvas = BitmapEx.ConvertToBitmapEx(new Bitmap(width, height, PixelFormat.Format24bppRgb));
+                    pbView_Paint_PrevWidth = pbView_Paint_PrevHeight = 0; // 新しいキャンバスは黒なので、下で表示の全体を背景色で塗る（Y22）
                     pbView_Paint_OnlyDrawMeasure = false;
                 }
                 else if (!pbView_SizeChanged_SizeChanging &&
@@ -7848,6 +7854,7 @@ namespace ZipPla
                     // 表示の 2 倍より大きければ作り直す（大きさを変えている途中は除く）（V19 の残り）
                     pbView_Paint_Canvas.Dispose();
                     pbView_Paint_Canvas = BitmapEx.ConvertToBitmapEx(new Bitmap(pbViewSize.Width, pbViewSize.Height, PixelFormat.Format24bppRgb));
+                    pbView_Paint_PrevWidth = pbView_Paint_PrevHeight = 0; // 新しいキャンバスは黒なので、下で表示の全体を背景色で塗る（Y22）
                     pbView_Paint_OnlyDrawMeasure = false;
                 }
 
@@ -11003,12 +11010,15 @@ namespace ZipPla
         // 取りこぼしの保険として 500ms ごとに残す。イベントが使えないときは従来どおり 10ms ごと
         // 待機中（依頼を待っている）か。依頼はカタログから名前付きパイプで届き、RequestArrived で起こされる（P3。以前は名前付きイベント、V6）
         private bool tmWatchIpc_Waiting;
+        // 待機中に依頼（先読みを含む）が届いたか（Y20）。届いたら起動直後のメモリの返却（ScheduleWaitingMemoryTrim）をしない
+        private volatile bool waitingRequestArrived;
         private Action tmWatchIpc_RequestArrivedHandler;
         private void StartWatchIpcWakeEvent()
         {
             if (ipcLookAheadInfo == null) return;
             tmWatchIpc_RequestArrivedHandler = () =>
             {
+                waitingRequestArrived = true; // Y20
                 try
                 {
                     if (tmWatchIpc_Stopped || IsDisposed || !IsHandleCreated) return;

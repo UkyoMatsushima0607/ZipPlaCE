@@ -2084,11 +2084,16 @@ namespace ZipPla
             }
             set
             {
+                if (!value && RequestSender != null) System.Threading.Interlocked.Increment(ref Generation); // カタログ側: 新しい依頼（Y18）
                 accept = value;
                 if (!value) RequestSender?.Invoke(this);  // カタログ側: 待機ビューアへ全項目を送る
                 else AcceptedSender?.Invoke();            // 待機ビューア側: 受け取りを知らせる
             }
         }
+
+        // 依頼の世代（Y18）。カタログ側で Accept を false にするたびに増え、依頼と一緒に送られ、受け取りの知らせで送り返される。
+        // 同じ依頼を二重に送らない・古い依頼の受け取りの知らせで新しい依頼を受け取り済みにしないために使う
+        internal int Generation;
 
         // 通信の側から書く（送り返さない）
         internal void SetAcceptFromRemote(bool value) => accept = value;

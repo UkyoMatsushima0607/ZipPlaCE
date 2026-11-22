@@ -2013,6 +2013,8 @@ namespace ZipPla
         public readonly long DataSizeInBytes;
         /// <summary>source が原寸など別の画像と画素のメモリを共有しているか（X1）。共有していると、相手を Dispose したあとは使えない</summary>
         public readonly bool SharesOtherMemory;
+        /// <summary>ビューアの読み込みジョブが JPEG などの縮小デコードで作った画像か（C5）。完了イベントに結果と一緒に渡す（Y21）</summary>
+        public bool ReducedDecoded;
         private readonly bool downScaleNearestNeighbor, upScaleNearestNeighbor;
         private VirtualBitmapEx(BitmapEx source, bool isEntity, long otherDataSize, Size size, bool downScaleNearestNeighbor, bool upScaleNearestNeighbor)
         {

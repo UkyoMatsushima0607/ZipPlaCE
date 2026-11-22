@@ -120,6 +120,7 @@ namespace ZipPla
                 w.Write((int)info.InitialFullscreenMode);
                 w.Write(info.AlwaysHideUI);
                 w.Write((int)info.ReadOnMemoryMode);
+                w.Write(info.Generation); // Y18
                 w.Flush();
                 return ms.ToArray();
             }
@@ -155,6 +156,7 @@ namespace ZipPla
                 info.InitialFullscreenMode = (InitialFullscreenMode)r.ReadInt32();
                 info.AlwaysHideUI = r.ReadBoolean();
                 info.ReadOnMemoryMode = (ReadOnMemoryMode)r.ReadInt32();
+                info.Generation = r.BaseStream.Position + 4 <= r.BaseStream.Length ? r.ReadInt32() : 0; // Y18
             }
         }
 
@@ -220,6 +222,8 @@ namespace ZipPla
             public NamedPipeServerStream Stream;
             public readonly object WriteLock = new object();
             public string Guid;
+            public IpcLookAheadInfo LastSentInfo; // 最後に送った依頼と世代（Y18）。WriteLock で守る
+            public int LastSentGeneration;
         }
 
         private readonly string pipeName;
@@ -303,7 +307,11 @@ namespace ZipPla
                                 {
                                     info = connection.Guid == null ? null : (infos.TryGetValue(connection.Guid, out var i) ? i : null);
                                 }
-                                info?.SetAcceptFromRemote(true);
+                                // 古い依頼の受け取りの知らせで、後から書いた新しい依頼を受け取り済みにしない（Y18）
+                                if (info != null && (body == null || body.Length < 4 || BitConverter.ToInt32(body, 0) == Volatile.Read(ref info.Generation)))
+                                {
+                                    info.SetAcceptFromRemote(true);
+                                }
                                 break;
                             }
                         case IpcPipeProtocol.Reports:
@@ -326,7 +334,15 @@ namespace ZipPla
         {
             try
             {
-                IpcPipeProtocol.Write(connection.Stream, connection.WriteLock, IpcPipeProtocol.Request, IpcPipeProtocol.SerializeRequest(info));
+                lock (connection.WriteLock)
+                {
+                    // Hello を受け取ったときと Accept を false にしたときが重なっても、同じ依頼を二重に送らない（Y18）
+                    var generation = Volatile.Read(ref info.Generation);
+                    if (ReferenceEquals(connection.LastSentInfo, info) && connection.LastSentGeneration == generation) return;
+                    IpcPipeProtocol.Write(connection.Stream, connection.WriteLock, IpcPipeProtocol.Request, IpcPipeProtocol.SerializeRequest(info));
+                    connection.LastSentInfo = info;
+                    connection.LastSentGeneration = generation;
+                }
             }
             catch (IpcDisconnectedException)
             {
@@ -412,7 +428,7 @@ namespace ZipPla
             LookAheadInfo = new IpcLookAheadInfo();
             LookAheadInfo.SetAcceptFromRemote(true); // 依頼が届くまでは「受け取り済み」
             LookAheadInfo.IsDisconnected = () => disconnected;
-            LookAheadInfo.AcceptedSender = () => send(IpcPipeProtocol.Accepted, null);
+            LookAheadInfo.AcceptedSender = () => send(IpcPipeProtocol.Accepted, BitConverter.GetBytes(LookAheadInfo.Generation)); // 受け取った依頼の世代を返す（Y18）
             Reports = new IpcReportFromViewerToCatalog();
             Reports.RemoteSender = reports => send(IpcPipeProtocol.Reports, IpcPipeProtocol.SerializeReports(reports));
             send(IpcPipeProtocol.Hello, Encoding.UTF8.GetBytes(guid));
@@ -597,7 +613,8 @@ namespace ZipPla
             if (!readFully(stream, body, length)) return;
             var path = Encoding.UTF8.GetString(body);
 
-            // UI スレッドで開かせる。UI が 3 秒以内に応じなければ断る（呼び出し側が自分で開く。遅れて開かないように取り消しの印を付ける）
+            // UI スレッドで開かせる。UI が 1 秒以内に応じなければ断る（呼び出し側が自分で開く。遅れて開かないように取り消しの印を付ける）。
+            // 以前は 3 秒待ったので、カタログが忙しいと自分で開くより最大 3 秒遅れた（Y19。自分で開くのは 0.3 秒前後）
             var done = new ManualResetEventSlim(false);
             var accepted = false;
             var cancelled = false;
@@ -618,7 +635,7 @@ namespace ZipPla
             {
                 return;
             }
-            if (!done.Wait(3000))
+            if (!done.Wait(1000))
             {
                 lock (gate)
                 {

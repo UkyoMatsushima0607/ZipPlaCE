@@ -2027,9 +2027,9 @@ namespace ZipPla
 
         private void ExtractZip(int physicalIndex, out MemoryStream stream, out string fileNameForType, out long length)
         {
+            var entry = zipArchiveEntries[physicalIndex];
             try
             {
-                var entry = zipArchiveEntries[physicalIndex];
                 using (var s = entry.Open())
                 {
                     stream = CopyToMemory(s, entry.Length);
@@ -2037,9 +2037,30 @@ namespace ZipPla
                 fileNameForType = entry.Name;
                 length = entry.Length;
             }
-            catch (InvalidDataException)
+            catch (InvalidDataException e)
             {
+                // AES などは Open で、ZipCrypto は展開の途中で InvalidDataException になる。展開の途中の例外はデータの破損でも起きるので、
+                // 暗号化の印のないエントリは普通の読み込みの失敗にする（Y23。D7 で展開をデコードの前に移してから、破損もパスワード付きの扱いになっていた）
+                if (IsZipEntryEncrypted(entry) == false) throw new ArgumentException("The zip entry data is corrupted.", e);
                 throw new PasswordLockedException();
+            }
+        }
+
+        // zip のエントリが暗号化されているか（汎用ビットフラグの bit 0）。.NET Framework の ZipArchiveEntry は公開していないので非公開のフィールドを読む。
+        // 読めなければ null（Y23）
+        private static readonly System.Reflection.FieldInfo zipEntryGeneralPurposeBitFlagField =
+            typeof(ZipArchiveEntry).GetField("_generalPurposeBitFlag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        private static bool? IsZipEntryEncrypted(ZipArchiveEntry entry)
+        {
+            try
+            {
+                var value = zipEntryGeneralPurposeBitFlagField?.GetValue(entry);
+                if (value == null) return null;
+                return (Convert.ToInt32(value) & 1) != 0;
+            }
+            catch
+            {
+                return null;
             }
         }
 
