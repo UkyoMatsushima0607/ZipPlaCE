@@ -23,6 +23,9 @@ namespace ZipPla
     public enum PackedImageLoaderOnMemoryMode { None, OnMemory, Releasable }
     class PackedImageLoader : IDisposable
     {
+        // 「書庫をメモリに読む」で読む書庫の大きさの上限（MemoryStream の上限の 2GB より少し小さく）（V18）
+        private const long OnMemoryLimit = int.MaxValue - 64 * 1024 * 1024;
+
         //const long SolidSizeBound = 128 * (1 << 20); // 書庫ファイルサイズ自体ではなく読み取りサイズの上限
 
         public enum PackType { Directory, Zip, ZipM, Rar, Rar5, Cab, Tar, Pdf, SevenZip, Lha, Unknown, Gz } // Gz はアーカイブ機能がないので対応させない
@@ -395,14 +398,23 @@ namespace ZipPla
                 switch (onMemory)
                 {
                     case PackedImageLoaderOnMemoryMode.OnMemory:
-                        using (var fs = File.OpenRead(path))
                         {
-                            // 容量を先に確保して、倍々の拡張でファイルサイズの約2倍を一時的に確保しないようにする（B8）
+                            var fs = File.OpenRead(path);
                             var length = fs.Length;
-                            stream = length <= int.MaxValue ? new MemoryStream((int)length) : new MemoryStream();
-                            fs.CopyTo(stream);
+                            if (length > OnMemoryLimit)
+                            {
+                                // MemoryStream は 2GB を超えられないので、以前は途中で失敗していた。大きな書庫は通常どおりファイルから読む（V18）
+                                stream = fs;
+                                break;
+                            }
+                            using (fs)
+                            {
+                                // 容量を先に確保して、倍々の拡張でファイルサイズの約2倍を一時的に確保しないようにする（B8）
+                                stream = new MemoryStream((int)length);
+                                fs.CopyTo(stream);
+                            }
+                            stream.Seek(0, SeekOrigin.Begin);
                         }
-                        stream.Seek(0, SeekOrigin.Begin);
                         break;
                     case PackedImageLoaderOnMemoryMode.Releasable:
                         stream = new ReleasableStream(File.OpenRead(path));
