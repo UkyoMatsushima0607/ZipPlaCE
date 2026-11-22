@@ -1442,11 +1442,24 @@ namespace ZipPla
             items = new ToolStripMenuItem[tags.Length];
             initialCheckStates = new CheckState[tags.Length];
             //var parent = owner.Owner as System.Windows.Forms.ContextMenuStrip;
+            // 選択した項目ごとにタグの配列を 1 回だけ走査して、タグごとに付いている項目の数を数える（K30。以前はタグ × 選択 × タグ配列の Contains）
+            var tagCounts = new Dictionary<string, int>();
+            foreach (var zpi in zipPlaInfos)
+            {
+                var tagArray = zpi.TagArray;
+                if (tagArray == null) continue;
+                foreach (var name in tagArray.Distinct())
+                {
+                    if (name == null) continue;
+                    tagCounts.TryGetValue(name, out var n);
+                    tagCounts[name] = n + 1;
+                }
+            }
             for (var i = 0; i < tags.Length; i++)
             {
                 var tag = tags[i];
-                var initState = zipPlaInfos.All(zpi => zpi.TagArray != null && zpi.TagArray.Contains(tag.Name)) ? CheckState.Checked :
-                    zipPlaInfos.All(zpi => !(zpi.TagArray != null && zpi.TagArray.Contains(tag.Name))) ? CheckState.Unchecked : CheckState.Indeterminate;
+                var tagCount = tag.Name != null && tagCounts.TryGetValue(tag.Name, out var c) ? c : 0;
+                var initState = tagCount == zipPlaInfos.Length ? CheckState.Checked : tagCount == 0 ? CheckState.Unchecked : CheckState.Indeterminate;
                 var item = new PrefixEscapedToolStripMenuItem(tag.Name, initState);
 
                 CheckMarkProvider.SetCheckMark(owner.DropDown, item, DisplayCheckMark.CheckThreeState);

@@ -12946,6 +12946,8 @@ namespace ZipPla
                         if (string.IsNullOrEmpty(name)) continue;
                         if (name[name.Length - 1] == Path.DirectorySeparatorChar)
                         {
+                            // thumbnailHistogram は 0 より大きいかしか使わないので、1 つ見つかったら残りのフォルダは調べない（K30）
+                            if (thumbnailHistogram > 0) continue;
                             try
                             {
                                 if (File.Exists(Path.Combine(selectedPathArray[i], ZipPlaCoverImageFileWithExtension)))
