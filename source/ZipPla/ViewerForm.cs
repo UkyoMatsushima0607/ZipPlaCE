@@ -5994,6 +5994,15 @@ namespace ZipPla
                 ResizedImageArray[idx] = image;
                 usedMemory += size;
                 if (AccountedSizeArray != null) AccountedSizeArray[idx] = size;
+                // solid の書庫で展開済みのバイト列を持ち続けないよう、書庫に使用済みと伝える（D9。ロックは要らない）
+                var entries = EntryArray;
+                if (entries != null && idx < entries.Length)
+                {
+                    var l = loader;
+                    l?.MarkEntryConsumed(entries[idx]);
+                    var cPage = currentPage;
+                    if (l != null && cPage >= 0 && cPage < entries.Length) l.SetViewPosition(entries[cPage]);
+                }
                 // 縮小デコードしたページは原寸を持っていないので、原寸を捨てたのと同じ扱いにする（表示の近くに来たら原寸を読み直す）（C5）
                 var reduced = ReducedDecodedArray != null && idx < ReducedDecodedArray.Length && ReducedDecodedArray[idx];
                 if (OriginalStateArray != null) OriginalStateArray[idx] = reduced ? OriginalState_Trimmed : OriginalState_Kept;

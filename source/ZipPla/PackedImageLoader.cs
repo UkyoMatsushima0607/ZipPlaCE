@@ -276,6 +276,89 @@ namespace ZipPla
         // solid 書庫で展開済みのエントリ（画像はもともと圧縮されているので、展開後もほぼ書庫と同じ大きさ）（B2）
         private Dictionary<int, byte[]> solidImageCache;
         private long solidImageCacheBytes;
+
+        // 呼び出し側（ビューア）が縮小画像を作り終えたエントリ（D9）。どのスレッドからでも積めるようにキューで受け取り、
+        // solid のキャッシュに触るとき（書庫のロックの中）に反映する
+        private readonly System.Collections.Concurrent.ConcurrentQueue<int> consumedEntryQueue = new System.Collections.Concurrent.ConcurrentQueue<int>();
+        private HashSet<int> consumedEntries;
+        // 使用済みでも、表示中のページからこの範囲は残す（表示中のページの原寸での読み直し（V22）やルーペ、少し戻る場合のため）
+        private const int KeepConsumedRange = 16;
+        // 呼び出し側（ビューア）が表示しているエントリ（D9）。-1 なら要求されたページを基準にする
+        private volatile int viewPositionIndex = -1;
+
+        /// <summary>
+        /// 表示しているエントリを伝える（D9）。使用済みのエントリを捨てるときの基準にする。先読みの要求は表示から遠くへ飛ぶので、
+        /// 要求されたページを基準にすると表示中のページまで捨ててしまう。書庫のロックは要らない
+        /// </summary>
+        public void SetViewPosition(PackedImageEntry entry)
+        {
+            var cIndex = entry.ChildIndex;
+            if (cIndex < 0)
+            {
+                viewPositionIndex = entry.Index;
+            }
+            else
+            {
+                var c = children;
+                if (c == null || cIndex >= c.Length) return;
+                var t = c[cIndex];
+                t.Item1.SetViewPosition(t.Item2[entry.Index]);
+            }
+        }
+
+        /// <summary>
+        /// このエントリはもう縮小画像ができていて、solid のキャッシュのバイト列は要求されたページから遠ければ捨ててよい（D9）。
+        /// 書庫のロックは要らない（どのスレッドからでも呼べる）
+        /// </summary>
+        public void MarkEntryConsumed(PackedImageEntry entry)
+        {
+            var cIndex = entry.ChildIndex;
+            if (cIndex < 0)
+            {
+                consumedEntryQueue.Enqueue(entry.Index);
+            }
+            else
+            {
+                var c = children;
+                if (c == null || cIndex >= c.Length) return;
+                var t = c[cIndex];
+                t.Item1.MarkEntryConsumed(t.Item2[entry.Index]);
+            }
+        }
+
+        // 使用済みの印を反映し、要求されたページから遠い使用済みのエントリを solid のキャッシュから捨てる（D9）
+        private void applyConsumedEntries(int anchorIndex)
+        {
+            var view = viewPositionIndex;
+            if (view >= 0) anchorIndex = view;
+            while (consumedEntryQueue.TryDequeue(out var index))
+            {
+                if (consumedEntries == null) consumedEntries = new HashSet<int>();
+                consumedEntries.Add(index);
+            }
+            if (consumedEntries == null || solidImageCache == null || solidImageCache.Count == 0) return;
+            List<int> remove = null;
+            foreach (var pair in solidImageCache)
+            {
+                if (Math.Abs(pair.Key - anchorIndex) > KeepConsumedRange && consumedEntries.Contains(pair.Key))
+                {
+                    (remove ?? (remove = new List<int>())).Add(pair.Key);
+                }
+            }
+            if (remove == null) return;
+            foreach (var key in remove)
+            {
+                solidImageCacheBytes -= solidImageCache[key].Length;
+                solidImageCache.Remove(key);
+            }
+        }
+
+        private bool isConsumedFarEntry(int index, int anchorIndex)
+        {
+            var view = viewPositionIndex;
+            if (view >= 0) anchorIndex = view;
+            return consumedEntries != null && Math.Abs(index - anchorIndex) > KeepConsumedRange && consumedEntries.Contains(index);
+        }
         private int[] solidEntryOccurrences;
         // (エントリ名, 同名の何番目か) → physicalIndex。リーダーで通過したエントリをキャッシュに入れるために使う
         private Dictionary<string, int[]> solidIndexByKey;
@@ -2168,6 +2251,7 @@ namespace ZipPla
         /// </summary>
         private byte[] getSolidEntryBytes(int physicalIndex)
         {
+            applyConsumedEntries(physicalIndex);
             byte[] cached;
             if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached)) return cached;
             try
@@ -2291,6 +2375,7 @@ namespace ZipPla
             if (solidIndexByKey == null || !solidIndexByKey.TryGetValue(key, out indices) || occurrence >= indices.Length) return;
             var index = indices[occurrence];
             if (solidImageCache != null && solidImageCache.ContainsKey(index)) return;
+            if (isConsumedFarEntry(index, anchorIndex)) return; // 縮小画像ができていて遠いページは持たない（D9）
             if (!ImageLoader.SupportsFullReading(key, ffmpegExists: true)) return; // 画像以外は読み飛ばす
             var size = iReader.Entry.Size;
             if (size > SolidCacheBudget / 4) return;
@@ -2361,6 +2446,7 @@ namespace ZipPla
 
         private byte[] getSevenZipSolidEntryBytes(int physicalIndex, bool inTask)
         {
+            applyConsumedEntries(physicalIndex);
             byte[] cached;
             if (solidImageCache != null && solidImageCache.TryGetValue(physicalIndex, out cached)) return cached;
 
@@ -2376,12 +2462,16 @@ namespace ZipPla
                 {
                     var e = sevenZipArchiveEntries[i];
                     if (e.IsFolder || (solidImageCache != null && solidImageCache.ContainsKey(i))) continue;
+                    if (isConsumedFarEntry(i, physicalIndex)) continue; // 縮小画像ができていて遠いページはまとめて展開しない（D9）
                     if (!ImageLoader.SupportsFullReading(e.FileName, ffmpegExists: true)) continue;
                     var s = e.Size;
                     if (s < 0 || s > SolidCacheBudget / 4) continue;
                 }
                 targets.Add(i);
             }
+#if PERFLOG
+            try { System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "solid.log"), $"req={physicalIndex}	targets={targets.Count}	min={(targets.Count > 0 ? targets.Min() : -1)}	max={(targets.Count > 0 ? targets.Max() : -1)}	cached={solidImageCache?.Count ?? 0}" + Environment.NewLine); } catch { }
+#endif
             var streams = new MemoryStream[targets.Count];
             Action extract = () => Entry.ExtractMany(targets.Select(i => sevenZipArchiveEntries[i]).ToList(), k =>
             {
