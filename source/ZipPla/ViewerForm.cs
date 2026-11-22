@@ -1169,6 +1169,8 @@ namespace ZipPla
             pbView.MouseWheel += pbView_MouseWheel;
             statusStrip.MouseWheel += aroundSeekBar_MouseWheel;
             mtbPage.MouseWheel += aroundSeekBar_MouseWheel;
+            mtbPage.MouseUp += (sender, e) => EndSeekBarDrag(); // V24
+            mtbPage.MouseCaptureChanged += (sender, e) => EndSeekBarDrag(); // ボタンを離さずにフォーカスが移った場合など（V24）
             /*
             pnlSeekbar.MouseWheel += aroundSeekBar_MouseWheel;
             mtbPage.MouseWheel += (sender, e) =>
@@ -6242,7 +6244,8 @@ namespace ZipPla
             }
             var order = orderList.ToArray();
 
-            // 表示から離れたページの縮小画像（と原寸）を捨てる
+            // 表示から離れたページの縮小画像（と原寸）を捨てる。シークバーのドラッグ中も捨てる
+            // （離すまで待つと、通過したページの縮小画像がたまって最大メモリが 154→564MB に増えた。V24）
             for (var i = 0; i < length; i++)
             {
                 if (ResizedImageArray[i] != null && !IsInPrefetchRange(i, current, PrefetchDiscardRange) &&
@@ -7088,6 +7091,17 @@ namespace ZipPla
 
             if (!mtbPage_ValueChanged_SendRequestToChangeSelection_Stop)
             {
+                if (SeekBarDragging) mtbPage_DragDeferred = true; // カタログへの選択の依頼はドラッグを終えたときに 1 回だけ（V24）
+                else SendRequestToChangeSelectionForCurrentPage();
+            }
+            
+            //ShowCurrentPageToStatusBar();
+            if (ipcLookAheadInfo == null) SetCurrentImageLongPath(); // ページ番号の描画よりも後で呼び出す
+        }
+
+        private void SendRequestToChangeSelectionForCurrentPage()
+        {
+            {
                 var elp = EntryLongPathArray;
                 var ld = loader;
                 if (elp != null && currentPage >= 0 && currentPage < elp.Length && ld != null)
@@ -7104,9 +7118,36 @@ namespace ZipPla
                     }
                 }
             }
-            
-            //ShowCurrentPageToStatusBar();
-            if (ipcLookAheadInfo == null) SetCurrentImageLongPath(); // ページ番号の描画よりも後で呼び出す
+        }
+
+        // シークバーをドラッグしている間は、1 ページ変わるたびの先読みの組み直し・原寸の読み直しと破棄・
+        // カタログへの選択の依頼をやめ、離したときに 1 回だけ行う（V24）。ドラッグ中の先読みは、トラックバーの上のカーソルに合わせる
+        // 処理（mtbPage_MouseMove、50ms に 1 回まで）が組み直す
+        private bool mtbPage_Dragging = false;
+        private bool mtbPage_DragDeferred = false;
+
+        // マウスを捕まえている間だけドラッグ中とみなす。離したことが届かなかった場合も、後回しにした処理を必ず行う
+        private bool SeekBarDragging
+        {
+            get
+            {
+                if (!mtbPage_Dragging) return false;
+                if (mtbPage.Capture) return true;
+                BeginInvoke((MethodInvoker)EndSeekBarDrag);
+                return false;
+            }
+        }
+
+        private void EndSeekBarDrag()
+        {
+            if (!mtbPage_Dragging) return;
+            mtbPage_Dragging = false;
+            if (!mtbPage_DragDeferred) return;
+            mtbPage_DragDeferred = false;
+            if (ResizedImageArray == null) return;
+            prefetchOrderPage = int.MinValue; // 先読みの範囲を必ず作り直させる
+            showCurrentPage();
+            if (!mtbPage_ValueChanged_SendRequestToChangeSelection_Stop) SendRequestToChangeSelectionForCurrentPage();
         }
         
         private void ShowCurrentPageToStatusBar()
@@ -7163,15 +7204,26 @@ namespace ZipPla
             if (ResizedImageArray == null) return;
 
             // ページが移ったら先読みの範囲を作り直す（読み終えて止まっているワーカーもここで再開する）
-            if (currentPage >= 0 && currentPage != prefetchOrderPage) SetBackgroundMode();
+            if (currentPage >= 0 && currentPage != prefetchOrderPage)
+            {
+                if (SeekBarDragging) mtbPage_DragDeferred = true; // ドラッグ中はトラックバーの処理に任せ、離したときに作り直す（V24）
+                else SetBackgroundMode();
+            }
             else if (setBackgroundModeIfPausing) SetBackgroundModeIfPausing();
 
 
             if (pbView_SizeChanged_SizeChanging) return;
 
-            // 表示の近くに来たページの原寸を読み直し、遠ざかったページの原寸を捨てる（C1）
-            ReloadTrimmedOriginalsNearCurrent();
-            TrimOriginals();
+            // 表示の近くに来たページの原寸を読み直し、遠ざかったページの原寸を捨てる（C1）。ドラッグ中は離したときに行う（V24）
+            if (SeekBarDragging)
+            {
+                mtbPage_DragDeferred = true;
+            }
+            else
+            {
+                ReloadTrimmedOriginalsNearCurrent();
+                TrimOriginals();
+            }
 
             var magNotMaked = !MagnifierCanvasPrepared();
             
@@ -16206,6 +16258,7 @@ namespace ZipPla
         private void mtbPage_MouseDown(object sender, MouseEventArgs e)
         {
             mtbPage.ValueCanChangedByMouseButton = true;
+            if (e.Button == MouseButtons.Left) mtbPage_Dragging = true; // V24
         }
 
         private void btnOpenLeftRight_MouseMove(object sender, MouseEventArgs e)
