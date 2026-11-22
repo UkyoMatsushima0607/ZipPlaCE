@@ -1854,7 +1854,14 @@ namespace iTextSharp.text.pdf {
         * @return the decoded data
         */    
         public static byte[] FlateDecode(byte[] inp) {
-            byte[] b = FlateDecode(inp, true);
+            return FlateDecode(inp, expectedLength: -1);
+        }
+
+        // expectedLength: 展開後の長さの見込み（分からなければ -1）。合っていれば、その大きさの配列に直接展開して写し直さない（ZipPla CE、Y13）
+        public static byte[] FlateDecode(byte[] inp, int expectedLength) {
+            byte[] b = FlateDecodeNative(inp, expectedLength);
+            if (b == null)
+                b = FlateDecode(inp, true);
             if (b == null)
                 return FlateDecode(inp, false);
             return b;
@@ -1887,12 +1894,8 @@ namespace iTextSharp.text.pdf {
             obj = GetPdfObject(dic.Get(PdfName.BITSPERCOMPONENT));
             if (obj != null && obj.IsNumber())
                 bpc = ((PdfNumber)obj).IntValue;
-            MemoryStream dataStream = new MemoryStream(inp);
-            MemoryStream fout = new MemoryStream(inp.Length);
             int bytesPerPixel = Math.Max(1, colors * bpc / 8); // PNG の仕様では 8 bit 未満でも 1 バイト（以前は 0 になり、行のフィルタで壊れていた）
             int bytesPerRow = (colors*width*bpc + 7)/8;
-            byte[] curr = new byte[bytesPerRow];
-            byte[] prior = new byte[bytesPerRow];
 
             if (predictor == 2) {
                 if (bpc == 8) {
@@ -1908,55 +1911,50 @@ namespace iTextSharp.text.pdf {
             }
 
             // Decode the (sub)image row-by-row
-            while (true) {
-                // Read the filter type byte and a row of data
-                int filter = 0;
-                try {
-                    filter = dataStream.ReadByte();
-                    if (filter < 0) {
-                        return fout.ToArray();
-                    }
-                    int tot = 0;
-                    while (tot < bytesPerRow) {
-                        int n = dataStream.Read(curr, tot, bytesPerRow - tot);
-                        if (n <= 0)
-                            return fout.ToArray();
-                        tot += n;
-                    }
-                } catch {
-                    return fout.ToArray();
-                }
-                
+            // ZipPla CE: 行ごとに MemoryStream へ読み書きして最後に ToArray で写すのをやめ、出力の大きさの配列に直接展開する（Y13）。
+            // 途中で切れた最後の行は、従来どおり捨てる
+            int numFullRows = inp.Length / (bytesPerRow + 1);
+            byte[] fout = new byte[(long)numFullRows * bytesPerRow];
+            for (int row = 0; row < numFullRows; row++) {
+                int src = row * (bytesPerRow + 1);
+                int filter = inp[src];
+                src++;
+                int dst = row * bytesPerRow;
+                int pri = dst - bytesPerRow; // 前の行（最初の行では使わない。前の行は 0 とみなす）
+                bool hasPrior = row > 0;
+                Buffer.BlockCopy(inp, src, fout, dst, bytesPerRow);
                 switch (filter) {
                     case 0: //PNG_FILTER_NONE
                         break;
                     case 1: //PNG_FILTER_SUB
                         for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                            curr[i] += curr[i - bytesPerPixel];
+                            fout[dst + i] += fout[dst + i - bytesPerPixel];
                         }
                         break;
                     case 2: //PNG_FILTER_UP
-                        for (int i = 0; i < bytesPerRow; i++) {
-                            curr[i] += prior[i];
+                        if (hasPrior) {
+                            for (int i = 0; i < bytesPerRow; i++) {
+                                fout[dst + i] += fout[pri + i];
+                            }
                         }
                         break;
                     case 3: //PNG_FILTER_AVERAGE
-                        for (int i = 0; i < bytesPerPixel; i++) {
-                            curr[i] += (byte)(prior[i] / 2);
+                        for (int i = 0; i < bytesPerPixel && i < bytesPerRow; i++) {
+                            fout[dst + i] += (byte)((hasPrior ? fout[pri + i] : 0) / 2);
                         }
                         for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                            curr[i] += (byte)(((curr[i - bytesPerPixel] & 0xff) + (prior[i] & 0xff))/2);
+                            fout[dst + i] += (byte)(((fout[dst + i - bytesPerPixel] & 0xff) + (hasPrior ? fout[pri + i] & 0xff : 0))/2);
                         }
                         break;
                     case 4: //PNG_FILTER_PAETH
-                        for (int i = 0; i < bytesPerPixel; i++) {
-                            curr[i] += prior[i];
+                        for (int i = 0; i < bytesPerPixel && i < bytesPerRow; i++) {
+                            fout[dst + i] += hasPrior ? fout[pri + i] : (byte)0;
                         }
 
                         for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                            int a = curr[i - bytesPerPixel] & 0xff;
-                            int b = prior[i] & 0xff;
-                            int c = prior[i - bytesPerPixel] & 0xff;
+                            int a = fout[dst + i - bytesPerPixel] & 0xff;
+                            int b = hasPrior ? fout[pri + i] & 0xff : 0;
+                            int c = hasPrior ? fout[pri + i - bytesPerPixel] & 0xff : 0;
 
                             int p = a + b - c;
                             int pa = Math.Abs(p - a);
@@ -1972,20 +1970,15 @@ namespace iTextSharp.text.pdf {
                             } else {
                                 ret = c;
                             }
-                            curr[i] += (byte)(ret);
+                            fout[dst + i] += (byte)(ret);
                         }
                         break;
                     default:
                         // Error -- uknown filter type
                         throw new Exception(MessageLocalization.GetComposedMessage("png.filter.unknown"));
                 }
-                fout.Write(curr, 0, curr.Length);
-                
-                // Swap curr and prior
-                byte[] tmp = prior;
-                prior = curr;
-                curr = tmp;
-            }        
+            }
+            return fout;
         }
         
         /** A helper to FlateDecode.
@@ -2024,7 +2017,11 @@ namespace iTextSharp.text.pdf {
         
         // zlib のヘッダー（2 バイト）を確かめて、残りの deflate のデータを System.IO.Compression.DeflateStream で展開する。
         // ヘッダーが zlib でない・プリセット辞書付き・展開に失敗したときは null（ZipPla CE）
-        private static byte[] FlateDecodeNative(byte[] inp) {
+        private static byte[] FlateDecodeNative(byte[] inp) => FlateDecodeNative(inp, -1);
+
+        // expectedLength が分かっていれば、その大きさの配列に直接展開し、ちょうどで終われば写し直さずに返す（Y13）。
+        // 以前は inp.Length * 4 の容量（512MB を超える入力ではあふれて例外になり、遅い C# 版に戻っていた）から伸ばして ToArray で写していた
+        private static byte[] FlateDecodeNative(byte[] inp, int expectedLength) {
             if (inp == null || inp.Length < 2)
                 return null;
             int cmf = inp[0], flg = inp[1];
@@ -2032,10 +2029,32 @@ namespace iTextSharp.text.pdf {
                 return null;
             try {
                 using (var source = new MemoryStream(inp, 2, inp.Length - 2, false))
-                using (var deflate = new System.IO.Compression.DeflateStream(source, System.IO.Compression.CompressionMode.Decompress))
-                using (var outp = new MemoryStream(inp.Length * 4)) {
-                    deflate.CopyTo(outp);
-                    return outp.ToArray();
+                using (var deflate = new System.IO.Compression.DeflateStream(source, System.IO.Compression.CompressionMode.Decompress)) {
+                    if (expectedLength > 0) {
+                        var head = new byte[expectedLength];
+                        int got = 0, n;
+                        while (got < head.Length && (n = deflate.Read(head, got, head.Length - got)) > 0)
+                            got += n;
+                        if (got < head.Length) {
+                            // 見込みより短い。展開できた分だけ返す
+                            Array.Resize(ref head, got);
+                            return head;
+                        }
+                        int extra = deflate.ReadByte();
+                        if (extra < 0)
+                            return head; // 見込みどおり
+                        // 見込みより長い。続きを読む
+                        using (var rest = new MemoryStream(got + 1 + 65536)) {
+                            rest.Write(head, 0, got);
+                            rest.WriteByte((byte)extra);
+                            deflate.CopyTo(rest);
+                            return rest.ToArray();
+                        }
+                    }
+                    using (var outp = new MemoryStream((int)Math.Min((long)inp.Length * 4, 256L * 1024 * 1024))) {
+                        deflate.CopyTo(outp);
+                        return outp.Capacity == outp.Length ? outp.GetBuffer() : outp.ToArray();
+                    }
                 }
             }
             catch {

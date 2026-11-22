@@ -42,13 +42,45 @@ namespace ZipPla
         {
             try
             {
-                var image = new PdfImageObject(stream, directBitmap: true);
+                var image = new PdfImageObject(stream, directBitmap: true, continueIfNoBitmap: false);
                 return image.DirectBitmap;
             }
             catch
             {
                 return null; // 従来の Decode で読み直す（例外も従来どおりそちらで出る）
             }
+        }
+
+        /// <summary>
+        /// TryDecodeToBitmap と同じく Bitmap を直接作り、作れなければ Decode と同じ結果（PNG・TIFF などのバイト列）を bytes に返す（Y12）。
+        /// 以前は Bitmap を作れなかった画像（CMYK・16 ビットなど）で、TryDecodeToBitmap が展開した結果を捨てて Decode が最初から展開し直していた
+        /// </summary>
+        public static Bitmap DecodeToBitmapOrStream(PRStream stream, out MemoryStream bytes, out Type type)
+        {
+            PdfImageObject image = null;
+            try
+            {
+                image = new PdfImageObject(stream, directBitmap: true, continueIfNoBitmap: true);
+            }
+            catch
+            {
+                image = null; // 従来の Decode で読み直す（例外も従来どおりそちらで出る）
+            }
+            if (image?.DirectBitmap != null)
+            {
+                bytes = null;
+                type = Type.PNG;
+                return image.DirectBitmap;
+            }
+            if (image == null || image.GetImageBytesType() == null)
+            {
+                // JPEG・JPX・JBIG2（展開する前に除いた）や例外の場合は、従来どおり最初から読む
+                bytes = Decode(stream, out type);
+                return null;
+            }
+            type = convert(image.GetImageBytesType());
+            bytes = new MemoryStream(image.GetImageAsBytes());
+            return null;
         }
 
 
@@ -150,12 +182,15 @@ namespace ZipPla
             }
 
             // directBitmap が true なら、PNG に作り直さずに Bitmap を直接作る（作れなければ DirectBitmap は null で、それ以外は何もしない）（D4）
-            public PdfImageObject(PRStream stream, bool directBitmap)
+            // continueIfNoBitmap が true なら、展開した後で Bitmap を作れなかったとき、同じ展開結果から従来どおり PNG・TIFF を作る（Y12）
+            public PdfImageObject(PRStream stream, bool directBitmap, bool continueIfNoBitmap)
             {
                 this.directBitmap = directBitmap;
+                this.continueIfNoBitmap = continueIfNoBitmap;
                 Initialize(stream, PdfReader.GetStreamBytesRaw(stream), null);
             }
             private readonly bool directBitmap;
+            private readonly bool continueIfNoBitmap;
             public Bitmap DirectBitmap { get; private set; }
 
             /**
@@ -366,7 +401,7 @@ namespace ZipPla
                 icc = null;
                 stride = 0;
                 FindColorspace(colorspace, true);
-                if (directBitmap && pngColorType < 0) return; // CMYK などは従来どおり（D4）
+                if (directBitmap && pngColorType < 0 && !continueIfNoBitmap) return; // CMYK などは従来どおり（D4）
                 MemoryStream ms = new MemoryStream();
                 if (pngColorType < 0)
                 {
@@ -417,18 +452,21 @@ namespace ZipPla
                 }
                 else
                 {
-                        if (directBitmap)
+                    var inverted = false;
+                    if (directBitmap)
                     {
                         // 1 ビットの /Decode [1 0] は従来どおり反転する
                         if (decode != null && pngBitDepth == 1 && decode.GetAsNumber(0).IntValue == 1 && decode.GetAsNumber(1).IntValue == 0)
                         {
                             for (int t = 0; t < imageBytes.Length; ++t) imageBytes[t] ^= 0xff;
+                            inverted = true;
                         }
                         DirectBitmap = CreateBitmap();
-                        return;
+                        if (DirectBitmap != null || !continueIfNoBitmap) return;
+                        // Bitmap を作れない形式（16 ビット・2 ビットなど）は、同じ展開結果から PNG を作る（Y12）
                     }
                     PngWriter png = new PngWriter(ms);
-                    if (decode != null)
+                    if (decode != null && !inverted)
                     {
                         if (pngBitDepth == 1)
                         {

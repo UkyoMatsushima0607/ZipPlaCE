@@ -2567,10 +2567,13 @@ namespace ZipPla
 
                     }
 
+                    MemoryStream result;
+                    RiosFastPdfImageDecoder.Type imageType;
                     if (getImage)
                     {
-                        // Flate・CCITT などのグレー・RGB・インデックスの画像は、PNG に作り直さずに Bitmap を直接作る（D4）
-                        var direct = RiosFastPdfImageDecoder.TryDecodeToBitmap(pdfStream);
+                        // Flate・CCITT などのグレー・RGB・インデックスの画像は、PNG に作り直さずに Bitmap を直接作る（D4）。
+                        // 作れなければ同じ展開結果から PNG・TIFF を作る（Y12。以前は最初から展開し直していた）
+                        var direct = RiosFastPdfImageDecoder.DecodeToBitmapOrStream(pdfStream, out result, out imageType);
                         if (direct != null)
                         {
                             image = direct;
@@ -2578,7 +2581,10 @@ namespace ZipPla
                             return new MemoryStream();
                         }
                     }
-                    var result = RiosFastPdfImageDecoder.Decode(pdfStream, out var imageType);
+                    else
+                    {
+                        result = RiosFastPdfImageDecoder.Decode(pdfStream, out imageType);
+                    }
                     if (getImage)
                     {
                         extensionWithPeriodForPDF = null;

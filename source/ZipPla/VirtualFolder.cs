@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ZipPla
@@ -170,31 +171,61 @@ namespace ZipPla
             }
         }
 
-        private static void runPendingReplacement(string bmkPath)
+        // .sor ごとの書き換えのロック（Y14）。背景のタスクと、WaitPendingReplacements で先に書き換える呼び出し側が同じ .sor を同時に書かないように
+        private static readonly Dictionary<string, object> replaceLocks = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private static object getReplaceLock(string bmkPath)
         {
-            Tuple<List<string>, List<string>> pair;
             lock (pendingReplaceLock)
             {
-                if (!pendingReplacements.TryGetValue(bmkPath, out pair)) return;
-                pendingReplacements.Remove(bmkPath);
-                replacingNow.Add(bmkPath);
-            }
-            inReplaceWorker = true;
-            try
-            {
-                // 同じ名前が続けて変わった（A→B→C）場合も順に置き換わるように、追加した順に 1 組ずつではなく、まとめて 1 回で書く。
-                // ReplaceBookmarkData は組ごとに順に適用する
-                ReplaceBookmarkData(bmkPath, pair.Item1, pair.Item2);
-            }
-            catch { }
-            finally
-            {
-                inReplaceWorker = false;
-                lock (pendingReplaceLock) replacingNow.Remove(bmkPath);
+                if (!replaceLocks.TryGetValue(bmkPath, out var l)) replaceLocks.Add(bmkPath, l = new object());
+                return l;
             }
         }
 
-        /// <summary>その .sor（null ならすべて）への背景の書き換えが終わるまで待つ（K23）</summary>
+        private static void runPendingReplacement(string bmkPath) => runPendingReplacement(bmkPath, Timeout.Infinite);
+
+        // その .sor にたまっている書き換えを行う。ほかのスレッドが書き換えの途中なら、終わるまで（最大 millisecondsTimeout）待つ
+        private static void runPendingReplacement(string bmkPath, int millisecondsTimeout)
+        {
+            var replaceLock = getReplaceLock(bmkPath);
+            var lockTaken = false;
+            try
+            {
+                Monitor.TryEnter(replaceLock, millisecondsTimeout, ref lockTaken);
+                if (!lockTaken) return;
+                Tuple<List<string>, List<string>> pair;
+                lock (pendingReplaceLock)
+                {
+                    if (!pendingReplacements.TryGetValue(bmkPath, out pair)) return;
+                    pendingReplacements.Remove(bmkPath);
+                    replacingNow.Add(bmkPath);
+                }
+                var wasInWorker = inReplaceWorker;
+                inReplaceWorker = true;
+                try
+                {
+                    // 同じ名前が続けて変わった（A→B→C）場合も順に置き換わるように、追加した順に 1 組ずつではなく、まとめて 1 回で書く。
+                    // ReplaceBookmarkData は組ごとに順に適用する
+                    ReplaceBookmarkData(bmkPath, pair.Item1, pair.Item2);
+                }
+                catch { }
+                finally
+                {
+                    inReplaceWorker = wasInWorker;
+                    lock (pendingReplaceLock) replacingNow.Remove(bmkPath);
+                }
+            }
+            finally
+            {
+                if (lockTaken) Monitor.Exit(replaceLock);
+            }
+        }
+
+        /// <summary>
+        /// その .sor（null ならすべて）への背景の書き換えが終わるまで待つ（K23）。
+        /// .sor を指定したときは、ほかの .sor の書き換えを待たず、たまっていればこのスレッドで先に書き換える（Y14。以前は背景の
+        /// 書き換えの列の最後まで、つまりほかのすべての .sor の書き換えを最大 10 秒待っていた）
+        /// </summary>
         public static void WaitPendingReplacements(string bmkPath = null, int millisecondsTimeout = 10000)
         {
             if (inReplaceWorker) return;
@@ -204,6 +235,11 @@ namespace ZipPla
                 if (bmkPath != null && !pendingReplacements.ContainsKey(bmkPath) && !replacingNow.Contains(bmkPath)) return;
                 if (bmkPath == null && pendingReplacements.Count == 0 && replacingNow.Count == 0) return;
                 task = pendingReplaceTask;
+            }
+            if (bmkPath != null)
+            {
+                runPendingReplacement(bmkPath, millisecondsTimeout);
+                return;
             }
             try { task.Wait(millisecondsTimeout); } catch { }
         }

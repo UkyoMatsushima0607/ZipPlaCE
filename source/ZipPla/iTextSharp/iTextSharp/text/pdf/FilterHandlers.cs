@@ -100,9 +100,82 @@ namespace iTextSharp.text.pdf {
          */
         private class Filter_FLATEDECODE : IFilterHandler{
             public byte[] Decode(byte[] b, PdfName filterName, PdfObject decodeParams, PdfDictionary streamDictionary) {
-                b = PdfReader.FlateDecode(b);
+                b = PdfReader.FlateDecode(b, ExpectedInflatedLength(b, decodeParams, streamDictionary));
                 b = PdfReader.DecodePredictor(b, decodeParams);
                 return b;
+            }
+
+            // 画像の Flate を展開した後の長さの見込み（ZipPla CE、Y13）。分からなければ -1。
+            // 見込みが合えば、その大きさの配列に直接展開して写し直さない（合わなくても結果は同じ）
+            private static int ExpectedInflatedLength(byte[] b, PdfObject decodeParams, PdfDictionary dic) {
+                try {
+                    if (b == null || dic == null || !PdfName.IMAGE.Equals(dic.GetAsName(PdfName.SUBTYPE))) return -1;
+                    // Flate の後にほかのフィルタ（DCT など）がある場合は、画素の長さにならない
+                    var filter = PdfReader.GetPdfObjectRelease(dic.Get(PdfName.FILTER));
+                    if (filter is PdfArray filters) {
+                        if (filters.Size == 0 || !PdfName.FLATEDECODE.Equals(PdfReader.GetPdfObjectRelease(filters[filters.Size - 1]))) return -1;
+                    }
+                    else if (!PdfName.FLATEDECODE.Equals(filter)) return -1;
+                    var heightNumber = dic.GetAsNumber(PdfName.HEIGHT);
+                    if (heightNumber == null) return -1;
+                    long height = heightNumber.IntValue;
+                    long length;
+                    var parms = PdfReader.GetPdfObjectRelease(decodeParams) as PdfDictionary;
+                    var predictor = parms?.GetAsNumber(PdfName.PREDICTOR);
+                    if (predictor != null && predictor.IntValue >= 10) {
+                        // PNG の予測は 1 行ごとにフィルタの 1 バイトが付く
+                        long columns = parms.GetAsNumber(PdfName.COLUMNS)?.IntValue ?? 1;
+                        long colors = parms.GetAsNumber(PdfName.COLORS)?.IntValue ?? 1;
+                        long bpc = parms.GetAsNumber(PdfName.BITSPERCOMPONENT)?.IntValue ?? 8;
+                        length = height * ((colors * columns * bpc + 7) / 8 + 1);
+                    }
+                    else if (predictor != null && predictor.IntValue > 1) {
+                        return -1; // TIFF の予測（2）は長さが変わらないが、まれなので見積もらない
+                    }
+                    else {
+                        var widthNumber = dic.GetAsNumber(PdfName.WIDTH);
+                        if (widthNumber == null) return -1;
+                        long width = widthNumber.IntValue;
+                        long bpc, components;
+                        var mask = dic.GetAsBoolean(PdfName.IMAGEMASK);
+                        if (mask != null && mask.BooleanValue) {
+                            bpc = 1; components = 1;
+                        }
+                        else {
+                            var bpcNumber = dic.GetAsNumber(PdfName.BITSPERCOMPONENT);
+                            if (bpcNumber == null) return -1;
+                            bpc = bpcNumber.IntValue;
+                            components = ColorComponents(PdfReader.GetPdfObjectRelease(dic.Get(PdfName.COLORSPACE)));
+                            if (components <= 0) return -1;
+                        }
+                        length = height * ((width * components * bpc + 7) / 8);
+                    }
+                    // deflate の圧縮率は最大でも約 1032 倍。壊れた辞書で大きすぎる配列を取らない
+                    if (length <= 0 || length > int.MaxValue - 64 || length > (long)b.Length * 1100) return -1;
+                    return (int)length;
+                }
+                catch {
+                    return -1;
+                }
+            }
+
+            private static int ColorComponents(PdfObject colorSpace) {
+                if (colorSpace is PdfName) {
+                    if (PdfName.DEVICEGRAY.Equals(colorSpace) || PdfName.CALGRAY.Equals(colorSpace)) return 1;
+                    if (PdfName.DEVICERGB.Equals(colorSpace) || PdfName.CALRGB.Equals(colorSpace)) return 3;
+                    if (PdfName.DEVICECMYK.Equals(colorSpace)) return 4;
+                    return -1; // リソースの名前などは分からない
+                }
+                if (colorSpace is PdfArray array && array.Size > 0) {
+                    var type = PdfReader.GetPdfObjectRelease(array[0]);
+                    if (PdfName.INDEXED.Equals(type)) return 1;
+                    if (PdfName.CALGRAY.Equals(type)) return 1;
+                    if (PdfName.CALRGB.Equals(type)) return 3;
+                    if (PdfName.ICCBASED.Equals(type) && array.Size > 1 && PdfReader.GetPdfObjectRelease(array[1]) is PdfDictionary icc) {
+                        return icc.GetAsNumber(PdfName.N)?.IntValue ?? -1;
+                    }
+                }
+                return -1;
             }
         }
         
