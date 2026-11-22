@@ -313,7 +313,8 @@ namespace ZipPla
         {
             if (!BaseControl_TextChanged_StopRead)
             {
-                clearButtons();
+                // 編集の間はボタンを捨てずに隠しておき、場所が変わらなければフォーカスが外れたときにそのまま戻す（K27）
+                hideButtonsForEdit();
                 SetBaseControlText(text);
             }
         }
@@ -322,8 +323,56 @@ namespace ZipPla
         {
             if (!BaseControl_TextChanged_StopRead)
             {
-                makeButtonList(ZipPlaAddressBarCommandSender.Leave);
+                if (!restoreButtonsHiddenForEdit())
+                {
+                    makeButtonList(ZipPlaAddressBarCommandSender.Leave);
+                }
             }
+        }
+
+        // 編集のために隠したボタン（K27）。null なら隠していない
+        private bool[] buttonsHiddenForEdit_Visibility;
+        private string buttonsHiddenForEdit_Text;
+
+        private void hideButtonsForEdit()
+        {
+            if (buttonsHiddenForEdit_Visibility != null) return;
+            var temp = BaseControl_TextChanged_StopRead;
+            BaseControl_TextChanged_StopRead = true;
+            var visibility = new bool[buttonList.Count];
+            for (var i = 0; i < buttonList.Count; i++)
+            {
+                var button = buttonList[i];
+                if (button == null) continue;
+                visibility[i] = button.Visible;
+                button.Visible = false;
+            }
+            BaseControl_TextChanged_StopRead = temp;
+            buttonsHiddenForEdit_Visibility = visibility;
+            buttonsHiddenForEdit_Text = text;
+        }
+
+        // 隠したときと同じ場所なら、ボタンを元の表示に戻して true。違えば隠したボタンを捨てて false（作り直しが要る）
+        private bool restoreButtonsHiddenForEdit()
+        {
+            var visibility = buttonsHiddenForEdit_Visibility;
+            if (visibility == null) return false;
+            buttonsHiddenForEdit_Visibility = null;
+            if (buttonsHiddenForEdit_Text != text || visibility.Length != buttonList.Count || buttonList.Count == 0 || buttonList.Any(b => b == null || b.IsDisposed))
+            {
+                clearButtons();
+                return false;
+            }
+            var temp = BaseControl_TextChanged_StopRead;
+            BaseControl_TextChanged_StopRead = true;
+            SetBaseControlText("");
+            for (var i = 0; i < buttonList.Count; i++)
+            {
+                buttonList[i].Visible = visibility[i];
+            }
+            BaseControl_TextChanged_StopRead = temp;
+            fitVisibleButtonCount(); // 隠している間に大きさが変わった場合
+            return true;
         }
 
         public Func<string, bool> DirectoryExistsOverrider;
@@ -2128,6 +2177,7 @@ namespace ZipPla
         */
         private void fitVisibleButtonCount()
         {
+            if (buttonsHiddenForEdit_Visibility != null) return; // 編集のために隠している間は触らない（K27）
             var buttonListCount = buttonList.Count;
             if (buttonListCount == 0) return;
 
@@ -2305,6 +2355,7 @@ namespace ZipPla
 
         private void clearButtons()
         {
+            buttonsHiddenForEdit_Visibility = null;
             var temp = BaseControl_TextChanged_StopRead;
             BaseControl_TextChanged_StopRead = true;
             foreach (var button in buttonList.ToArray())
