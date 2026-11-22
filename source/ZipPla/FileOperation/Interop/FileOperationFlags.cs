@@ -27,6 +27,7 @@ namespace MsdnMag
         FOFX_PREFERHARDLINK          = 0x00020000,  // Create hard link if possible
         FOFX_SHOWELEVATIONPROMPT     = 0x00040000,  // Show elevation prompts when error UI is disabled (use with FOF_NOERRORUI)
         FOFX_EARLYFAILURE            = 0x00100000,  // Fail operation as soon as a single error occurs rather than trying to process other items (applies only when using FOF_NOERRORUI)
+        FOFX_RECYCLEONDELETE         = 0x00080000,  // Recycle when deleting (Windows 8 or later)
         FOFX_PRESERVEFILEEXTENSIONS  = 0x00200000,  // Rename collisions preserve file extns (use with FOF_RENAMEONCOLLISION)
         FOFX_KEEPNEWERFILE           = 0x00400000,  // Keep newer file on naming conflicts
         FOFX_NOCOPYHOOKS             = 0x00800000,  // Don't use copy hooks

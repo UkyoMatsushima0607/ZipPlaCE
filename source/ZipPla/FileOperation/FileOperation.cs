@@ -27,6 +27,12 @@ namespace MsdnMag
             if (owner != null) _fileOperation.SetOwnerWindow((uint)owner.Handle);
         }
 
+        internal void SetOperationFlags(FileOperationFlags flags)
+        {
+            ThrowIfDisposed();
+            _fileOperation.SetOperationFlags(flags);
+        }
+
         public void CopyItem(string source, string destination, string newName)
         {
             ThrowIfDisposed();

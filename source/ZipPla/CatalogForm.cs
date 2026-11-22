@@ -21177,33 +21177,11 @@ namespace ZipPla
 
                     StopLookAheadProcess();
 
-                    var target = deleteFromDisk ? Microsoft.VisualBasic.FileIO.RecycleOption.DeletePermanently : Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin;
-                    var deleteSuccessedList = new List<string>();
-                    for (var i = 0; i < count; i++)
+                    // 1 件ずつ送るとごみ箱の処理が件数分かかるので、IFileOperation に全件積んで 1 回で行う（K25）
+                    var deleteSuccessedList = deleteItemsInOneOperation(deleteList, deleteFromDisk, this);
+                    if (deleteSuccessedList.Count < count)
                     {
-                        var deletePath = deleteList[i];
-                        try
-                        {
-                            if (isDirList[i])
-                            {
-                                Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(deletePath,
-                                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                                    target);
-                            }
-                            else
-                            {
-                                Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(deletePath,
-                                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                                    target);
-                            }
-                            deleteSuccessedList.Add(deletePath);
-                        }
-                        catch//(Exception ex)
-                        {
-                            //MessageBox.Show(this, exception.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            MakePreview(tvCatalog.ScrollBarPercentage, tvCatalog.SelectedIndex);
-                            break;
-                        }
+                        MakePreview(tvCatalog.ScrollBarPercentage, tvCatalog.SelectedIndex);
                     }
 
 
@@ -21220,6 +21198,62 @@ namespace ZipPla
 
                     PrepareLookAheadProcess();
                 }
+            }
+        }
+
+        /// <summary>
+        /// パスの一覧をまとめて削除する（ごみ箱へ送るか完全に削除）。削除できたパス（引数の文字列のまま）を返す（K25）
+        /// </summary>
+        private static List<string> deleteItemsInOneOperation(IList<string> paths, bool deleteFromDisk, IWin32Window owner)
+        {
+            var original = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var path in paths)
+            {
+                var key = trimDirectorySeparator(path);
+                if (!original.ContainsKey(key)) original.Add(key, path);
+            }
+            var sink = new DeleteResultSink();
+            try
+            {
+                using (var fo = new MsdnMag.FileOperation(sink, owner))
+                {
+                    var flags = MsdnMag.FileOperationFlags.FOF_NOCONFIRMATION | MsdnMag.FileOperationFlags.FOF_NOCONFIRMMKDIR;
+                    if (!deleteFromDisk)
+                    {
+                        // ごみ箱に入らないものは確認する（以前の VB の DeleteFile と同じく、黙って完全に削除しない）
+                        flags |= MsdnMag.FileOperationFlags.FOF_ALLOWUNDO | MsdnMag.FileOperationFlags.FOFX_RECYCLEONDELETE | MsdnMag.FileOperationFlags.FOF_WANTNUKEWARNING;
+                    }
+                    fo.SetOperationFlags(flags);
+                    foreach (var key in original.Keys)
+                    {
+                        try { fo.DeleteItem(key); } catch { } // 既にない項目など
+                    }
+                    fo.PerformOperations();
+                }
+            }
+            catch (COMException) { } // 取り消しや失敗。消せた分は sink に記録されている
+            var result = new List<string>();
+            foreach (var deleted in sink.Deleted)
+            {
+                string path;
+                if (original.TryGetValue(trimDirectorySeparator(deleted), out path)) result.Add(path);
+            }
+            return result;
+        }
+
+        private static string trimDirectorySeparator(string path)
+        {
+            if (path.Length > 3) path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return path;
+        }
+
+        private sealed class DeleteResultSink : MsdnMag.FileOperationProgressSink
+        {
+            public readonly List<string> Deleted = new List<string>();
+            public override void PostDeleteItem(uint dwFlags, MsdnMag.IShellItem psiItem, uint hrDelete, MsdnMag.IShellItem psiNewlyCreated)
+            {
+                if ((int)hrDelete < 0 || psiItem == null) return;
+                try { Deleted.Add(psiItem.GetDisplayName(MsdnMag.SIGDN.SIGDN_FILESYSPATH)); } catch { }
             }
         }
 
