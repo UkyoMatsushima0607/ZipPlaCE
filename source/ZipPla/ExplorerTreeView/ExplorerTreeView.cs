@@ -690,6 +690,64 @@ namespace WilsonProgramming
             watcher.Renamed += eventHandler2;
             fileSystemWatcherSet.Add(pathInLower, watcher);
             watcher.EnableRaisingEvents = true;
+            StartSubFolderWatcher(node, path, pathInLower);
+        }
+
+        // 展開したフォルダの子フォルダの中（孫）でのフォルダの作成・削除・名前の変更の監視。
+        // ローカルの NTFS では子フォルダの中の変化は親の監視（IncludeSubdirectories なし）に届かないので、
+        // 子フォルダの中にフォルダを作っても子の＋が付かなかった（以前から）。フォルダ名の変化だけを下の階層まで監視し、
+        // 子の直下で起きたものなら、その子の＋だけを裏で調べ直す（Backlog 4.1）
+        private readonly Dictionary<string, FileSystemWatcher> subFolderWatcherSet = new Dictionary<string, FileSystemWatcher>();
+        private void StartSubFolderWatcher(TreeNode node, string path, string pathInLower)
+        {
+            if (subFolderWatcherSet.ContainsKey(pathInLower)) return;
+            FileSystemWatcher watcher;
+            try
+            {
+                watcher = new FileSystemWatcher(path) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.DirectoryName };
+            }
+            catch
+            {
+                return;
+            }
+            var root = path.EndsWith(Path.DirectorySeparatorChar.ToString()) ? path : path + Path.DirectorySeparatorChar;
+            Action<string> onChange = changedPath =>
+            {
+                if (changedPath == null || !changedPath.StartsWith(root, StringComparison.OrdinalIgnoreCase)) return;
+                var relative = changedPath.Substring(root.Length);
+                var parts = relative.Split(Path.DirectorySeparatorChar);
+                if (parts.Length != 2) return; // 子の直下（孫）だけ。子そのものの増減は通常の監視が扱う
+                var childPath = root + parts[0];
+                Task.Run(() =>
+                {
+                    bool has;
+                    try { has = Directory.Exists(childPath) && new DirectoryInfo(childPath).EnumerateDirectories().Any(); } catch { return; }
+                    PostToTree(() =>
+                    {
+                        if (!subFolderWatcherSet.ContainsKey(pathInLower) || !node.IsExpanded) return;
+                        treeWnd.UpdateHasSubFolder(node, childPath, has);
+                    });
+                });
+            };
+            watcher.Created += (sender, e) => onChange(e.FullPath);
+            watcher.Deleted += (sender, e) => onChange(e.FullPath);
+            watcher.Renamed += (sender, e) =>
+            {
+                onChange(e.FullPath);
+                string old;
+                try { old = e.OldFullPath; } catch (PathTooLongException) { old = null; }
+                onChange(old);
+            };
+            subFolderWatcherSet.Add(pathInLower, watcher);
+            try
+            {
+                watcher.EnableRaisingEvents = true;
+            }
+            catch
+            {
+                subFolderWatcherSet.Remove(pathInLower);
+                watcher.Dispose();
+            }
         }
 
         // 監視イベントの処理を UI スレッドに渡す（K22。以前は Invoke で、プールのスレッドが UI を待ってふさがっていた）
@@ -790,6 +848,11 @@ namespace WilsonProgramming
             {
                 watcher.Dispose();
                 fileSystemWatcherSet.Remove(pathInLower);
+            }
+            if (subFolderWatcherSet.TryGetValue(pathInLower, out watcher))
+            {
+                watcher.Dispose();
+                subFolderWatcherSet.Remove(pathInLower);
             }
         }
 
