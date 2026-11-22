@@ -38,6 +38,20 @@ namespace ZipPla
         private static string[] supportsImageAtLeastThumbnailReadingExtensionWithPeriodInLowerCase, supportsAtLeastThumbnailReadingExtensionWithPeriodInLowerCase;
         //public static readonly string SupportedFileFilter;
         private static ConcurrentDictionary<string, string> susieSupportsExtensionWithoutPeriodInLowerCaseToSpiName;
+
+        /// <summary>
+        /// WebP を libwebp で（Susie を通らずに）読むか（D1）。libwebp のデコードはスレッド安全なので、ビューアで並列にデコードしてよい。
+        /// WebP 用の Susie プラグインがあると Susie が先に使われるので false
+        /// </summary>
+        public static bool WebPDecodesWithLibWebP
+        {
+            get
+            {
+                if (!WebPDecoder.Available) return false;
+                var susie = susieSupportsExtensionWithoutPeriodInLowerCaseToSpiName;
+                return susie == null || !susie.ContainsKey("webp");
+            }
+        }
         static ImageLoader()
         {
             defaultSupportPathRegex = new Regex(@"\.(?:" + string.Join("|", defaultSupportExtensions) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
