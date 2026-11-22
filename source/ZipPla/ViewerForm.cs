@@ -978,6 +978,9 @@ namespace ZipPla
             CommandLineOptionInfoForLookAhead = info;
             Constructor(info);
             //Constructor(initialFullscreenMode, alwaysHideUI, backColor: Color.Black, aia: ArchivesInArchiveMode.Ignore);
+            // 構築に使った値を「依頼された値」の初期値にする。null のままだと最初の依頼で必ず設定と文言を適用し直していた（S5、5〜30ms）
+            requestedInitialFullscreenMode = initialFullscreenMode;
+            requestedAlwaysHideUI = alwaysHideUI;
 
             StartWatchIpcWakeEvent();
             tmWatchIpc.Start();
