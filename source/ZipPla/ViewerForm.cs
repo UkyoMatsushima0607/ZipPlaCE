@@ -5091,11 +5091,12 @@ namespace ZipPla
         {
             if (bmp == null) throw new ArgumentNullException(nameof(bmp));
             var pixelFormat = bmp.PixelFormat;
-            const int Flag_IsGrayScale = 0x00000002;
-            if (pixelFormat == PixelFormat.Format8bppIndexed && (bmp.Palette.Flags & Flag_IsGrayScale) == Flag_IsGrayScale)
+            // GDI+ がデコードした 8bpp のグレーは、パレットが恒等でも Flags に GrayScale が付かないことが多く、作り直していた。
+            // Flags は見ずに、256 色の恒等なグレーのパレットならそのまま使う（D10）
+            if (pixelFormat == PixelFormat.Format8bppIndexed)
             {
                 var entries = bmp.Palette.Entries;
-                var ok = true;
+                var ok = entries.Length == 256;
                 for (var i = 0; i < entries.Length; i++)
                 {
                     var c = entries[i];

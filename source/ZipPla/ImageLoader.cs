@@ -511,7 +511,13 @@ namespace ZipPla
                     image.BeginInit();
                     image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                     image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
-                    image.DecodePixelWidth = (int)Math.Ceiling(width * scale);
+                    // 1/2・1/4・1/8 ちょうどの大きさを求め、WIC が DCT の段階の縮小だけで済むようにする。
+                    // 半端な大きさを求めると WIC がさらに再標本化し、呼び出し側の縮小と合わせて 2 回になっていた（D10）
+                    var denominator = 2;
+                    while (denominator < 8 && (width + denominator * 2 - 1) / (denominator * 2) >= Math.Ceiling(width * scale) &&
+                        (height + denominator * 2 - 1) / (denominator * 2) >= Math.Ceiling(height * scale)) denominator *= 2;
+                    image.DecodePixelWidth = (width + denominator - 1) / denominator;
+                    image.DecodePixelHeight = (height + denominator - 1) / denominator; // 高さも指定しないと縦横比から 1 画素ずれて再標本化される
                     image.StreamSource = s;
                     image.EndInit();
                     System.Windows.Media.Imaging.BitmapSource source = image;
@@ -1841,15 +1847,23 @@ namespace ZipPla
                     return new BitmapEx(frames);
                 }
                 */
-                ms = new MemoryStream();
-                try
+                // 取り出し済みのメモリなら、同じ配列を指すストリームを作り、全体を写さない（D10）
+                if (stream is MemoryStream source && source.TryGetBuffer(out var segment) && p >= 0 && p <= source.Length)
                 {
-                    seekable.CopyTo(ms);
+                    ms = new MemoryStream(segment.Array, segment.Offset + (int)p, (int)(source.Length - p), writable: false, publiclyVisible: true);
                 }
-                catch
+                else
                 {
-                    ms.Dispose();
-                    throw;
+                    ms = new MemoryStream();
+                    try
+                    {
+                        seekable.CopyTo(ms);
+                    }
+                    catch
+                    {
+                        ms.Dispose();
+                        throw;
+                    }
                 }
             }
             return new BitmapEx(new GifProvider(ms, frameCount), from d in imageDatas select TimeSpan.FromMilliseconds(d.iDelayTime * 10));
