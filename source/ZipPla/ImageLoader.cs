@@ -43,6 +43,19 @@ namespace ZipPla
         /// WebP を libwebp で（Susie を通らずに）読むか（D1）。libwebp のデコードはスレッド安全なので、ビューアで並列にデコードしてよい。
         /// WebP 用の Susie プラグインがあると Susie が先に使われるので false
         /// </summary>
+        /// <summary>
+        /// JPEG 2000（jp2・j2k・jpf・jpx）を Susie を通らずに ffmpeg で読むか（D6）。ffmpeg は別のプロセスなので、ビューアで並列にデコードしてよい。
+        /// その形式の Susie プラグインがあると Susie が先に使われるので false
+        /// </summary>
+        public static bool Jpeg2000DecodesWithFfmpeg(string extensionWithoutPeriodInLowerCase)
+        {
+            if (extensionWithoutPeriodInLowerCase != "jp2" && extensionWithoutPeriodInLowerCase != "j2k" &&
+                extensionWithoutPeriodInLowerCase != "jpf" && extensionWithoutPeriodInLowerCase != "jpx") return false;
+            if (!MovieThumbnailLoader.ffmpegExists()) return false;
+            var susie = susieSupportsExtensionWithoutPeriodInLowerCaseToSpiName;
+            return susie == null || !susie.ContainsKey(extensionWithoutPeriodInLowerCase);
+        }
+
         public static bool WebPDecodesWithLibWebP
         {
             get
@@ -872,7 +885,7 @@ namespace ZipPla
                                 {
                                     using (var ms = new MemoryStream(buf, writable: false))
                                     {
-                                        var result2 = MovieThumbnailLoader.GetImageByFfmpeg(ms);
+                                        var result2 = MovieThumbnailLoader.GetJpeg2000ImageByFfmpeg(ms, buf.Length); // 一時ファイルを使わない（D6）
                                         imageInfo = GetImageInfo(result2);
                                         return result2;
                                     }
@@ -898,7 +911,9 @@ namespace ZipPla
                         }
                         if (MovieThumbnailLoader.SupportedImageExtensionsWithPeriodInLowerCase.Contains(extension))// && MovieThumbnailLoader.ffmpegExists())
                         {
-                            var result = extension == ".webp" ? MovieThumbnailLoader.GetWebPImageByFfmpeg(stream, streamLength) : MovieThumbnailLoader.GetImageByFfmpeg(stream);
+                            var result = extension == ".webp" ? MovieThumbnailLoader.GetWebPImageByFfmpeg(stream, streamLength) :
+                                extension != ".mj2" ? MovieThumbnailLoader.GetJpeg2000ImageByFfmpeg(stream, streamLength) : // 一時ファイルを使わない（D6。mj2 は動画なので従来どおり）
+                                MovieThumbnailLoader.GetImageByFfmpeg(stream);
                             imageInfo = GetImageInfo(result);
                             return result;
                         }

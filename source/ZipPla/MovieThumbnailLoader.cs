@@ -96,6 +96,43 @@ namespace ZipPla
             }
         }
 
+        /// <summary>
+        /// JPEG 2000（jp2・j2k など、PDF の JPXDecode を含む）を ffmpeg で読む。一時ファイルに書き出さず、標準入力で渡す（D6）。
+        /// 標準入力から読めなければ、従来どおり一時ファイルで読む
+        /// </summary>
+        public static Bitmap GetJpeg2000ImageByFfmpeg(Stream stream, long streamLength = -1)
+        {
+            if (stream.CanSeek) return getJpeg2000ImageByFfmpegSeekable(stream);
+            using (var source = streamLength >= 0 && streamLength <= int.MaxValue ?
+                new MemoryStream((int)streamLength) : new MemoryStream())
+            {
+                stream.CopyTo(source);
+                source.Position = 0;
+                return getJpeg2000ImageByFfmpegSeekable(source);
+            }
+        }
+
+        private static Bitmap getJpeg2000ImageByFfmpegSeekable(Stream source)
+        {
+            var position = source.Position;
+            try
+            {
+                int outputSize;
+                var buf = readStdOutBinary(ffmpegPath,
+                    "-hide_banner -loglevel error -f j2k_pipe -i pipe:0 -vframes 1 -an -vcodec bmp -f image2 -update 1 pipe:1",
+                    source, null, out outputSize);
+                using (var imageStream = new MemoryStream(buf, 0, outputSize, writable: false, publiclyVisible: false))
+                {
+                    return new Bitmap(imageStream);
+                }
+            }
+            catch (Exception e) when (e is IOException || e is InvalidDataException || e is ArgumentException || e is System.ComponentModel.Win32Exception || e is System.Runtime.InteropServices.ExternalException)
+            {
+                source.Position = position;
+                return GetImageByFfmpeg(source);
+            }
+        }
+
         public static Bitmap GetWebPImageByFfmpeg(Stream stream, long streamLength = -1)
         {
             if (stream.CanSeek) return getWebPImageByFfmpegSeekable(stream);

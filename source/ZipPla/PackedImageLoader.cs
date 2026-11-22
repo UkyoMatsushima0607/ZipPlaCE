@@ -1918,12 +1918,12 @@ namespace ZipPla
             {
                 case PackType.Pdf:
                     {
-                        // そのまま JPEG として読めるページだけ、バイト列を取り出す（デコードは呼び出し側がロックの外で並列に行う、D2）
-                        var jpeg = TryGetPdfPlainJpegBytes(physicalIndex);
-                        if (jpeg == null) return false;
-                        stream = new MemoryStream(jpeg, 0, jpeg.Length, writable: false, publiclyVisible: true);
-                        fileNameForType = PdfPlainJpegName;
-                        length = jpeg.Length;
+                        // そのまま JPEG（D2）・JPEG 2000（D6）として読めるページだけ、バイト列を取り出す（デコードは呼び出し側がロックの外で並列に行う）
+                        var bytes = TryGetPdfPlainJpegBytes(physicalIndex, allowJpx: true, out var isJpx);
+                        if (bytes == null) return false;
+                        stream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+                        fileNameForType = isJpx ? PdfJpxName : PdfPlainJpegName;
+                        length = bytes.Length;
                         return true;
                     }
                 case PackType.Directory:
@@ -2477,7 +2477,7 @@ namespace ZipPla
         private Bitmap OpenInnerImageStreamPdf(int physicalIndex)
         {
             // そのまま JPEG として読めるページは、JPEG のデコード（縮小デコードを含む）で読む（D2。以前は new Bitmap で常に原寸）
-            var jpeg = TryGetPdfPlainJpegBytes(physicalIndex);
+            var jpeg = TryGetPdfPlainJpegBytes(physicalIndex, allowJpx: false, out _);
             if (jpeg != null)
             {
                 try
@@ -2644,6 +2644,8 @@ namespace ZipPla
 
         // PDF から取り出した JPEG を読むときの名前（形式の判定にだけ使う、D2）
         private const string PdfPlainJpegName = "x.jpg";
+        // PDF の JPXDecode の画像を読むときの名前。従来の読み方（RiosFastPdfImageDecoder → GetFullBitmap(…, "x.jp2")）と同じ（D6）
+        private const string PdfJpxName = "x.jp2";
 
         /// <summary>
         /// PDF のページの画像（GetInnerImageStreamPdf が読むのと同じ、最初の画像の XObject）が、そのまま JPEG として読めるものなら、
@@ -2652,8 +2654,9 @@ namespace ZipPla
         /// Exif（APP1）を持たない JPEG に限る（JPEG のデコードは Exif の向きで回転するが、PDF では無視するのが正しい）。
         /// このクラスはスレッド安全ではないので、呼び出し側が直列にすること
         /// </summary>
-        private byte[] TryGetPdfPlainJpegBytes(int physicalIndex)
+        private byte[] TryGetPdfPlainJpegBytes(int physicalIndex, bool allowJpx, out bool isJpx)
         {
+            isJpx = false;
             try
             {
                 var page = pdfArchive.GetPageN(physicalIndex + 1); // ページは１オリジン
@@ -2670,6 +2673,14 @@ namespace ZipPla
                     if (!PdfName.IMAGE.Equals(type)) continue;
 
                     // 最初の画像だけを見る（GetInnerImageStreamPdf と同じ）
+                    if (allowJpx && IsOnlyJpxImageDictionary(tg) && ImageLoader.Jpeg2000DecodesWithFfmpeg("jp2"))
+                    {
+                        // JPXDecode だけの画像は、従来どおり生のバイト列を jp2 として読む（ffmpeg は別のプロセスなので並列に読める、D6）
+                        var jpxStream = pdfArchive.GetPdfObject((obj as PRIndirectReference).Number) as PRStream;
+                        if (jpxStream == null) return null;
+                        isJpx = true;
+                        return PdfReader.GetStreamBytesRaw(jpxStream);
+                    }
                     if (!IsPlainJpegImageDictionary(tg)) return null;
                     var pdfStream = pdfArchive.GetPdfObject((obj as PRIndirectReference).Number) as PRStream;
                     if (pdfStream == null) return null;
@@ -2686,6 +2697,18 @@ namespace ZipPla
             {
                 return null;
             }
+        }
+
+        // フィルタが JPXDecode だけか（D6）
+        private static bool IsOnlyJpxImageDictionary(PdfDictionary image)
+        {
+            var filter = PdfReader.GetPdfObject(image.Get(PdfName.FILTER));
+            if (filter is PdfArray filters)
+            {
+                if (filters.Size != 1) return false;
+                filter = PdfReader.GetPdfObject(filters[0]);
+            }
+            return PdfName.JPXDECODE.Equals(filter);
         }
 
         private static bool IsPlainJpegImageDictionary(PdfDictionary image)

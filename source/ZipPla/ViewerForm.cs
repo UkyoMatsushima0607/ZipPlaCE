@@ -3423,7 +3423,8 @@ namespace ZipPla
             if (string.IsNullOrEmpty(path)) return false;
             var ext = Path.GetExtension(path).ToLowerInvariant();
             return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".gif" || ext == ".tif" || ext == ".tiff" ||
-                ext == ".webp" && ImageLoader.WebPDecodesWithLibWebP; // libwebp はスレッド安全（D1）
+                ext == ".webp" && ImageLoader.WebPDecodesWithLibWebP || // libwebp はスレッド安全（D1）
+                ext.Length > 1 && ImageLoader.Jpeg2000DecodesWithFfmpeg(ext.Substring(1)); // ffmpeg は別のプロセス（D6）
         }
 
         // ページの画像を読む（V1）。並列にデコードできる形式は、書庫からの取り出しだけをロックの中で行い、デコードはロックの外で行う
