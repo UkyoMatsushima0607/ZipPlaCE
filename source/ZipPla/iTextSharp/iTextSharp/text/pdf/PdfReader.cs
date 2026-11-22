@@ -1995,6 +1995,13 @@ namespace iTextSharp.text.pdf {
         * @return the decoded data
         */    
         public static byte[] FlateDecode(byte[] inp, bool strict) {
+            // ZipPla CE: 正しいデータは .NET の DeflateStream（ネイティブの zlib）で展開する（D4 の残り。C# 版の zlib より速い）。
+            // 壊れたデータ（strict でないときの部分的な展開）やプリセット辞書付きは従来どおり
+            if (strict) {
+                var native = FlateDecodeNative(inp);
+                if (native != null)
+                    return native;
+            }
             MemoryStream stream = new MemoryStream(inp);
             ZInflaterInputStream zip = new ZInflaterInputStream(stream);
             MemoryStream outp = new MemoryStream();
@@ -2015,6 +2022,27 @@ namespace iTextSharp.text.pdf {
             }
         }
         
+        // zlib のヘッダー（2 バイト）を確かめて、残りの deflate のデータを System.IO.Compression.DeflateStream で展開する。
+        // ヘッダーが zlib でない・プリセット辞書付き・展開に失敗したときは null（ZipPla CE）
+        private static byte[] FlateDecodeNative(byte[] inp) {
+            if (inp == null || inp.Length < 2)
+                return null;
+            int cmf = inp[0], flg = inp[1];
+            if ((cmf & 0x0F) != 8 || ((cmf << 8) | flg) % 31 != 0 || (flg & 0x20) != 0)
+                return null;
+            try {
+                using (var source = new MemoryStream(inp, 2, inp.Length - 2, false))
+                using (var deflate = new System.IO.Compression.DeflateStream(source, System.IO.Compression.CompressionMode.Decompress))
+                using (var outp = new MemoryStream(inp.Length * 4)) {
+                    deflate.CopyTo(outp);
+                    return outp.ToArray();
+                }
+            }
+            catch {
+                return null;
+            }
+        }
+
         /** Decodes a stream that has the ASCIIHexDecode filter.
         * @param in the input data
         * @return the decoded data
