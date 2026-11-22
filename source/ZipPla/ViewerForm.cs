@@ -14795,6 +14795,69 @@ namespace ZipPla
                 return randomIndex;
             }
         }
+        /// <summary>
+        /// candidates を comparer の順に、ascending なら小さいものから、そうでなければ大きいものから 1 つずつ返す（V27）。
+        /// 以前は全体を並べ替えてから先頭から試していたが、ほとんどは最初の 1 つで開けるので、そのたびに残りから 1 回の走査で選ぶ。
+        /// candidates は書き換える
+        /// </summary>
+        private static IEnumerable<FileSortInfo> EnumerateNearestFirst(List<FileSortInfo> candidates, IComparer<FileSortInfo> comparer, bool ascending)
+        {
+            while (candidates.Count > 0)
+            {
+                var best = 0;
+                for (var i = 1; i < candidates.Count; i++)
+                {
+                    var c = comparer.Compare(candidates[i], candidates[best]);
+                    if (ascending ? c < 0 : c > 0) best = i;
+                }
+                var result = candidates[best];
+                candidates.RemoveAt(best);
+                yield return result;
+            }
+        }
+
+        // 次・前の本を探すときのフォルダの列挙結果（V27）。名前順のときだけ、フォルダの更新日時が変わるまで使い回す
+        // （項目の追加・削除・名前変更ではフォルダの更新日時が変わる。日時やサイズの順はファイルの情報が変わるので毎回列挙する）
+        private string siblingsCache_Parent;
+        private DateTime siblingsCache_LastWriteTimeUtc;
+        private int siblingsCache_Tick;
+        private const int SiblingsCacheMilliseconds = 10000; // 更新日時が確実に変わらないファイルシステム（ネットワークなど）に備えて、短い間だけ
+        private FileSortInfo[] siblingsCache_Files, siblingsCache_Folders;
+
+        private void GetSiblingsForOpenNextOrPrevious(DirectoryInfo parent, SortModeDetails sort, out FileSortInfo[] files, out FileSortInfo[] folders)
+        {
+            var nameOnly = sort == null || sort.SortMode == SortMode.NameInAsc || sort.SortMode == SortMode.NameInDesc;
+            var lastWrite = DateTime.MinValue;
+            if (nameOnly)
+            {
+                lastWrite = parent.LastWriteTimeUtc;
+                var age = unchecked(Environment.TickCount - siblingsCache_Tick);
+                if (siblingsCache_Files != null && siblingsCache_Parent == parent.FullName && siblingsCache_LastWriteTimeUtc == lastWrite &&
+                    0 <= age && age < SiblingsCacheMilliseconds)
+                {
+                    files = siblingsCache_Files;
+                    folders = siblingsCache_Folders;
+                    return;
+                }
+            }
+            files = parent.GetFiles()
+                .Where(info => PackedImageLoader.Supports(info.Name))
+                .Select(info => new FileSortInfo(info)).ToArray();
+            folders = parent.GetDirectories().Select(info => new FileSortInfo(info)).ToArray();
+            if (nameOnly)
+            {
+                siblingsCache_Parent = parent.FullName;
+                siblingsCache_LastWriteTimeUtc = lastWrite;
+                siblingsCache_Tick = Environment.TickCount;
+                siblingsCache_Files = files;
+                siblingsCache_Folders = folders;
+            }
+            else
+            {
+                siblingsCache_Files = siblingsCache_Folders = null;
+            }
+        }
+
         private OpenResult OpenNextOrPrevious(bool next, bool loop, Action notFoundAction = null)
         {
             if (ExitAfterCoverSetting) return OpenResult.NoOperation;
@@ -14814,10 +14877,8 @@ namespace ZipPla
                 
                 var comparer = new OpenNextOrPrevious_Comparer(requestedSortModeDetails);
                 
-                var allFiles = parent.GetFiles()
-                    .Where(info => PackedImageLoader.Supports(info.Name))
-                    .Select(info => new FileSortInfo(info)).ToArray();
-                var allFolders = parent.GetDirectories().Select(info => new FileSortInfo(info)).ToArray();
+                FileSortInfo[] allFiles, allFolders;
+                GetSiblingsForOpenNextOrPrevious(parent, requestedSortModeDetails, out allFiles, out allFolders);
 
                 if (requestedSortModeDetails != null && (requestedSortModeDetails.SortMode == SortMode.TypeInAsc || requestedSortModeDetails.SortMode == SortMode.TypeInDesc ||
                     requestedSortModeDetails.PreSortMode == SortMode.TypeInAsc || requestedSortModeDetails.PreSortMode == SortMode.TypeInDesc))
@@ -14839,30 +14900,15 @@ namespace ZipPla
                 var files = (from item in allFiles where sign * comparer.Compare(currentInfo, item) < 0 select item).ToArray();
                 if (searchManagerFromCatalogForm != null) allFolders = allFolders.Where(info => searchManagerFromCatalogForm.Match(info.Name)).ToArray();
                 var folders = (from item in allFolders where sign * comparer.Compare(currentInfo, item) < 0 select item).ToArray();
-                var paths = new FileSortInfo[files.Length + folders.Length];
-                var index = 0;
-                foreach (var file in files) paths[index++] = file;
-                foreach (var folder in folders) paths[index++] = folder;
-                //if (currentSortModeDetails == null || currentSortModeDetails.SortMode == SortMode.nameina)
-                Array.Sort(paths, comparer);
-
-                //MessageBox.Show($"{paths.Length}");
+                var paths = new List<FileSortInfo>(files.Length + folders.Length);
+                paths.AddRange(files);
+                paths.AddRange(folders);
+                // 全体を並べ替えず、今の本の次（前）にあたるものから 1 つずつ選ぶ（V27。ほとんどは最初の 1 つで開ける）
 
                 while (true)
                 {
-                    int start, stop, delta;
-                    if (next)
+                    foreach (var path in EnumerateNearestFirst(paths, comparer, ascending: next))
                     {
-                        start = 0; stop = index; delta = 1;
-                    }
-                    else
-                    {
-                        start = index - 1; stop = -1; delta = -1;
-                    }
-
-                    for (var i = start; i != stop; i += delta)
-                    {
-                        var path = paths[i];
                         try
                         {
                             using (var loader = getPackedImageLoader(path.FullName, ViewerFormOnMemoryMode.ForCheckOnlyEntries))
@@ -14884,13 +14930,9 @@ namespace ZipPla
                     {
                         files = (from item in allFiles where sign * comparer.Compare(currentInfo, item) > 0 select item).ToArray();
                         folders = (from item in allFolders where sign * comparer.Compare(currentInfo, item) > 0 select item).ToArray();
-                        //paths = files.Concat(folders).OrderBy(p => p, LogicalStringComparer).ToArray();
-                        paths = new FileSortInfo[files.Length + folders.Length];
-                        index = 0;
-                        foreach (var file in files) paths[index++] = file;
-                        foreach (var folder in folders) paths[index++] = folder;
-                        //index = paths.Length;
-                        Array.Sort(paths, comparer);
+                        paths = new List<FileSortInfo>(files.Length + folders.Length);
+                        paths.AddRange(files);
+                        paths.AddRange(folders);
                         loop = false;
                         continue;
                     }
