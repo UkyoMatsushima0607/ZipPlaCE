@@ -7809,6 +7809,15 @@ namespace ZipPla
                     pbView_Paint_Canvas = BitmapEx.ConvertToBitmapEx(new Bitmap(width, height, PixelFormat.Format24bppRgb));
                     pbView_Paint_OnlyDrawMeasure = false;
                 }
+                else if (!pbView_SizeChanged_SizeChanging &&
+                    (long)pbView_Paint_Canvas.Width * pbView_Paint_Canvas.Height > 2L * pbViewSize.Width * pbViewSize.Height)
+                {
+                    // 大きくするだけで縮めなかったので、全画面（4K で約 25MB）から戻しても持ち続けていた。
+                    // 表示の 2 倍より大きければ作り直す（大きさを変えている途中は除く）（V19 の残り）
+                    pbView_Paint_Canvas.Dispose();
+                    pbView_Paint_Canvas = BitmapEx.ConvertToBitmapEx(new Bitmap(pbViewSize.Width, pbViewSize.Height, PixelFormat.Format24bppRgb));
+                    pbView_Paint_OnlyDrawMeasure = false;
+                }
 
                 if (pbViewSize.Width > pbView_Paint_PrevWidth || pbViewSize.Height > pbView_Paint_PrevHeight)
                 {
