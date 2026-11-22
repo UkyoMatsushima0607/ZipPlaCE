@@ -4002,7 +4002,7 @@ namespace ZipPla
                     }
                 });
             }
-#if DEBUG
+#if DEBUG || PERFLOG
             catch (Exception ee)
 #else
             catch
@@ -4010,6 +4010,9 @@ namespace ZipPla
             {
 #if DEBUG
                 var errorMessage = ee.ToString();
+#endif
+#if PERFLOG
+                try { lock (perfLoadLogLock) File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-error.log"), $"page={e.WorkNumber}	{ee}" + Environment.NewLine); } catch { }
 #endif
                 var errorSize = new Size(-210, -297);
                 var resizedSize = GetResizedSize(errorSize);
@@ -4796,7 +4799,8 @@ namespace ZipPla
         }
         */
         
-        [DllImport("kernel32.dll")]
+        // kernel32.dll が公開しているのは RtlMoveMemory で、CopyMemory はヘッダのマクロの名前。.NET（Core）では見つからず描画が失敗したので、実体を指定する
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         public static extern void CopyMemory(IntPtr dst, IntPtr src, int size);
         
         // 色のある画素が見つかったら loop.Stop() で残りの行を打ち切る（V11。Break は前の行をすべて処理し終えるまで止まらない）
