@@ -38,8 +38,72 @@ namespace ZipPla
                     RegexOptions.IgnoreCase : RegexOptions.None));
         }
         
+        /// <summary>作ったときの絞り込みの文字列（K29）</summary>
+        public string Text { get; }
+
+        /// <summary>
+        /// newText で一致する名前が、必ず oldText でも一致するか（K29）。両方とも演算子・評価・ワイルドカード・正規表現のない
+        /// AND の単純な語だけで、oldText の各語が newText のどれかの語に含まれるときだけ true（判定できなければ false）。
+        /// 濁点などの結合文字が続く場合は、あいまい比較で前の文字と一体になりうるので false にする
+        /// </summary>
+        public static bool IsNarrowing(string oldText, string newText)
+        {
+            if (oldText == null || newText == null) return false;
+            if (IsRegex.IsMatch(oldText) || IsRegex.IsMatch(newText)) return false;
+            string[] oldTerms, newTerms;
+            try
+            {
+                oldTerms = Split(oldText);
+                newTerms = Split(newText);
+            }
+            catch
+            {
+                return false;
+            }
+            if (!allSimpleTerms(oldTerms) || !allSimpleTerms(newTerms)) return false;
+            foreach (var o in oldTerms)
+            {
+                var found = false;
+                foreach (var n in newTerms)
+                {
+                    var idx = n.IndexOf(o, StringComparison.OrdinalIgnoreCase);
+                    if (idx < 0) continue;
+                    var after = idx + o.Length;
+                    if (after < n.Length && isCombining(n[after])) continue;
+                    found = true;
+                    break;
+                }
+                if (!found) return false;
+            }
+            return true;
+        }
+
+        private static bool allSimpleTerms(string[] terms)
+        {
+            if (terms.Length == 0) return false;
+            foreach (var t in terms)
+            {
+                if (string.IsNullOrEmpty(t)) return false;
+                var c = t[0];
+                if (c == '+' || c == '-' || c == '"') return false;
+                if (t.IndexOf('*') >= 0 || t.IndexOf('?') >= 0 || t.IndexOf('"') >= 0) return false;
+                if (IsRatingFilter.IsMatch(t)) return false;
+                if (isCombining(c)) return false;
+            }
+            return true;
+        }
+
+        private static bool isCombining(char c)
+        {
+            if (c == '\uFF9E' || c == '\uFF9F' || c == '\u3099' || c == '\u309A' || c == '\u309B' || c == '\u309C') return true;
+            var cat = char.GetUnicodeCategory(c);
+            return cat == System.Globalization.UnicodeCategory.NonSpacingMark || cat == System.Globalization.UnicodeCategory.SpacingCombiningMark ||
+                cat == System.Globalization.UnicodeCategory.EnclosingMark;
+        }
+
         public SearchManager(string text)
         {
+            Text = text;
             if (IsRegex.IsMatch(text))
             {
                 regexArray = new Regex[1] { GetRegex(text) };

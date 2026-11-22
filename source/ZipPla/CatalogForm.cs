@@ -14439,6 +14439,49 @@ namespace ZipPla
         public static readonly LogicalStringComparer GetSortArray_NaturalSort = new LogicalStringComparer();
         private static readonly filePathComparator GetSortArray_FilePathComparator = new filePathComparator();
         //private readonly Random randomForPermutation = new Random();
+        // 絞り込みの判定の記録（K29）。名前の参照が同じ項目は、同じ絞り込みなら前回の結果を使い、
+        // 前回の絞り込みを狭めただけ（AND の単純な語を延長・追加）なら前回一致しなかった項目は調べない
+        private string filterMemo_Text;
+        private string[] filterMemo_Names;
+        private bool[] filterMemo_Matched;
+        private readonly object filterMemo_Lock = new object();
+
+        private void filterWithMemo(int count, List<int> orderList)
+        {
+            var manager = cbFilter_SearchManager;
+            var text = manager.Text;
+            var names = ZipNameArray;
+            var memoNames = filterMemo_Names;
+            var memoMatched = filterMemo_Matched;
+            var same = false;
+            var narrowing = false;
+            if (text != null && filterMemo_Text != null && memoNames != null && memoMatched != null && memoNames.Length == count && memoMatched.Length == count)
+            {
+                same = text == filterMemo_Text;
+                narrowing = !same && SearchManager.IsNarrowing(filterMemo_Text, text);
+            }
+            var matched = new bool[count];
+            for (var i = 0; i < count; i++)
+            {
+                var name = names[i];
+                bool m;
+                if ((same || narrowing) && ReferenceEquals(name, memoNames[i]))
+                {
+                    if (same) m = memoMatched[i];
+                    else m = memoMatched[i] && name != null && manager.Match(name);
+                }
+                else
+                {
+                    m = name != null && manager.Match(name);
+                }
+                matched[i] = m;
+                if (m && ZipMaskArray[i]) orderList.Add(i);
+            }
+            filterMemo_Text = text;
+            filterMemo_Names = (string[])names.Clone();
+            filterMemo_Matched = matched;
+        }
+
         private int[] GetSortArray(int[] preSortArray, bool careTvCatalog = true, SortMode? sortMode = null, bool recursiveCall = false)
         {
             var count = ZipPathArray.Length;
@@ -14454,15 +14497,16 @@ namespace ZipPla
             {
                 var orderList = new List<int>();
                 var invalid = InArchive || InMovie || cbFilter_SearchManager == null;
-                for (var i = 0; i < count; i++)
+                if (invalid)
                 {
-                    if (!ZipMaskArray[i]) continue;
-
-                    string name;
-                    if (invalid || (name = ZipNameArray[i]) != null && cbFilter_SearchManager.Match(ZipNameArray[i]))
+                    for (var i = 0; i < count; i++)
                     {
-                        orderList.Add(i);
+                        if (ZipMaskArray[i]) orderList.Add(i);
                     }
+                }
+                else
+                {
+                    lock (filterMemo_Lock) filterWithMemo(count, orderList); // 背景のスレッドから呼ばれても記録が混ざらないように
                 }
 
                 if (preSortArray != null)
