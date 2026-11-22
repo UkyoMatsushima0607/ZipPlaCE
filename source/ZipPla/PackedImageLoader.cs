@@ -1,5 +1,4 @@
 ﻿using iTextSharp.text.pdf;
-using Microsoft.Deployment.Compression.Cab;
 using SevenZipExtractor;
 using SharpCompress.Archives;
 using SharpCompress.Readers;
@@ -267,10 +266,6 @@ namespace ZipPla
         private IArchiveEntry[] iArchiveEntries;
         private ArchiveFile sevenZipArchive;
         private Entry[] sevenZipArchiveEntries;
-        //private CabInfo cabArchive;
-        //private IList<CabFileInfo> cabArchiveEntries;
-        private CabEngine cabArchive;
-        private IList<Microsoft.Deployment.Compression.ArchiveFileInfo> cabArchiveEntries;
         private IReader iReader;
         // Keep a bounded cache of extracted files; decoded bitmaps are much larger.
         // solid 書庫で展開済みのエントリ（画像はもともと圧縮されているので、展開後もほぼ書庫と同じ大きさ）（B2）
@@ -926,7 +921,8 @@ namespace ZipPla
 
         // 7z 形式は、7z.dll があれば SharpCompress より 7z.dll で読む方が速い（300 ページの 7z で solid 2.4 秒→1.0 秒、非 solid 2.5 秒→0.8 秒）。
         // 7z.dll が見つからなければ従来どおり SharpCompress で読む。RAR4 などは検証できていないので従来どおり。
-        private static bool PreferSevenZipDll(PackType type) => type == PackType.SevenZip;
+        // CAB は 7z.dll だけで読む（B7。WiX DTF の Microsoft.Deployment.Compression.Cab は MS-RL で GPL と両立しない可能性があるのでやめた）
+        private static bool PreferSevenZipDll(PackType type) => type == PackType.SevenZip || type == PackType.Cab;
 
         private bool UseZipArchiveClass = true;
 
@@ -952,7 +948,7 @@ namespace ZipPla
                         switch (Type)
                         {
                             case PackType.Zip: return UseZipArchiveClass ? hasAnyZipArchiveEntry() : hasAnyIArchiveEntry();
-                            case PackType.Cab: return hasAnyCabEntry();
+                            case PackType.Cab: throw new NotSupportedException(); // 7z.dll が要る（B7）
                             default: return hasAnyIArchiveEntry();
                         }
                     }
@@ -1005,7 +1001,7 @@ namespace ZipPla
                             case PackType.Tar:
                             case PackType.SevenZip:
                                 return getIArchiveEntries(neededFileInfos, needToExecOnTask);
-                            case PackType.Cab: return getCabEntries(neededFileInfos, needToExecOnTask);
+                            case PackType.Cab: throw new NotSupportedException(); // 7z.dll が要る（B7）
                         }
                     }
                     else
@@ -1741,99 +1737,6 @@ namespace ZipPla
             }, null);
         }
         
-        private List<PackedImageEntry> getCabEntries(PackedImageLoaderFileInfo neededFileInfos, bool needToExecOnTask)
-        {
-            try
-            {
-                if (cabArchive == null)
-                {
-                    cabArchive = new CabEngine();
-                    cabArchiveEntries = cabArchive.GetFileInfo(stream);
-                }
-                var result = new List<PackedImageEntry>();
-                var length = cabArchiveEntries.Count;
-                var needTime = (neededFileInfos & PackedImageLoaderFileInfo.LastWriteTime) == PackedImageLoaderFileInfo.LastWriteTime;
-                var needSize = (neededFileInfos & PackedImageLoaderFileInfo.Size) == PackedImageLoaderFileInfo.Size;
-                var ffmpegEixsts = MovieThumbnailLoader.ffmpegExists();
-                for (var i = 0; i < length; i++)
-                {
-                    var entry = cabArchiveEntries[i];
-                    var path = entry.Name;
-                    if (ImageLoader.SupportsFullReading(path, ffmpegEixsts))
-                    {
-                        DateTime dateTime;
-                        if (needTime)
-                        {
-                            dateTime = entry.LastWriteTime;
-                        }
-                        else
-                        {
-                            dateTime = DateTime.MinValue;
-                        }
-                        result.Add(new PackedImageEntry(-1, i, path, dateTime, needSize ? entry.Length : -1));
-                    }
-                }
-
-                var h = leftHierarchies - 1;
-                if (h >= 0 && (searchMode == PackedImageLoaderSearchMode.Full || result.Count == 0))
-                {
-                    var childrenList = new List<Tuple<PackedImageLoader, List<PackedImageEntry>>>();
-                    foreach (var entry in cabArchiveEntries)
-                    {
-                        var name = entry.Name;
-                        if (Supports(name, forFile: false))
-                        {
-                            var res = addChildFile(result, childrenList, h, cabArchive.Unpack(stream, name), entry.Length, name, neededFileInfos, needToExecOnTask);
-                            if (searchMode == PackedImageLoaderSearchMode.UntilFoundItem && res > 0) break;
-                        }
-                    }
-                    children = childrenList.ToArray();
-                }
-
-                return result;
-            }
-            catch// (Exception e)
-            {
-                throw new NotSupportedException();
-            }
-        }
-
-        private bool hasAnyCabEntry()
-        {
-            try
-            {
-                if (cabArchive == null)
-                {
-                    cabArchive = new CabEngine();
-                    cabArchiveEntries = cabArchive.GetFileInfo(stream);
-                }
-                var length = cabArchiveEntries.Count;
-                var ffmpegEixsts = MovieThumbnailLoader.ffmpegExists();
-                var h = leftHierarchies - 1;
-                var hNN = h >= 0;
-                var cabEntries = hNN ? new List<Microsoft.Deployment.Compression.ArchiveFileInfo>() : null;
-                for (var i = 0; i < length; i++)
-                {
-                    var entry = cabArchiveEntries[i];
-                    var path = entry.Name;
-                    if (ImageLoader.SupportsFullReading(path, ffmpegEixsts))
-                    {
-                        return true;
-                    }
-                    if (hNN) cabEntries.Add(entry);
-                }
-
-                return hNN && hasAnyChildStreamEntry(from e in cabEntries
-                                                     let name = e.Name
-                                                     where Supports(name, forFile: false)
-                                                     select Tuple.Create(cabArchive.Unpack(stream, name), e.Length, name), h);
-            }
-            catch
-            {
-                throw new NotSupportedException();
-            }
-        }
-
         public Stream GetStream(PackedImageEntry entry, out string extensionWithPeriodForPDF, bool callback = false)
         {
             var cIndex = entry.ChildIndex;
@@ -1884,10 +1787,6 @@ namespace ZipPla
                             case PackType.SevenZip:
                                 //case PackType.Gz:
                                 return GetInnerImageStreamSharpCompress(physicalIndex);
-                            case PackType.Cab:
-                                var cabEntrie = cabArchiveEntries[physicalIndex];
-                                var name = cabEntrie.Name;
-                                return cabArchive.Unpack(stream, name);
                         }
                     }
                     throw new NotSupportedException();
@@ -1961,10 +1860,6 @@ namespace ZipPla
                                         return DecodeExtracted(extracted, fileNameForType, animation, length);
                                     }
                                 }
-                            case PackType.Cab:
-                                var cabEntrie = cabArchiveEntries[physicalIndex];
-                                var name = cabEntrie.Name;
-                                return GetImageAndDisposeOriginal(cabArchive.Unpack(stream, name), name, cabEntrie.Length);
                         }
                     }
 
@@ -2014,7 +1909,6 @@ namespace ZipPla
                         return true;
                     }
                 case PackType.Directory:
-                case PackType.Cab:
                     return false;
                 case PackType.ZipM:
                 case PackType.Rar5:
@@ -3170,11 +3064,6 @@ namespace ZipPla
                         {
                             try { child.Dispose(); } catch { }
                         }
-                    }
-                    if (cabArchive != null)
-                    {
-                        try { cabArchive.Dispose(); } catch { }
-                        cabArchive = null;
                     }
                 }
 
