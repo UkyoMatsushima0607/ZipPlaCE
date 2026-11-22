@@ -1140,7 +1140,7 @@ namespace ZipPla
                                         currentParent = Path.GetDirectoryName(current).ToLower();
 
                                         // ルートの場合に必要な処理
-                                        if (currentParent.Last() == Path.DirectorySeparatorChar)
+                                        if (currentParent[currentParent.Length - 1] == Path.DirectorySeparatorChar)
                                         {
                                             currentParent = currentParent.Substring(0, currentParent.Length - 1);
                                         }
@@ -4328,7 +4328,7 @@ namespace ZipPla
                 var zna = ZipNameArray; if (zna == null || (zpaLength = zna.Length) <= di) return; // 想定外 
                 //var path = zpa[di]; if (string.IsNullOrEmpty(path)) return;
                 var name = zna[di]; if (string.IsNullOrEmpty(name)) return;
-                if (name.Last() == Path.DirectorySeparatorChar)
+                if (name[name.Length - 1] == Path.DirectorySeparatorChar)
                 {
                     var zpa = ZipPathArray; if (zpa == null || zpa.Length != zpaLength) return; // 想定外 
                     var path = zpa[di]; if (string.IsNullOrEmpty(path)) return;
@@ -4395,7 +4395,7 @@ namespace ZipPla
                 int zpaLength;
                 var zna = ZipNameArray; if (zna == null || (zpaLength = zna.Length) <= di) return null;
                 var name = zna[di]; if (string.IsNullOrEmpty(name)) return null;
-                var isDir = name.Last() == Path.DirectorySeparatorChar;
+                var isDir = name[name.Length - 1] == Path.DirectorySeparatorChar;
                 if (!isDir) return currentLocation;
                 var zpa = ZipPathArray; if (zpa == null || zpa.Length != zpaLength) return null; // 想定外 
                 return zpa[di];
@@ -11011,7 +11011,7 @@ namespace ZipPla
                             if (zma[i])
                             {
                                 var name = zna[i];
-                                if (!string.IsNullOrEmpty(name) && (name.Last() == Path.DirectorySeparatorChar || PackedImageLoader.Supports(name)) &&
+                                if (!string.IsNullOrEmpty(name) && (name[name.Length - 1] == Path.DirectorySeparatorChar || PackedImageLoader.Supports(name)) &&
                                     ZipPlaInfo.GetOnlyBindingModeFromFullName(name) == null)
                                 {
                                     return true;
@@ -12665,7 +12665,7 @@ namespace ZipPla
                         {
                             //    allSelectionLoaded = false;
                         }
-                        var thisIsFolder = selectedName.Length > 0 && selectedName.Last() == Path.DirectorySeparatorChar;
+                        var thisIsFolder = selectedName.Length > 0 && selectedName[selectedName.Length - 1] == Path.DirectorySeparatorChar;
                         if (allSelectionFile && thisIsFolder)
                         {
                             allSelectionFile = false;
@@ -12792,7 +12792,7 @@ namespace ZipPla
             setThumbnailManuallyToolStripMenuItem.Visible = !singleImage && !InMovie;
             setCoverToThisToolStripMenuItem.Visible = InMovie;
 
-            var singleDir = !string.IsNullOrEmpty(singleName) && singleName.Last() == Path.DirectorySeparatorChar;
+            var singleDir = !string.IsNullOrEmpty(singleName) && singleName[singleName.Length - 1] == Path.DirectorySeparatorChar;
             if (InMovie || (!(InSmartDirectory || InVirtualDirectory) && (allSelectionFile &&
                 (singleImage ||
                 //PackedImageLoader.Supports(singlePath) ||
@@ -12944,7 +12944,7 @@ namespace ZipPla
                     {
                         var name = selectedNameArray[i];
                         if (string.IsNullOrEmpty(name)) continue;
-                        if (name.Last() == Path.DirectorySeparatorChar)
+                        if (name[name.Length - 1] == Path.DirectorySeparatorChar)
                         {
                             try
                             {
@@ -13701,7 +13701,7 @@ namespace ZipPla
                             {
                                 var zipPlaInfo = new ZipPlaInfo(path);
                                 zipPlaInfo.Rating = rating;
-                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name.Last() == Path.DirectorySeparatorChar);
+                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
 
                                 if (path != newPath)
                                 {
@@ -13734,7 +13734,7 @@ namespace ZipPla
             if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(name)) return;
             var zipPlaInfo = new ZipPlaInfo(path);
             zipPlaInfo.Rating = rating;
-            var newPath = zipPlaInfo.GetPathOfCurrentInfo(name.Last() == Path.DirectorySeparatorChar);
+            var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
 
             RenameShownArchive(index, path, newPath);
         }
@@ -13764,7 +13764,7 @@ namespace ZipPla
                             {
                                 var zipPlaInfo = new ZipPlaInfo(path);
                                 zipPlaInfo.BindingModeForSet = bindingMode;
-                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name.Last() == Path.DirectorySeparatorChar);
+                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
 
                                 if (path != newPath)
                                 {
@@ -13806,7 +13806,7 @@ namespace ZipPla
                             {
                                 var zipPlaInfo = new ZipPlaInfo(path);
                                 zipPlaInfo.ThumbnailInfo = null;
-                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name.Last() == Path.DirectorySeparatorChar);
+                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
 
                                 if (path != newPath)
                                 {
@@ -13919,7 +13919,7 @@ namespace ZipPla
                                 var oldInfo = new ZipPlaInfo(oldName);
                                 var changedThumbnail = newInfo.ThumbnailInfo != newInfo.ThumbnailInfo;
                                 var changedEffectivePageSequence = false;
-                                var isDir = oldName.Last() == Path.DirectorySeparatorChar;
+                                var isDir = oldName[oldName.Length - 1] == Path.DirectorySeparatorChar;
                                 var newPath = isDir ? oldPath.Substring(0, oldPath.Length - oldName.Length + 1) + text :
                                     oldPath.Substring(0, oldPath.Length - oldName.Length) + text + oldName.Substring(oldBase.Length);
                                 var needToCheck = !changedThumbnail && InDirectoryVirtualDirectoryOrSmartDirectory && currentClipMode == ClipMode.PlaClip && (isDir || PackedImageLoader.Supports(oldPath));
@@ -14069,7 +14069,7 @@ namespace ZipPla
                                         zipPlaInfo.ThumbnailInfo = null;
                                     }
 
-                                    var isDir = name.Last() == Path.DirectorySeparatorChar;
+                                    var isDir = name[name.Length - 1] == Path.DirectorySeparatorChar;
 
                                     oldNames[i] = path;
                                     newNames[i] = zipPlaInfo.GetPathOfCurrentInfo(isDir);
@@ -14465,18 +14465,22 @@ namespace ZipPla
 
                 if (preSortArray != null)
                 {
-                    var preCount = preSortArray.Length;
-                    var prePosition = new int[count];
-                    for (var i = 0; i < count; i++)
+                    // 前の並び順にある項目はその順に、ない項目はその後ろに元の順で並べる（OrderBy(prePosition) と同じ結果を O(n) で。K28）
+                    var included = new bool[count];
+                    foreach (var dataIndex in orderList) included[dataIndex] = true;
+                    var inPre = new bool[count];
+                    var ordered = new List<int>(orderList.Count);
+                    foreach (var dataIndex in preSortArray)
                     {
-                        prePosition[i] = int.MaxValue;
+                        if (dataIndex < 0 || dataIndex >= count || inPre[dataIndex]) continue;
+                        inPre[dataIndex] = true;
+                        if (included[dataIndex]) ordered.Add(dataIndex);
                     }
-                    for (var i = 0; i < preCount; i++)
+                    foreach (var dataIndex in orderList)
                     {
-                        prePosition[preSortArray[i]] = i;
+                        if (!inPre[dataIndex]) ordered.Add(dataIndex);
                     }
-
-                    order = orderList.OrderBy(dataIndex => prePosition[dataIndex]).ToArray();
+                    order = ordered.ToArray();
                 }
                 else
                 {
@@ -15018,10 +15022,29 @@ namespace ZipPla
             return typeArray;
         }
 
+        // ランダムの並べ替えのたびに全パスの SHA1 を計算しないよう、同じ種のあいだは結果を覚える（K28）
+        private static readonly Dictionary<string, UBigInteger> getRandomIndex_Cache = new Dictionary<string, UBigInteger>();
+        private static string getRandomIndex_CacheSeed;
+        private const int GetRandomIndex_CacheLimit = 200000;
+
         public static UBigInteger GetRandomIndex(string fullPath, string randomSeed)
         {
             var basePath = ZipPlaInfo.GetBasePathRoughly(fullPath); // タグの書き換えで順序が変わらないように
-            return new UBigInteger(getHash_SHA1.ComputeHash(Encoding.UTF8.GetBytes(basePath + "\t" + randomSeed)));
+            lock (getRandomIndex_Cache)
+            {
+                if (getRandomIndex_CacheSeed != randomSeed || getRandomIndex_Cache.Count >= GetRandomIndex_CacheLimit)
+                {
+                    getRandomIndex_Cache.Clear();
+                    getRandomIndex_CacheSeed = randomSeed;
+                }
+                UBigInteger result;
+                if (!getRandomIndex_Cache.TryGetValue(basePath, out result))
+                {
+                    result = new UBigInteger(getHash_SHA1.ComputeHash(Encoding.UTF8.GetBytes(basePath + "\t" + randomSeed)));
+                    getRandomIndex_Cache.Add(basePath, result);
+                }
+                return result;
+            }
         }
 
         //private static System.Security.Cryptography.MD5CryptoServiceProvider getHash64_MD5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
@@ -15459,7 +15482,7 @@ namespace ZipPla
 
         private bool setFileListRowStaticGlobalPart(FileListRowInfo row, string path, string name, DateTime lastWriteTime)
         {
-            row.IsDir = name != null && name.Length > 0 && name.Last() == Path.DirectorySeparatorChar;
+            row.IsDir = name != null && name.Length > 0 && name[name.Length - 1] == Path.DirectorySeparatorChar;
             row.LastWriteTime = lastWriteTime;
             row.Path = path;
             row.IconResolved = false; // アイコンと種類の名前は描画するときに取得する
@@ -18566,7 +18589,7 @@ namespace ZipPla
                                         parent = Path.GetDirectoryName(path).ToLower();
 
                                         // ルートの場合に必要な処理
-                                        if (parent.Last() == Path.DirectorySeparatorChar)
+                                        if (parent[parent.Length - 1] == Path.DirectorySeparatorChar)
                                         {
                                             parent = parent.Substring(0, parent.Length - 1);
                                         }
@@ -20931,7 +20954,7 @@ namespace ZipPla
         private string getBaseName(string name)
         {
             if (string.IsNullOrEmpty(name)) return name;
-            if (name.Last() == Path.DirectorySeparatorChar)
+            if (name[name.Length - 1] == Path.DirectorySeparatorChar)
             {
                 return name.Substring(0, name.Length - 1);
             }
@@ -25952,7 +25975,7 @@ namespace ZipPla
                 var subfolderIsSearched = SubfolderIsSearched();
                 if (subfolderIsSearched && !IsDisplay(SubfolderMode))
                 {
-                    var pathInLowerYen = pathToLower.Last() == Path.DirectorySeparatorChar ? pathToLower : (pathToLower + Path.DirectorySeparatorChar);
+                    var pathInLowerYen = pathToLower[pathToLower.Length - 1] == Path.DirectorySeparatorChar ? pathToLower : (pathToLower + Path.DirectorySeparatorChar);
                     return !dirNameInLower.StartsWith(pathInLowerYen);
                 }
                 else
@@ -25961,7 +25984,7 @@ namespace ZipPla
                     {
                         return true;
                     }
-                    var pathInLowerYen = pathToLower.Last() == Path.DirectorySeparatorChar ? pathToLower : (pathToLower + Path.DirectorySeparatorChar);
+                    var pathInLowerYen = pathToLower[pathToLower.Length - 1] == Path.DirectorySeparatorChar ? pathToLower : (pathToLower + Path.DirectorySeparatorChar);
                     if (!dirNameInLower.StartsWith(pathInLowerYen))
                     {
                         return true;
@@ -27544,7 +27567,7 @@ namespace ZipPla
                     foreach (var name in names)
                     {
                         if (string.IsNullOrEmpty(name)) throw new ArgumentException(nameof(name));
-                        var isDir = name.Last() == Path.DirectorySeparatorChar;
+                        var isDir = name[name.Length - 1] == Path.DirectorySeparatorChar;
                         var plain = isDir ? name.Substring(0, name.Length - 1) : name;
 
                         var path = Path.Combine(cl, plain);
@@ -29393,7 +29416,7 @@ namespace ZipPla
                     {
                         var pathInLower = path.ToLower();
                         if (pathInLower.Last() == ':') pathInLower += Path.DirectorySeparatorChar;
-                        //var pathInLower2 = pathInLower.Last() == Path.DirectorySeparatorChar ? pathInLower : (pathInLower + Path.DirectorySeparatorChar);
+                        //var pathInLower2 = pathInLower[pathInLower.Length - 1] == Path.DirectorySeparatorChar ? pathInLower : (pathInLower + Path.DirectorySeparatorChar);
                         if (explorerTreeView_TreeWndDragEnter_Files != null)
                         {
                             var sameCheck = sameDirMode == SameDirEffectMode.Ignore;
@@ -29402,7 +29425,7 @@ namespace ZipPla
                                 sameCheck = explorerTreeView_TreeWndDragEnter_Files.All(file =>
                                 {
                                     var f = file.ToLower();
-                                    return Path.GetDirectoryName(f) != pathInLower && f != pathInLower && !pathInLower.StartsWith(f.Last() == Path.DirectorySeparatorChar ? f : (f + Path.DirectorySeparatorChar));
+                                    return Path.GetDirectoryName(f) != pathInLower && f != pathInLower && !pathInLower.StartsWith(f[f.Length - 1] == Path.DirectorySeparatorChar ? f : (f + Path.DirectorySeparatorChar));
                                 });
                             }
                             if (sameCheck || sameDirMode == SameDirEffectMode.Link)
