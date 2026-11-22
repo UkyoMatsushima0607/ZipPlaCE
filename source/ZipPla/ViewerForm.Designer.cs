@@ -1634,6 +1634,7 @@
             this.bmwLoadEachPage.RunWorkerStarting += new GenerarClasses.BackgroundMultiWorker.RunWorkerStartingEventHandler(this.bmwLoadEachPage_RunWorkerStarting);
             this.bmwLoadEachPage.AllRunWorkersCompleted += new GenerarClasses.BackgroundMultiWorker.AllRunWorkerCompletedEventHandler(this.bmwLoadEachPage_AllRunWorkersCompleted);
             this.bmwLoadEachPage.EachRunWorkerCompleted += new GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventHandler(this.bmwLoadEachPage_EachRunWorkerCompleted);
+            this.bmwLoadEachPage.InconclusiveWorkerDisposing += new GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventHandler(this.bmwLoadEachPage_InconclusiveWorkerDisposing);
             // 
             // tmMemoryReducer
             // 

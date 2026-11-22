@@ -3527,6 +3527,13 @@ namespace ZipPla
 #if PERFLOG
                         perfDecodeEnd = System.Diagnostics.Stopwatch.GetTimestamp();
 #endif
+                        // 本の切り替えや Reload でキャンセルされていれば、色の判定・変換・縮小をせずに抜ける（V28）。
+                        // まだどこにも登録していないので捨てる
+                        if (bmwLoadEachPage.CancellationPending)
+                        {
+                            img.Dispose();
+                            return;
+                        }
                         if (reduceRequest != null && reduceRequest.Reduced)
                         {
                             reducedDecoded = true;
@@ -3894,6 +3901,13 @@ namespace ZipPla
                     };
                     var reducedArray = ReducedDecodedArray;
                     if (reducedArray != null && e.WorkNumber < reducedArray.Length) reducedArray[e.WorkNumber] = reducedDecoded;
+                    // 縮小の前にもキャンセルを見る（V28）。原寸は PreFilteredImageArray に登録済みなのでそのまま残し、
+                    // 縮小デコードの画像（どこにも登録していない）は捨てる
+                    if (bmwLoadEachPage.CancellationPending)
+                    {
+                        if (reducedDecoded) bmp.Dispose();
+                        return;
+                    }
 #if PERFLOG
                     if (item == null)
                     {
@@ -5828,6 +5842,12 @@ namespace ZipPla
         }
 
         int bmwLoadEachPage_EachRunWorkerCompleted_PrevPage = -1;
+
+        // 作業セットが片付けられた後に終わったジョブの結果（完了イベントは来ない）を捨てる（X7）
+        private void bmwLoadEachPage_InconclusiveWorkerDisposing(object sender, GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
+        {
+            (e.Result as VirtualBitmapEx)?.Dispose();
+        }
         private void bmwLoadEachPage_EachRunWorkerCompleted(object sender, GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
         {
 #if PERFLOG
@@ -5891,6 +5911,8 @@ namespace ZipPla
             else
             {
                 bmwLoadEachPage_EachRunWorkerCompleted_PrevPage = -1;
+                // キャンセルされたジョブの縮小画像（1 枚 2〜6MB）はどこにも持たれないので捨てる（X7）
+                if (e.Cancelled) (e.Result as VirtualBitmapEx)?.Dispose();
             }
 
             if (SetCurrentImageLongPath_Que) SetCurrentImageLongPath();
