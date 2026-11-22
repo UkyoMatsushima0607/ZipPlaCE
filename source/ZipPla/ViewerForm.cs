@@ -6035,6 +6035,7 @@ namespace ZipPla
             var memory = Math.Max(1, GetCurrentWorkingSet());
             //optionToolStripMenuItem.Text = $"{memory}";
             var available = computerInfo.AvailablePhysicalMemory;
+            var systemAvailable = available;
             //var userUbound = is32bit ? Math.Min(BuiltInViewerMemoryLimit, 3UL << 30) : BuiltInViewerMemoryLimit;
             var userUbound = GetUserMemoryUBound();
             if (available > userUbound) available = userUbound;
@@ -6045,6 +6046,9 @@ namespace ZipPla
             var total = computerInfo.TotalPhysicalMemory;
             var dynamicBound = coef * usedMemory * (1 + (double)available / memory);
             var floor = coef * Math.Min(userUbound, total / 16);
+            // 下限も空き物理メモリで抑える（Y17）。以前は空きがなくても下限（16GB の PC で前面なら約 700MB）までは画像を持ち続け、
+            // ほかのアプリがメモリを使っているときにページングを招いていた。いま持っている分と空きの合計の半分までにする
+            floor = Math.Min(floor, 0.5 * ((double)usedMemory + systemAvailable));
             var ceiling = (double)Math.Min(userUbound, total / 4);
             usedMemoryUBound = (ulong)Math.Min(Math.Max(dynamicBound, floor), ceiling);
         }

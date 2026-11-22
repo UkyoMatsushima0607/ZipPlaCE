@@ -1618,6 +1618,7 @@ namespace ZipPla
             Program.RunTimeMeasure.Block("InitializeComponent");
 #endif
             InitializeComponent();
+            fileSystemWatcher.Error += fileSystemWatcher_Error; // Y16
 
 
 #if RUNTIME
@@ -25995,6 +25996,33 @@ namespace ZipPla
             }
         }
         
+        // 監視のバッファがあふれた（イベントを取りこぼした）ら、少し待ってから一覧を読み直す（Y16）。
+        // あふれるのは大量の変更の途中なので、続けて来ても変更が落ち着いてから 1 回だけ読み直す
+        // フォルダの項目の表紙・件数のためにサブフォルダの中も見るのでイベントが多く、まとめてコピーしたときなどにあふれる（以前は知らせなしに取りこぼしていた）。
+        // バッファ（InternalBufferSize）を 64KB に広げると、.NET Framework の監視の IO スレッドで ArgumentException が起きてプロセスが落ちたので、既定のまま
+        private System.Windows.Forms.Timer fileSystemWatcherErrorTimer;
+        private string fileSystemWatcherErrorPath;
+        private void fileSystemWatcher_Error(object sender, ErrorEventArgs e)
+        {
+            if (IsDisposed || !fileSystemWatcher.EnableRaisingEvents) return;
+            fileSystemWatcherErrorPath = fileSystemWatcher.Path;
+            if (fileSystemWatcherErrorTimer == null)
+            {
+                fileSystemWatcherErrorTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+                fileSystemWatcherErrorTimer.Tick += (s, ee) =>
+                {
+                    fileSystemWatcherErrorTimer.Stop();
+                    if (IsDisposed || CatalogForm_FormClosing_FormClosed) return;
+                    // 待っている間に別の場所へ移ったら、移った先はもう読み込み直している
+                    if (!fileSystemWatcher.EnableRaisingEvents || !string.Equals(fileSystemWatcher.Path, fileSystemWatcherErrorPath, StringComparison.OrdinalIgnoreCase)) return;
+                    userReload();
+                };
+            }
+            // 続けてあふれたら延ばす
+            fileSystemWatcherErrorTimer.Stop();
+            fileSystemWatcherErrorTimer.Start();
+        }
+
         private void fileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
         {
             var fullPath = e.FullPath;

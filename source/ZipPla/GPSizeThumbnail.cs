@@ -1094,6 +1094,15 @@ namespace ZipPla
         {
             if (getBiggest)
             {
+                // 後回しの書き込みは 1 件ごとに最大サイズの画像の複製を持つ。書き込みが追いつかずにたまったら、ここで書く（Y15。
+                // 以前は上限がなく、CPU が埋まった状態で多くのファイルをすばやくスクロールすると溜まり続け、閉じるときも最大 10 秒待った）
+                int pendingCount;
+                lock (pendingWrites) pendingCount = pendingWriteCount;
+                if (pendingCount >= MaxPendingWrites)
+                {
+                    return TrySetCore(cacheRoot, fileName, index, requiredSize, letterBox, fullSizeCache, thumbnail, pixelRatio, gpData, getBiggest: true,
+                        biggestBitmap: out biggestBitmap, biggestBitmapPixelRatio: out biggestBitmapPixelRatio, pending: null);
+                }
                 return TrySetDeferred(cacheRoot, fileName, index, requiredSize, letterBox, fullSizeCache, thumbnail, pixelRatio, gpData, out biggestBitmap, out biggestBitmapPixelRatio);
             }
             return TrySetCore(cacheRoot, fileName, index, requiredSize, letterBox, fullSizeCache, thumbnail, pixelRatio, gpData, getBiggest, out biggestBitmap, out biggestBitmapPixelRatio, pending: null);
@@ -1327,6 +1336,8 @@ namespace ZipPla
 
         private static readonly Queue<PendingWrite> pendingWrites = new Queue<PendingWrite>();
         private static int pendingWriteCount = 0; // 順番待ち＋処理中。pendingWrites で lock する
+        // 後回しの書き込みの順番待ちの上限（Y15）。これを超えたら呼び出し側のスレッドで書く
+        private const int MaxPendingWrites = 64;
         private static Thread pendingWriteThread = null;
 
         private static void EnqueuePendingWrite(PendingWrite job)
