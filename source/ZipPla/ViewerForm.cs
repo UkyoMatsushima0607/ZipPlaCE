@@ -6015,7 +6015,13 @@ namespace ZipPla
             if (available > userUbound) available = userUbound;
             var coef = ActiveForm == this ? 0.7 : 0.3;
 
-            usedMemoryUBound = (ulong)(coef * usedMemory * (1 + (available / (ulong)memory)));
+            // 以前の式は使用量そのものに比例するので、使用量が 0 だと上限も 0 になり（自己参照、B6）、整数除算で空きの比も切り捨てていた。
+            // 比は実数で求め、下限（物理メモリの 1/16 × 係数）と上限（物理メモリの 1/4。ユーザー設定の上限が小さければそちら）で挟む（V5）
+            var total = computerInfo.TotalPhysicalMemory;
+            var dynamicBound = coef * usedMemory * (1 + (double)available / memory);
+            var floor = coef * Math.Min(userUbound, total / 16);
+            var ceiling = (double)Math.Min(userUbound, total / 4);
+            usedMemoryUBound = (ulong)Math.Min(Math.Max(dynamicBound, floor), ceiling);
         }
 
         private ulong GetUserMemoryUBound_SystemUBound = 0;
