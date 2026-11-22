@@ -16935,10 +16935,16 @@ namespace ZipPla
 
             painting = true;
 
-            base.OnPaint(e);
-
-            painting = false;
-            invalidating = false;
+            // 描画中に例外が出ても painting を戻さないと、以後の描画がすべて止まる
+            try
+            {
+                base.OnPaint(e);
+            }
+            finally
+            {
+                painting = false;
+                invalidating = false;
+            }
 
             if (reserveInvalidate)
             {
