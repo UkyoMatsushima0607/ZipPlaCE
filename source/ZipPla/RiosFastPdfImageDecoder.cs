@@ -294,7 +294,18 @@ namespace ZipPla
                     }
                     else if (allowIndexed && PdfName.INDEXED.Equals(tyca))
                     {
-                        FindColorspace(ca.GetDirectObject(1), false);
+                        // パレットの色は画素のビット数によらず 1 成分 8 bit。基底の色空間は 8 bit として調べる
+                        // （以前は画素のビット数で調べたので、4 bit などのインデックスの画像を DeviceRGB と認めず読めなかった）
+                        var indexBpc = bpc;
+                        bpc = 8;
+                        try
+                        {
+                            FindColorspace(ca.GetDirectObject(1), false);
+                        }
+                        finally
+                        {
+                            bpc = indexBpc;
+                        }
                         if (pngColorType == 2)
                         {
                             PdfObject id2 = ca.GetDirectObject(3);

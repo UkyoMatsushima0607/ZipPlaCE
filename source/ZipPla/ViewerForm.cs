@@ -5914,6 +5914,8 @@ namespace ZipPla
                 var perfHandlerEnd = System.Diagnostics.Stopwatch.GetTimestamp();
                 try
                 {
+                    // page= の行（ワーカー）と同時に書くと片方が失敗して行が抜けるので、同じロックで囲む
+                    lock (perfLoadLogLock)
                     File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
                         $"handler={e.WorkNumber}\thandlerStart={PerfMs(perfHandlerStart):F2}\thandlerEnd={PerfMs(perfHandlerEnd):F2}" + Environment.NewLine);
                 }
