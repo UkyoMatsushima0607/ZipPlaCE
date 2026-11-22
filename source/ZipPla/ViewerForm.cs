@@ -6123,6 +6123,33 @@ namespace ZipPla
             var disposeTarget = worksOrder.Length;
             var existingImageCount = ResizedImageArray.Count(img => img != null);
             var existingImageCountBound = (protectedIndex >= 0 ? -1 : 0) + MaxPageCountInWindow * 4;  // 今＋前後それぞれ 1 ページ分は読んでおかないとページ送りチェックができない。後トラックバー。
+
+            // 先読みの順番に入っていないページ（先読みの範囲の外で、まだ捨てる距離に達していないもの）は順番の中のどのページよりも優先度が低い。
+            // 以前はこれらを捨てる候補にしなかったので、上限を超えると先読みの範囲の中のページが捨てられ、遠いページが残っていた。
+            // 先に、表示中のページから遠い順に捨てる
+            if (usedMemory > uBound && existingImageCount > existingImageCountBound)
+            {
+                var length = ResizedImageArray.Length;
+                var inOrder = new bool[length];
+                foreach (var i in worksOrder) if (0 <= i && i < length) inOrder[i] = true;
+                List<int> outside = null;
+                for (var i = 0; i < length; i++)
+                {
+                    if (!inOrder[i] && i != protectedIndex && ResizedImageArray[i] != null) (outside ?? (outside = new List<int>())).Add(i);
+                }
+                if (outside != null)
+                {
+                    var center = Math.Max(0, currentPage);
+                    outside.Sort((a, b) => Math.Abs(b - center) - Math.Abs(a - center));
+                    foreach (var i in outside)
+                    {
+                        if (!(usedMemory > uBound && existingImageCount > existingImageCountBound)) break;
+                        DiscardLoadedPage(i);
+                        existingImageCount--;
+                    }
+                }
+            }
+
             while (usedMemory > uBound && existingImageCount > existingImageCountBound)
             {
                 // 先読みの順番は表示中のページの前後だけなので、順番の中に捨てられるページが残っていないこともある
