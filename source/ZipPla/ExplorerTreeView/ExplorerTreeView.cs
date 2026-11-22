@@ -616,74 +616,141 @@ namespace WilsonProgramming
                 return;
             }
             var nodes = e.Node.Nodes;
+            // フォルダの監視（K22）。以前は展開したフォルダへのファイルの追加・書き込みでも、イベントごとに UI スレッドで
+            // 子フォルダを全部列挙し直していた（ファイル 800 件の書き込みで UI スレッドの CPU 時間が約 2 秒）。
+            // - ファイルの中身の変化・ファイルの追加や名前変更は、シェルがフォルダとして扱う書庫でなければ無視する
+            // - 子フォルダの Changed（中身が変わった）は、その子の「子フォルダがあるか」だけを裏で調べ直す
+            //   （ローカルの NTFS では子フォルダの中の変化は親の監視に届かなかったが、届くファイルシステムのため）
+            // - 子フォルダの増減による作り直しはノードごとに 300ms まとめ、UI へは BeginInvoke で渡す
             FileSystemEventHandler eventHandler = (sender2, e2) =>
             {
                 Task.Run(() => // デッドロック回避
                 {
-                    try
+                    var fullPath = e2.FullPath;
+                    if (e2.ChangeType == WatcherChangeTypes.Changed)
                     {
-                        Invoke((MethodInvoker)(() =>
+                        if (!Directory.Exists(fullPath)) return; // ファイルの書き込み
+                        bool has;
+                        try { has = new DirectoryInfo(fullPath).EnumerateDirectories().Any(); } catch { return; }
+                        PostToTree(() =>
                         {
-                            if (TrySelect_Excuting || updating) return;
-                            if (!fileSystemWatcherSet.ContainsKey(pathInLower)) return;
-
-                            if (!node.IsExpanded) return;
-
-                            if (e2.ChangeType == WatcherChangeTypes.Created)
-                            {
-                                if (contains(nodes, e2.FullPath)) return;
-                            }
-                            else if (e2.ChangeType == WatcherChangeTypes.Deleted)
-                            {
-                                if (!contains(nodes, e2.FullPath)) return;
-                            }
-
-                            treeWnd.RefreshNodeGently(node);
-                        }));
+                            if (!fileSystemWatcherSet.ContainsKey(pathInLower) || !node.IsExpanded) return;
+                            treeWnd.UpdateHasSubFolder(node, fullPath, has);
+                        });
+                        return;
                     }
-                    catch (ObjectDisposedException)
+                    if (e2.ChangeType == WatcherChangeTypes.Created && IsPlainFile(fullPath)) return;
+                    PostToTree(() =>
                     {
-                        return; // プログラム終了時なので stop 戻す必要はない
-                    }
+                        if (!fileSystemWatcherSet.ContainsKey(pathInLower)) return;
+                        if (!node.IsExpanded) return;
+
+                        if (e2.ChangeType == WatcherChangeTypes.Created)
+                        {
+                            if (contains(nodes, fullPath)) return;
+                        }
+                        else if (e2.ChangeType == WatcherChangeTypes.Deleted)
+                        {
+                            if (!contains(nodes, fullPath)) return;
+                        }
+
+                        RequestRefreshNodeGently(node, pathInLower);
+                    });
                 });
             };
             RenamedEventHandler eventHandler2 = (sender2, e2) =>
             {
                 Task.Run(() => // デッドロック回避
                 {
-                    try
+                    // https://connect.microsoft.com/VisualStudio/feedback/details/520436/renamedeventargs-oldfullpath-throws-pathtoolongexception の問題に対処
+                    string oldFullPath;
+                    try { oldFullPath = e2.OldFullPath; } catch (PathTooLongException) { oldFullPath = null; }
+                    var newIsPlainFile = IsPlainFile(e2.FullPath);
+                    PostToTree(() =>
                     {
-                        Invoke((MethodInvoker)(() =>
+                        if (!fileSystemWatcherSet.ContainsKey(pathInLower)) return;
+
+                        if (!node.IsExpanded) return;
+
+                        var oldContained = oldFullPath != null && contains(nodes, oldFullPath);
+                        if (contains(nodes, e2.FullPath))
                         {
-                            if (TrySelect_Excuting || updating) return;
-                            if (!fileSystemWatcherSet.ContainsKey(pathInLower)) return;
+                            if (!oldContained) return; // 古いパスが取れない場合も従来どおり何もしない
+                        }
+                        else if (!oldContained && newIsPlainFile) return; // ファイルの名前変更（K22）
 
-                            if (!node.IsExpanded) return;
-
-                            if (contains(nodes, e2.FullPath))
-                            {
-                                // https://connect.microsoft.com/VisualStudio/feedback/details/520436/renamedeventargs-oldfullpath-throws-pathtoolongexception の問題に対処
-                                string oldFullPath;
-                                try { oldFullPath = e2.OldFullPath; } catch (PathTooLongException) { return; }
-
-                                if (!contains(nodes, oldFullPath)) return;
-                            }
-
-                            treeWnd.RefreshNodeGently(node);
-                        }));
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        return; // プログラム終了時なので stop 戻す必要はない
-                    }
+                        RequestRefreshNodeGently(node, pathInLower);
+                    });
                 });
             };
+            watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite;
             watcher.Created += eventHandler;
             watcher.Deleted += eventHandler;
             watcher.Changed += eventHandler;
             watcher.Renamed += eventHandler2;
             fileSystemWatcherSet.Add(pathInLower, watcher);
             watcher.EnableRaisingEvents = true;
+        }
+
+        // 監視イベントの処理を UI スレッドに渡す（K22。以前は Invoke で、プールのスレッドが UI を待ってふさがっていた）
+        private void PostToTree(Action action)
+        {
+            try
+            {
+                if (IsDisposed || !IsHandleCreated) return;
+                BeginInvoke((MethodInvoker)(() =>
+                {
+                    if (TrySelect_Excuting || updating) return;
+                    action();
+                }));
+            }
+            catch (ObjectDisposedException) { } // プログラム終了時
+            catch (InvalidOperationException) { } // ハンドルが破棄された
+        }
+
+        // ノードの子の作り直しを 300ms まとめる（K22）。UI スレッドから呼ぶ
+        private readonly HashSet<TreeNode> refreshPendingNodes = new HashSet<TreeNode>();
+        private void RequestRefreshNodeGently(TreeNode node, string pathInLower)
+        {
+            if (!refreshPendingNodes.Add(node)) return;
+            Task.Delay(300).ContinueWith(_ => PostToTreeAlways(() =>
+            {
+                refreshPendingNodes.Remove(node);
+                if (TrySelect_Excuting || updating) return;
+                if (!fileSystemWatcherSet.ContainsKey(pathInLower) || !node.IsExpanded) return;
+                treeWnd.RefreshNodeGently(node);
+            }));
+        }
+
+        private void PostToTreeAlways(Action action)
+        {
+            try
+            {
+                if (IsDisposed || !IsHandleCreated) return;
+                BeginInvoke((MethodInvoker)(() => action()));
+            }
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
+        }
+
+        // シェルがフォルダとして扱う（ツリーに出る）ことのある書庫の拡張子。.zip は GetSubFolders で除いている（K22）
+        private static readonly HashSet<string> shellFolderLikeExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".cab", ".7z", ".rar", ".tar", ".tgz", ".gz", ".bz2", ".tbz2", ".xz", ".txz", ".zst", ".lzh", ".lha", ".iso", ".library-ms", ".search-ms",
+        };
+
+        // ツリーに関係しない普通のファイルか（K22）。ワーカースレッドから呼ばれる
+        private static bool IsPlainFile(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path) || !File.Exists(path)) return false;
+                return !shellFolderLikeExtensions.Contains(Path.GetExtension(path));
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         bool updating = false;

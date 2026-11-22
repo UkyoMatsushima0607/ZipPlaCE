@@ -48,7 +48,18 @@ namespace WilsonProgramming
         {
             if (RefreshNode_Stop) return;
             RefreshNode_Stop = true;
+            try
+            {
+                RefreshNodeGentlyCore(node);
+            }
+            finally
+            {
+                RefreshNode_Stop = false; // 例外で true のまま残ると、以後ツリーが更新されなくなっていた（K22 で判明）
+            }
+        }
 
+        private void RefreshNodeGentlyCore(TreeNode node)
+        {
             var newChildren = GetChildren(node);
             var newCount = newChildren.Length;
             var nodes = node.Nodes;
@@ -87,9 +98,10 @@ namespace WilsonProgramming
             if (newIndex < newCount)
             {
                 var newNodes = new TreeNode[newCount - newIndex];
+                var start = newIndex;
                 while (newIndex < newCount)
                 {
-                    newNodes[newIndex - newCount] = CreateNode(newChildren[newIndex++]);
+                    newNodes[newIndex - start] = CreateNode(newChildren[newIndex++]); // 以前は newIndex - newCount（負の添字）で例外になっていた（K22 で判明）
                 }
                 nodes.AddRange(newNodes);
             }
@@ -103,8 +115,31 @@ namespace WilsonProgramming
                     nodes.RemoveAt(phyIndex);
                 }
             }
-            
-            RefreshNode_Stop = false;
+        }
+
+        /// <summary>
+        /// 子フォルダ childPath の「子フォルダがあるか」（展開の＋）だけを更新する（K22）。子の中身が変わっただけのときに、
+        /// 親の子を全部列挙し直す（RefreshNodeGently）のを避ける。has はワーカースレッドで調べた値
+        /// </summary>
+        public void UpdateHasSubFolder(TreeNode parent, string childPath, bool has)
+        {
+            if (RefreshNode_Stop) return;
+            foreach (TreeNode child in parent.Nodes)
+            {
+                var item = child.Tag as ShellItem;
+                if (item == null || string.Compare(item.Path, childPath, ignoreCase: true) != 0) continue;
+                if (item.HasSubFolder == has || child.IsExpanded) return; // 展開中の子は自分の監視が更新する
+                item.HasSubFolder = has;
+                if (has)
+                {
+                    if (child.Nodes.Count == 0) child.Nodes.Add("PH");
+                }
+                else
+                {
+                    child.Nodes.Clear();
+                }
+                return;
+            }
         }
 
         // RefreshNodeGently 専用なので OnBeforeCollapse は行わない
@@ -121,6 +156,7 @@ namespace WilsonProgramming
                 {
                     dstCollection[dstIndex].Nodes.Add("PH");
                 }
+                dstItem.HasSubFolder = !dstHas; // 付け外しに合わせる。戻さないと次の比較でまた付け外ししていた（K22 で判明）
             }
         }
 
