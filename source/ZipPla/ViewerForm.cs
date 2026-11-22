@@ -3475,9 +3475,19 @@ namespace ZipPla
                 string name;
                 long length;
                 bool extracted;
+#if PERFLOG
+                var perfLockRequest = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
                 lock (loaderLock)
                 {
+#if PERFLOG
+                    var perfLockTaken = System.Diagnostics.Stopwatch.GetTimestamp();
+                    perfLockWaitTicks = perfLockTaken - perfLockRequest;
+#endif
                     extracted = l.TryExtractEntry(entry, out stream, out name, out length);
+#if PERFLOG
+                    perfExtractTicks = System.Diagnostics.Stopwatch.GetTimestamp() - perfLockTaken;
+#endif
                 }
                 if (extracted)
                 {
@@ -3493,10 +3503,15 @@ namespace ZipPla
             }
         }
 
+#if PERFLOG
+        // 書庫のロックを待った時間と、ロックの中で取り出した時間（D5 の計測）。ジョブのスレッドごと
+        [ThreadStatic] private static long perfLockWaitTicks, perfExtractTicks;
+#endif
         private void bmwLoadEachPage_DoWorkCore(object sender, GenerarClasses.BackgroundMultiWorker.EachDoWorkEventArgs e)
         {
 #if PERFLOG
             perfJobStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            perfLockWaitTicks = perfExtractTicks = 0;
 #endif
             var rsa = ResizedSizeArray;
             if (rsa == null || rsa.Length <= e.WorkNumber)
@@ -3954,7 +3969,7 @@ namespace ZipPla
                             // 並列に読むと同時に書いて片方が失敗し、行が抜けるのでロックする（V23 の計測で判明）
                             lock (perfLoadLogLock)
                             File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
-                                $"page={e.WorkNumber}\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms\tjobStart={PerfMs(perfJobStart):F2}\tjobEnd={PerfMs(end):F2}" + Environment.NewLine);
+                                $"page={e.WorkNumber}\tlockWait={perfLockWaitTicks * 1000 / f:F1}ms\textract={perfExtractTicks * 1000 / f:F1}ms\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms\tjobStart={PerfMs(perfJobStart):F2}\tjobEnd={PerfMs(end):F2}" + Environment.NewLine);
                         }
                         catch { }
                         return;
