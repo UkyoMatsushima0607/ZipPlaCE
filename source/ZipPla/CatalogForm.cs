@@ -17493,15 +17493,7 @@ namespace ZipPla
             
             if (!(bool)(thisIsActiveNullable = thisIsActiveNullable ?? ActiveForm == this))
             {
-                if (OpenWaitingProcess_Processing)
-                {
-                    OpenWaitingProcess_StopPrepareLookAheadProcess = true;
-                }
-                else
-                {
-                    StopLookAheadProcess();
-                    SetLookAheadArchive_PrevDataIndex = -1;
-                }
+                stopLookAheadOnDeactivate();
             }
 
             CursorIsOnControllField = false;
@@ -17536,15 +17528,29 @@ namespace ZipPla
             SetBackgroundMode(false, 0);
             unselectedItemMaskOff();
 
-            if (OpenWaitingProcess_Processing)
-            {
-                OpenWaitingProcess_StopPrepareLookAheadProcess = true;
-            }
-            else
+            stopLookAheadOnDeactivate();
+        }
+
+        /// <summary>
+        /// カタログが非アクティブになったとき、先読みした本を持つ待機ビューアを止め（本のファイルを掴んだままにしないため）、
+        /// 何も読んでいない待機ビューアを低い優先度で用意しておく（Y8）。
+        /// 以前は何も読んでいない待機ビューアまで殺していた。本を開いた直後に作った次の待機ビューアも、開いたビューアが前面に出た
+        /// ときに殺され（開いている途中なら作られず）、カタログに戻って項目にマウスを乗せるまで作られなかった。
+        /// エクスプローラーなどから開く本（S7）もそのたびに待機ビューアの起動からになっていた
+        /// </summary>
+        private void stopLookAheadOnDeactivate()
+        {
+            // 開いている途中の待機ビューアは、開く本を表示するので止めない。開き終わると次の待機ビューアが作られる
+            if (OpenWaitingProcess_Processing) return;
+            var hasLookAhead = lookAheadInfo?.Path != null; // 先読みの依頼を送ると Path が入る。新しく作った待機ビューアでは null
+            if (hasLookAhead || waitingProcess == null || waitingProcess.HasExited)
             {
                 StopLookAheadProcess();
                 SetLookAheadArchive_PrevDataIndex = -1;
+                // 表示前（Shown で作る）と終了中は作らない
+                if (AllowReadAheadProcess && IsShown && !IsDisposed && !CatalogForm_FormClosing_FormClosed) PrepareLookAheadProcess();
             }
+            setWaitingProcessPriority(ProcessPriorityClass.BelowNormal);
         }
 
         private void setWaitingProcessPriority(ProcessPriorityClass priority)
