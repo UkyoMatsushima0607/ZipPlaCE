@@ -3772,7 +3772,9 @@ namespace ZipPla
                                 }
 
                                 const int pixelsPerPixelToBeLeft = int.MaxValue;
-                                const bool parallel = true;
+                                // 縮小の内部並列は表示中のページだけ。先読みのページは読み込みのスレッド（最大 4 本）どうしで並列になっているので、
+                                // さらに全コアで並列にすると表示中のページの縮小と CPU を取り合う（V29）
+                                var parallel = IsDisplayedPage(e.WorkNumber);
                                 switch (scalingAlgorithm)
                                 {
                                     case ScalingAlgorithm.HighSpeed: entity = bmp.CreateNew(bmpi => QuickGraphic.CreateNew(bmpi, resizedSize, parallel: parallel)); break;
