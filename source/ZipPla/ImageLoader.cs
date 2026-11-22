@@ -69,10 +69,59 @@ namespace ZipPla
                 SusieReset(allowUntested, searchInstallationFolder);
             }
         }
+        // 前回 Susie を構成したときの設定とプラグインのファイルの一覧（K20）
+        private static string susieSignature;
+
+        /// <summary>
+        /// Susie の構成を決めるもの（設定・プラグインのフォルダにある .spi/.sph の名前・サイズ・更新日時）を文字列にする（K20）。
+        /// フォルダを開くたびに全プラグインの MD5 と LoadLibrary をし直していたのを、これが変わったときだけにする
+        /// </summary>
+        private static string GetSusieSignature(bool allowUntested, bool searchInstallationFolder)
+        {
+            var sb = new StringBuilder();
+            sb.Append(allowUntested).Append('|').Append(searchInstallationFolder);
+            AppendSusiePluginFolderSignature(sb, Application.StartupPath);
+            if (searchInstallationFolder)
+            {
+                try
+                {
+                    using (var regkey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Takechin\Susie\Plug-in", false))
+                    {
+                        var path = regkey?.GetValue("Path") as string;
+                        sb.Append("|reg:").Append(path);
+                        if (path != null) AppendSusiePluginFolderSignature(sb, path);
+                    }
+                }
+                catch
+                {
+                    sb.Append("|reg:error");
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static void AppendSusiePluginFolderSignature(StringBuilder sb, string folder)
+        {
+            sb.Append("|dir:").Append(folder);
+            try
+            {
+                foreach (var file in new DirectoryInfo(folder).EnumerateFiles("*.sp?"))
+                {
+                    sb.Append('|').Append(file.Name).Append(':').Append(file.Length).Append(':').Append(file.LastWriteTimeUtc.Ticks);
+                }
+            }
+            catch
+            {
+                sb.Append("|error");
+            }
+        }
+
         private static void SusieReset(bool allowUntested, bool searchInstallationFolder)
         {
             ImageLoader.allowUntested = allowUntested;
             ImageLoader.searchInstallationFolder = searchInstallationFolder;
+            var signature = GetSusieSignature(allowUntested, searchInstallationFolder);
+            if (signature == susieSignature) return; // 設定もプラグインも前回と同じ（K20）
             /*
             if (Environment.Is64BitProcess)
             {
@@ -111,6 +160,7 @@ namespace ZipPla
 
             //supportsAtLeastThumbnailReadingPathRegex = new Regex(@"\.(?:" + string.Join("|", atLeastThumbnailList) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             supportsAtLeastThumbnailReadingExtensionWithPeriodInLowerCase = (from ext in atLeastThumbnailList select "." + ext).ToArray();
+            susieSignature = signature;
 
             //list.AddRange(ImageInfo.SupportExtensionsInLowerWithoutPeriod);
             //supportsGetImageInfo = new Regex(@"\.(?:" + string.Join("|", list) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);

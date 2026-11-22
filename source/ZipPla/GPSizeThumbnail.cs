@@ -1012,6 +1012,25 @@ namespace ZipPla
             return new DriveInfo(driveName).DriveFormat;
         }
         
+        /// <summary>
+        /// フォルダを開くたびの ADS の判定（K20）。対応していると分かっている共有は試し書きをし直さない
+        /// （以前は毎回キャッシュを消して共有のルートに試験用の ADS を書いて消していた）。
+        /// 対応していない・まだ調べていない場所は、状況が変わったかもしれないので従来どおり調べ直す
+        /// </summary>
+        public static long SupportADSSizeRecheckingUnsupported(string driveName)
+        {
+            var commonFolderRoot = GetCommonFolderRoot(driveName);
+            var knownSupported = false;
+            if (commonFolderRoot != null)
+            {
+                lock (GetDriveFormatString_Lock)
+                {
+                    knownSupported = GetDriveFormatString_NTFSSet.Contains(commonFolderRoot);
+                }
+            }
+            return SupportADSSize(driveName, checkNew: !knownSupported);
+        }
+
         public static long SupportADSSize(string driveName, bool checkNew)
         {
             var driveFormatString = GetDriveFormatString(driveName, checkNew);

@@ -204,6 +204,9 @@ namespace ZipPla
             sevenZipExists = result != null;
             return result;
         }
+        // 最後に読み込めることを確かめた 7z.dll（パス・サイズ・更新日時）。同じなら LoadLibrary での確認を省く（K20）
+        private static string checkedSevenZipSignature;
+
         public static void CheckSevenZipExistence(System.Windows.Forms.Form owner)
         {
             bool gotPathFromRegistry;
@@ -211,11 +214,20 @@ namespace ZipPla
             //if (path != null && !gotPathFromRegistry)
             if (path != null) // 安全性をとってこちらを採用
                 {
+                string signature = null;
+                try
+                {
+                    var info = new FileInfo(path);
+                    signature = path + "|" + info.Length + "|" + info.LastWriteTimeUtc.Ticks;
+                }
+                catch { }
+                if (signature != null && signature == checkedSevenZipSignature) return;
                 try
                 {
                     using (new SevenZipHandle(path))
                     {
                     }
+                    checkedSevenZipSignature = signature;
                 }
                 catch
                 {

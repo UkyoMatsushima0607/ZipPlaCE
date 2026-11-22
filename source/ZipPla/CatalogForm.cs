@@ -7406,7 +7406,7 @@ namespace ZipPla
                 }
 
                 if (isDir && thumbnailCache == GPSizeThumbnail.AlternateDataStream
-                    && GPSizeThumbnail.SupportADSSize(text, checkNew: true) <= 0
+                    && GPSizeThumbnail.SupportADSSizeRecheckingUnsupported(text) <= 0
                     && (string.IsNullOrEmpty(currentLocation)
                     || GPSizeThumbnail.SupportADSSize(currentLocation, checkNew: false) > 0
                     ))
