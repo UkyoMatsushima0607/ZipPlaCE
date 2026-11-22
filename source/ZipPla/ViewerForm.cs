@@ -6166,19 +6166,44 @@ namespace ZipPla
         /// <summary>
         /// 原寸を捨てたページが表示の近くに来たら、原寸を読み直させる（C1）。
         /// 縮小画像はそのまま表示に使い、読み直しが終わったら SetNewResizedImage で差し替える。
+        /// 縮小デコードで読んだページ（Trimmed）は、ルーペを使っていなければ表示中の見開きだけを、
+        /// そのページに 300ms 留まってから読み直す（V22。以前は前後の見開きも含めてすぐ読み直し、大きな JPEG をほぼ全ページ 2 回デコードしていた）
         /// </summary>
-        private void ReloadTrimmedOriginalsNearCurrent()
+        private void ReloadTrimmedOriginalsNearCurrent() => ReloadTrimmedOriginalsNearCurrent(displayedTrimmedNow: false);
+
+        private void ReloadTrimmedOriginalsNearCurrent(bool displayedTrimmedNow)
         {
             var resized = ResizedImageArray;
             var states = OriginalStateArray;
             if (resized == null || states == null || resized.Length != states.Length) return;
             if (!TryGetOriginalProtectedRange(out var start, out var stop)) return;
             if (!TryGetOriginalKeepRange(out var keepStart, out var keepStop)) return;
+            var cPage = currentPage;
+            var window = Math.Max(1, MaxPageCountInWindow);
             var requested = false;
+            var displayedTrimmedPending = false;
             for (var i = Math.Max(0, start); i < Math.Min(stop, resized.Length); i++)
             {
-                // 縮小デコードのページ（Trimmed）は画質のため、原寸を捨てたページ（Discarded）はルーペのために原寸が要る範囲だけ（V2）
-                if ((states[i] == OriginalState_Trimmed || states[i] == OriginalState_Discarded && keepStart <= i && i < keepStop) && resized[i] != null)
+                if (resized[i] == null) continue;
+                bool reload;
+                if (states[i] == OriginalState_Trimmed)
+                {
+                    // 縮小デコードのページは画質のため。ルーペを使うなら原寸が要るので従来どおり範囲全体をすぐ
+                    if (magnifierWanted) reload = true;
+                    else if (i < cPage || cPage + window <= i) reload = false;
+                    else if (displayedTrimmedNow) reload = true;
+                    else
+                    {
+                        reload = false;
+                        displayedTrimmedPending = true;
+                    }
+                }
+                else
+                {
+                    // 原寸を捨てたページ（Discarded）はルーペのために原寸が要る範囲だけ（V2）
+                    reload = states[i] == OriginalState_Discarded && keepStart <= i && i < keepStop;
+                }
+                if (reload)
                 {
                     // 読み直しが終わる（SetNewResizedImage）まで Reloading のままにする。
                     // ReworkOrder は前回の結果を消さないので、GetWorkState では読み直し中かどうか判定できない
@@ -6187,8 +6212,34 @@ namespace ZipPla
                     requested = true;
                 }
             }
+            if (displayedTrimmedPending) ScheduleDisplayedOriginalsReload(cPage);
             // 読み込みが止まっている（ThreadCount == 0 や全ワーカー終了）場合もあるので、実行順を作り直して再開させる
             if (requested) SetBackgroundMode();
+        }
+
+        // 表示中の見開きの縮小デコードのページを、留まってから原寸で読み直すためのタイマー（V22）
+        private const int DisplayedOriginalsReloadDelayMs = 300;
+        private System.Windows.Forms.Timer displayedOriginalsReloadTimer;
+        private int displayedOriginalsReloadPage = -1;
+
+        private void ScheduleDisplayedOriginalsReload(int page)
+        {
+            if (displayedOriginalsReloadTimer == null)
+            {
+                displayedOriginalsReloadTimer = new System.Windows.Forms.Timer { Interval = DisplayedOriginalsReloadDelayMs };
+                displayedOriginalsReloadTimer.Tick += (sender, e) =>
+                {
+                    displayedOriginalsReloadTimer.Stop();
+                    if (IsDisposed || displayedOriginalsReloadPage != currentPage) return; // 別のページへ移った
+                    if (SeekBarDragging) return; // 離したときにもう一度呼ばれる（V24）
+                    ReloadTrimmedOriginalsNearCurrent(displayedTrimmedNow: true);
+                };
+                Disposed += (sender, e) => displayedOriginalsReloadTimer.Dispose();
+            }
+            if (displayedOriginalsReloadTimer.Enabled && displayedOriginalsReloadPage == page) return; // 待っている途中
+            displayedOriginalsReloadPage = page;
+            displayedOriginalsReloadTimer.Stop();
+            displayedOriginalsReloadTimer.Start();
         }
 
         // 表示中のページで、原寸を捨てたあと読み直し中のものがあるか（拡大画像はそれが終わってから作る）
