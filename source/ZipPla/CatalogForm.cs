@@ -1313,8 +1313,19 @@ namespace ZipPla
         private bool showStartHelpMessage = false;
         private bool showStartHelpMessageOfDirectoryList = false;
         private bool IsShown = false;
+        // エクスプローラーなどから開いた本を受け付ける（S7）
+        private OpenRequestServer openRequestServer;
+        private bool OpenFromOtherProcess(string path)
+        {
+            if (OpenWaitingProcess_Processing || IsDisposed) return false; // 別の本を開いている途中なら断る（依頼した側が自分で開く）
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
+            OpenWaitingProcess(path, -1, false);
+            return true;
+        }
+
         private void CatalogForm_Shown(object sender, EventArgs e)
         {
+            if (openRequestServer == null) openRequestServer = new OpenRequestServer(this, OpenFromOtherProcess);
 #if RUNTIME
             Program.RunTimeMeasure?.Block("SetTagFilteringMenuItems");
 #endif
@@ -18481,6 +18492,8 @@ namespace ZipPla
             CleanupOnClose_Done = true;
             GPSizeThumbnail.FlushPendingWrites(10000); // 後回しにしたサムネイルキャッシュの書き込みを済ませる（K7 (a)）
             VirtualFolder.WaitPendingReplacements(); // 背景の .sor の書き換えを済ませる（K23）
+            openRequestServer?.Dispose(); // ほかのプロセスからの依頼を受け付けない（S7）
+            openRequestServer = null;
             if (currentIpcChanne != null)
             {
                 if (lookAheadInfo != null)

@@ -326,6 +326,8 @@ namespace ZipPla
                 {
                     if (PackedImageLoader.Supports(cmds[1]) || ImageLoader.SupportsFullReading(cmds[1], ref ffmpegExists))
                     {
+                        // カタログが起動していれば、その待機ビューアで開かせて自分は終わる（S7。以前は毎回フルのプロセスを作っていた）
+                        if (OpenRequestPipe.TryForward(Path.GetFullPath(cmds[1]))) return;
                         startForm = new ViewerForm(cmds[1], -1, null);
                     }
                     else
