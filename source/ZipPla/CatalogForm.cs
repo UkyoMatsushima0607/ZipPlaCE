@@ -18480,6 +18480,7 @@ namespace ZipPla
             if (CleanupOnClose_Done) return;
             CleanupOnClose_Done = true;
             GPSizeThumbnail.FlushPendingWrites(10000); // 後回しにしたサムネイルキャッシュの書き込みを済ませる（K7 (a)）
+            VirtualFolder.WaitPendingReplacements(); // 背景の .sor の書き換えを済ませる（K23）
             if (currentIpcChanne != null)
             {
                 if (lookAheadInfo != null)
@@ -19987,6 +19988,13 @@ namespace ZipPla
                     }
                     foreach (var renameTarget in renameTargetsSorSet)
                     {
+                        // 開いている .sor は結果（例外）をすぐに使うので同期で、ほかの .sor と履歴は背景で直列に書き換える（K23。
+                        // 以前は評価・タグ・名前を変えるたびに UI スレッドで全部の .sor を読み書きしていた）
+                        if (current != renameTarget)
+                        {
+                            VirtualFolder.ReplaceBookmarkDataInBackground(renameTarget, oldPathArray, newPathArray);
+                            continue;
+                        }
                         try
                         {
                             VirtualFolder.ReplaceBookmarkData(renameTarget, oldPathArray, newPathArray);

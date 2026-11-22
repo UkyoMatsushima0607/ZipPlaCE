@@ -144,8 +144,73 @@ namespace ZipPla
             return dict;
         }
 
+        // 名前の変更に合わせた .sor の書き換えを、UI スレッドではなく背景で直列に行う（K23）。
+        // 同じプロセスでその .sor を読み書きするときは、たまっている書き換えを先に済ませる（WaitPendingReplacements）
+        private static readonly object pendingReplaceLock = new object();
+        private static readonly Dictionary<string, Tuple<List<string>, List<string>>> pendingReplacements = new Dictionary<string, Tuple<List<string>, List<string>>>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> replacingNow = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // 書き換えの途中
+        private static Task pendingReplaceTask = Task.CompletedTask;
+        [ThreadStatic] private static bool inReplaceWorker;
+
+        /// <summary>ReplaceBookmarkData を背景で行う（K23）。同じ .sor への書き換えは順にまとめて 1 回で書く</summary>
+        public static void ReplaceBookmarkDataInBackground(string bmkPath, IReadOnlyList<string> paths, IReadOnlyList<string> replacePaths)
+        {
+            if (string.IsNullOrEmpty(bmkPath) || paths == null || replacePaths == null || paths.Count != replacePaths.Count || paths.Count == 0) return;
+            lock (pendingReplaceLock)
+            {
+                if (!pendingReplacements.TryGetValue(bmkPath, out var pair))
+                {
+                    pair = Tuple.Create(new List<string>(), new List<string>());
+                    pendingReplacements.Add(bmkPath, pair);
+                    var target = bmkPath;
+                    pendingReplaceTask = pendingReplaceTask.ContinueWith(_ => runPendingReplacement(target), TaskScheduler.Default);
+                }
+                pair.Item1.AddRange(paths);
+                pair.Item2.AddRange(replacePaths);
+            }
+        }
+
+        private static void runPendingReplacement(string bmkPath)
+        {
+            Tuple<List<string>, List<string>> pair;
+            lock (pendingReplaceLock)
+            {
+                if (!pendingReplacements.TryGetValue(bmkPath, out pair)) return;
+                pendingReplacements.Remove(bmkPath);
+                replacingNow.Add(bmkPath);
+            }
+            inReplaceWorker = true;
+            try
+            {
+                // 同じ名前が続けて変わった（A→B→C）場合も順に置き換わるように、追加した順に 1 組ずつではなく、まとめて 1 回で書く。
+                // ReplaceBookmarkData は組ごとに順に適用する
+                ReplaceBookmarkData(bmkPath, pair.Item1, pair.Item2);
+            }
+            catch { }
+            finally
+            {
+                inReplaceWorker = false;
+                lock (pendingReplaceLock) replacingNow.Remove(bmkPath);
+            }
+        }
+
+        /// <summary>その .sor（null ならすべて）への背景の書き換えが終わるまで待つ（K23）</summary>
+        public static void WaitPendingReplacements(string bmkPath = null, int millisecondsTimeout = 10000)
+        {
+            if (inReplaceWorker) return;
+            Task task;
+            lock (pendingReplaceLock)
+            {
+                if (bmkPath != null && !pendingReplacements.ContainsKey(bmkPath) && !replacingNow.Contains(bmkPath)) return;
+                if (bmkPath == null && pendingReplacements.Count == 0 && replacingNow.Count == 0) return;
+                task = pendingReplaceTask;
+            }
+            try { task.Wait(millisecondsTimeout); } catch { }
+        }
+
         public static void GetBookmarkFiles(out string[] filePaths, out int[] filePages, out string[] folderPaths, out int[] folderPages, string bmkPath)
         {
+            WaitPendingReplacements(bmkPath); // 背景の書き換えが済んでから読む（K23）
             var filePathList = new List<string>();
             var filePageList = new List<int>();
             var folderPathList = new List<string>();
