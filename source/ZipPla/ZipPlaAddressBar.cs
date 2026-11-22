@@ -1726,13 +1726,9 @@ namespace ZipPla
                 item.DragDropFinished += DragDropFinished;
                 if (childPath.ToLower() == curPathInLower)
                 {
-                    item.Font = new Font(item.Font, FontStyle.Bold);
+                    item.Font = Program.StyledFont(item.Font, FontStyle.Bold); // 開くたびに Font を作らない（X19）
                     item.CheckState = CheckState.Indeterminate;
                     CheckMarkProvider.SetCheckMark(cms, item, DisplayCheckMark.Select);
-                }
-                else
-                {
-                    item.Font = new Font(item.Font, FontStyle.Regular);
                 }
                 item.MouseUp += (sender2, e2) =>
                 {

@@ -104,7 +104,7 @@ namespace ZipPla
         // 注目点の記録（P4）。ピラミッドの後ろに、幅・高さ 0、分子・分母 FOCUS_MAGIC のエントリとして足す。
         // 幅・高さが 0 なので以前の版は選ばずに読み飛ばし、以前の版が書き直すと消える（ヘッダの版は変えない）
         private const int FOCUS_MAGIC = 0x46435A50; // "PZCF"
-        private const int FOCUS_ENTRY_VERSION = 1;
+        private const int FOCUS_ENTRY_VERSION = 2; // 2: グレー値の計算を直した（X10）。1 の記録は読み飛ばして計算し直す
         private const int FOCUS_PAYLOAD_LENGTH = 4 + 4 * 4 + 4 + 4 + 2 * 4;
         private const int MAX_FOCUS_MEMOS = 4;
 

@@ -2457,7 +2457,8 @@ namespace ZipPla
                 if (targets[k] == physicalIndex) result = bytes;
                 addToSolidCache(targets[k], bytes, physicalIndex);
             }
-            return result ?? new byte[0];
+            if (result == null) throw new IOException($"7z.dll did not extract the entry: {sevenZipArchiveEntries[physicalIndex].FileName}");
+            return result;
         }
 
         private static void SevenZipEntryExtractInTask(Entry entry, Stream dst)
@@ -2842,6 +2843,18 @@ namespace ZipPla
             return result;
         }
 
+        private static bool readFully(Stream stream, byte[] buffer, int count)
+        {
+            var read = 0;
+            while (read < count)
+            {
+                var r = stream.Read(buffer, read, count - read);
+                if (r <= 0) return false;
+                read += r;
+            }
+            return true;
+        }
+
         private PackType GetTypeFromStreamAndSeekFirst(Stream stream)
         {
             const int bufferSize = 8;
@@ -2861,46 +2874,23 @@ namespace ZipPla
                 最も多く想定されるのは ASCII 内のフォルダがルートに存在する場合なのでこれを回避するため
                 ASCII 判定かつサイズ 0 の間は判定を繰り返す
                 */
-                var first = true;
+                // ローカルヘッダを順にたどる。データディスクリプタ付き（サイズが後ろにある）のエントリや、
+                // 次のヘッダのシグネチャが合わないときはそこで打ち切る（X15）
                 var foundUtf8 = false;
-                while (true)
+                var header = new byte[30];
+                long position = buffer[2] == 0x07 ? 4 : 0; // 分割書庫の印（PK）の後ろに最初のヘッダがある
+                for (var n = 0; n < 256; n++)
                 {
-                    var skip = first ? 14 : 22;
-                    first = false;
-                    var atEnd = false;
-                    while (skip > 0)
-                    {
-                        var read = stream.Read(buffer, 0, Math.Min(bufferSize, skip));
-                        if (read <= 0)
-                        {
-                            if (skip == 22)
-                            {
-                                atEnd = true;
-                                break;
-                            }
-                            throw new IOException();
-                        }
-                        skip -= read;
-                    }
-                    if (atEnd) break;
-                    var i = 0;
-                    while (i < 8)
-                    {
-                        var read = stream.Read(buffer, i, 8 - i);
-                        if (read <= 0) throw new IOException();
-                        i += read;
-                    }
-                    var uncompressedSize = buffer[0] | (uint)buffer[1] << 8 | (uint)buffer[2] << 16 | (uint)buffer[3] << 24;
-                    var fileNameLength = buffer[4] | buffer[5] << 8;
-                    var extraFieldLength = buffer[6] | buffer[7] << 8;
+                    stream.Seek(position, SeekOrigin.Begin);
+                    if (!readFully(stream, header, header.Length)) break;
+                    if (header[0] != 0x50 || header[1] != 0x4B || header[2] != 0x03 || header[3] != 0x04) break;
+                    var flags = header[6] | header[7] << 8;
+                    var compressedSize = header[18] | (uint)header[19] << 8 | (uint)header[20] << 16 | (uint)header[21] << 24;
+                    var uncompressedSize = header[22] | (uint)header[23] << 8 | (uint)header[24] << 16 | (uint)header[25] << 24;
+                    var fileNameLength = header[26] | header[27] << 8;
+                    var extraFieldLength = header[28] | header[29] << 8;
                     var nameBuffer = new byte[fileNameLength];
-                    i = 0;
-                    while (i < fileNameLength)
-                    {
-                        var read = stream.Read(nameBuffer, i, fileNameLength - i);
-                        if (read <= 0) throw new IOException();
-                        i += read;
-                    }
+                    if (!readFully(stream, nameBuffer, fileNameLength)) break;
                     var code = ImageLoader.GetCode(nameBuffer);
                     foundUtf8 = code == Encoding.UTF8;
 
@@ -2908,20 +2898,11 @@ namespace ZipPla
                     int preambleLength = code.GetPreamble().Length;
                     var s = code.GetString(nameBuffer, preambleLength, nameBuffer.Length - preambleLength);
 #endif
-                    if (code != Encoding.ASCII || uncompressedSize != 0)
-                    {
-                        stream.Seek(0, SeekOrigin.Begin);
-                        break;
-                    }
-
-                    skip = extraFieldLength;
-                    while (skip > 0)
-                    {
-                        var read = stream.Read(buffer, 0, Math.Min(bufferSize, skip));
-                        if (read == 0) throw new IOException();
-                        skip -= read;
-                    }
+                    if (code != Encoding.ASCII || uncompressedSize != 0) break;
+                    if ((flags & 0x8) != 0 || compressedSize == 0xffffffff) break; // 圧縮データの長さがヘッダから分からない
+                    position += header.Length + fileNameLength + extraFieldLength + compressedSize;
                 }
+                stream.Seek(0, SeekOrigin.Begin);
 
                 UseZipArchiveClass = !foundUtf8;
 
@@ -3233,7 +3214,27 @@ namespace ZipPla
     public class SeekableStream : Stream
     {
         public static Stream Seekablize(Stream originalStream, long streamLength, bool leaveOpen = false) =>
-            originalStream.CanSeek ? originalStream : new SeekableStream(originalStream, streamLength, leaveOpen);
+            originalStream.CanSeek ? (leaveOpen ? new NonClosingStream(originalStream) : originalStream) : new SeekableStream(originalStream, streamLength, leaveOpen);
+
+        /// <summary>
+        /// Dispose しても元のストリームを閉じない包み（X19: シークできるストリームでも leaveOpen を効かせる）
+        /// </summary>
+        private sealed class NonClosingStream : Stream
+        {
+            private readonly Stream s;
+            public NonClosingStream(Stream s) { this.s = s; }
+            public override bool CanRead => s.CanRead;
+            public override bool CanSeek => s.CanSeek;
+            public override bool CanWrite => false;
+            public override long Length => s.Length;
+            public override long Position { get => s.Position; set => s.Position = value; }
+            public override void Flush() { }
+            public override int Read(byte[] buffer, int offset, int count) => s.Read(buffer, offset, count);
+            public override int ReadByte() => s.ReadByte();
+            public override long Seek(long offset, SeekOrigin origin) => s.Seek(offset, origin);
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
 
         private readonly bool leaveOpen;
         private readonly Stream originalStream;

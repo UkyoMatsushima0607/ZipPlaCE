@@ -26,6 +26,36 @@ namespace ZipPla
 
     static class Program
     {
+        private static readonly Dictionary<(string, float, GraphicsUnit, byte, FontStyle), Font> styledFontCache = new Dictionary<(string, float, GraphicsUnit, byte, FontStyle), Font>();
+
+        /// <summary>
+        /// 項目を外して破棄する（X19: 作り直すメニューの項目を溜めない）
+        /// </summary>
+        public static void ClearAndDisposeItems(ToolStripItemCollection items)
+        {
+            var old = new ToolStripItem[items.Count];
+            items.CopyTo(old, 0);
+            items.Clear();
+            foreach (var item in old) item.Dispose();
+        }
+
+        /// <summary>
+        /// baseFont の書体・大きさで style のフォントを返す。同じ組み合わせは使い回し、破棄しない（X19: メニューを開くたびに Font を作らない）
+        /// </summary>
+        public static Font StyledFont(Font baseFont, FontStyle style)
+        {
+            var key = (baseFont.FontFamily.Name, baseFont.Size, baseFont.Unit, baseFont.GdiCharSet, style);
+            lock (styledFontCache)
+            {
+                Font font;
+                if (!styledFontCache.TryGetValue(key, out font))
+                {
+                    font = new Font(baseFont.FontFamily, baseFont.Size, style, baseFont.Unit, baseFont.GdiCharSet, baseFont.GdiVerticalFont);
+                    styledFontCache.Add(key, font);
+                }
+                return font;
+            }
+        }
         public static CatalogForm catalogForm { get; private set; }
         private static Form startForm;
         public static Form StartForm { get { return startForm; } }
@@ -157,8 +187,22 @@ namespace ZipPla
         {
             try
             {
-                var ms = (DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime).TotalMilliseconds;
-                File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "startup-trace.log"), $"{ms,7:F0}\t{label}" + Environment.NewLine);
+                var process = System.Diagnostics.Process.GetCurrentProcess();
+                var ms = (DateTime.Now - process.StartTime).TotalMilliseconds;
+                // 複数のプロセスが同時に書くと共有違反で行が抜けるので、名前付きミューテックスで直列にし、PID を付ける（X12）
+                using (var mutex = new System.Threading.Mutex(false, "ZipPlaCE.StartupTraceLog"))
+                {
+                    var owned = false;
+                    try
+                    {
+                        try { owned = mutex.WaitOne(1000); } catch (System.Threading.AbandonedMutexException) { owned = true; }
+                        File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "startup-trace.log"), $"{ms,7:F0}\t{process.Id}\t{label}" + Environment.NewLine);
+                    }
+                    finally
+                    {
+                        if (owned) mutex.ReleaseMutex();
+                    }
+                }
             }
             catch { }
         }

@@ -9424,24 +9424,24 @@ namespace ZipPla
                             /*
                             if (isDir)
                             {
-                                openInBuiltinViewerToolStripMenuItem.Font = new Font(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
+                                openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
                                 openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInExternalViewerToolStripMenuItem.Font = new Font(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
+                                openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
                                 openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInAssociationToolStripMenuItem.Font = new Font(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
+                                openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
                                 openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                moveToThisFolderToolStripMenuItem.Font = new Font(moveToThisFolderToolStripMenuItem.Font, FontStyle.Bold);
+                                moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Bold);
                                 moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
                             }
                             else
                             {
-                                openInBuiltinViewerToolStripMenuItem.Font = new Font(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
+                                openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
                                 openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInExternalViewerToolStripMenuItem.Font = new Font(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
+                                openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
                                 openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInAssociationToolStripMenuItem.Font = new Font(openInAssociationToolStripMenuItem.Font, FontStyle.Bold);
+                                openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Bold);
                                 openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                                moveToThisFolderToolStripMenuItem.Font = new Font(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
+                                moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
                                 moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
                             }
                             */
@@ -9688,7 +9688,7 @@ namespace ZipPla
             {
                 defaultNotFound = false;
                 var tsmi = new ToolStripMenuItem(Message.SetCoverToThis);
-                tsmi.Font = new Font(tsmi.Font, FontStyle.Bold);
+                tsmi.Font = Program.StyledFont(tsmi.Font, FontStyle.Bold);
                 tsmi.ShortcutKeyDisplayString = "Enter";
                 if (selectedPaths.Length == 1)
                 {
@@ -9723,12 +9723,12 @@ namespace ZipPla
                 var tsmi = app.GetToolStripMenuItem(this, selectedPaths);
                 if (isDefault)
                 {
-                    tsmi.Font = new Font(tsmi.Font, FontStyle.Bold);
+                    tsmi.Font = Program.StyledFont(tsmi.Font, FontStyle.Bold);
                     tsmi.ShortcutKeyDisplayString = "Enter";
                 }
                 else
                 {
-                    tsmi.Font = new Font(tsmi.Font, FontStyle.Regular);
+                    tsmi.Font = Program.StyledFont(tsmi.Font, FontStyle.Regular);
                     tsmi.ShortcutKeyDisplayString = null;
                 }
                 items.Insert(stop++, tsmi);
@@ -9806,12 +9806,12 @@ namespace ZipPla
                 var tsmi = app.GetToolStripMenuItem(this, selectedPaths);
                 if (isDefault)
                 {
-                    tsmi.Font = new Font(tsmi.Font, FontStyle.Bold);
+                    tsmi.Font = Program.StyledFont(tsmi.Font, FontStyle.Bold);
                     tsmi.ShortcutKeyDisplayString = "Enter";
                 }
                 else
                 {
-                    tsmi.Font = new Font(tsmi.Font, FontStyle.Regular);
+                    tsmi.Font = Program.StyledFont(tsmi.Font, FontStyle.Regular);
                     tsmi.ShortcutKeyDisplayString = null;
                 }
                 if (!enabled) tsmi.Enabled = false;
@@ -12694,49 +12694,49 @@ namespace ZipPla
                 {
                     if (isSingleDirectory)
                     {
-                        openInBuiltinViewerToolStripMenuItem.Font = new Font(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
+                        openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
                         openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInExternalViewerToolStripMenuItem.Font = new Font(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
+                        openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
                         openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInAssociationToolStripMenuItem.Font = new Font(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
+                        openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
                         openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        moveToThisFolderToolStripMenuItem.Font = new Font(moveToThisFolderToolStripMenuItem.Font, FontStyle.Bold);
+                        moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Bold);
                         moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
                     }
                     else
                     {
-                        openInBuiltinViewerToolStripMenuItem.Font = new Font(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
+                        openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
                         openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInExternalViewerToolStripMenuItem.Font = new Font(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
+                        openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
                         openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInAssociationToolStripMenuItem.Font = new Font(openInAssociationToolStripMenuItem.Font, FontStyle.Bold);
+                        openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Bold);
                         openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                        moveToThisFolderToolStripMenuItem.Font = new Font(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
+                        moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
                         moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
                     }
                 }
                 else
                 {
-                    openInBuiltinViewerToolStripMenuItem.Font = new Font(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Bold);
+                    openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Bold);
                     openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                    openInExternalViewerToolStripMenuItem.Font = new Font(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
+                    openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
                     openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                    openInAssociationToolStripMenuItem.Font = new Font(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
+                    openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
                     openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                    moveToThisFolderToolStripMenuItem.Font = new Font(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
+                    moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
                     moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
                 }
 
             }
             else
             {
-                openInBuiltinViewerToolStripMenuItem.Font = new Font(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
+                openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
                 openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                openInExternalViewerToolStripMenuItem.Font = new Font(openInExternalViewerToolStripMenuItem.Font, FontStyle.Bold);
+                openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Bold);
                 openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                openInAssociationToolStripMenuItem.Font = new Font(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
+                openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
                 openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                moveToThisFolderToolStripMenuItem.Font = new Font(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
+                moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
                 moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
 
             }
@@ -12997,7 +12997,7 @@ namespace ZipPla
                 }
 
                 //tagToolStripMenuItem.Enabled = true;
-                tagToolStripMenuItem.DropDownItems.Clear();
+                Program.ClearAndDisposeItems(tagToolStripMenuItem.DropDownItems); // 開くたびに作り直す（X19）
 
 
 
@@ -13173,7 +13173,7 @@ namespace ZipPla
                 thumbnailToolStripMenuItem.Enabled = false;
                 thumbnailToolStripMenuItem.Visible = false;
 
-                tagToolStripMenuItem.DropDownItems.Clear();
+                Program.ClearAndDisposeItems(tagToolStripMenuItem.DropDownItems); // 開くたびに作り直す（X19）
                 tagToolStripMenuItem.DropDownItems.Add("");
                 tagToolStripMenuItem.Enabled = false;
                 cmsRightClickPrepareAndShow_TagInitialCheckState = null;
@@ -14528,7 +14528,7 @@ namespace ZipPla
                                 if (!string.IsNullOrEmpty(name))
                                 {
                                     var c = name[name.Length - 1];
-                                    if (c != Path.DirectorySeparatorChar && c != Path.DirectorySeparatorChar)
+                                    if (c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar)
                                     {
                                         sizeArray[i] = s;
                                     }
@@ -14558,7 +14558,7 @@ namespace ZipPla
                                 if (!string.IsNullOrEmpty(name))
                                 {
                                     var c = name[name.Length - 1];
-                                    if (c != Path.DirectorySeparatorChar && c != Path.DirectorySeparatorChar)
+                                    if (c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar)
                                     {
                                         sizeArray[i] = s;
                                     }
@@ -14567,6 +14567,10 @@ namespace ZipPla
                                         sizeArray[i] = -1;
                                     }
                                 }
+                            }
+                            else
+                            {
+                                sizeArray[i] = -1; // サイズ不明は昇順と同じくフォルダと一緒に末尾へ
                             }
                         }
                         result = order.OrderByDescending(x => sizeArray[x]).ToArray();
@@ -16789,11 +16793,11 @@ namespace ZipPla
                 var current = tsi.Font;
                 if ((bool)bold)
                 {
-                    tsi.Font = new Font(current, current.Style | FontStyle.Bold);
+                    tsi.Font = Program.StyledFont(current, current.Style | FontStyle.Bold);
                 }
                 else
                 {
-                    tsi.Font = new Font(current, current.Style & ~FontStyle.Bold);
+                    tsi.Font = Program.StyledFont(current, current.Style & ~FontStyle.Bold);
                 }
             }
         }
@@ -18597,11 +18601,12 @@ namespace ZipPla
                     if (newold.RequestToUpdateLastAccessTime)
                     {
                         var path = newold.New;
-                        Task.Run(() =>
+                        Task.Run(async () =>
                         {
+                            // 待つ間はプールのスレッドを持たない（X13）
                             for (var i = 0; i < 1000; i++)
                             {
-                                Thread.Sleep(100);
+                                await Task.Delay(100).ConfigureAwait(false);
                                 //GPSizeThumbnail.AddBlackListWeight(path);
                                 DateTime? now_;
                                 GPSizeThumbnail.EnterEditing(path);
@@ -18641,9 +18646,9 @@ namespace ZipPla
                                                                 if (sortMode == SortMode.AccessedInAsc || sortMode == SortMode.AccessedInDesc)
                                                                 {
                                                                     var s2d = tvCatalog.ShowIndexToDataIndex;
-                                                                    var sign = sortMode == SortMode.NameInAsc ? 1 : -1;
-                                                                    if (showIndex > 0 && sign * GetSortArray_NaturalSort.Compare(LastAccessTimeArray[s2d[showIndex - 1]], now) > 0 ||
-                                                                    showIndex < LastAccessTimeArray.Length - 1 && sign * GetSortArray_NaturalSort.Compare(now, ZipNameArray[s2d[showIndex + 1]]) > 0)
+                                                                    var sign = sortMode == SortMode.AccessedInAsc ? 1 : -1;
+                                                                    if (showIndex > 0 && showIndex - 1 < s2d.Length && sign * DateTime.Compare(LastAccessTimeArray[s2d[showIndex - 1]], now) > 0 ||
+                                                                    showIndex + 1 < s2d.Length && sign * DateTime.Compare(now, LastAccessTimeArray[s2d[showIndex + 1]]) > 0)
                                                                     {
                                                                         tbcAccessTime.HeaderCell.SortGlyphDirection = SortOrder.None;
                                                                         cbSortBy.SelectedIndex = -1;
@@ -23419,12 +23424,12 @@ namespace ZipPla
 
                 if (i == undoBufferIndex)
                 {
-                    item.Font = new Font(item.Font, FontStyle.Bold);
+                    item.Font = Program.StyledFont(item.Font, FontStyle.Bold);
                     item.CheckState = CheckState.Indeterminate;
                 }
                 else
                 {
-                    item.Font = new Font(item.Font, FontStyle.Regular);
+                    item.Font = Program.StyledFont(item.Font, FontStyle.Regular);
                     var ii = i;
                     item.Click += (sender2, e2) =>
                     {
@@ -23829,6 +23834,9 @@ namespace ZipPla
             var newItems = new ToolStripItem[newCount + 1];
             newItems[0] = ratingFilterToolStripMenuItem;
 
+            var oldDropDowns = setTagFilteringMenuItems_DropDown;
+            var oldItems = new ToolStripItem[items.Count];
+            items.CopyTo(oldItems, 0);
             setTagFilteringMenuItems_DropDown = new ToolStripDropDown[newCount];
 
             for (var i = 0; i < newCount; i++)
@@ -23890,6 +23898,21 @@ namespace ZipPla
             menuStripForTagFilter.AutoSize = true;
             items.AddRange(newItems);
             menuStripForTagFilter.AutoSize = false;
+
+            // 作り直す前の項目とドロップダウンを破棄する（X19）。開いているものは閉じたときに
+            if (oldDropDowns != null)
+            {
+                foreach (var dropDown in oldDropDowns)
+                {
+                    if (dropDown == null || dropDown.IsDisposed) continue;
+                    if (dropDown.Visible) dropDown.Closed += (s2, e2) => BeginInvoke(new MethodInvoker(dropDown.Dispose));
+                    else dropDown.Dispose();
+                }
+            }
+            foreach (var item in oldItems)
+            {
+                if (item != null && item != ratingFilterToolStripMenuItem) item.Dispose();
+            }
 
             setTagFilterLocation_WidthMemory = (from item in newItems select item.Width).ToArray();
 
@@ -25145,7 +25168,7 @@ namespace ZipPla
                             InArchive && e.DataIndex == LocationZipPlaInfo.ThumbnailInfo?.Item1)
                         {
                             //e.Graphics.DrawString(Message.Cover, tvCatalog.Font, Brushes.Black, thumbRect);
-                            var font = new Font(tvCatalog.Font, FontStyle.Bold);
+                            var font = Program.StyledFont(tvCatalog.Font, FontStyle.Bold); // 描くたびに作らない（X19）
                             drawSimpleString(e.Graphics, Message.Cover, font, thumbRect, Color.Black, Brushes.Pink, tvCatalog_ThumbnailPaint_CoverStringWidthDictionary);
                         }
                     }

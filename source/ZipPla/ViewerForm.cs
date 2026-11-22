@@ -8079,7 +8079,7 @@ namespace ZipPla
                 var start = pageDirection > 0 ? currentPage : stopPage - 1;
                 var stop = pageDirection > 0 ? stopPage : currentPage - 1;
                 lockBits(canvas, new Rectangle(0, 0, pbViewSize.Width, pbViewSize.Height),
-                    pbView_Paint_Rectangle.IsEmpty ? ImageLockMode.ReadOnly : ImageLockMode.ReadWrite, "normal image (canvas)", dst =>
+                    ImageLockMode.ReadWrite, "normal image (canvas)", dst =>
                 {
                     for (var i = start; i != stop; i += pageDirection)
                     {
@@ -8785,7 +8785,7 @@ namespace ZipPla
                                         }
                                         if (canvas1.FrameCount == 1)
                                         {
-                                            if (imageFilter != null)
+                                            if (imageInfo != null)
                                             {
                                                 imageFilter.PostFilter(canvas1, ref imageInfo.MaxColorDiff, bwMagnifierMaker);
                                             }
@@ -11998,6 +11998,7 @@ namespace ZipPla
                 var item = items[i];
                 if (item == tagEditorToolStripMenuItem) break;
                 items.RemoveAt(i);
+                item.Dispose(); // 開くたびに作り直すタグの項目（X19）
             }
 
             if(ViewerMode == ViewerModeEnum.CoverSetting)

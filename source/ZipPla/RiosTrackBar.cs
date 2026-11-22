@@ -265,7 +265,7 @@ namespace ZipPla
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
-            g.Clip = new Region(e.ClipRectangle);
+            using (var clip = new Region(e.ClipRectangle)) g.Clip = clip; // 設定時に複製されるので破棄してよい（X19）
             drawScaleMarks(g);
             drawCenterLine(g);
             drawKnob(g);
@@ -464,9 +464,10 @@ namespace ZipPla
             }
             knobBound.Intersect(g.ClipBounds);
             g.FillRectangle(BackBrush, knobBound);
-            g.Clip = new Region(knobBound);
+            using (var clip = new Region(knobBound)) g.Clip = clip;
             drawCenterLine(g, offset);
             g.Clip = originalClip;
+            originalClip.Dispose(); // getter は複製を返す（X19）
         }
         
 

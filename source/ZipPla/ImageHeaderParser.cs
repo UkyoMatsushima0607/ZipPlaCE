@@ -206,7 +206,7 @@ namespace ZipPla
                         if (fs.Seek(12, SeekOrigin.Current) < 12 || fs.Read(buf16, 0, 16) < 16) throw new NotSupportedException();
 
                         //http://www.ruche-home.net/program/bmp/struct
-                        switch (buf16[0] | buf16[1] << 8 | buf16[2] << 16 | buf16[3] << 32)
+                        switch (buf16[0] | buf16[1] << 8 | buf16[2] << 16 | buf16[3] << 24)
                         {
                             case 12:
                                 {
@@ -227,6 +227,7 @@ namespace ZipPla
                                     int width = buf16[4] | buf16[5] << 8 | buf16[6] << 16 | buf16[7] << 24;
                                     if (width <= 0) throw new NotSupportedException();
                                     int height = buf16[8] | buf16[9] << 8 | buf16[10] << 16 | buf16[11] << 24;
+                                    if (height < 0 && height != int.MinValue) height = -height; // 高さが負なら上から下に並ぶ BMP
                                     if (height <= 0) throw new NotSupportedException();
                                     if (buf16[12] != 1 || buf16[13] != 0) throw new NotSupportedException();
                                     var bpp = buf16[14] | buf16[15] << 8;

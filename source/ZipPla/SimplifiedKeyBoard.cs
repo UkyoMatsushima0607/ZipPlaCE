@@ -304,11 +304,11 @@ namespace ZipPla
                     if (held)
                     {
                         base.Pushed = true;
-                        Font = new Font(Font, FontStyle.Underline);
+                        Font = Program.StyledFont(Font, FontStyle.Underline);
                     }
                     else
                     {
-                        Font = new Font(Font, FontStyle.Regular);
+                        Font = Program.StyledFont(Font, FontStyle.Regular);
                     }
                 }
             }

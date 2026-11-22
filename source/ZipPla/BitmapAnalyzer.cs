@@ -162,7 +162,7 @@ namespace ZipPla
                                 int b = bgr[0];
                                 int g = bgr[1];
                                 int r = bgr[2];
-                                grayLinearArray[yW + x] = b + 6 * b + 3 * r;
+                                grayLinearArray[yW + x] = b + 6 * g + 3 * r; // 以前は緑の代わりに b を使っていた（X10）
                             }
                         }
                     }
@@ -172,10 +172,9 @@ namespace ZipPla
                     workingBmp.UnlockBits(img);
                 }
             }
-            catch
+            finally
             {
                 workingBmp.Dispose();
-                throw;
             }
             var pointsLinearArray = new int[wh];
             var h1 = workingHeight - 1;
