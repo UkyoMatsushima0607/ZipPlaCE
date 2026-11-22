@@ -3431,7 +3431,8 @@ namespace ZipPla
         {
             var l = loader;
             if (l == null) throw new ObjectDisposedException(nameof(loader));
-            if (CanDecodeInParallel(entry.Path))
+            // PDF のエントリ名には拡張子がないが、そのまま JPEG として読めるページは TryExtractEntry が取り出す（D2）
+            if (CanDecodeInParallel(entry.Path) || l.Type == PackedImageLoader.PackType.Pdf && entry.ChildIndex < 0)
             {
                 if (l.ReadsEntryFileDirectly(entry))
                 {

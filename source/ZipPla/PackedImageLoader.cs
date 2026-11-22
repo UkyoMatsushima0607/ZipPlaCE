@@ -1916,8 +1916,17 @@ namespace ZipPla
             length = -1;
             switch (Type)
             {
-                case PackType.Directory:
                 case PackType.Pdf:
+                    {
+                        // そのまま JPEG として読めるページだけ、バイト列を取り出す（デコードは呼び出し側がロックの外で並列に行う、D2）
+                        var jpeg = TryGetPdfPlainJpegBytes(physicalIndex);
+                        if (jpeg == null) return false;
+                        stream = new MemoryStream(jpeg, 0, jpeg.Length, writable: false, publiclyVisible: true);
+                        fileNameForType = PdfPlainJpegName;
+                        length = jpeg.Length;
+                        return true;
+                    }
+                case PackType.Directory:
                 case PackType.Cab:
                     return false;
                 case PackType.ZipM:
@@ -2467,6 +2476,20 @@ namespace ZipPla
 
         private Bitmap OpenInnerImageStreamPdf(int physicalIndex)
         {
+            // そのまま JPEG として読めるページは、JPEG のデコード（縮小デコードを含む）で読む（D2。以前は new Bitmap で常に原寸）
+            var jpeg = TryGetPdfPlainJpegBytes(physicalIndex);
+            if (jpeg != null)
+            {
+                try
+                {
+                    using (var ms = new MemoryStream(jpeg, writable: false))
+                    {
+                        return ImageFromStream(ms, PdfPlainJpegName, animation, jpeg.Length);
+                    }
+                }
+                catch (ArgumentException) { } // 従来の読み方で読み直す
+            }
+
             Bitmap result;
             GetInnerImageStreamPdf(physicalIndex, getImage: true, extensionWithPeriodForPDF: out var dummy, image: out result).Dispose();
             //using (var ms = GetInnerImageStreamPdf(physicalIndex))
@@ -2606,6 +2629,97 @@ namespace ZipPla
             }
 
             throw new ArgumentException();
+        }
+
+        // PDF から取り出した JPEG を読むときの名前（形式の判定にだけ使う、D2）
+        private const string PdfPlainJpegName = "x.jpg";
+
+        /// <summary>
+        /// PDF のページの画像（GetInnerImageStreamPdf が読むのと同じ、最初の画像の XObject）が、そのまま JPEG として読めるものなら、
+        /// そのバイト列を返す。読めなければ null（従来の読み方を使う）（D2）。
+        /// 表示が変わらないように、DCTDecode だけで圧縮され、/Decode（値の反転）がなく、色空間が DeviceRGB・DeviceGray・1 か 3 成分の ICCBased で、
+        /// Exif（APP1）を持たない JPEG に限る（JPEG のデコードは Exif の向きで回転するが、PDF では無視するのが正しい）。
+        /// このクラスはスレッド安全ではないので、呼び出し側が直列にすること
+        /// </summary>
+        private byte[] TryGetPdfPlainJpegBytes(int physicalIndex)
+        {
+            try
+            {
+                var page = pdfArchive.GetPageN(physicalIndex + 1); // ページは１オリジン
+                var res = PdfReader.GetPdfObject(page.Get(PdfName.RESOURCES)) as PdfDictionary;
+                var xobj = res == null ? null : PdfReader.GetPdfObject(res.Get(PdfName.XOBJECT)) as PdfDictionary;
+                if (xobj == null) return null;
+                foreach (var name in xobj.Keys)
+                {
+                    var obj = xobj.Get(name);
+                    if (!obj.IsIndirect()) continue;
+                    var tg = PdfReader.GetPdfObject(obj) as PdfDictionary;
+                    if (tg == null) continue;
+                    var type = PdfReader.GetPdfObject(tg.Get(PdfName.SUBTYPE)) as PdfName;
+                    if (!PdfName.IMAGE.Equals(type)) continue;
+
+                    // 最初の画像だけを見る（GetInnerImageStreamPdf と同じ）
+                    if (!IsPlainJpegImageDictionary(tg)) return null;
+                    var pdfStream = pdfArchive.GetPdfObject((obj as PRIndirectReference).Number) as PRStream;
+                    if (pdfStream == null) return null;
+                    var bytes = PdfReader.GetStreamBytesRaw(pdfStream);
+                    return IsJpegWithoutExif(bytes) ? bytes : null;
+                }
+                return null;
+            }
+            catch (iTextSharp.text.exceptions.BadPasswordException)
+            {
+                throw new PasswordLockedException();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsPlainJpegImageDictionary(PdfDictionary image)
+        {
+            var filter = PdfReader.GetPdfObject(image.Get(PdfName.FILTER));
+            if (filter is PdfArray filters)
+            {
+                if (filters.Size != 1) return false;
+                filter = PdfReader.GetPdfObject(filters[0]);
+            }
+            if (!PdfName.DCTDECODE.Equals(filter)) return false;
+            if (image.Get(PdfName.DECODE) != null) return false;
+
+            var colorSpace = PdfReader.GetPdfObject(image.Get(PdfName.COLORSPACE));
+            if (colorSpace is PdfName csName)
+            {
+                return PdfName.DEVICERGB.Equals(csName) || PdfName.DEVICEGRAY.Equals(csName);
+            }
+            if (colorSpace is PdfArray csArray && csArray.Size == 2 && PdfName.ICCBASED.Equals(PdfReader.GetPdfObject(csArray[0])))
+            {
+                var icc = PdfReader.GetPdfObject(csArray[1]) as PdfDictionary;
+                var n = icc == null ? null : PdfReader.GetPdfObject(icc.Get(PdfName.N)) as PdfNumber;
+                return n != null && (n.IntValue == 1 || n.IntValue == 3);
+            }
+            return false;
+        }
+
+        // JPEG の SOI で始まり、スキャンの前に Exif（APP1）がないか
+        private static bool IsJpegWithoutExif(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length < 4 || bytes[0] != 0xFF || bytes[1] != 0xD8) return false;
+            var pos = 2;
+            while (pos + 4 <= bytes.Length)
+            {
+                if (bytes[pos] != 0xFF) return false;
+                var marker = bytes[pos + 1];
+                if (marker == 0xFF) { pos++; continue; } // 詰め物
+                if (marker == 0xDA) return true; // SOS
+                var segmentLength = bytes[pos + 2] << 8 | bytes[pos + 3];
+                if (segmentLength < 2) return false;
+                if (marker == 0xE1 && segmentLength >= 8 && pos + 10 <= bytes.Length &&
+                    bytes[pos + 4] == (byte)'E' && bytes[pos + 5] == (byte)'x' && bytes[pos + 6] == (byte)'i' && bytes[pos + 7] == (byte)'f') return false;
+                pos += 2 + segmentLength;
+            }
+            return false;
         }
 
         private static MemoryStream GetImageType(MemoryStream ms, out string extension)
