@@ -275,6 +275,8 @@ namespace ZipPla
         private int leftHierarchies;
         private PackedImageLoaderSearchMode searchMode;
         private Tuple<PackedImageLoader, List<PackedImageEntry>>[] children;
+        /// <summary>作った子のローダーすべて。列挙の途中で例外が出て children に入らなかったものも含めて Dispose で解放する（X4）</summary>
+        private List<PackedImageLoader> ownedChildLoaders;
 
         bool animation = false;
 
@@ -1147,6 +1149,7 @@ namespace ZipPla
                 }
                 var newDepth = loader.LoadedDepth + 1;
                 if (newDepth > LoadedDepth) LoadedDepth = newDepth;
+                (ownedChildLoaders ?? (ownedChildLoaders = new List<PackedImageLoader>())).Add(loader);
                 childrenList.Add(Tuple.Create(loader, entries));
                 return count;
             }
@@ -2965,8 +2968,33 @@ namespace ZipPla
 
         public void Dispose()
         {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
             if (!Disposed)
             {
+                if (disposing)
+                {
+                    // 子のローダー（入れ子・フォルダの中の書庫）と CAB はそれぞれのファイナライザがあるので、明示的に Dispose されたときだけ解放する（X4）
+                    var owned = ownedChildLoaders;
+                    ownedChildLoaders = null;
+                    if (owned != null)
+                    {
+                        foreach (var child in owned)
+                        {
+                            try { child.Dispose(); } catch { }
+                        }
+                    }
+                    if (cabArchive != null)
+                    {
+                        try { cabArchive.Dispose(); } catch { }
+                        cabArchive = null;
+                    }
+                }
+
                 if (iReader != null)
                 {
                     try { iReader.Dispose(); } catch { }
@@ -2989,7 +3017,7 @@ namespace ZipPla
         
         ~PackedImageLoader()
         {
-            Dispose();
+            Dispose(disposing: false);
         }
 
         private class MyRandomAccessSource : iTextSharp.text.io.IRandomAccessSource

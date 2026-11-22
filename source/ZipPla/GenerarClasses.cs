@@ -518,9 +518,19 @@ namespace GenerarClasses
             }
         }
 
+        /// <summary>
+        /// ReserveExit で予約した終了で Environment.Exit を呼ぶ直前に起きる。Environment.Exit では FormClosed が呼ばれないので、
+        /// 終了前に済ませておく処理（後回しにしたキャッシュの書き込みなど）をここで行う（X3）
+        /// </summary>
+        public event EventHandler ExitingByReservation;
+
         private void ExitQueAccepter()
         {
-            if (Exit_Que && AllWorkerCount == 0) Environment.Exit(Exit_Code);
+            if (Exit_Que && AllWorkerCount == 0)
+            {
+                try { ExitingByReservation?.Invoke(this, EventArgs.Empty); } catch { }
+                Environment.Exit(Exit_Code);
+            }
             //if (Exit_Que) Environment.Exit(Exit_Code);
         }
 

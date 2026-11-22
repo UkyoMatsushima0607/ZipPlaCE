@@ -10050,6 +10050,7 @@ namespace ZipPla
 
             // bmw を使う方法
             bool realTime;
+            bmwMakePreview.ExitingByReservation += (s, ee) => CleanupOnClose(); // 予約した終了は Environment.Exit で FormClosed を通らない（X3）
             bmwMakePreview.ReserveExit(0, out realTime);
             if (!realTime)
             {
@@ -10532,16 +10533,43 @@ namespace ZipPla
             }
 
             cbLocation.Items.Clear();
-            foreach (var h in locationHistory)
             {
-                try
+                // 消すのは、つながっている固定ドライブ上でなくなったものだけにする。外したドライブ・ネットワークの場所は
+                // 一時的に見えないだけのことがあるので残す（X6）。ネットワークの場所は存在確認もしない（切断中だと 1 件ごとに長く止まる）
+                var keptHistory = new List<object>(locationHistory.Length);
+                var fixedReadyRoots = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                foreach (var h in locationHistory)
                 {
-                    if (VirtualFolder.DirectoryOrBookmarkExists(h))
+                    try
                     {
-                        cbLocation.Items.Add(h);
+                        if (string.IsNullOrEmpty(h)) continue;
+                        var root = Path.GetPathRoot(h);
+                        if (string.IsNullOrEmpty(root)) continue;
+                        if (!fixedReadyRoots.TryGetValue(root, out var fixedReady))
+                        {
+                            try
+                            {
+                                if (root.StartsWith(@"\\"))
+                                {
+                                    fixedReady = false;
+                                }
+                                else
+                                {
+                                    var drive = new DriveInfo(root);
+                                    fixedReady = drive.DriveType == DriveType.Fixed && drive.IsReady;
+                                }
+                            }
+                            catch { fixedReady = false; }
+                            fixedReadyRoots.Add(root, fixedReady);
+                        }
+                        if (!fixedReady || VirtualFolder.DirectoryOrBookmarkExists(h))
+                        {
+                            keptHistory.Add(h);
+                        }
                     }
+                    catch { }
                 }
-                catch { }
+                cbLocation.Items.AddRange(keptHistory.ToArray());
             }
             //zabLocation.Text = location; // setMainPanelWidth より後で
 
@@ -18326,6 +18354,18 @@ namespace ZipPla
 
         private void CatalogForm_FormClosed(object sender, FormClosedEventArgs e)
         {
+            CleanupOnClose();
+        }
+
+        private bool CleanupOnClose_Done = false;
+
+        /// <summary>
+        /// カタログを閉じるときの後始末。FormClosed と、読み込み中に閉じたときの予約した終了（Environment.Exit の直前、X3）の両方から呼ばれる
+        /// </summary>
+        private void CleanupOnClose()
+        {
+            if (CleanupOnClose_Done) return;
+            CleanupOnClose_Done = true;
             GPSizeThumbnail.FlushPendingWrites(10000); // 後回しにしたサムネイルキャッシュの書き込みを済ませる（K7 (a)）
             if (currentIpcChanne != null)
             {

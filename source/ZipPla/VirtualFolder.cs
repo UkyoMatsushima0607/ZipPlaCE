@@ -252,6 +252,15 @@ namespace ZipPla
             return File.Exists(altPos < 0 ? path : path.Substring(0, altPos));
         }
 
+        private static bool ContainsIgnoreCase(List<string> list, string path)
+        {
+            foreach (var item in list)
+            {
+                if (string.Compare(path, item, ignoreCase: true) == 0) return true;
+            }
+            return false;
+        }
+
         private static void AddDeleteBookmarkData(string bmkPath, IReadOnlyList<string> paths, IReadOnlyList<int> pages, int limitOfItemsCount, out bool trimmed, bool deleteLostPath,
             bool deleteOrReplace, IReadOnlyList<string> replacePaths, out int firstMatchedPage)
         {
@@ -322,7 +331,10 @@ namespace ZipPla
                 bool isDir;
                 if (!EndsWithDirectorySeparatorChar(path))
                 {
-                    if(Directory.Exists(path))
+                    // 名前変更・削除はファイル操作のあとに呼ばれるので、旧パスのフォルダはもう存在しない。
+                    // その場合は記録の側にフォルダとしてだけあるかで決める（X5）
+                    if (Directory.Exists(path) ||
+                        deleteOrReplace && !File.Exists(path) && ContainsIgnoreCase(folderPathList, path) && !ContainsIgnoreCase(filePathList, path))
                     {
                         path += Path.DirectorySeparatorChar;
                         isDir = true;
@@ -357,6 +369,7 @@ namespace ZipPla
                         if (string.Compare(path, folderPathList[j], ignoreCase: true) == 0)
                         {
                             if (firstMatchedPage < 0) firstMatchedPage = folderPageList[j];
+                            edited = true; // ファイル側と同じく、一致したら書き直す（X5）
                             if (delete || found)
                             {
                                 folderPathList.RemoveAt(j);
