@@ -125,10 +125,10 @@ namespace ZipPla
                 if (tsmi != null)
                 {
                     SetCheckMark(ts, tsmi, checkMark);
-                    var dropDown = tsmi.DropDown;
-                    if(dropDown != null)
+                    // DropDown の getter は子のない項目にも空のドロップダウンを作る（全メニューで数百個）ので、子があるときだけ（S8）
+                    if (tsmi.HasDropDownItems)
                     {
-                        SetCheckMark(dropDown, checkMark);
+                        SetCheckMark(tsmi.DropDown, checkMark);
                     }
                 }
             }
