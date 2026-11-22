@@ -18926,9 +18926,9 @@ namespace ZipPla
                 }
                 if (enterIf)
                 {
-                    bool dummy; // 一部リロードでは再ソートしない仕様
-                    movieInfo = null;
-                    thumbnail = GetThumbnail(path, isDir, null, out dummy, out filecount, out loadResult, out fileSize, out imageInfo, ref movieInfo, existsHeader: false);
+                    // サムネイルは作らず、ヘッダ（ページ数・解像度・動画情報など）だけを取る。サムネイルは、表示範囲に入っている項目だけ
+                    // ThumbViewerItem.LoadAsync が作る（K21。以前は監視イベントのたびに、見えていない項目のサムネイルまで作ってキャッシュに書いていた）
+                    GetHeader(path, isDir, out _, out filecount, out loadResult, out fileSize, out imageInfo, out movieInfo);
                     if (fileSize < 0 && !isDir) // フォルダの場合サイズは取得済みまたはサイズは表示しない設定
                     {
                         try
@@ -19066,13 +19066,15 @@ namespace ZipPla
                                     {
                                         if (silent)
                                         {
-                                            tvCatalog[index].SilentSet(thumbnail, zipName);
+                                            tvCatalog[index].SilentSet(zipName); // サムネイルは変わっていないので今の画像のまま（K21）
                                         }
                                         else
                                         {
-                                            tvCatalog[index].Set(thumbnail, zipName);
+                                            tvCatalog[index].ResetForReload(zipName);
                                         }
                                     }
+                                    // 表示範囲に入っている項目のサムネイルを作らせる（描画のときに LoadAsync が呼ばれる。K21）
+                                    tvCatalog.Invalidate();
                                 }
                                 catch (Exception error)
                                 {
@@ -25924,9 +25926,20 @@ namespace ZipPla
             }
         }
 
-        private void fileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
+        // 書き込み中の大きなファイルでは Changed が何度も届くので、同じパスは 300ms まとめる（K21）
+        private readonly HashSet<string> fileSystemWatcher_ChangedPending = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private async void fileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
         {
             if (isCacheFolder(e.FullPath)) return;
+            if (!fileSystemWatcher_ChangedPending.Add(e.FullPath)) return;
+            try
+            {
+                await Task.Delay(300);
+            }
+            finally
+            {
+                fileSystemWatcher_ChangedPending.Remove(e.FullPath);
+            }
             fileSystemWatcher_Created(sender, e);
         }
 
@@ -26288,6 +26301,11 @@ namespace ZipPla
                     }
                 }
 
+                // 配列の複製から差し替えまでをロックの中で行う。ロックの外で複製すると、その間に別の項目の ReloadOneThumbnailForSubThread が
+                // 古い配列へ書いた名前などが失われ、名前が null の項目は一覧から外れる（K21 で 1 件の処理が速くなって起きるようになった）
+                Monitor.Enter(ZipPathArrayLocker);
+                try
+                {
                 var zipPathArray = zpa;
                 var zipNameArray = ZipNameArray; if (zipNameArray == null || zipNameArray.Length != count) return;
                 var zipPageArray = ZipPageArray; if (zipPageArray == null || zipPageArray.Length != count) return;
@@ -26322,7 +26340,6 @@ namespace ZipPla
                     zipPageArray2[i] = -1;
                 }
 
-                lock (ZipPathArrayLocker)
                 {
                     ZipPathArray = zipPathArray2;
                     ZipNameArray = zipNameArray2;
@@ -26337,11 +26354,15 @@ namespace ZipPla
                     ZipSizeArray = zipSizeArray2;
                     ZipMaskArray = zipMaskArray2;
                 }
-                //MessageBox.Show($"{ZipPathArray.Length}");
-                tvCatalog.ItemBuffSizeChange(count21);
-
                 ZipMaskArray[count] = true;
                 ZipPathArray[count] = path;
+                //MessageBox.Show($"{ZipPathArray.Length}");
+                tvCatalog.ItemBuffSizeChange(count21);
+                }
+                finally
+                {
+                    Monitor.Exit(ZipPathArrayLocker);
+                }
 
                 addOrReloadItem_Add(count, path, silentModeForAdd);
             }
@@ -30927,6 +30948,11 @@ namespace ZipPla
             if (loadCancelled || disposed || filePath != path)
             {
                 result?.Dispose();
+                if (reloadAfterLoad && !disposed && filePath == path)
+                {
+                    reloadAfterLoad = false;
+                    _ = LoadAsync(); // 読み込み中にファイルが変わった（K21）
+                }
                 return;
             }
             // 読み込み結果を戻す（アイコンを描くかどうかに使われる、A11）。画像をセットすると再描画されるので、その前に戻す
@@ -30955,6 +30981,7 @@ namespace ZipPla
 #endif
             }
             if (loading) loadCancelled = true;
+            reloadAfterLoad = false; // 範囲外になったので読み直さない（K21）
             // 表示範囲から外れただけなら、画像は捨てずにメモリのキャッシュへ移す（範囲に戻ったら使う、A3）
             if (!disposed && owner != null && filePath != null && image != null)
             {
@@ -31004,6 +31031,25 @@ namespace ZipPla
         {
             this.text = text;
         }
+
+        /// <summary>
+        /// ファイルが変わったとき（監視イベント、K21）: 画像を捨て、次に表示範囲で描かれたときに作り直させる。
+        /// 読み込みに失敗した印も消す（書き込み中で読めなかったファイルを、書き終わったあとに読み直すため）
+        /// </summary>
+        public void ResetForReload(string text)
+        {
+            this.text = text;
+            loadFailed = false;
+            if (loading)
+            {
+                // 読み込み中の結果は古い中身なので捨て、終わったら読み直す
+                loadCancelled = true;
+                reloadAfterLoad = true;
+            }
+            if (filePath != null) owner?.ThumbnailMemoryCache.Remove(filePath);
+            Image = null; // 描き直される
+        }
+        private bool reloadAfterLoad = false;
 
         public void Set(Bitmap image, string text)
         {
