@@ -138,6 +138,15 @@ namespace Common
                 {
                     // シリアル化はプロパティの getter から別の設定を構築することがあるので lock の外で行う
                     var newNode = GetXElementFromThis();
+                    // カタログとビューアのプロセスが同時に保存すると、片方の書き込みが共有違反で失敗したり、
+                    // 読み直してから書くまでの間に他方の変更を古い内容で上書きしたりして設定が失われていた（B3）。
+                    // 読み直し・差し替え・書き込みをプロセス間のミューテックスで直列にする
+                    using (var interProcess = new System.Threading.Mutex(false, GetSaveMutexName()))
+                    {
+                    var ownsMutex = false;
+                    try
+                    {
+                        try { ownsMutex = interProcess.WaitOne(5000); } catch (System.Threading.AbandonedMutexException) { ownsMutex = true; }
                     lock (cacheLocker)
                     {
                         // 読み込んだときから内容が変わっていなければ書き込まない（K1）
@@ -168,9 +177,27 @@ namespace Common
 
                         // 書き込み中に他のプロセスに変えられた場合に備え、キャッシュは捨てて次の読み込みで読み直す
                         cachedRoot = null;
-                        WriteFile(file);
+                        // ミューテックスを取れなかった・ほかのアプリが開いている場合に備え、共有違反は少し待って数回やり直す（B3）
+                        for (var attempt = 0; ; attempt++)
+                        {
+                            try
+                            {
+                                WriteFile(file);
+                                break;
+                            }
+                            catch (IOException) when (attempt < 4 && !File.Exists(XmlBack))
+                            {
+                                System.Threading.Thread.Sleep(50);
+                            }
+                        }
                         xmlFile = file;
                         xmlNode = newNode;
+                    }
+                    }
+                    finally
+                    {
+                        if (ownsMutex) interProcess.ReleaseMutex();
+                    }
                     }
 
                     return null;
@@ -183,6 +210,20 @@ namespace Common
             else
             {
                 return lastException;
+            }
+        }
+
+        // 設定ファイルのパスごとのプロセス間のミューテックスの名前（B3）。名前に \ は使えないので、パスのハッシュにする
+        private static string GetSaveMutexName()
+        {
+            unchecked
+            {
+                var hash = 2166136261u; // FNV-1a（string.GetHashCode はプロセスによって変わりうるので使わない）
+                foreach (var c in XmlPath.ToUpperInvariant())
+                {
+                    hash = (hash ^ c) * 16777619u;
+                }
+                return "ZipPlaCE.ConfigSave." + hash.ToString("x8");
             }
         }
 
