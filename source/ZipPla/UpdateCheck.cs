@@ -15,36 +15,32 @@ namespace ZipPla
 {
     public static class UpdateCheck
     {
-        public static async Task FromVector(Control owner, string vectorUri, string howToDownloadUri, string fileNamePattern = null, Action<bool> postAction = null, bool byUser = false)
+        /// <summary>
+        /// ZipPla CE の更新を GitHub の Releases で確認する（X11。以前は元祖 ZipPla の vector.co.jp のページを http で見て CE の版と比べていた）。
+        /// 設定の読み込みと通信は背景で行い、UI スレッドを止めない（S8）
+        /// </summary>
+        public static async Task FromGitHub(Control owner, string repository, Action<bool> postAction = null, bool byUser = false)
         {
             var messageShown = false;
+            var releasesUri = $"https://github.com/{repository}/releases";
             try
             {
-                if (needToCheck(owner, force: byUser, dialog: out var dialog))
+                var config = await Task.Run(() => new UpdateCheckConfig()); // XmlSerializer の準備を UI スレッドでしない（S8）
+                if (needToCheck(owner, config, force: byUser, dialog: out var dialog))
                 {
                     if (dialog) byUser = true;
-                    var fileName = await GetFileNameFromVector(vectorUri, fileNamePattern);
-                    if (newFileName(fileName, out var developmentVersion))
+                    var latest = await GetLatestReleaseTagFromGitHub(repository);
+                    var developmentVersion = false;
+                    if (latest != null && isNewerThanThis(latest, out developmentVersion))
                     {
                         messageShown = true;
                         MethodInvoker action = () =>
-                        MessageForm.Show(owner, fileName + "\r\n\r\n" + Message.NewVersionIsAvailable, Message.Information,
-                            Message.HowToDownload, (sender, e) =>
-                            {
-                                try
-                                {
-                                    System.Diagnostics.Process.Start(howToDownloadUri);
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show(ex.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                }
-                            },
+                        MessageForm.Show(owner, "ZipPla CE " + latest + "\r\n\r\n" + Message.NewVersionIsAvailable, Message.Information,
                             Message.DownloadPage, (sender, e) =>
                             {
                                 try
                                 {
-                                    System.Diagnostics.Process.Start(vectorUri);
+                                    System.Diagnostics.Process.Start(releasesUri + "/latest");
                                 }
                                 catch (Exception ex)
                                 {
@@ -55,7 +51,6 @@ namespace ZipPla
                             {
                                 try
                                 {
-                                    //Program.OpenWithExplorer(Application.ExecutablePath); // 既に開いていても改めて開く
                                     System.Diagnostics.Process.Start(Application.StartupPath); // 既に開いていればそれを表示
                                 }
                                 catch (Exception ex)
@@ -75,16 +70,7 @@ namespace ZipPla
                                 }
                             },
                             MessageBoxIcon.Information);
-                        if (owner == null) action(); else owner.Invoke(action);
-
-                        /*
-                        var res = MessageBox.Show(
-                            fileName + "\r\n\r\n" + Message.NewVersionIsAvailableDoYouOpenDownloadPage, Message.Information, MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-                        if(res == DialogResult.Yes)
-                        {
-                            System.Diagnostics.Process.Start(vectorUri);
-                        }
-                        */
+                        if (owner == null || !owner.InvokeRequired) action(); else owner.Invoke(action);
                     }
                     else if (byUser)
                     {
@@ -98,38 +84,53 @@ namespace ZipPla
             }
             postAction?.Invoke(messageShown);
         }
-        
-        private static readonly Regex regexGetVersion = new Regex(@"(\d+)\.(\d+)\.(\d+)\.(\d+)", RegexOptions.Compiled);
-        private static bool newFileName(string fileName, out bool developmentVersion)
+
+        private static readonly Regex regexTagName = new Regex("\"tag_name\"\\s*:\\s*\"([^\"]*)\"", RegexOptions.Compiled);
+
+        /// <summary>最新のリリースのタグ名。リリースがまだなければ null</summary>
+        private static async Task<string> GetLatestReleaseTagFromGitHub(string repository)
         {
-            var m = regexGetVersion.Match(fileName);
-            if(m.Success)
+            var uri = $"https://api.github.com/repos/{repository}/releases/latest";
+            using (var wc = new System.Net.WebClient())
             {
-                developmentVersion = false;
-
-                var f1 = int.Parse(m.Groups[1].Value);
-                var f2 = int.Parse(m.Groups[2].Value);
-                var f3 = int.Parse(m.Groups[3].Value);
-                var f4 = int.Parse(m.Groups[4].Value);
-
-                var thisAssembly = Assembly.GetExecutingAssembly();
-                var version = thisAssembly.GetName().Version;
-                if (version.Major < f1) return true;
-                if (version.Major > f1) { developmentVersion = true; return false; }
-                if (version.Minor < f2) return true;
-                if (version.Minor > f2) { developmentVersion = true; return false; }
-                if (version.Build < f3) return true;
-                if (version.Build > f3) { developmentVersion = true; return false; }
-                if (version.Revision < f4) return true;
-                if (version.Revision > f4) { developmentVersion = true; return false; }
-                return false;
-            }
-            else
-            {
-                throw new FormatException("File name");
+                wc.Headers[System.Net.HttpRequestHeader.UserAgent] = "ZipPlaCE-UpdateCheck"; // GitHub の API は User-Agent が必須
+                wc.Headers[System.Net.HttpRequestHeader.Accept] = "application/vnd.github+json";
+                string json;
+                try
+                {
+                    json = await wc.DownloadStringTaskAsync(uri);
+                }
+                catch (System.Net.WebException ex) when ((ex.Response as System.Net.HttpWebResponse)?.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return null; // リリースがない
+                }
+                var m = regexTagName.Match(json);
+                if (!m.Success) throw new FormatException("GitHub release");
+                return m.Groups[1].Value;
             }
         }
-        
+
+        private static readonly Regex regexVersionParts = new Regex(@"(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?", RegexOptions.Compiled);
+
+        // タグ（v1.8.0 や 1.7.2.10 など。足りない部分は 0）がこの版より新しいか
+        private static bool isNewerThanThis(string tag, out bool developmentVersion)
+        {
+            developmentVersion = false;
+            var m = regexVersionParts.Match(tag);
+            if (!m.Success) throw new FormatException("Tag: " + tag);
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            var mine = new[] { version.Major, version.Minor, Math.Max(0, version.Build), Math.Max(0, version.Revision) };
+            for (var i = 0; i < 4; i++)
+            {
+                var g = m.Groups[i + 1];
+                var theirs = g.Success ? int.Parse(g.Value) : 0;
+                if (mine[i] < theirs) return true;
+                if (mine[i] > theirs) { developmentVersion = true; return false; }
+            }
+            return false;
+        }
+
+        private static readonly Regex regexGetVersion = new Regex(@"(\d+)\.(\d+)\.(\d+)\.(\d+)", RegexOptions.Compiled);
         public static int VersionStringComp(string a, string b)
         {
             if (a == null) return b == null ? 0 : -1;
@@ -151,7 +152,11 @@ namespace ZipPla
 
         private static bool needToCheck(Control owner, bool force, out bool dialog)
         {
-            var config = new UpdateCheckConfig();
+            return needToCheck(owner, new UpdateCheckConfig(), force, out dialog);
+        }
+
+        private static bool needToCheck(Control owner, UpdateCheckConfig config, bool force, out bool dialog)
+        {
 
             var lastCheckTime = config.LastCheckTime;
             var first = lastCheckTime == DateTime.MinValue;
@@ -230,35 +235,6 @@ namespace ZipPla
 
         }
         
-        //private static readonly Regex regexGetFileNameFromVector = new Regex(@"^\s*<tr><th>ファイル：<\/th><td>(.*?)&nbsp;\/&nbsp;.*?&nbsp;/&nbsp;.*?<\/td><\/tr>$", RegexOptions.Compiled | RegexOptions.Multiline);
-        private static async Task<string> GetFileNameFromVector(string vectorUri, string matchPattern = null)
-        {
-            /*
-            var source = await Task.Run(() =>
-            {
-                using (var wc = new System.Net.WebClient())
-                {
-                    return wc.DownloadString(vectorUri);
-                }
-            });
-            */
-            string source;
-            using (var wc = new System.Net.WebClient())
-            {
-                source = await wc.DownloadStringTaskAsync(vectorUri);
-            }
-
-            if (matchPattern == null) matchPattern = @"^\s*<tr><th>ファイル：<\/th><td>(.*?)&nbsp;\/&nbsp;.*?&nbsp;/&nbsp;.*?<\/td><\/tr>$";
-            //var regexGetFileNameFromVector = new Regex(matchPattern, RegexOptions.Compiled | RegexOptions.Multiline);
-            //var m = regexGetFileNameFromVector.Match(source);
-            var m = Regex.Match(source, matchPattern, RegexOptions.Multiline);
-            if(m.Success)
-            {
-                return m.Groups[1].Value;
-            }
-            throw new FormatException("Html");
-        }
-
         /*
         private static async Task<string> GetFileNameFromVectorByBrowser(string vectorUri)
         {

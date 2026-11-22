@@ -93,16 +93,17 @@ namespace ZipPla
             return (int)Math.Round(DisplayMagnification * v);
         }
 
+        // 更新を確認する GitHub のリポジトリ（X11）
+        private const string UpdateCheckRepository = "UkyoMatsushima0607/ZipPlaCE";
+
         public static void StartCheckUpdateAndNgen(Control owner, bool checkNgen)
         {
-            var dummy = UpdateCheck.FromVector(owner, "http://www.vector.co.jp/soft/dl/winnt/art/se513079.html", Message.HowToDownloadURL,
-                @"(ZipPla_\d+\.\d+\.\d+\.\d+\.zip)", checkNgen ? StartCheckUpdateAndNgen_PostAction : null as Action<bool>);
+            var dummy = UpdateCheck.FromGitHub(owner, UpdateCheckRepository, checkNgen ? StartCheckUpdateAndNgen_PostAction : null as Action<bool>);
         }
 
         public static async Task CheckUpdateAsync(Control owner)
         {
-            await UpdateCheck.FromVector(owner, "http://www.vector.co.jp/soft/dl/winnt/art/se513079.html", Message.HowToDownloadURL,
-                @"(ZipPla_\d+\.\d+\.\d+\.\d+\.zip)", byUser: true);
+            await UpdateCheck.FromGitHub(owner, UpdateCheckRepository, byUser: true);
         }
 
         private static async void StartCheckUpdateAndNgen_PostAction(bool messageShown)
