@@ -1319,7 +1319,7 @@ namespace ZipPla
         {
             if (OpenWaitingProcess_Processing || IsDisposed) return false; // 別の本を開いている途中なら断る（依頼した側が自分で開く）
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
-            OpenWaitingProcess(path, -1, false);
+            OpenWaitingProcess(path, -1, false, fromOtherProcess: true);
             return true;
         }
 
@@ -18261,7 +18261,7 @@ namespace ZipPla
         bool OpenWaitingProcess_Opening = false;
         bool OpenWaitingProcess_Processing = false;
         bool OpenWaitingProcess_StopPrepareLookAheadProcess = false;
-        async void OpenWaitingProcess(string path, int page, bool coverSettingMode)
+        async void OpenWaitingProcess(string path, int page, bool coverSettingMode, bool fromOtherProcess = false)
         {
             var now = Environment.TickCount;
             if (OpenWaitingProcess_LastOpenningPath == path && InDoubleClickTime(now, OpenWaitingProcess_LastOpenningTime)) return;
@@ -18323,6 +18323,14 @@ namespace ZipPla
                 var sortModeDetails = GetCurrentSortModeDetails(page);
                 lookAheadInfo.SortModeDetails = sortModeDetails;
                 setSendFilterToLookAheadInfo();
+                if (fromOtherProcess)
+                {
+                    // エクスプローラーなどから開いた本は、カタログで開いているフォルダとは関係がないので、
+                    // カタログの並べ替えと絞り込みを送らない（単独で起動したときと同じにする）（S7）
+                    lookAheadInfo.SortModeDetails = null;
+                    lookAheadInfo.FilterString = null;
+                    lookAheadInfo.FilterStringWithoutAlias = null;
+                }
                 lookAheadInfo.Message = coverSettingMode ? IpcLookAheadInfo.MessageEnum.CoverSetting : IpcLookAheadInfo.MessageEnum.Show;
                 if (waitingProcess != null) AllowSetForegroundWindow(waitingProcess.Id);
                 lookAheadInfo.Accept = false;

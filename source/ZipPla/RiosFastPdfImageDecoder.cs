@@ -306,7 +306,7 @@ namespace ZipPla
                         {
                             bpc = indexBpc;
                         }
-                        if (pngColorType == 2)
+                        if (pngColorType == 2 || pngColorType == 0)
                         {
                             PdfObject id2 = ca.GetDirectObject(3);
                             if (id2 is PdfString)
@@ -316,6 +316,21 @@ namespace ZipPla
                             else if (id2 is PRStream)
                             {
                                 palette = PdfReader.GetStreamBytes(((PRStream)id2));
+                            }
+                            if (pngColorType == 0)
+                            {
+                                // 基底がグレーのパレットは 1 色 1 バイトなので、PNG のパレット（RGB）に広げる。
+                                // 以前は stride が 8 bit のまま残り、インデックスの値をそのままグレーとして扱っていた
+                                if (palette != null)
+                                {
+                                    var rgb = new byte[palette.Length * 3];
+                                    for (int i = 0, j = 0; i < palette.Length; i++, j += 3)
+                                    {
+                                        rgb[j] = rgb[j + 1] = rgb[j + 2] = palette[i];
+                                    }
+                                    palette = rgb;
+                                }
+                                icc = null; // グレーの ICC プロファイルはパレットの PNG には付けられない
                             }
                             stride = (width * bpc + 7) / 8;
                             pngColorType = 3;

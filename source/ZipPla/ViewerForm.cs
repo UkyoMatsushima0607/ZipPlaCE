@@ -3191,6 +3191,8 @@ namespace ZipPla
             }
             //ResizedImageArray = new Bitmap[EntryNumberArray.Length];
             //ResizedSizeArray = new Size[EntryNumberArray.Length];
+            // 縮小画像を作り直すので、書庫の使用済みの印も外す（D9）
+            loader?.ClearConsumedEntries();
             ResizedImageArray = new VirtualBitmapEx[EntryArray.Length];
             ResizedSizeArray = new Size[EntryArray.Length];
             AccountedSizeArray = new ulong[EntryArray.Length];
@@ -6136,6 +6138,9 @@ namespace ZipPla
             usedMemory -= Math.Min(usedMemory, GetAccountedSize(idx, image));
             image.Dispose();
             ResizedImageArray[idx] = null;
+            // 書庫の使用済みの印を外し、戻ったときにまとめて展開されるようにする（D9。ロックは要らない）
+            var entries = EntryArray;
+            if (entries != null && idx < entries.Length) loader?.UnmarkEntryConsumed(entries[idx]);
             ResizedSizeArray[idx] = default(Size);
             if (AccountedSizeArray != null) AccountedSizeArray[idx] = 0;
             if (OriginalStateArray != null) OriginalStateArray[idx] = OriginalState_Kept;
@@ -9858,7 +9863,7 @@ namespace ZipPla
 
             if (loader != null)
             {
-                loader.Dispose();
+                lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
                 loader = null;
             }
             try
@@ -10012,7 +10017,7 @@ namespace ZipPla
                             {
                                 if (loader != null)
                                 {
-                                    loader.Dispose();
+                                    lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
                                     loader = null;
                                 }
                                 Program.TryUpdateLastAccessTime(archiveFilePath[i]);
@@ -10176,7 +10181,7 @@ namespace ZipPla
 
             if (loader != null)
             {
-                loader.Dispose();
+                lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
                 loader = null;
             }
             try
@@ -11903,7 +11908,7 @@ namespace ZipPla
                         var prevArchiveFilePath = getCurrentRenameTarget();
                         if (loader != null)
                         {
-                            loader.Dispose();
+                            lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
                             loader = null;
                         }
 
@@ -12504,7 +12509,7 @@ namespace ZipPla
 
             if (loader != null)
             {
-                loader.Dispose();
+                lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
                 loader = null;
             }
             try
@@ -12616,7 +12621,7 @@ namespace ZipPla
 
             if (loader != null)
             {
-                loader.Dispose();
+                lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
                 loader = null;
             }
             try

@@ -324,16 +324,62 @@ namespace ZipPla
             }
         }
 
+        /// <summary>
+        /// 呼び出し側（ビューア）がこのエントリの縮小画像を捨てたので、使用済みの印を外す（D9）。
+        /// 外さないと、戻ったときにこのページがまとめて展開されず、1 ページごとに solid のブロックを最初から展開し直す。
+        /// 書庫のロックは要らない
+        /// </summary>
+        public void UnmarkEntryConsumed(PackedImageEntry entry)
+        {
+            var cIndex = entry.ChildIndex;
+            if (cIndex < 0)
+            {
+                consumedEntryQueue.Enqueue(~entry.Index); // 負の値は印を外す
+            }
+            else
+            {
+                var c = children;
+                if (c == null || cIndex >= c.Length) return;
+                var t = c[cIndex];
+                t.Item1.UnmarkEntryConsumed(t.Item2[entry.Index]);
+            }
+        }
+
+        /// <summary>
+        /// 使用済みの印をすべて外す（D9。同じ本の読み直しで縮小画像を作り直すとき）。書庫のロックは要らない
+        /// </summary>
+        public void ClearConsumedEntries()
+        {
+            consumedEntryQueue.Enqueue(ClearConsumedMarker);
+            viewPositionIndex = -1;
+            var c = children;
+            if (c != null) foreach (var t in c) t.Item1.ClearConsumedEntries();
+        }
+        private const int ClearConsumedMarker = int.MinValue;
+
         // 使用済みの印を反映し、要求されたページから遠い使用済みのエントリを solid のキャッシュから捨てる（D9）
         private void applyConsumedEntries(int anchorIndex)
         {
-            var view = viewPositionIndex;
-            if (view >= 0) anchorIndex = view;
             while (consumedEntryQueue.TryDequeue(out var index))
             {
-                if (consumedEntries == null) consumedEntries = new HashSet<int>();
-                consumedEntries.Add(index);
+                if (index == ClearConsumedMarker)
+                {
+                    consumedEntries?.Clear();
+                }
+                else if (index < 0)
+                {
+                    consumedEntries?.Remove(~index);
+                }
+                else
+                {
+                    if (consumedEntries == null) consumedEntries = new HashSet<int>();
+                    consumedEntries.Add(index);
+                }
             }
+            // 要求されたページは、もう一度要るので使用済みではない
+            consumedEntries?.Remove(anchorIndex);
+            var view = viewPositionIndex;
+            if (view >= 0) anchorIndex = view;
             if (consumedEntries == null || solidImageCache == null || solidImageCache.Count == 0) return;
             List<int> remove = null;
             foreach (var pair in solidImageCache)
@@ -2383,7 +2429,9 @@ namespace ZipPla
             {
                 var size = sevenZipArchiveEntries[targets[k]].Size;
                 return streams[k] = size >= 0 && size <= int.MaxValue ? new MemoryStream((int)size) : new MemoryStream();
-            });
+            },
+            // CRC エラー・データの破損などのエントリは、壊れたバイト列をキャッシュに入れない（要求されたページなら下で例外になる）
+            k => streams[k] = null);
             if (inTask)
             {
                 using (var task = Task.Run(extract))
@@ -3347,8 +3395,12 @@ namespace ZipPla
 
     public class ReleasableStream : Stream
     {
+        // MemoryStream の上限の 2GB より少し小さく（PackedImageLoader.OnMemoryLimit と同じ）（V18）
+        private const long ReleaseLimit = int.MaxValue - 64 * 1024 * 1024;
+        // 写すときに 1 回でロックを持つ大きさ
+        private const int ReleaseChunkSize = 4 * 1024 * 1024;
         readonly object thisLock = new object();
-        bool isReleased = false;
+        volatile bool isReleased = false;
         public bool IsReleased => isReleased;
         Stream stream;
         public ReleasableStream(Stream originalStream)
@@ -3360,31 +3412,63 @@ namespace ZipPla
         {
             if (!isReleased)
             {
+                // 長さぶんの配列を先に確保し、少しずつロックを取って写す。以前は容量なしの MemoryStream に
+                // ロックを持ったまま全体を写していたので、倍々の拡張で約 2 倍を確保し、その間ほかのスレッドの読み込みが止まり、
+                // 2GB を超える書庫では例外になっていた（OnMemory 側の B8・V18 と同じ扱いにする）
+                byte[] buffer;
+                long length;
+                try
+                {
+                    lock (thisLock)
+                    {
+                        if (isReleased || stream == null) return;
+                        length = stream.Length;
+                    }
+                    // 大きすぎる書庫は MemoryStream にできないので、ファイルから読み続ける（V18）
+                    if (length > ReleaseLimit) return;
+                    buffer = new byte[length];
+                    long done = 0;
+                    while (done < length)
+                    {
+                        lock (thisLock)
+                        {
+                            if (isReleased || stream == null) return;
+                            var position = stream.Position;
+                            try
+                            {
+                                stream.Seek(done, SeekOrigin.Begin);
+                                var count = (int)Math.Min(ReleaseChunkSize, length - done);
+                                var read = stream.Read(buffer, (int)done, count);
+                                if (read <= 0) return; // 途中でファイルが縮んだ。写すのをやめてファイルから読み続ける
+                                done += read;
+                            }
+                            finally
+                            {
+                                stream.Seek(position, SeekOrigin.Begin);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Task.Run の中で呼ばれるので、失敗したらファイルから読み続ける
+                    return;
+                }
+
                 var temp = null as Stream;
                 lock (thisLock)
                 {
-                    if (!isReleased)
+                    if (!isReleased && stream != null)
                     {
-                        var memoryStream = new MemoryStream();
+                        var memoryStream = new MemoryStream(buffer, 0, (int)length, writable: false, publiclyVisible: true);
                         try
                         {
-                            var position = stream.Position;
-                            if (position > 0) stream.Seek(0, SeekOrigin.Begin);
-                            try
-                            {
-                                stream.CopyTo(memoryStream);
-                                memoryStream.Seek(position, SeekOrigin.Begin);
-                            }
-                            catch
-                            {
-                                stream.Seek(position, SeekOrigin.Begin);
-                                throw;
-                            }
+                            memoryStream.Seek(stream.Position, SeekOrigin.Begin);
                         }
                         catch
                         {
                             memoryStream.Dispose();
-                            throw;
+                            return;
                         }
                         temp = stream;
                         stream = memoryStream;

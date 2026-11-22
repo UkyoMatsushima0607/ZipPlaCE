@@ -1889,7 +1889,7 @@ namespace iTextSharp.text.pdf {
                 bpc = ((PdfNumber)obj).IntValue;
             MemoryStream dataStream = new MemoryStream(inp);
             MemoryStream fout = new MemoryStream(inp.Length);
-            int bytesPerPixel = colors * bpc / 8;
+            int bytesPerPixel = Math.Max(1, colors * bpc / 8); // PNG の仕様では 8 bit 未満でも 1 バイト（以前は 0 になり、行のフィルタで壊れていた）
             int bytesPerRow = (colors*width*bpc + 7)/8;
             byte[] curr = new byte[bytesPerRow];
             byte[] prior = new byte[bytesPerRow];
