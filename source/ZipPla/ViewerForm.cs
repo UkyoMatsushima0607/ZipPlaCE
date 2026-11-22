@@ -981,10 +981,42 @@ namespace ZipPla
 
             StartWatchIpcWakeEvent();
             tmWatchIpc.Start();
+            ScheduleWaitingMemoryTrim();
 
             //tmMemoryReducer.Enabled = true; // Start() と同じ
         }
         private CommandLineOptionInfo CommandLineOptionInfoForLookAhead = null;
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool SetProcessWorkingSetSize(IntPtr hProcess, IntPtr dwMinimumWorkingSetSize, IntPtr dwMaximumWorkingSetSize);
+
+        /// <summary>
+        /// 待機ビューア（-LookAheadMode）は何も表示していないのに、起動の一時的なメモリ（WS 約 100MB）を抱えたまま待っていた（S4）。
+        /// 起動して 1.5 秒たっても待機中なら、GC（LOH の圧縮つき）をしてワーキングセットを OS に返す
+        /// </summary>
+        private void ScheduleWaitingMemoryTrim()
+        {
+            var timer = new System.Windows.Forms.Timer { Interval = 1500 };
+            timer.Tick += (sender, e) =>
+            {
+                timer.Stop();
+                timer.Dispose();
+                if (IsDisposed || tmWatchIpc_WakeRegistration == null) return; // もう表示を始めている
+                try
+                {
+                    System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                    {
+                        SetProcessWorkingSetSize(process.Handle, (IntPtr)(-1), (IntPtr)(-1));
+                    }
+                }
+                catch { }
+            };
+            timer.Start();
+        }
 
         //private ContextMenuStripForMenu startContextMenuStripForMenu;
 
