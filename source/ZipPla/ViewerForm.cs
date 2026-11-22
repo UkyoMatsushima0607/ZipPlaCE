@@ -2962,6 +2962,7 @@ namespace ZipPla
             {
                 var image = images[i];
                 if (image == null || image.FrameCount != 1 || sources[i].IsEmpty) continue;
+                if (image.SharesOtherMemory) continue; // 原寸とメモリを共有している等倍のページは、読み直しで原寸を Dispose すると壊れるので残さない（X1）
                 if (states[i] == OriginalState_Reloading) continue; // 原寸の読み直し中のページは作り直す
                 if (image.Size != sizes[i] || GetResizedSize(sources[i]) != sizes[i]) continue;
                 if (keep == null)
@@ -3410,9 +3411,9 @@ namespace ZipPla
             if (l == null) throw new ObjectDisposedException(nameof(loader));
             if (CanDecodeInParallel(entry.Path))
             {
-                if (l.Type == PackedImageLoader.PackType.Directory)
+                if (l.ReadsEntryFileDirectly(entry))
                 {
-                    return l.OpenImageStream(entry); // ファイルを直接読むので書庫のロックは要らない
+                    return l.OpenImageStream(entry); // ファイルを直接読むので書庫のロックは要らない（フォルダの中の書庫は子のローダーを通るのでロックが要る、X2）
                 }
                 MemoryStream stream;
                 string name;
@@ -3842,7 +3843,7 @@ namespace ZipPla
 
                             // 原寸と共有している（等倍の Clone）なら、原寸のぶんを足すと同じメモリを二重に数えてしまい、
                             // ReduceUsingMemory が早く捨てすぎる（V14）。共有している原寸は TrimOriginals でも捨てない
-                            result = new VirtualBitmapEx(entity, reducedDecoded || sharesOriginal ? 0 : bmp.GetDataSizeInBytes());
+                            result = new VirtualBitmapEx(entity, reducedDecoded || sharesOriginal ? 0 : bmp.GetDataSizeInBytes(), sharesOriginal);
                         }
                         else
                         {

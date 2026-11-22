@@ -1882,6 +1882,8 @@ namespace ZipPla
         public readonly int Width, Height;
         public readonly Size Size;
         public readonly long DataSizeInBytes;
+        /// <summary>source が原寸など別の画像と画素のメモリを共有しているか（X1）。共有していると、相手を Dispose したあとは使えない</summary>
+        public readonly bool SharesOtherMemory;
         private readonly bool downScaleNearestNeighbor, upScaleNearestNeighbor;
         private VirtualBitmapEx(BitmapEx source, bool isEntity, long otherDataSize, Size size, bool downScaleNearestNeighbor, bool upScaleNearestNeighbor)
         {
@@ -1896,6 +1898,10 @@ namespace ZipPla
             Height = size.Height;
         }
         public VirtualBitmapEx(BitmapEx source, long otherDataSize) : this(source, true, otherDataSize, source.Size, true, true) { }
+        public VirtualBitmapEx(BitmapEx source, long otherDataSize, bool sharesOtherMemory) : this(source, true, otherDataSize, source.Size, true, true)
+        {
+            SharesOtherMemory = sharesOtherMemory;
+        }
         public VirtualBitmapEx(BitmapEx source, Size virtualSize, bool downScaleNearestNeighbor, bool upScaleNearestNeighbor) : this (source, false, 0, virtualSize, downScaleNearestNeighbor, upScaleNearestNeighbor) { }
 
         public static VirtualBitmapEx GetErrorImage(Size size)

@@ -1797,6 +1797,18 @@ namespace ZipPla
 
         }
 
+        /// <summary>
+        /// entry がフォルダの中のファイルで、書庫を通らずに直接読めるか（X2）。
+        /// フォルダの中の書庫のエントリは子のローダー（スレッド安全ではない）を通るので false
+        /// </summary>
+        public bool ReadsEntryFileDirectly(PackedImageEntry entry)
+        {
+            var cIndex = entry.ChildIndex;
+            if (cIndex < 0) return Type == PackType.Directory;
+            var t = children[cIndex];
+            return t.Item1.ReadsEntryFileDirectly(t.Item2[entry.Index]);
+        }
+
         public Bitmap OpenImageStream(PackedImageEntry entry)
         {
             var cIndex = entry.ChildIndex;
