@@ -7826,6 +7826,7 @@ namespace ZipPla
             */
         }
 
+        private Font magnifierMessageFont, magnifierMessageFontBase;
         private void drawMessageOnRectangle(Graphics g)//, Image baseImage)
         {
             string mess;
@@ -7835,8 +7836,14 @@ namespace ZipPla
             {
                 var baseFont = pbView.Font ?? DefaultFont;
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-                var baseSize = baseFont.Size;
-                using (var font = new Font(baseFont.FontFamily, baseSize * 2))
+                // ルーペの開閉のアニメーション中は毎回呼ばれるので、フォントを使い回す（V32）
+                if (magnifierMessageFont == null || magnifierMessageFontBase != baseFont)
+                {
+                    magnifierMessageFont?.Dispose();
+                    magnifierMessageFontBase = baseFont;
+                    magnifierMessageFont = new Font(baseFont.FontFamily, baseFont.Size * 2);
+                }
+                var font = magnifierMessageFont;
                 {
                     var p = pbView_Paint_Rectangle.Location;
                     if (opening)
@@ -8278,9 +8285,17 @@ namespace ZipPla
         }
         private void ReserveNextInvadiateForAnimation(int start, int stop, out DateTime now) // start < stop であること
         {
-            var targets = (from i in Enumerable.Range(start, stop - start) let t = ResizedImageArray[i] where t.FrameCount > 1 select t.GetSourceForLock()).ToArray();
-            ReserveNextInvadiateForAnimation(targets, out now);
+            // 描くたびに呼ばれるので、アニメーションがない（ほとんどの）場合は配列を作らない（V32）
+            var resized = ResizedImageArray;
+            List<BitmapEx> list = null;
+            for (var i = start; i < stop; i++)
+            {
+                var t = resized[i];
+                if (t.FrameCount > 1) (list ?? (list = new List<BitmapEx>())).Add(t.GetSourceForLock());
+            }
+            ReserveNextInvadiateForAnimation(list == null ? NoAnimationTargets : list.ToArray(), out now);
         }
+        private static readonly BitmapEx[] NoAnimationTargets = new BitmapEx[0];
         private void ReserveNextInvadiateForAnimation(BitmapEx[] targets, out DateTime now)
         {
             if (targets.Length <= 0)
@@ -8398,6 +8413,8 @@ namespace ZipPla
             });
         }
 
+        [ThreadStatic] private static byte[] fillRectangleBuff;
+        [ThreadStatic] private static int fillRectangleBuffColor;
         private void FillRectangle(BitmapData dst, Color color, Rectangle rect, ParallelMode parallelMode)
         {
             FillRectangle(dst, rect.X, rect.Y, color, rect.Width, rect.Height, parallelMode);
@@ -8416,21 +8433,25 @@ namespace ZipPla
             var dstStride = dst.Stride;
             var dstLeft = dst.Scan0 + yDst * dstStride + xDst * bytePerPixel;
             var buffSize = width * bytePerPixel;
-            var buff = new byte[buffSize];
-            if (bytePerPixel == 3)
+            if (bytePerPixel != 3) throw new NotImplementedException();
+            // 描くたびに 1 行分の配列を作らない。色が同じで長さが足りれば使い回す（V32）
+            var buff = fillRectangleBuff;
+            if (buff == null || buff.Length < buffSize || fillRectangleBuffColor != color.ToArgb())
             {
+                buff = new byte[Math.Max(buffSize, buff?.Length ?? 0)];
                 var b = color.B;
                 var g = color.G;
                 var r = color.R;
                 var i = 0;
-                while (i < buffSize)
+                while (i + 2 < buff.Length)
                 {
                     buff[i++] = b;
                     buff[i++] = g;
                     buff[i++] = r;
                 }
+                fillRectangleBuff = buff;
+                fillRectangleBuffColor = color.ToArgb();
             }
-            else throw new NotImplementedException();
 
             fixed (byte* a = buff)
             {
