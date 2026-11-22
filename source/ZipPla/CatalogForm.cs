@@ -8938,6 +8938,7 @@ namespace ZipPla
                     while (cbLocation.Items.Contains(dirPath)) cbLocation.Items.Remove(dirPath);
 
                     cbLocation.Items.Insert(0, dirPath);
+                    TrimHistoryItems(cbLocation.Items, LocationHistoryLimit); // 古いものから捨てる（S1）
                     zabLocation.Text = dirPath;
 
                     //bmwMakePreview.RunWorkerAsyncWithInterrupt(ZipPathArrayDup, false);
@@ -10540,6 +10541,7 @@ namespace ZipPla
                 var fixedReadyRoots = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
                 foreach (var h in locationHistory)
                 {
+                    if (keptHistory.Count >= LocationHistoryLimit) break; // 上限を超えた古いものは読まない（S1）
                     try
                     {
                         if (string.IsNullOrEmpty(h)) continue;
@@ -10579,10 +10581,8 @@ namespace ZipPla
 
             cbFilter.Items.Clear();
             cbFilter.Items.Add("");
-            foreach (var h in filterHistory)
-            {
-                cbFilter.Items.Add(h);
-            }
+            // ユーザーが作った固定のリストは削らない。履歴は上限を超えた古いものを読まない（S1）
+            cbFilter.Items.AddRange((invariantFilter ? filterHistory : filterHistory.Take(FilterHistoryLimit)).Cast<object>().ToArray());
 
             aliasesToFilteringStrings = new Dictionary<string, string>();
             foreach (var kav in alias) aliasesToFilteringStrings.Add(kav.Key, kav.Value);
@@ -17015,7 +17015,19 @@ namespace ZipPla
                     cbFilter.Text = text;
                 }
                 cbFilter.Items.Insert(1, text);
+                TrimHistoryItems(cbFilter.Items, FilterHistoryLimit + 1); // 先頭の空欄のぶん +1。古いものから捨てる（S1）
             }
+        }
+
+        // 場所・絞り込みの履歴の上限（S1）。以前は無制限で、使うほど config.xml が大きくなり起動も遅くなっていた
+        private const int LocationHistoryLimit = 200;
+        private const int FilterHistoryLimit = 200;
+
+        private static void TrimHistoryItems(ComboBox.ObjectCollection items, int limit)
+        {
+            var count = items.Count;
+            if (count <= limit) return;
+            for (var i = count - 1; i >= limit; i--) items.RemoveAt(i);
         }
 
         private void btnLocationCommands_Click(object sender, EventArgs e)
