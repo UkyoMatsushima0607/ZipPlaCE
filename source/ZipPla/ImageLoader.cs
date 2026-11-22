@@ -642,6 +642,42 @@ namespace ZipPla
             return length >= 4 && path.Substring(length - 4).ToLower() == ".jpg" || length >= 5 && path.Substring(length - 5).ToLower() == ".jpeg";
         }
 
+        // これ以下の大きさのファイルは、デコードの前に 1 回で読み込む（D8）
+        private const long ReadWholeFileLimit = 64L << 20;
+
+        /// <summary>
+        /// デコード用にファイルを開く（D8）。Exif・ヘッダ・本体を先頭に戻りながら 4KB のバッファで何度も読まないように、
+        /// 上限以下ならファイル全体を 1 回で読んだメモリのストリームを返す（NAS・HDD で効く）
+        /// </summary>
+        private static Stream OpenFileForDecode(string filePath)
+        {
+            var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, FileOptions.SequentialScan);
+            try
+            {
+                var length = fs.Length;
+                if (length <= 0 || length > ReadWholeFileLimit)
+                {
+                    fs.Dispose();
+                    return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920);
+                }
+                var bytes = new byte[length];
+                var read = 0;
+                while (read < bytes.Length)
+                {
+                    var r = fs.Read(bytes, read, bytes.Length - read);
+                    if (r <= 0) break;
+                    read += r;
+                }
+                fs.Dispose();
+                return new MemoryStream(bytes, 0, read, writable: false, publiclyVisible: true);
+            }
+            catch
+            {
+                fs.Dispose();
+                throw;
+            }
+        }
+
         private static Bitmap GetFullBitmap(string filePath, bool setImageInfo, out ImageInfo imageInfo, out bool needToRefresh, bool animation)
         {
             if (defaultSupportPathRegex.IsMatch(filePath))
@@ -659,7 +695,7 @@ namespace ZipPla
                 }
                 else
                 {
-                    using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                    using (var s = OpenFileForDecode(filePath))
                     {
                         if (animation && ext == ".gif")
                         {
