@@ -3345,6 +3345,7 @@ namespace ZipPla
         [ThreadStatic] private static long perfLoadStart, perfDecodeEnd, perfJobStart; // 読み込みは並列（V1）なのでスレッドごと
         // ジョブの開始・終了と完了イベントの時刻（ms、Stopwatch のタイムスタンプから）。ジョブのあいだの空き時間を調べる（V1）
         private static double PerfMs(long timestamp) => timestamp * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        private static readonly object perfLoadLogLock = new object();
 #endif
         private int bmwLoadEachPage_DoWork_DEBUG_WorkNumber = -1;
         private int bmwLoadEachPage_DoWork_DEBUG_Phase;
@@ -3372,14 +3373,19 @@ namespace ZipPla
                 // 原寸でデコードするページ（表示の近く。3000x4300 のカラーで 1 枚 38MB）は同時に読む数を絞る。
                 // 4 本とも原寸を読むと最大メモリが 1.6〜1.8 倍になった。縮小デコードのページ（小さい）は制限しない
                 var full = !CanDecodeReduced(e.WorkNumber);
-                if (full) FullDecodeSemaphore.Wait();
+                // 表示中のページは専用の枠（見開きの枚数ぶん）で読み、表示外のページ（前後の見開き）とは枠を取り合わない。
+                // 開いた直後や遠くへ飛んだ直後に、見開きの 2 ページが直列になったり、表示外のページの後ろで待ったりしないようにする（V23）
+                var usesDisplayedSlot = full && IsDisplayedPage(e.WorkNumber);
+                if (usesDisplayedSlot) DisplayedPageFullDecodeSemaphore.Wait();
+                else if (full) FullDecodeSemaphore.Wait();
                 try
                 {
                     bmwLoadEachPage_DoWorkCore(sender, e);
                 }
                 finally
                 {
-                    if (full) FullDecodeSemaphore.Release();
+                    if (usesDisplayedSlot) DisplayedPageFullDecodeSemaphore.Release();
+                    else if (full) FullDecodeSemaphore.Release();
                 }
             }
         }
@@ -3395,6 +3401,16 @@ namespace ZipPla
             }
         }
         private readonly System.Threading.SemaphoreSlim FullDecodeSemaphore = new System.Threading.SemaphoreSlim(FullDecodeConcurrency);
+        // 表示中のページの原寸デコード用の枠（V23）。見開きの 2 ページを並列に読む
+        private readonly System.Threading.SemaphoreSlim DisplayedPageFullDecodeSemaphore = new System.Threading.SemaphoreSlim(2);
+
+        // 今表示しているページか（V23）。ワーカースレッドから呼ばれる
+        private bool IsDisplayedPage(int idx)
+        {
+            var cPage = currentPage;
+            if (cPage < 0) return false;
+            return cPage <= idx && idx < cPage + Math.Max(1, MaxPageCountInWindow);
+        }
 
         // GDI+ などで並列にデコードしてよい形式か。Susie プラグインや PDF などは従来どおり書庫のロックの中で読む
         private static bool CanDecodeInParallel(string path)
@@ -3879,6 +3895,8 @@ namespace ZipPla
                         var end = System.Diagnostics.Stopwatch.GetTimestamp();
                         try
                         {
+                            // 並列に読むと同時に書いて片方が失敗し、行が抜けるのでロックする（V23 の計測で判明）
+                            lock (perfLoadLogLock)
                             File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
                                 $"page={e.WorkNumber}\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms\tjobStart={PerfMs(perfJobStart):F2}\tjobEnd={PerfMs(end):F2}" + Environment.NewLine);
                         }
