@@ -36,6 +36,63 @@ namespace ZipPla
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr WebPDecodeBGRAInto(IntPtr data, UIntPtr dataSize, IntPtr outputBuffer, UIntPtr outputBufferSize, int outputStride);
 
+        // 縮小デコード用（D1）。libwebp 1.6.0 の decode.h の WebPDecoderConfig。64bit のレイアウトだけを定義する
+        // （WebPDecBuffer の共用体は WebPYUVABuffer の 80 バイト。入力 40・出力 120・オプション 76 で、全体で 240 バイト）
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WebPDecBuffer
+        {
+            public int Colorspace;
+            public int Width, Height;
+            public int IsExternalMemory;
+            public IntPtr Rgba;          // u.RGBA.rgba
+            public int Stride;           // u.RGBA.stride
+            private int padStride;
+            public UIntPtr Size;         // u.RGBA.size
+            private ulong union3, union4, union5, union6, union7, union8, union9; // 共用体の残り（56 バイト）
+            private uint pad0, pad1, pad2, pad3;
+            private IntPtr privateMemory;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WebPDecoderOptions
+        {
+            public int BypassFiltering;
+            public int NoFancyUpsampling;
+            public int UseCropping;
+            public int CropLeft, CropTop;
+            public int CropWidth, CropHeight;
+            public int UseScaling;
+            public int ScaledWidth, ScaledHeight;
+            public int UseThreads;
+            public int DitheringStrength;
+            public int Flip;
+            public int AlphaDitheringStrength;
+            private uint pad0, pad1, pad2, pad3, pad4;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WebPDecoderConfig
+        {
+            public WebPBitstreamFeatures Input;
+            public WebPDecBuffer Output;
+            public WebPDecoderOptions Options;
+        }
+
+        private const int MODE_BGR = 2;
+        private const int MODE_BGRA_DECODE = 3;
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int WebPInitDecoderConfigInternal(ref WebPDecoderConfig config, int version);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int WebPDecode(IntPtr data, UIntPtr dataSize, ref WebPDecoderConfig config);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void WebPFreeDecBuffer(ref WebPDecBuffer buffer);
+
+        // 構造体の大きさが decode.h と合っているか（合わなければ縮小デコードは使わない）
+        private static readonly bool scaledDecodeSupported = IntPtr.Size == 8 && Marshal.SizeOf(typeof(WebPDecoderConfig)) == 240;
+
         // 0: 未確認、1: 使える、-1: 使えない
         private static int availability;
 
@@ -91,6 +148,13 @@ namespace ZipPla
                 if (features.HasAnimation != 0 || features.Width <= 0 || features.Height <= 0) return null;
 
                 var alpha = features.HasAlpha != 0;
+                // ビューアの先読みやサムネイルで縮小デコードを求められていれば、libwebp の縮小（use_scaling）で小さく読む（D1）
+                var request = ReducedJpegDecodeRequest.Current;
+                if (request != null && scaledDecodeSupported)
+                {
+                    var scaled = tryDecodeScaled(ptr, size, features, alpha, request);
+                    if (scaled != null) return scaled;
+                }
                 var result = new System.Drawing.Bitmap(features.Width, features.Height, alpha ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
                 var ok = false;
                 try
@@ -119,6 +183,54 @@ namespace ZipPla
             {
                 handle.Free();
             }
+        }
+
+        /// <summary>
+        /// 求められた最小サイズが原寸の半分以下なら、その大きさ以上で縮小してデコードする（D1）。縮小しない・失敗したら null
+        /// </summary>
+        private static Bitmap tryDecodeScaled(IntPtr ptr, UIntPtr size, WebPBitstreamFeatures features, bool alpha, ReducedJpegDecodeRequest request)
+        {
+            var original = new System.Drawing.Size(features.Width, features.Height);
+            var min = request.MinimumSizeProvider(original);
+            if (min.Width <= 0 || min.Height <= 0) return null;
+            var scale = Math.Max((double)min.Width / original.Width, (double)min.Height / original.Height);
+            if (scale > 0.5) return null; // 縮小の効果が小さい
+            var width = Math.Max(1, (int)Math.Ceiling(original.Width * scale));
+            var height = Math.Max(1, (int)Math.Ceiling(original.Height * scale));
+
+            var config = new WebPDecoderConfig();
+            if (WebPInitDecoderConfigInternal(ref config, WEBP_DECODER_ABI_VERSION) == 0) return null;
+            var result = new System.Drawing.Bitmap(width, height, alpha ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
+            var ok = false;
+            try
+            {
+                var bd = result.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, result.PixelFormat);
+                try
+                {
+                    config.Options.UseScaling = 1;
+                    config.Options.ScaledWidth = width;
+                    config.Options.ScaledHeight = height;
+                    config.Output.Colorspace = alpha ? MODE_BGRA_DECODE : MODE_BGR;
+                    config.Output.IsExternalMemory = 1;
+                    config.Output.Rgba = bd.Scan0;
+                    config.Output.Stride = bd.Stride;
+                    config.Output.Size = (UIntPtr)(ulong)((long)bd.Stride * height);
+                    ok = WebPDecode(ptr, size, ref config) == 0;
+                    WebPFreeDecBuffer(ref config.Output); // 外部のメモリなので解放するものはないが、作法として呼ぶ
+                }
+                finally
+                {
+                    result.UnlockBits(bd);
+                }
+            }
+            finally
+            {
+                if (!ok) result.Dispose();
+            }
+            if (!ok) return null;
+            request.OriginalSize = original;
+            request.Reduced = true;
+            return new Bitmap(result);
         }
 
         #region アニメーション WebP（libwebpdemux.dll。libwebp.dll・libsharpyuv.dll に依存する）
