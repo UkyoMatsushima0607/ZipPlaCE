@@ -5493,6 +5493,38 @@ namespace ZipPla
         /// ThumbViewerItem が作ったサムネイルの読み込み結果を LoadResultArray に戻す（UI スレッドで呼ぶ）（A11）。
         /// これでサムネイルのない項目（読めないファイルなど）にアイコンが描かれ、読めた項目には重ならない。
         /// </summary>
+        /// <summary>
+        /// サムネイルのメモリキャッシュ（A3）で、一覧を作り直しても使い回してよいかを確かめるための印（K26）。
+        /// ファイルの更新日時。書庫の中・動画の位置・フォルダ（中身で表紙が変わる）・不明なときは 0（作り直したら使わない）
+        /// </summary>
+        internal long GetThumbnailStamp(int dataIndex, string path)
+        {
+            if (string.IsNullOrEmpty(path) || path.IndexOf(Path.AltDirectorySeparatorChar) >= 0) return 0;
+            if (path[path.Length - 1] == Path.DirectorySeparatorChar) return 0;
+            lock (ZipPathArrayLocker)
+            {
+                var zpa = ZipPathArray;
+                var mta = ModifiedTimeArray;
+                var zna = ZipNameArray;
+                if (zpa == null || mta == null || zna == null || dataIndex < 0 || dataIndex >= zpa.Length || dataIndex >= mta.Length || dataIndex >= zna.Length) return 0;
+                if (zpa[dataIndex] != path) return 0;
+                var name = zna[dataIndex];
+                if (string.IsNullOrEmpty(name) || name[name.Length - 1] == Path.DirectorySeparatorChar) return 0;
+                var time = mta[dataIndex];
+                return time == DateTime.MinValue ? 0 : time.Ticks;
+            }
+        }
+
+        /// <summary>
+        /// サムネイルの見た目を決める設定（K26）。これが同じなら、一覧を作り直してもメモリキャッシュのサムネイルを使い回す。
+        /// サムネイルの大きさはキャッシュから取り出すときに比べる
+        /// </summary>
+        private string getThumbnailAppearanceKey()
+        {
+            return string.Join("|", currentClipMode, archiveLoadLevel, imageLoadLevel, videoLoadLevel, otherLoadLevel, SubfolderMode,
+                thumbnailCache ?? "", packedImageLoaderSearchMode, packedImageLoaderLeftHierarchies, SystemColors.Window.ToArgb());
+        }
+
         internal void ReportThumbnailLoadResult(int dataIndex, string path, LoadResult result)
         {
             lock (ZipPathArrayLocker)
@@ -9053,6 +9085,7 @@ namespace ZipPla
                 //sw.Stop(); ss += $"sortStart:\t{sw.Elapsed}\n"; sw.Restart();
                 var sortedArray = GetSortArray(preSortArray: null, careTvCatalog: false);
                 //sw.Stop(); ss += $"srtEnd:\t{sw.Elapsed}\n"; sw.Restart();
+                tvCatalog.ThumbnailAppearanceKey = getThumbnailAppearanceKey(); // 同じならメモリキャッシュを残す（K26）
                 tvCatalog.Clear(len, selectedIndex, tScrollbar, sortedArray, ChangeThumbnailSize_Width, ChangeThumbnailSize_Height, Program.DpiScaling(ChangeThumbnailSize_Padding * currentMinimumFrameThickness));
                 sortedArray = null;
 
@@ -30909,10 +30942,12 @@ namespace ZipPla
             if (disposed || filePath == null || OwnerCatalog == null || loading || queueNode != null || loadFailed || Image != null)
                 return Task.CompletedTask;
             // 少し前まで表示していたサムネイルがメモリに残っていれば、作り直さずに使う（A3）
-            var cached = owner?.ThumbnailMemoryCache.Take(filePath, owner.ThumbnailSize);
+            var stamp = OwnerCatalog.GetThumbnailStamp(index, filePath);
+            var cached = owner?.ThumbnailMemoryCache.Take(filePath, owner.ThumbnailSize, stamp);
             if (cached != null)
             {
                 Image = cached;
+                imageStamp = stamp;
                 return Task.CompletedTask;
             }
             queueNode = loadQueue.AddLast(this);
@@ -30979,6 +31014,7 @@ namespace ZipPla
 #endif
             Bitmap result = null;
             var loadResult = CatalogForm.LoadResult.LoadError;
+            var stamp = catalog.GetThumbnailStamp(index, path); // 読み込みを始めた時点のファイルの印（K26）
             try
             {
                 MovieInfo info = null;
@@ -31021,10 +31057,13 @@ namespace ZipPla
                 return;
             }
             Image = result;
+            imageStamp = stamp;
 #if PERFLOG
             if (owner != null) PerfTrace.CheckRangeReady(owner.IsLoadRangeReady(), owner.CountLoadedImages);
 #endif
         }
+
+        private long imageStamp; // 画像を作ったときのファイルの印（K26）
 
         /// <summary>表示範囲外になったとき：待ち行列から外し、読み込み中なら結果を捨てさせ、画像を破棄する</summary>
         public void Clear()
@@ -31048,7 +31087,7 @@ namespace ZipPla
                     detached = image;
                     image = null;
                 }
-                if (detached != null) owner.ThumbnailMemoryCache.Put(filePath, detached);
+                if (detached != null) owner.ThumbnailMemoryCache.Put(filePath, detached, imageStamp);
                 return;
             }
             Image = null;
@@ -31129,13 +31168,21 @@ namespace ZipPla
 
     /// <summary>
     /// 表示範囲から外れたサムネイルを、容量の上限まで残しておくキャッシュ（A3）。古く使われたものから捨てる。
-    /// UI スレッドだけで使う。一覧が作り直される（ThumbViewer.Clear）と丸ごと捨てる。
+    /// UI スレッドだけで使う。一覧が作り直される（ThumbViewer.Clear）ときは、見た目の設定が変わっていれば丸ごと捨て、
+    /// 同じならファイルの印（更新日時）が分かるものだけ残す（K26）。取り出すときに印が違えば捨てる。
     /// </summary>
     public sealed class ThumbnailMemoryCache
     {
-        private readonly Dictionary<string, LinkedListNode<KeyValuePair<string, Bitmap>>> map = new Dictionary<string, LinkedListNode<KeyValuePair<string, Bitmap>>>(StringComparer.OrdinalIgnoreCase);
-        private readonly LinkedList<KeyValuePair<string, Bitmap>> order = new LinkedList<KeyValuePair<string, Bitmap>>(); // 先頭が古い
+        private struct Entry
+        {
+            public string Path;
+            public Bitmap Image;
+            public long Stamp; // 0 は「確かめられない」。一覧を作り直したら捨てる
+        }
+        private readonly Dictionary<string, LinkedListNode<Entry>> map = new Dictionary<string, LinkedListNode<Entry>>(StringComparer.OrdinalIgnoreCase);
+        private readonly LinkedList<Entry> order = new LinkedList<Entry>(); // 先頭が古い
         private long bytes;
+        private string appearanceKey;
         private static readonly long Budget = getBudget();
         private static long getBudget()
         {
@@ -31153,30 +31200,29 @@ namespace ZipPla
 
         public int Count => map.Count;
 
-        public void Put(string path, Bitmap image)
+        public void Put(string path, Bitmap image, long stamp)
         {
             Remove(path);
             var size = sizeOf(image);
             if (size > Budget / 4) { image.Dispose(); return; }
-            map[path] = order.AddLast(new KeyValuePair<string, Bitmap>(path, image));
+            map[path] = order.AddLast(new Entry { Path = path, Image = image, Stamp = stamp });
             bytes += size;
             while (bytes > Budget && order.First != null)
             {
-                var oldest = order.First.Value;
-                Remove(oldest.Key);
+                Remove(order.First.Value.Path);
             }
         }
 
-        /// <summary>キャッシュから取り出す（取り出したものの所有権は呼び出し側に移る）。大きさが違えば捨てて null</summary>
-        public Bitmap Take(string path, Size requiredSize)
+        /// <summary>キャッシュから取り出す（取り出したものの所有権は呼び出し側に移る）。大きさかファイルの印が違えば捨てて null</summary>
+        public Bitmap Take(string path, Size requiredSize, long stamp)
         {
-            LinkedListNode<KeyValuePair<string, Bitmap>> node;
+            LinkedListNode<Entry> node;
             if (path == null || !map.TryGetValue(path, out node)) return null;
             map.Remove(path);
             order.Remove(node);
-            var image = node.Value.Value;
+            var image = node.Value.Image;
             bytes -= sizeOf(image);
-            if (image.Size != requiredSize)
+            if (image.Size != requiredSize || node.Value.Stamp != stamp)
             {
                 image.Dispose();
                 return null;
@@ -31186,17 +31232,38 @@ namespace ZipPla
 
         public void Remove(string path)
         {
-            LinkedListNode<KeyValuePair<string, Bitmap>> node;
+            LinkedListNode<Entry> node;
             if (path == null || !map.TryGetValue(path, out node)) return;
             map.Remove(path);
             order.Remove(node);
-            bytes -= sizeOf(node.Value.Value);
-            node.Value.Value.Dispose();
+            bytes -= sizeOf(node.Value.Image);
+            node.Value.Image.Dispose();
+        }
+
+        /// <summary>
+        /// 一覧を作り直したときに呼ぶ（K26）。見た目の設定（newAppearanceKey）が変わっていれば全部捨て、
+        /// 同じならファイルの印が分からないもの（書庫の中・フォルダなど）だけ捨てる
+        /// </summary>
+        public void OnListRebuilt(string newAppearanceKey)
+        {
+            if (newAppearanceKey == null || newAppearanceKey != appearanceKey)
+            {
+                Clear();
+                appearanceKey = newAppearanceKey;
+                return;
+            }
+            var node = order.First;
+            while (node != null)
+            {
+                var next = node.Next;
+                if (node.Value.Stamp == 0) Remove(node.Value.Path);
+                node = next;
+            }
         }
 
         public void Clear()
         {
-            foreach (var pair in order) pair.Value.Dispose();
+            foreach (var entry in order) entry.Image.Dispose();
             order.Clear();
             map.Clear();
             bytes = 0;
@@ -31212,6 +31279,8 @@ namespace ZipPla
         readonly List<ThumbViewerItem> items = new List<ThumbViewerItem>(); // サムネイル保存用
         // 表示範囲から外れたサムネイルを残しておくキャッシュ（A3）
         internal readonly ThumbnailMemoryCache ThumbnailMemoryCache = new ThumbnailMemoryCache();
+        /// <summary>サムネイルの見た目を決める設定。Clear の前に設定する。変わっていればメモリキャッシュを捨てる（K26）</summary>
+        internal string ThumbnailAppearanceKey;
 
         public int MouseWheelScrollAmount = 120;
         public ThumbViewerScrollUnit MouseWheelScrollUnit = ThumbViewerScrollUnit.AbsolutePixel;
@@ -33295,8 +33364,6 @@ namespace ZipPla
             //sw.Restart();
 
             Clearing = true;
-            // 一覧を作り直すときは、表示設定（クリップ方式など）が変わっている可能性があるので残しておいたサムネイルを捨てる（A3）
-            ThumbnailMemoryCache.Clear();
             var imagesCount = items.Count;
             for (var i = 0; i < imagesCount; i++)
             {
@@ -33309,6 +33376,10 @@ namespace ZipPla
             }
 
             //sw.Stop(); ss += $"disEnd\t{sw.Elapsed}\n"; sw.Restart();
+
+            // 表示していた項目の画像もキャッシュに入った後で、見た目の設定が変わっていれば全部捨て、
+            // 同じなら更新日時で確かめられるものだけ残す（K26。以前は丸ごと捨てていた。A3）
+            ThumbnailMemoryCache.OnListRebuilt(ThumbnailAppearanceKey);
 
             Refresh();
             items.Clear();
