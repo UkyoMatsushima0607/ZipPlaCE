@@ -1861,19 +1861,23 @@ namespace ZipPla
                         switch (Type)
                         {
                             case PackType.Zip:
-                                if (zipArchive != null)
-                                {
-                                    return OpenInnerImageStream(physicalIndex);
-                                }
-                                else
-                                {
-                                    return OpenInnerImageStreamSharpCompress(physicalIndex);
-                                }
                             case PackType.Rar:
                             case PackType.Tar:
                             case PackType.SevenZip:
                                 //case PackType.Gz:
-                                return OpenInnerImageStreamSharpCompress(physicalIndex);
+                                {
+                                    // 展開のストリームはシークできず長さも伝わらないので、デコード側で倍々に伸びる MemoryStream に写されていた。
+                                    // 長さぴったりのメモリに取り出してからデコードする（D7。ビューアの V1 と同じ経路）
+                                    MemoryStream extracted;
+                                    string fileNameForType;
+                                    long length;
+                                    if (Type == PackType.Zip && zipArchive != null) ExtractZip(physicalIndex, out extracted, out fileNameForType, out length);
+                                    else ExtractSharpCompress(physicalIndex, out extracted, out fileNameForType, out length);
+                                    using (extracted)
+                                    {
+                                        return DecodeExtracted(extracted, fileNameForType, animation, length);
+                                    }
+                                }
                             case PackType.Cab:
                                 var cabEntrie = cabArchiveEntries[physicalIndex];
                                 var name = cabEntrie.Name;
@@ -2062,19 +2066,6 @@ namespace ZipPla
             }
         }
 
-        private Bitmap OpenInnerImageStream(int physicalIndex)
-        {
-            try
-            {
-                var entry = zipArchiveEntries[physicalIndex];
-                return GetImageAndDisposeOriginal(entry.Open(), entry.Name, entry.Length);
-            }
-            catch (InvalidDataException)
-            {
-                throw new PasswordLockedException();
-            }
-        }
-
         private Stream GetInnerImageStream(int physicalIndex)
         {
             try
@@ -2112,45 +2103,6 @@ namespace ZipPla
         */
 
         private bool OpenInnerImageStreamSharpCompress_IsSolid = false;
-        private Bitmap OpenInnerImageStreamSharpCompress(int physicalIndex)
-        {
-            try
-            {
-                if (!OpenInnerImageStreamSharpCompress_IsSolid)
-                {
-                    var entry = iArchiveEntries[physicalIndex];
-                    try
-                    {
-                        //return GetImageAndDisposeOriginal(SeekableStream.Seekablize(entry.OpenEntryStream(), entry.Size), entry.Key);
-                        return GetImageAndDisposeOriginal(entry.OpenEntryStream(), entry.Key, entry.Size);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        OpenInnerImageStreamSharpCompress_IsSolid = true;
-                        initializeSolidEntryOccurrences();
-                    }
-                }
-
-                var solidEntry = iArchiveEntries[physicalIndex];
-                var bytes = getSolidEntryBytes(physicalIndex);
-                using (var imageStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true))
-                {
-                    return ImageFromStream(imageStream, solidEntry.Key, animation, bytes.Length);
-                }
-            }
-            catch (Exception e)
-            {
-                if(e.ToString().Contains("Crypto"))
-                {
-                    throw new PasswordLockedException();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
         private Stream GetInnerImageStreamSharpCompress(int physicalIndex)
         {
             try
