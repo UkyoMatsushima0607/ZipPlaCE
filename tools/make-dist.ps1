@@ -1,7 +1,12 @@
 ﻿# ZipPla CE の配布用 zip を作る。
 # 使い方: powershell -NoProfile -ExecutionPolicy Bypass -File tools\make-dist.ps1 -Version 1.0.0 [-Commit v1.0.0] [-OutDir .work\dist]
+#         [-WebPDir <libwebp の DLL のフォルダ>] [-NoWebP] [-AllowUnpushed]
 #
-# - 指定したコミット（既定 HEAD）を git worktree に取り出して AutoBuild 構成でビルドするので、作業ツリーの未コミットの変更は入らない。
+# - 指定したコミット（既定 HEAD）を一時フォルダの git worktree に取り出し、AutoBuild 構成でクリーンビルドする。
+#   作業ツリーの未コミットの変更は入らない。worktree と中間ファイルは終わったら消す。
+# - 必要なもの: git、Visual Studio 2022（MSBuild と .NET Framework 4.8 の開発パック）
+# - libwebp の DLL は tools\build-libwebp.ps1 -OutDir <フォルダ> で作り、-WebPDir で指定する（既定 .work\tmp\libwebp-dll）。
+#   -NoWebP なら入れない（WebP は ffmpeg で読み、アニメーション WebP は読めない）。
 # - 入れるもの: ZipPla.exe、ZipPla.exe.config、libwebp の DLL、license\、README.txt（このスクリプトが作る）
 # - 入れないもの: ffmpeg.exe（GPL 版で大きい）、7z.dll、config.xml などの実行時に作られるファイル
 # - AGPL のため、配布する版のソースが公開リポジトリから取れるようにすること（タグを付けて push する）。
@@ -10,6 +15,9 @@ param(
     [string]$Commit = "HEAD",
     # zip の置き場所。リポジトリのルートからの相対パスか絶対パス
     [string]$OutDir = ".work\dist",
+    # libwebp の DLL（libwebpdecoder.dll・libwebpdemux.dll・libwebp.dll・libsharpyuv.dll）があるフォルダ
+    [string]$WebPDir = ".work\tmp\libwebp-dll",
+    [switch]$NoWebP,
     # 公開リポジトリに無いコミットでも作る（手元での確認用）
     [switch]$AllowUnpushed
 )
@@ -17,6 +25,19 @@ $ErrorActionPreference = "Stop"
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 if (-not [IO.Path]::IsPathRooted($OutDir)) { $OutDir = Join-Path $repo $OutDir }
+if (-not [IO.Path]::IsPathRooted($WebPDir)) { $WebPDir = Join-Path $repo $WebPDir }
+$webpNames = "libwebpdecoder.dll", "libwebpdemux.dll", "libwebp.dll", "libsharpyuv.dll"
+if (-not $NoWebP) {
+    foreach ($f in $webpNames) {
+        if (-not (Test-Path (Join-Path $WebPDir $f))) { throw "$f がありません: $WebPDir（tools\build-libwebp.ps1 -OutDir で作るか、-NoWebP を付けてください）" }
+    }
+}
+
+# MSBuild を探す（Visual Studio 2022。旧形式の csproj なので dotnet build は使えない）
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (-not (Test-Path $vswhere)) { throw "vswhere.exe が見つかりません。Visual Studio をインストールしてください。" }
+$msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+if (-not $msbuild) { throw "MSBuild.exe が見つかりません。" }
 
 $fullSha = (git -C $repo rev-parse "$Commit^{commit}").Trim()
 if ($LASTEXITCODE -ne 0 -or -not $fullSha) { throw "コミットが見つかりません: $Commit" }
@@ -32,30 +53,33 @@ if ($remoteBranches.Count -eq 0) {
 $tags = @(git -C $repo tag --points-at $fullSha)
 if ($tags.Count -eq 0) { Write-Warning "コミット $sha にタグがありません。配布するなら git tag v$Version $sha と git push origin v$Version を推奨します。" }
 
-# ビルド（中間ファイルも含めて専用の出力先に分ける）
-$buildOut = Join-Path $repo ".work\tmp\dist-build-$sha"
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo ".claude\skills\build\build.ps1") -Configuration AutoBuild -Rebuild -Commit $fullSha -OutputPath $buildOut
-if ($LASTEXITCODE -ne 0) { throw "ビルドに失敗しました" }
-$wt = Join-Path $repo ".work\tmp\worktrees\$sha"   # build.ps1 が作る worktree（license をここから取る）
-
-# 配布フォルダを組み立てる
+# 一時フォルダに worktree を作ってビルドする（中間ファイルも含めてそこに閉じ込める）
+$work = Join-Path ([IO.Path]::GetTempPath()) "ZipPlaCE-dist-$sha"
+if (Test-Path $work) { cmd /c "git -C `"$repo`" worktree remove --force `"$work\src`" >nul 2>&1"; Remove-Item $work -Recurse -Force }
+New-Item -ItemType Directory -Force $work | Out-Null
+$wt = Join-Path $work "src"
+$buildOut = Join-Path $work "bin\"
 $name = "ZipPlaCE-$Version"
-$stageRoot = Join-Path $repo ".work\tmp\dist-stage"
-$stage = Join-Path $stageRoot $name
-if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
-New-Item -ItemType Directory -Force $stage | Out-Null
+$stage = Join-Path $work "stage\$name"
+try {
+    # git は進捗を標準エラーに出すので、PowerShell 5.1 でエラー扱いにならないよう cmd 経由で呼ぶ
+    cmd /c "git -C `"$repo`" worktree add --detach `"$wt`" $fullSha >nul 2>&1"
+    if ($LASTEXITCODE -ne 0) { throw "git worktree add に失敗しました: $wt" }
+    $log = Join-Path $work "build.log"
+    Write-Output "ビルド: $sha（AutoBuild）"
+    & $msbuild (Join-Path $wt "source\ZipPla\ZipPla.csproj") /t:Rebuild /p:Configuration=AutoBuild /p:Platform=AnyCPU "/p:OutputPath=$buildOut" "/p:IntermediateOutputPath=$(Join-Path $work 'obj\')" /m /nologo /v:minimal "/flp:LogFile=$log;Verbosity=normal;Encoding=UTF-8" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Get-Content $log -Encoding UTF8 | Where-Object { $_ -match ': error ' } | Select-Object -Unique -First 20 | ForEach-Object { Write-Output "  $_" }
+        throw "ビルドに失敗しました（ログ: $log）"
+    }
+    $warnings = @(Get-Content $log -Encoding UTF8 | Where-Object { $_ -match ': warning ' } | Select-Object -Unique)
+    Write-Output ("ビルド成功（警告 {0} 件）" -f $warnings.Count)
 
-foreach ($f in "ZipPla.exe", "ZipPla.exe.config") {
-    Copy-Item (Join-Path $buildOut $f) $stage
-}
-# libwebp（tools\build-libwebp.ps1 で .work\tmp\libwebp-dll に作ったもの）
-$webpDir = Join-Path $repo ".work\tmp\libwebp-dll"
-foreach ($f in "libwebpdecoder.dll", "libwebpdemux.dll", "libwebp.dll", "libsharpyuv.dll") {
-    $src = Join-Path $webpDir $f
-    if (-not (Test-Path $src)) { throw "$f がありません。先に tools\build-libwebp.ps1 を実行してください: $src" }
-    Copy-Item $src $stage
-}
-Copy-Item (Join-Path $wt "license") (Join-Path $stage "license") -Recurse
+    # 配布フォルダを組み立てる
+    New-Item -ItemType Directory -Force $stage | Out-Null
+    foreach ($f in "ZipPla.exe", "ZipPla.exe.config") { Copy-Item (Join-Path $buildOut $f) $stage }
+    if (-not $NoWebP) { foreach ($f in $webpNames) { Copy-Item (Join-Path $WebPDir $f) $stage } }
+    Copy-Item (Join-Path $wt "license") (Join-Path $stage "license") -Recurse
 
 $exeVersion = (Get-Item (Join-Path $stage "ZipPla.exe")).VersionInfo.FileVersion
 $origin = (git -C $repo remote get-url origin).Trim() -replace '\.git$', ''
@@ -114,4 +138,9 @@ Get-ChildItem $stage -Recurse -File | ForEach-Object { Write-Output ("  {0,-40} 
 Write-Output ""
 Write-Output ("作成しました: {0}（{1:N2} MB）" -f $zip, ((Get-Item $zip).Length / 1MB))
 Write-Output "SHA256: $hash"
-Write-Output "確認用に展開したフォルダ: $stage"
+}
+finally {
+    # worktree と中間ファイルを消す
+    cmd /c "git -C `"$repo`" worktree remove --force `"$wt`" >nul 2>&1"
+    Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
+}
