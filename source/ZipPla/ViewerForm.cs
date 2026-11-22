@@ -16322,11 +16322,19 @@ namespace ZipPla
             var now = Environment.TickCount;
             // 並列に読み込むと（V1）、デコードの一時的なメモリ（WIC のネイティブメモリや取り出したバイト列）が GC が回るまで残り、
             // 読み込みが終わって落ち着いたあとのワーキングセットが 1 本のときの 1.5〜2 倍になった。
-            // 読み込みが 0.5 秒途切れたら、まとめて読んだ（8 ページ以上）ときだけ GC を 1 回走らせて返す
-            if (loadedPagesSinceGc >= 8 && unchecked(now - lastPageLoadedTick) > 500)
+            // 読み込みが 0.5 秒途切れたら（まとめて読んだ 8 ページ以上のとき。それ未満でも 1.5 秒途切れたら）GC を 1 回走らせて返す。
+            // UI スレッドを止めないように、ブロックしない（バックグラウンドの）フル GC にする（V31。以前は 8 ページ未満だと走らず WS が下がらなかった）
+            var sinceLoad = unchecked(now - lastPageLoadedTick);
+            if (loadedPagesSinceGc > 0 && sinceLoad > (loadedPagesSinceGc >= 8 ? 500 : 1500))
             {
                 loadedPagesSinceGc = 0;
-                GC.Collect();
+                GC.Collect(2, GCCollectionMode.Forced, blocking: false);
+            }
+            // 前面になく読み込みも落ち着いているときは 500ms 間隔に（待機中は IPC の待ち受けの側で 500ms にしている）（V31）
+            if (tmWatchIpc_WakeRegistration == null)
+            {
+                var interval = Form.ActiveForm != this && sinceLoad > 2000 ? 500 : 100;
+                if (tmMemoryReducer.Interval != interval) tmMemoryReducer.Interval = interval;
             }
             var elapsed = unchecked(now - tiMemoryReducer_Tick_LastReduce);
             if (elapsed >= 450 || elapsed < 0)
