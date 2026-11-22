@@ -51,59 +51,39 @@ namespace ZipPla
         }
 #endif
 
-        public static void ForIReadOnlyList<T>(IReadOnlyList<T> list, int index, Action<T> body)
+        /// <summary>
+        /// list[index] の項目のロックを取って body を呼ぶ（項目が null ならロックなしで null を渡す）。
+        /// 配列のロックは項目の参照を取る間だけ持ち、項目のロックは配列のロックを外してから取る。取った後に
+        /// 配列の項目が差し替わっていたらやり直す（V30。以前は配列のロックを持ったまま項目のロックを待ち、
+        /// UI が縮小中のページを破棄しようとして待つ間、ほかの全ページの読み込みが止まっていた）
+        /// </summary>
+        public static void ForIReadOnlyList<T>(IReadOnlyList<T> list, int index, Action<T> body) where T : class
         {
-            var listLockWasTaken = false;
-            var itemLockWasTaken = false;
-            var tempList = list;
-            T item;
-            try
+            while (true)
             {
-                Monitor.Enter(tempList, ref listLockWasTaken);
+                T item;
+                lock (list)
                 {
                     item = list[index];
-                    if (item != null)
-                    {
-                        try
-                        {
-                            Monitor.Enter(item, ref itemLockWasTaken);
-                        }
-                        catch
-                        {
-                            if (itemLockWasTaken)
-                            {
-                                Monitor.Exit(item);
-                            }
-                            throw;
-                        }
-                    }
                 }
-            }
-            finally
-            {
-                if (listLockWasTaken)
+                if (item == null)
                 {
-                    Monitor.Exit(tempList);
+                    body(null);
+                    return;
                 }
-            }
-            if (item != null)
-            {
-                var tempItem = item;
+                var itemLockWasTaken = false;
                 try
                 {
+                    Monitor.Enter(item, ref itemLockWasTaken);
+                    // 待っている間に差し替えられた（破棄されて null になった）なら、ロックを外して取り直す
+                    if (!ReferenceEquals(list[index], item)) continue;
                     body(item);
+                    return;
                 }
                 finally
                 {
-                    if (itemLockWasTaken)
-                    {
-                        Monitor.Exit(tempItem);
-                    }
+                    if (itemLockWasTaken) Monitor.Exit(item);
                 }
-            }
-            else
-            {
-                body(item);
             }
         }
     }
