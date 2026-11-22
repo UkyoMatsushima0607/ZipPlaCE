@@ -32,6 +32,25 @@ namespace ZipPla
             return new MemoryStream(image.GetImageAsBytes());
         }
 
+        /// <summary>
+        /// 展開した生の画素から Bitmap を直接作る（D4）。以前は PngWriter で PNG（圧縮レベル 5）に作り直し、それを GDI+ が展開し直していた。
+        /// グレー（1・8 ビット）、RGB（8 ビット）、インデックス（1・4・8 ビット）だけ。それ以外（JPEG・JPX・JBIG2・CMYK・16 ビットなど）は null を返すので、
+        /// 従来どおり Decode を使う。ICC プロファイルは従来どおり使わない（GDI+ は PNG の iCCP を既定で無視していた）。
+        /// /Decode は従来どおり 1 ビットの反転だけを扱う
+        /// </summary>
+        public static Bitmap TryDecodeToBitmap(PRStream stream)
+        {
+            try
+            {
+                var image = new PdfImageObject(stream, directBitmap: true);
+                return image.DirectBitmap;
+            }
+            catch
+            {
+                return null; // 従来の Decode で読み直す（例外も従来どおりそちらで出る）
+            }
+        }
+
 
         private class PdfImageObject
         {
@@ -130,6 +149,15 @@ namespace ZipPla
             {
             }
 
+            // directBitmap が true なら、PNG に作り直さずに Bitmap を直接作る（作れなければ DirectBitmap は null で、それ以外は何もしない）（D4）
+            public PdfImageObject(PRStream stream, bool directBitmap)
+            {
+                this.directBitmap = directBitmap;
+                Initialize(stream, PdfReader.GetStreamBytesRaw(stream), null);
+            }
+            private readonly bool directBitmap;
+            public Bitmap DirectBitmap { get; private set; }
+
             /**
              * Creates a PdfImage object.
              * @param stream a PRStream
@@ -148,6 +176,18 @@ namespace ZipPla
              */
             protected internal PdfImageObject(PdfDictionary dictionary, byte[] samples, PdfDictionary colorSpaceDic)
             {
+                Initialize(dictionary, samples, colorSpaceDic);
+            }
+
+            private void Initialize(PdfDictionary dictionary, byte[] samples, PdfDictionary colorSpaceDic)
+            {
+                if (directBitmap)
+                {
+                    // JPEG・JPX・JBIG2 は対象外。展開する前に除く
+                    var filter = PdfReader.GetPdfObject(dictionary.Get(PdfName.FILTER));
+                    var filters = filter is PdfArray array ? array.ArrayList.Select(f => PdfReader.GetPdfObject(f)).ToArray() : new[] { filter };
+                    if (filters.Any(f => PdfName.DCTDECODE.Equals(f) || PdfName.JPXDECODE.Equals(f) || PdfName.JBIG2DECODE.Equals(f))) return;
+                }
                 this.dictionary = dictionary;
                 this.colorSpaceDic = colorSpaceDic;
                 TrackingFilter trackingFilter = new TrackingFilter();
@@ -300,6 +340,7 @@ namespace ZipPla
                 icc = null;
                 stride = 0;
                 FindColorspace(colorspace, true);
+                if (directBitmap && pngColorType < 0) return; // CMYK などは従来どおり（D4）
                 MemoryStream ms = new MemoryStream();
                 if (pngColorType < 0)
                 {
@@ -350,6 +391,16 @@ namespace ZipPla
                 }
                 else
                 {
+                        if (directBitmap)
+                    {
+                        // 1 ビットの /Decode [1 0] は従来どおり反転する
+                        if (decode != null && pngBitDepth == 1 && decode.GetAsNumber(0).IntValue == 1 && decode.GetAsNumber(1).IntValue == 0)
+                        {
+                            for (int t = 0; t < imageBytes.Length; ++t) imageBytes[t] ^= 0xff;
+                        }
+                        DirectBitmap = CreateBitmap();
+                        return;
+                    }
                     PngWriter png = new PngWriter(ms);
                     if (decode != null)
                     {
@@ -394,6 +445,90 @@ namespace ZipPla
             virtual public byte[] GetImageAsBytes()
             {
                 return imageBytes;
+            }
+
+            // 展開した画素（PNG の行と同じ並び）から Bitmap を作る。対象外なら null（D4）
+            private unsafe Bitmap CreateBitmap()
+            {
+                System.Drawing.Imaging.PixelFormat format;
+                if (pngColorType == 0)
+                {
+                    if (bpc == 8) format = System.Drawing.Imaging.PixelFormat.Format8bppIndexed;
+                    else if (bpc == 1) format = System.Drawing.Imaging.PixelFormat.Format1bppIndexed;
+                    else return null;
+                }
+                else if (pngColorType == 2)
+                {
+                    if (bpc != 8) return null;
+                    format = System.Drawing.Imaging.PixelFormat.Format24bppRgb;
+                }
+                else if (pngColorType == 3)
+                {
+                    if (palette == null) return null;
+                    if (bpc == 8) format = System.Drawing.Imaging.PixelFormat.Format8bppIndexed;
+                    else if (bpc == 4) format = System.Drawing.Imaging.PixelFormat.Format4bppIndexed;
+                    else if (bpc == 1) format = System.Drawing.Imaging.PixelFormat.Format1bppIndexed;
+                    else return null;
+                }
+                else return null;
+                if (width <= 0 || height <= 0 || stride <= 0 || imageBytes == null || (long)stride * height > imageBytes.Length) return null;
+
+                var bmp = new Bitmap(width, height, format);
+                try
+                {
+                    if (pngColorType != 2)
+                    {
+                        var pal = bmp.Palette;
+                        var entries = pal.Entries;
+                        for (var i = 0; i < entries.Length; i++)
+                        {
+                            if (pngColorType == 0)
+                            {
+                                var v = bpc == 1 ? (i == 0 ? 0 : 255) : i;
+                                entries[i] = Color.FromArgb(v, v, v);
+                            }
+                            else
+                            {
+                                entries[i] = 3 * i + 2 < palette.Length ? Color.FromArgb(palette[3 * i], palette[3 * i + 1], palette[3 * i + 2]) : Color.Black;
+                            }
+                        }
+                        bmp.Palette = pal;
+                    }
+                    var data = bmp.LockBits(new Rectangle(0, 0, width, height), System.Drawing.Imaging.ImageLockMode.WriteOnly, format);
+                    try
+                    {
+                        fixed (byte* src0 = imageBytes)
+                        {
+                            for (var y = 0; y < height; y++)
+                            {
+                                var src = src0 + (long)y * stride;
+                                var dst = (byte*)data.Scan0 + (long)y * data.Stride;
+                                if (pngColorType == 2)
+                                {
+                                    for (var x = 0; x < width; x++)
+                                    {
+                                        dst[0] = src[2]; dst[1] = src[1]; dst[2] = src[0]; // RGB → BGR
+                                        src += 3; dst += 3;
+                                    }
+                                }
+                                else
+                                {
+                                    Buffer.MemoryCopy(src, dst, data.Stride, stride);
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        bmp.UnlockBits(data);
+                    }
+                    return bmp;
+                }
+                catch
+                {
+                    bmp.Dispose();
+                    throw;
+                }
             }
             
 #if DRAWING

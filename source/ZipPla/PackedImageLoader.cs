@@ -2570,6 +2570,17 @@ namespace ZipPla
 
                     }
 
+                    if (getImage)
+                    {
+                        // Flate・CCITT などのグレー・RGB・インデックスの画像は、PNG に作り直さずに Bitmap を直接作る（D4）
+                        var direct = RiosFastPdfImageDecoder.TryDecodeToBitmap(pdfStream);
+                        if (direct != null)
+                        {
+                            image = direct;
+                            extensionWithPeriodForPDF = null;
+                            return new MemoryStream();
+                        }
+                    }
                     var result = RiosFastPdfImageDecoder.Decode(pdfStream, out var imageType);
                     if (getImage)
                     {
