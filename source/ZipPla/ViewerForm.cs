@@ -2741,7 +2741,7 @@ namespace ZipPla
                     else
                     */
                     {
-                        VirtualFolder.AddBookmarkData(Program.HistorySorPath, path, Math.Max(0, startPage), limitOfItemsCount: Program.GetLimitOfHistoryCount(), deleteLostPath: true);
+                        AddHistoryInBackground(path, Math.Max(0, startPage)); // V26
                         SendSorMessageToCatalogForm(path, Program.HistorySorPath, Math.Max(0, startPage), requestToUpdateLastAccessTime: false, m: SelfLastAccessTimeUpdateMode.None);
                     }
                 }
@@ -7019,6 +7019,61 @@ namespace ZipPla
             {
                 SaveSettings();
             }
+            FlushHistoryWrites(10000); // 背景で書いている履歴を書き終えてから終わる（V26）
+        }
+
+        // 履歴（History.sor）への書き込みを、UI スレッドではなく背景で直列に行う（V26）。
+        // 本を切り替えるたびに、今の本の保存と新しい本の追加で履歴を 2 回読み書きし、そのたびに UI が止まっていた（1 万件で 1 回 15〜70ms）。
+        // たまっている分は 1 回の AddBookmarkData にまとめる（後のものほど新しいページ）。カタログへの報告は従来どおりすぐ送る
+        // （カタログは報告のページをそのまま使い、History.sor を読み直さない）
+        private readonly object historyWriteLock = new object();
+        private readonly List<string> historyWritePaths = new List<string>();
+        private readonly List<int> historyWritePages = new List<int>();
+        private int historyWriteLimit = int.MaxValue;
+        private Task historyWriteTask = Task.CompletedTask;
+
+        private void AddHistoryInBackground(string path, int page)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+            var limit = Program.GetLimitOfHistoryCount(); // 設定の読み込みは UI スレッドで
+            lock (historyWriteLock)
+            {
+                historyWritePaths.Add(path);
+                historyWritePages.Add(page);
+                historyWriteLimit = limit;
+                if (historyWritePaths.Count == 1)
+                {
+                    historyWriteTask = historyWriteTask.ContinueWith(_ => WritePendingHistory(), TaskScheduler.Default);
+                }
+            }
+        }
+
+        private void WritePendingHistory()
+        {
+            string[] paths;
+            int[] pages;
+            int limit;
+            lock (historyWriteLock)
+            {
+                if (historyWritePaths.Count == 0) return;
+                paths = historyWritePaths.ToArray();
+                pages = historyWritePages.ToArray();
+                limit = historyWriteLimit;
+                historyWritePaths.Clear();
+                historyWritePages.Clear();
+            }
+            try
+            {
+                VirtualFolder.AddBookmarkData(Program.HistorySorPath, paths, pages, limitOfItemsCount: limit, deleteLostPath: true);
+            }
+            catch { }
+        }
+
+        private void FlushHistoryWrites(int millisecondsTimeout)
+        {
+            Task task;
+            lock (historyWriteLock) task = historyWriteTask;
+            try { task.Wait(millisecondsTimeout); } catch { }
         }
         
         private void trySaveCurrentConditionToHistory(SelfLastAccessTimeUpdateMode m)
@@ -7034,7 +7089,7 @@ namespace ZipPla
 
                 var page = loader == null || loader.Type != PackedImageLoader.PackType.Directory ? Math.Max(0, currentPage) : -1;
                 var targetPath = loader != null && loader.Type != PackedImageLoader.PackType.Directory ? currentArchiveFilePath : currentStartingFilePath;
-                VirtualFolder.AddBookmarkData(Program.HistorySorPath, targetPath, page, limitOfItemsCount: Program.GetLimitOfHistoryCount(), deleteLostPath: true);
+                AddHistoryInBackground(targetPath, page); // V26
                 SendSorMessageToCatalogForm(targetPath, Program.HistorySorPath, page, requestToUpdateLastAccessTime: true, m: m);
             }
             catch { }
@@ -11216,7 +11271,7 @@ namespace ZipPla
 
                                         try
                                         {
-                                            VirtualFolder.AddBookmarkData(Program.HistorySorPath, path, Math.Max(0, page), limitOfItemsCount: Program.GetLimitOfHistoryCount(), deleteLostPath: true);
+                                            AddHistoryInBackground(path, Math.Max(0, page)); // V26
                                             SendSorMessageToCatalogForm(path, Program.HistorySorPath, Math.Max(0, page), requestToUpdateLastAccessTime: false, m: SelfLastAccessTimeUpdateMode.None);
                                         }
                                         catch { }
