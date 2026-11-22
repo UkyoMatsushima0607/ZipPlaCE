@@ -35229,7 +35229,13 @@ namespace ZipPla
                 {
                     message = Message.RecommendFfmpeg;
                 }
+                // 閉鎖した配布元（Zeranoe、2020 年終了）。AutoBuild は既存の言語ファイルを作り直さないので、古いファイルの URL もここで置き換え、
+                // Zeranoe 向けの「$1-bit / Static 版を推奨」の行は除く
+                const string closedFfmpegSite = "https://ffmpeg.zeranoe.com/builds/";
+                var staleFfmpegMessage = message.Contains(closedFfmpegSite);
+                if (staleFfmpegMessage) message = message.Replace(closedFfmpegSite, "https://ffmpeg.org/download.html");
                 var a = message.Split(new string[] { @"\n" }, StringSplitOptions.None);
+                if (staleFfmpegMessage) a = a.Where(line => !line.Contains("$1")).ToArray();
                 var str = "";
                 if (ShowDialog_ReplacerRegex == null) ShowDialog_ReplacerRegex = new Regex(@"\$1|\{[^|]+\|[^|]+\}");
                 var bitsString = Environment.Is64BitOperatingSystem ? "64" : "32"; // DLL 等の都合で 32bit で動作させても ffmpeg まで合わせる必要はないので Is64Bit"OperatingSystem"

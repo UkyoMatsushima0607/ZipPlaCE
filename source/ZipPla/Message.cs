@@ -1263,10 +1263,9 @@ namespace ZipPla
                 @"ZipPla で動画ファイル（mp4, wmv, avi, mkv, flv, webm 等）のサムネイルを表示できます。\n" +
                 @"\n" +
                 @"\n" +
-                @"ffmpeg.exe は以下のページからダウンロードできます。\n" +
-                @"このパソコンで使用する場合は $1-bit / Static 版を推奨します。\n" +
+                @"ffmpeg.exe は以下のページの「Windows builds」（gyan.dev または BtbN）から入手できます。\n" +
                 @"\n" +
-                @"https://ffmpeg.zeranoe.com/builds/\n" +
+                @"https://ffmpeg.org/download.html\n" +
                 @"\n" +
                 @"ダウンロードした圧縮ファイル内の bin フォルダーの中に ffmpeg.exe が格納されています。";/*\n" +
                 @"\n" +
@@ -2140,10 +2139,9 @@ namespace ZipPla
                 @"ZipPla shows thumbnails of video files. (mp4, wmv, avi, mkv, flv, webm, etc.)\n" +
                 @"\n" +
                 @"\n" +
-                @"""ffmpeg.exe"" can be downloaded from the following page.\n" +
-                @"$1-bit / Static version is recommended for your PC.\n" +
+                @"""ffmpeg.exe"" can be downloaded from ""Windows builds"" (gyan.dev or BtbN) on the following page.\n" +
                 @"\n" +
-                @"https://ffmpeg.zeranoe.com/builds/\n" +
+                @"https://ffmpeg.org/download.html\n" +
                 @"\n" +
                 @"The downloaded archive includes ""bin"" folder and it contains ""ffmpeg.exe""."; /*\n" +
                 @"\n" +
