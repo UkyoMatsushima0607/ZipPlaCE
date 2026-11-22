@@ -3108,6 +3108,9 @@ namespace ZipPla
                         Program.TryUpdateLastAccessTime(TryUpdateLastAccessTimeAfterLoaderDisposed);
                     }
                     loader = next.Loader;
+                    // 別の本ではルーペを使うとは限らないので、使うまで拡大画像を作らず原寸も残さない（V25）
+                    magnifierWanted = false;
+                    magnifierUnusedPageTurns = 0;
                 }
                 EntryArray = next.Entries;
                 EntryLongPathArray = next.EntriesPaths;
@@ -7258,6 +7261,16 @@ namespace ZipPla
             //shownImegesPath = currentArchiveFilePath;
             shownImegesPath = currentStartingFilePath;
 
+            // ルーペを使わずにページを送り続けたら、ルーペを使っていない状態に戻す（V25）
+            if (magnifierWanted && currentPage != shownImegesPage && shownImegesPage >= 0 && ViewerMode == ViewerModeEnum.Normal)
+            {
+                if (++magnifierUnusedPageTurns >= MagnifierUnusedPageTurnsLimit)
+                {
+                    magnifierWanted = false;
+                    magnifierUnusedPageTurns = 0;
+                    TrimOriginals(); // 残していた原寸を捨てる
+                }
+            }
             shownImegesPage = currentPage;
             
             // 拡大モードの作成。ルーペを一度も使っていなければ作らない（ページ送りのたびに全コアで数十 ms 使い、見開きで 20〜80MB 持っていた）（V2）
@@ -8878,13 +8891,17 @@ namespace ZipPla
             EnsureMagnifierCanvas();
         }
 
-        // ルーペを一度でも開いたら true（V2）。以後は従来どおりページごとに拡大画像を先に作り、原寸を表示中＋前後1見開き分残す
+        // ルーペを開いたら true（V2）。true の間はページごとに拡大画像を先に作り、原寸を表示中＋前後1見開き分残す。
+        // 別の本を開いたときと、ルーペを使わずに MagnifierUnusedPageTurnsLimit 回ページを送ったときに false に戻す（V25）
         private bool magnifierWanted = false;
+        private int magnifierUnusedPageTurns = 0;
+        private const int MagnifierUnusedPageTurnsLimit = 10;
 
         // ルーペを開くときに拡大画像がなければ作り始める（V2）。
         // 原寸がなければ先に読み直させる。読み直しが終わると showCurrentPage から resetMagnifier が呼ばれる
         private void EnsureMagnifierCanvas()
         {
+            magnifierUnusedPageTurns = 0; // V25
             if (!magnifierWanted)
             {
                 magnifierWanted = true;
