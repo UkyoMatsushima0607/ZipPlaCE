@@ -3394,7 +3394,9 @@ namespace ZipPla
         // 読み込みは複数のスレッドで並列に行う（V1）。書庫からの取り出しは loaderLock で直列にし、デコード・色判定・縮小は並列。
         // 同じページのジョブ（原寸の読み直しの ReworkOrder など）が重ならないように、ページごとのロック（剰余で共有）を取る
         private readonly object loaderLock = new object();
-        private static readonly object[] loadPageLocks = Enumerable.Range(0, 64).Select(_ => new object()).ToArray();
+        // 先読みの範囲（前後 64 ページ）より十分多くし、表示中のページと先読みの遠いページが同じロックにならないようにする（Y11。以前は 64 で、c と c±64 がぶつかった）
+        private const int LoadPageLockCount = 256;
+        private static readonly object[] loadPageLocks = Enumerable.Range(0, LoadPageLockCount).Select(_ => new object()).ToArray();
         private static int LoadThreadCount
         {
             get
@@ -3409,10 +3411,15 @@ namespace ZipPla
 
         private void bmwLoadEachPage_DoWork(object sender, GenerarClasses.BackgroundMultiWorker.EachDoWorkEventArgs e)
         {
-            lock (loadPageLocks[e.WorkNumber & 63])
+            // 本の切り替えや Reload でキャンセルされたジョブは、ロックやセマフォを待つ前後で抜ける（Y9。以前はデコードの後だけ見ていたので、
+            // 待っていたジョブが取り出しと原寸のデコードを最後までしてから捨てていた）
+            if (bmwLoadEachPage.CancellationPending) return;
+            lock (loadPageLocks[e.WorkNumber % LoadPageLockCount])
             {
+                if (bmwLoadEachPage.CancellationPending) return;
                 // 原寸でデコードするページ（表示の近く。3000x4300 のカラーで 1 枚 38MB）は同時に読む数を絞る。
-                // 4 本とも原寸を読むと最大メモリが 1.6〜1.8 倍になった。縮小デコードのページ（小さい）は制限しない
+                // 4 本とも原寸を読むと最大メモリが 1.6〜1.8 倍になった。縮小デコードのページ（小さい）は制限しない。
+                // 原寸から縮小するだけのジョブも枠を取る（縮小は原寸の一時的なコピーを作るので、枠の外で並列にすると最大メモリが増えた。Y10 は見送り）
                 var full = !CanDecodeReduced(e.WorkNumber);
                 // 表示中のページは専用の枠（見開きの枚数ぶん）で読み、表示外のページ（前後の見開き）とは枠を取り合わない。
                 // 開いた直後や遠くへ飛んだ直後に、見開きの 2 ページが直列になったり、表示外のページの後ろで待ったりしないようにする（V23）
@@ -3421,6 +3428,7 @@ namespace ZipPla
                 else if (full) FullDecodeSemaphore.Wait();
                 try
                 {
+                    if (bmwLoadEachPage.CancellationPending) return; // 枠を待っている間にキャンセルされた（Y9）
                     bmwLoadEachPage_DoWorkCore(sender, e);
                 }
                 finally
@@ -3488,6 +3496,7 @@ namespace ZipPla
                     var perfLockTaken = System.Diagnostics.Stopwatch.GetTimestamp();
                     perfLockWaitTicks = perfLockTaken - perfLockRequest;
 #endif
+                    ThrowIfLoadCanceled(); // ロックを待っている間にキャンセルされたら取り出さない（Y9）
                     extracted = l.TryExtractEntry(entry, out stream, out name, out length);
 #if PERFLOG
                     perfExtractTicks = System.Diagnostics.Stopwatch.GetTimestamp() - perfLockTaken;
@@ -3503,8 +3512,15 @@ namespace ZipPla
             }
             lock (loaderLock)
             {
+                ThrowIfLoadCanceled(); // Y9
                 return l.OpenImageStream(entry);
             }
+        }
+
+        // 本の切り替えや Reload でキャンセルされた読み込みジョブを、書庫のロックを取った直後に止める（Y9）。DoWorkCore が捕まえて結果なしで抜ける
+        private void ThrowIfLoadCanceled()
+        {
+            if (bmwLoadEachPage.CancellationPending) throw new OperationCanceledException();
         }
 
 #if PERFLOG
@@ -4003,6 +4019,10 @@ namespace ZipPla
                         }
                     }
                 });
+            }
+            catch (OperationCanceledException) when (bmwLoadEachPage.CancellationPending)
+            {
+                // キャンセルされたので、エラー画像も作らずに抜ける（Y9）
             }
 #if DEBUG || PERFLOG
             catch (Exception ee)
