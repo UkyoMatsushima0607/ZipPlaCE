@@ -18,9 +18,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Ipc;
 using System.Security.Permissions;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18038,7 +18035,7 @@ namespace ZipPla
 
         private IpcLookAheadInfo lookAheadInfo = null;
         private Process waitingProcess = null;
-        private IpcServerChannel currentIpcChanne = null;
+        private CatalogIpcServer currentIpcChanne = null; // 名前付きパイプのサーバー（P3。以前は .NET Remoting の IpcServerChannel）
         private IpcReportFromViewerToCatalog reportFromViewerToCatalog = null;
         private string currentIpcGUID = null; // チャンネル自身の名前及び ViewerForm 用プロセスからの連絡用オブジェクト名
 
@@ -18055,12 +18052,10 @@ namespace ZipPla
             if (currentIpcChanne == null)
             {
                 currentIpcGUID = Guid.NewGuid().ToString();
-                var currentIpcChannePortName = IpcLookAheadInfo.ChannelName + "_" + currentIpcGUID;
-                currentIpcChanne = new IpcServerChannel(currentIpcChannePortName);
-                ChannelServices.RegisterChannel(currentIpcChanne, true);
+                currentIpcChanne = new CatalogIpcServer(currentIpcGUID);
 
                 reportFromViewerToCatalog = new IpcReportFromViewerToCatalog();
-                RemotingServices.Marshal(reportFromViewerToCatalog, currentIpcGUID, typeof(IpcReportFromViewerToCatalog));
+                currentIpcChanne.Reports = reportFromViewerToCatalog;
 
                 tmWatchIpc.Start();
             }
@@ -18068,15 +18063,13 @@ namespace ZipPla
             // リモートオブジェクトを生成して公開
             if (lookAheadInfo != null)
             {
-                RemotingServices.Disconnect(lookAheadInfo);
-                lookAheadInfo.DisposeWakeEvent();
+                currentIpcChanne?.Unregister(lookAheadInfo);
                 lookAheadInfo = null;
             }
             lookAheadInfo = new IpcLookAheadInfo();
-            lookAheadInfo.CreateWakeEvent(); // 依頼を書いたら待機ビューアを起こす（V6）
 
             var guid = Guid.NewGuid().ToString();
-            RemotingServices.Marshal(lookAheadInfo, guid, typeof(IpcLookAheadInfo));
+            currentIpcChanne.Register(lookAheadInfo, guid); // 依頼を書いて Accept を false にすると待機ビューアへ送る（P3）
 
             //CheckAndRecoverWaitingProcess_INIModified = iniModified;
 
@@ -18396,8 +18389,7 @@ namespace ZipPla
                 {
                     if (lookAheadInfo != null)
                     {
-                        RemotingServices.Disconnect(lookAheadInfo);
-                        lookAheadInfo.DisposeWakeEvent();
+                        currentIpcChanne?.Unregister(lookAheadInfo);
                         lookAheadInfo = null;
                     }
                     waitingProcess = null;
@@ -18492,11 +18484,10 @@ namespace ZipPla
             {
                 if (lookAheadInfo != null)
                 {
-                    RemotingServices.Disconnect(lookAheadInfo);
-                    lookAheadInfo.DisposeWakeEvent();
+                    currentIpcChanne?.Unregister(lookAheadInfo);
                     lookAheadInfo = null;
                 }
-                ChannelServices.UnregisterChannel(currentIpcChanne);
+                currentIpcChanne.Dispose();
                 currentIpcChanne = null;
             }
             // 待ちプロセスは自分で消滅するためこちらから消す必要はない

@@ -163,7 +163,6 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Runtime.Remoting" />
     <Reference Include="System.Security" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -365,6 +364,7 @@
     <Compile Include="ImageFormat\WindowsMediaPhoto.cs" />
     <Compile Include="ImageHeaderParser.cs" />
     <Compile Include="ImageLoader.cs" />
+    <Compile Include="IpcPipe.cs" />
     <Compile Include="iTextSharp\iTextSharp\awt\geom\AffineTransform.cs" />
     <Compile Include="iTextSharp\iTextSharp\awt\geom\Point.cs" />
     <Compile Include="iTextSharp\iTextSharp\awt\geom\Point2D.cs" />

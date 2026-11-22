@@ -7,8 +7,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Ipc;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -356,19 +354,16 @@ namespace ZipPla
                 if (cmds[1] == "-LookAheadMode" || cmds[1] == "-LookAheadModeW" || cmds[1] == "-LookAheadModeF" ||
                     cmds[1] == "-LookAheadModeH" || cmds[1] == "-LookAheadModeWH" || cmds[1] == "-LookAheadModeFH")
                 {
-                    IpcClientChannel channel = new IpcClientChannel();
-                    ChannelServices.RegisterChannel(channel, true);
                     var currentIpcGUID = cmds[2];
-                    var currentIpcChannePortName = IpcLookAheadInfo.ChannelName + "_" + currentIpcGUID;
                     var guid = cmds[3];
-                    var lookAheadURL = "ipc://" + currentIpcChannePortName + "/" + guid;
-                    var reportFromViewerToCatalogURL = "ipc://" + currentIpcChannePortName + "/" + currentIpcGUID;
                     IpcLookAheadInfo ipcLookAheadInfo;
                     IpcReportFromViewerToCatalog ipcReportFromViewerToCatalog;
                     try
                     {
-                        ipcLookAheadInfo = Activator.GetObject(typeof(IpcLookAheadInfo), lookAheadURL) as IpcLookAheadInfo;
-                        ipcReportFromViewerToCatalog = Activator.GetObject(typeof(IpcReportFromViewerToCatalog), reportFromViewerToCatalogURL) as IpcReportFromViewerToCatalog;
+                        // カタログの名前付きパイプにつなぐ（P3。以前は .NET Remoting の IPC チャンネル）
+                        var client = ViewerIpcClient.Connect(currentIpcGUID, guid);
+                        ipcLookAheadInfo = client.LookAheadInfo;
+                        ipcReportFromViewerToCatalog = client.Reports;
                     }
                     catch (Exception error)
                     {
@@ -2053,7 +2048,13 @@ namespace ZipPla
         }
     }
     
-    public class IpcLookAheadInfo : MarshalByRefObject
+    /// <summary>
+    /// カタログから待機ビューアへの依頼。名前付きパイプで送る（P3。以前は .NET Remoting の MarshalByRefObject で、
+    /// 待機ビューアが項目を 1 つずつプロセス間で読みに来ていた）。
+    /// カタログ側では、項目を書いてから Accept を false にすると、つながっている待機ビューアに全項目を送る。
+    /// 待機ビューア側では、依頼が届くと項目が更新されて Accept が false になり、RequestArrived が起きる。Accept を true にすると受け取りを知らせる
+    /// </summary>
+    public class IpcLookAheadInfo
     {
         public string Path;
         public int Page;
@@ -2071,44 +2072,38 @@ namespace ZipPla
         public bool AlwaysHideUI;
         public ReadOnMemoryMode ReadOnMemoryMode;
 
-        // カタログが依頼を書いて false にしたら、待機ビューアを起こすイベントを立てる（V6）。
-        // 待機ビューアは以前 10ms ごとにプロセス間通信で Accept を読みに来ていた
-        private bool accept = true;
+        private volatile bool accept = true;
         public bool Accept
         {
-            get => accept;
+            get
+            {
+                if (IsDisconnected?.Invoke() == true) throw new IpcDisconnectedException(); // カタログが終了した（待機ビューア側）
+                return accept;
+            }
             set
             {
                 accept = value;
-                if (!value)
-                {
-                    try { wakeEvent?.Set(); } catch { }
-                }
+                if (!value) RequestSender?.Invoke(this);  // カタログ側: 待機ビューアへ全項目を送る
+                else AcceptedSender?.Invoke();            // 待機ビューア側: 受け取りを知らせる
             }
         }
 
-        // 待機ビューアを起こすための名前付きイベントの名前。カタログ側で作る（CreateWakeEvent）。null ならイベントなし
-        public string WakeEventName;
-        private System.Threading.EventWaitHandle wakeEvent;
+        // 通信の側から書く（送り返さない）
+        internal void SetAcceptFromRemote(bool value) => accept = value;
+        internal bool AcceptRaw => accept;
 
-        public void CreateWakeEvent()
-        {
-            var name = @"Local\ZipPla_LookAhead_" + Guid.NewGuid().ToString("N");
-            wakeEvent = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, name);
-            WakeEventName = name;
-        }
+        internal Action<IpcLookAheadInfo> RequestSender; // カタログ側（CatalogIpcServer.Register）
+        internal Action AcceptedSender;                   // 待機ビューア側（ViewerIpcClient）
+        internal Func<bool> IsDisconnected;               // 待機ビューア側
 
-        public void DisposeWakeEvent()
+        /// <summary>待機ビューア側: 依頼が届いた、または通信が切れた（別のスレッドから呼ばれる）</summary>
+        public event Action RequestArrived;
+        internal void RaiseRequestArrived()
         {
-            var e = wakeEvent;
-            wakeEvent = null;
-            WakeEventName = null;
-            e?.Dispose();
+            try { RequestArrived?.Invoke(); } catch { }
         }
 
         public static string ChannelName = "ipcZipPla";
-
-        public override object InitializeLifetimeService() => null;
     }
 
     [Serializable]
@@ -2164,7 +2159,11 @@ namespace ZipPla
     }
 
 
-    public class IpcReportFromViewerToCatalog : MarshalByRefObject
+    /// <summary>
+    /// ビューアからカタログへの報告。名前付きパイプで送る（P3）。ビューア側では AddReports がカタログへ送り、
+    /// カタログ側では届いた報告を積んで TakeReports で取り出す
+    /// </summary>
+    public class IpcReportFromViewerToCatalog
     {
         [Serializable]
         public class OldAndNewString
@@ -2181,9 +2180,16 @@ namespace ZipPla
         // ビューアからの追加とカタログでの取り出しを、カタログのプロセス内で排他して行う（V7）。
         // 以前はビューアがリスト全体を読んで書き戻していた（プロセス間の呼び出し 2 回、取り出しと重なると報告が消えうる）
         private readonly object locker = new object();
+        internal Action<OldAndNewString[]> RemoteSender; // ビューア側（ViewerIpcClient）
         public void AddReports(OldAndNewString[] reports)
         {
             if (reports == null || reports.Length == 0) return;
+            var sender = RemoteSender;
+            if (sender != null)
+            {
+                sender(reports); // 切れていれば IpcDisconnectedException
+                return;
+            }
             lock (locker)
             {
                 var list = PathRequiredReload.Where(x => x != null).ToList();
@@ -2202,13 +2208,6 @@ namespace ZipPla
             }
         }
 
-        /// <summary>
-        /// 自動的に切断されるのを回避する
-        /// </summary>
-        public override object InitializeLifetimeService()
-        {
-            return null;
-        }
     }
 
     static class ToolStripDropDownScroller

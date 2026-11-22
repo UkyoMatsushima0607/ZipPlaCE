@@ -12,7 +12,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -1004,7 +1003,7 @@ namespace ZipPla
             {
                 timer.Stop();
                 timer.Dispose();
-                if (IsDisposed || tmWatchIpc_WakeRegistration == null) return; // もう表示を始めている
+                if (IsDisposed || !tmWatchIpc_Waiting) return; // もう表示を始めている
                 try
                 {
                     System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
@@ -9920,7 +9919,7 @@ namespace ZipPla
 
                     SendReportsToCatalog(rep);
                 }
-                catch (RemotingException)
+                catch (IpcDisconnectedException)
                 {
                     ipcReportFromViewerToCatalog = null;
                 }
@@ -9942,7 +9941,7 @@ namespace ZipPla
                     rep.RequestToReloadTags = true;
                     SendReportsToCatalog(rep);
                 }
-                catch (RemotingException)
+                catch (IpcDisconnectedException)
                 {
                     ipcReportFromViewerToCatalog = null;
                 }
@@ -9982,7 +9981,7 @@ namespace ZipPla
 
                     SendReportsToCatalog(reps);
                 }
-                catch (RemotingException)
+                catch (IpcDisconnectedException)
                 {
                     ipcReportFromViewerToCatalog = null;
                 }
@@ -10031,7 +10030,7 @@ namespace ZipPla
         private IpcReportFromViewerToCatalog.OldAndNewString reportToCatalog_PendingSelection = null;
         private bool reportToCatalog_SenderRunning = false;
 
-        /// <summary>報告を同期で送る。RemotingException などは呼び出し側で処理する</summary>
+        /// <summary>報告を同期で送る。IpcDisconnectedException などは呼び出し側で処理する</summary>
         private void SendReportsToCatalog(params IpcReportFromViewerToCatalog.OldAndNewString[] reports)
         {
             var ipc = ipcReportFromViewerToCatalog;
@@ -10056,7 +10055,7 @@ namespace ZipPla
             {
                 SendReportsToCatalog();
             }
-            catch (RemotingException)
+            catch (IpcDisconnectedException)
             {
                 ipcReportFromViewerToCatalog = null;
             }
@@ -10102,7 +10101,7 @@ namespace ZipPla
                         reportToCatalog_PendingSelection = null;
                         reportToCatalog_SenderRunning = false;
                     }
-                    if (error is RemotingException)
+                    if (error is IpcDisconnectedException)
                     {
                         if (ipcReportFromViewerToCatalog == ipc) ipcReportFromViewerToCatalog = null;
                     }
@@ -10126,7 +10125,7 @@ namespace ZipPla
                     rep.ViewerFormSortMode = viewerFormSortMode ?? (currentSortModeDetails == null ? SortMode.NameInAsc : currentSortModeDetails.SortMode);
                     SendRequestToChangeSelectionAsync(rep);
                 }
-                catch (RemotingException)
+                catch (IpcDisconnectedException)
                 {
                     ipcReportFromViewerToCatalog = null;
                 }
@@ -10967,44 +10966,38 @@ namespace ZipPla
         private bool tmWatchIpc_Stopped = false;
 
         // 待機ビューアは、カタログが依頼を書いたときに立つ名前付きイベントで起きる（V6）。
-        // 以前は 10ms ごとにプロセス間通信で依頼の有無を読みに行っていた。タイマーは、カタログの終了の検出（RemotingException）と
+        // 以前は 10ms ごとにプロセス間通信で依頼の有無を読みに行っていた。タイマーは、カタログの終了の検出（IpcDisconnectedException）と
         // 取りこぼしの保険として 500ms ごとに残す。イベントが使えないときは従来どおり 10ms ごと
-        private RegisteredWaitHandle tmWatchIpc_WakeRegistration;
-        private EventWaitHandle tmWatchIpc_WakeEvent;
+        // 待機中（依頼を待っている）か。依頼はカタログから名前付きパイプで届き、RequestArrived で起こされる（P3。以前は名前付きイベント、V6）
+        private bool tmWatchIpc_Waiting;
+        private Action tmWatchIpc_RequestArrivedHandler;
         private void StartWatchIpcWakeEvent()
         {
-            try
+            if (ipcLookAheadInfo == null) return;
+            tmWatchIpc_RequestArrivedHandler = () =>
             {
-                var name = ipcLookAheadInfo.WakeEventName;
-                if (name == null) return;
-                tmWatchIpc_WakeEvent = EventWaitHandle.OpenExisting(name);
-                tmWatchIpc_WakeRegistration = ThreadPool.RegisterWaitForSingleObject(tmWatchIpc_WakeEvent, (state, timedOut) =>
+                try
                 {
-                    try
-                    {
-                        if (tmWatchIpc_Stopped || IsDisposed || !IsHandleCreated) return;
-                        BeginInvoke((MethodInvoker)(() => tmWatchIpc_Tick(this, EventArgs.Empty))); // e が null でないこと（カタログからの依頼として扱う）
-                    }
-                    catch (ObjectDisposedException) { }
-                    catch (InvalidOperationException) { }
-                }, null, Timeout.Infinite, executeOnlyOnce: false);
-                tmWatchIpc.Interval = 500;
-                tmMemoryReducer.Interval = 500;
-                // Shown より前に届いた依頼は tmWatchIpc_Tick が無視するので、Shown の直後に一度見る
-                Shown += (sender, e) => tmWatchIpc_Tick(sender, EventArgs.Empty);
-            }
-            catch
-            {
-                StopWatchIpcWakeEvent();
-            }
+                    if (tmWatchIpc_Stopped || IsDisposed || !IsHandleCreated) return;
+                    BeginInvoke((MethodInvoker)(() => tmWatchIpc_Tick(this, EventArgs.Empty))); // e が null でないこと（カタログからの依頼として扱う）
+                }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
+            };
+            ipcLookAheadInfo.RequestArrived += tmWatchIpc_RequestArrivedHandler;
+            tmWatchIpc_Waiting = true;
+            tmWatchIpc.Interval = 500;
+            tmMemoryReducer.Interval = 500;
+            // Shown より前に届いた依頼は tmWatchIpc_Tick が無視するので、Shown の直後に一度見る
+            Shown += (sender, e) => tmWatchIpc_Tick(sender, EventArgs.Empty);
         }
 
         private void StopWatchIpcWakeEvent()
         {
-            tmWatchIpc_WakeRegistration?.Unregister(null);
-            tmWatchIpc_WakeRegistration = null;
-            tmWatchIpc_WakeEvent?.Dispose();
-            tmWatchIpc_WakeEvent = null;
+            var info = ipcLookAheadInfo;
+            if (info != null && tmWatchIpc_RequestArrivedHandler != null) info.RequestArrived -= tmWatchIpc_RequestArrivedHandler;
+            tmWatchIpc_RequestArrivedHandler = null;
+            tmWatchIpc_Waiting = false;
             tmMemoryReducer.Interval = 100; // 表示を始めたら通常の間隔に戻す
         }
         private void tmWatchIpc_Tick(object sender, EventArgs e)
@@ -11477,11 +11470,11 @@ namespace ZipPla
                     }
                 }
 #if DEBUG
-                catch (RemotingException ex)
+                catch (IpcDisconnectedException ex)
                 {
                     MessageBox.Show(ex.ToString());
 #else
-                catch (RemotingException)
+                catch (IpcDisconnectedException)
                 {
 #endif
                     tmWatchIpc_Stopped = true;
@@ -16482,7 +16475,7 @@ namespace ZipPla
                 GC.Collect(2, GCCollectionMode.Forced, blocking: false);
             }
             // 前面になく読み込みも落ち着いているときは 500ms 間隔に（待機中は IPC の待ち受けの側で 500ms にしている）（V31）
-            if (tmWatchIpc_WakeRegistration == null)
+            if (!tmWatchIpc_Waiting)
             {
                 var interval = Form.ActiveForm != this && sinceLoad > 2000 ? 500 : 100;
                 if (tmMemoryReducer.Interval != interval) tmMemoryReducer.Interval = interval;
