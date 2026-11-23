@@ -2925,9 +2925,9 @@ namespace ZipPla
                 }
                 return count == entryCount;
             }
-            catch (IOException)
+            catch (Exception)
             {
-                return false;
+                return false; // 判定できなければ従来どおり SharpCompress で読む
             }
         }
 
