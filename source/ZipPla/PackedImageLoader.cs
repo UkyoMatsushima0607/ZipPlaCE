@@ -978,9 +978,47 @@ namespace ZipPla
         public static bool PrioritizeSevenZip = false;
 
         // 7z 形式は、7z.dll があれば SharpCompress より 7z.dll で読む方が速い（300 ページの 7z で solid 2.4 秒→1.0 秒、非 solid 2.5 秒→0.8 秒）。
-        // 7z.dll が見つからなければ従来どおり SharpCompress で読む。RAR4 などは検証できていないので従来どおり。
+        // 7z.dll が見つからなければ従来どおり SharpCompress で読む。
         // CAB は 7z.dll だけで読む（B7。WiX DTF の Microsoft.Deployment.Compression.Cab は MS-RL で GPL と両立しない可能性があるのでやめた）
-        private static bool PreferSevenZipDll(PackType type) => type == PackType.SevenZip || type == PackType.Cab;
+        // RAR4 も 7z.dll で読む。SharpCompress の RAR の展開は managed の実装で、7z.dll（unrar と同じネイティブの実装）より遅い。
+        // ただしヘッダーごと暗号化された RAR4 は、7z.dll ではパスワードの問い合わせに答えられず開けないだけになるので、
+        // パスワード付きと分かるよう従来どおり SharpCompress で読む。項目だけ暗号化されている場合は一覧を作るときに PasswordLockedException にする
+        private bool PreferSevenZipDll(PackType type) => type == PackType.SevenZip || type == PackType.Cab || type == PackType.Rar && !rar4HeaderEncrypted;
+
+        // RAR4 のメインヘッダーに MHD_PASSWORD（0x80）が立っているか。読めなければ true（従来どおり SharpCompress で読む）
+        private bool rar4HeaderEncrypted = false;
+
+        /// <summary>
+        /// RAR4 の署名（7 バイト）の直後のメインヘッダー（HEAD_CRC 2・HEAD_TYPE 1 = 0x73・HEAD_FLAGS 2）を見て、ヘッダーが暗号化されているかを返す。
+        /// stream は書庫の先頭にあること。位置は戻す
+        /// </summary>
+        private static bool isRar4HeaderEncrypted(Stream stream)
+        {
+            var position = stream.Position;
+            try
+            {
+                var buffer = new byte[12];
+                if (!readFully(stream, buffer, buffer.Length)) return true;
+                if (buffer[9] != 0x73) return true;
+                return (buffer[10] & 0x80) != 0;
+            }
+            catch
+            {
+                return true;
+            }
+            finally
+            {
+                stream.Seek(position, SeekOrigin.Begin);
+            }
+        }
+
+        /// <summary>
+        /// 7z.dll で読む RAR4 の画像の項目が暗号化されていれば PasswordLockedException にする（SharpCompress で読んでいたときと同じく、パスワード付きと分かるように）
+        /// </summary>
+        private static void throwIfEncryptedRar4Entry(KnownSevenZipFormat format, Entry entry)
+        {
+            if (format == KnownSevenZipFormat.Rar && entry.IsEncrypted) throw new PasswordLockedException();
+        }
 
         private bool UseZipArchiveClass = true;
         // ZipArchive に渡す名前の文字コード。null なら UTF-8 フラグのない名前をシステムの既定のコードページで読む
@@ -1482,7 +1520,11 @@ namespace ZipPla
                 //size += entry.Size;
                 //if (sizeBound == long.MaxValue && entry.IsSolid) sizeBound = SolidSizeBound;
                 //if (size > sizeBound) break;
-                if (!entry.IsFolder && ImageLoader.SupportsFullReading(entry.FileName, ffmpegEixsts)) return true;
+                if (!entry.IsFolder && ImageLoader.SupportsFullReading(entry.FileName, ffmpegEixsts))
+                {
+                    throwIfEncryptedRar4Entry(format, entry);
+                    return true;
+                }
                 if (hNN) sevenZipEntries.Add(entry);
             }
 
@@ -1670,6 +1712,7 @@ namespace ZipPla
                 var path = entry.FileName;
                 if (ImageLoader.SupportsFullReading(path, ffmpegEixsts))
                 {
+                    throwIfEncryptedRar4Entry(format, entry);
                     DateTime dateTime;
                     if (needTime)
                     {
@@ -3042,6 +3085,7 @@ namespace ZipPla
                 if (buffer6 == 0x00)
                 {
                     stream.Seek(-bufferSize, SeekOrigin.Current);
+                    rar4HeaderEncrypted = isRar4HeaderEncrypted(stream);
                     return PackType.Rar;
                 }
                 else if (buffer6 == 0x01 && buffer[7] == 0x00)
