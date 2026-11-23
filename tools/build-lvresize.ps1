@@ -5,6 +5,7 @@
 #   - Visual Studio（Build Tools を含む。C++ ビルドツールが必要）の cl で 64bit の DLL をビルドする
 #   - Visual C++ ランタイムを静的リンクする（/MT。配布先に vcruntime のインストールを求めない）
 #   - AVX2・AVX-512 の命令は関数の中で CPU を確かめてから使うので、/arch は付けない
+#   - ソースは BOM なしの UTF-8 なので /utf-8 を付ける（付けないと日本語の Windows ではコードページ 932 として読まれ、警告 C4819 が出る）
 param(
     [Parameter(Mandatory)] [string]$OutDir,
     [string]$Source = ""
@@ -22,7 +23,7 @@ $vcvars = Join-Path $vs "VC\Auxiliary\Build\vcvars64.bat"
 $obj = Join-Path ([IO.Path]::GetTempPath()) ("lvresize-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Force $obj | Out-Null
 try {
-    $cmd = "`"$vcvars`" >nul && cd /d `"$obj`" && cl /nologo /O2 /W3 /MT /LD `"$Source\lvresize.c`" /Fe:lvresize.dll /link /NOLOGO"
+    $cmd = "`"$vcvars`" >nul && cd /d `"$obj`" && cl /nologo /utf-8 /O2 /W3 /MT /LD `"$Source\lvresize.c`" /Fe:lvresize.dll /link /NOLOGO"
     cmd /c $cmd
     if ($LASTEXITCODE -ne 0) { throw "ビルドに失敗しました（終了コード $LASTEXITCODE）" }
     $dll = Join-Path $obj "lvresize.dll"
