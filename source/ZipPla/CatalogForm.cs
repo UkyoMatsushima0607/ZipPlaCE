@@ -9044,6 +9044,7 @@ namespace ZipPla
 #if PERFLOG
             MakePreviewPerfLog.Start(e.Arguments?.Cast<object>().Count() ?? -1);
 #endif
+            resetDeferredHeaders(e.WorkSetGuid); // K33（下の SetBackgroundMode が表示中の項目を設定する）
             //var sw = new Stopwatch();
             //var ss = "";
 
@@ -9189,6 +9190,195 @@ namespace ZipPla
 
         Guid loadingGuid = Guid.Empty;
 
+        // ---- 後回しにしたヘッダの読み込み（K33） ----
+        // 以前はフォルダを開くと全項目のヘッダ（ページ数・解像度・動画情報など）を取っていて、表示中のサムネイルが揃ったあとも
+        // HDD を読み続けていた（画像 3200 件で 13 秒、小さな zip 5000 件で 47 秒）。ヘッダが見えていない項目に要るのは
+        // ファイル一覧の列（ページ数・解像度など）で並べ替えるときだけなので、見えていない項目は後回しにし、
+        // 見えたとき（サムネイルの描画・一覧の行の表示）と列で並べ替えるときに取る。
+        private readonly object headerDeferLock = new object();
+        private HashSet<string> headerDeferred = new HashSet<string>(); // 後回しにした項目のパス。headerDeferLock の中で読み書きする
+        private Guid headerDeferGuid = Guid.Empty;
+        private volatile HashSet<int> headerShownSet = null; // 表示中の項目（データのインデックス）。SetBackgroundModeCore が作り直す。null なら全部取る
+        private volatile bool headerWantAll = false; // 列で並べ替えるために全項目のヘッダが要る
+        private readonly List<KeyValuePair<int, string>> headerRequests = new List<KeyValuePair<int, string>>(); // UI スレッドだけ。末尾から取る
+        private int headerLoadersActive = 0; // UI スレッドだけ
+        private bool headerPumpScheduled = false; // UI スレッドだけ
+
+        private sealed class PendingVolatileSort
+        {
+            public DataGridViewColumn Column;
+            public SortOrder Direction;
+            public SortMode SortMode;
+            public Guid Guid;
+        }
+        private PendingVolatileSort pendingVolatileSort = null; // ヘッダが揃ったら並べ直す列の並べ替え。UI スレッドだけ
+
+        private void resetDeferredHeaders(Guid workSetGuid)
+        {
+            lock (headerDeferLock)
+            {
+                headerDeferred = new HashSet<string>();
+                headerDeferGuid = workSetGuid;
+            }
+            headerShownSet = null;
+            headerWantAll = false;
+            headerRequests.Clear();
+            pendingVolatileSort = null;
+        }
+
+        /// <summary>後回しにしていたら、その項目のヘッダを取る（UI スレッドで呼ぶ。描画中に呼んでよい）</summary>
+        private void requestDeferredHeader(int dataIndex)
+        {
+            var zpa = ZipPathArray;
+            if (zpa == null || dataIndex < 0 || dataIndex >= zpa.Length) return;
+            var path = zpa[dataIndex];
+            if (path == null) return;
+            lock (headerDeferLock)
+            {
+                if (headerDeferred.Count == 0 || headerDeferGuid != loadingGuid || !headerDeferred.Remove(path)) return;
+            }
+            headerRequests.Add(new KeyValuePair<int, string>(dataIndex, path));
+            scheduleHeaderPump();
+        }
+
+        /// <summary>
+        /// 後回しにした全項目のヘッダを取る（列で並べ替えるとき）。読み込みが残っていれば true
+        /// </summary>
+        private bool requestAllDeferredHeaders()
+        {
+            headerWantAll = true; // まだ始まっていないジョブも後回しにしない
+            HashSet<string> deferred;
+            lock (headerDeferLock)
+            {
+                deferred = headerDeferred;
+                if (headerDeferGuid != loadingGuid) deferred = null;
+                headerDeferred = new HashSet<string>();
+            }
+            var zpa = ZipPathArray;
+            if (deferred != null && deferred.Count > 0 && zpa != null)
+            {
+                // 表示順に取る（末尾から取り出すので逆順に積む）。すでに積んである見えている項目は、その後ろ（先に取る）へ回す
+                var visible = headerRequests.ToArray();
+                headerRequests.Clear();
+                var s2d = tvCatalog.ShowIndexToDataIndex;
+                var added = new bool[zpa.Length];
+                var list = new List<KeyValuePair<int, string>>(deferred.Count);
+                if (s2d != null)
+                {
+                    foreach (var di in s2d)
+                    {
+                        if (di >= 0 && di < zpa.Length && !added[di] && deferred.Contains(zpa[di])) { added[di] = true; list.Add(new KeyValuePair<int, string>(di, zpa[di])); }
+                    }
+                }
+                for (var i = 0; i < zpa.Length; i++) // 絞り込みで隠れている項目
+                {
+                    if (!added[i] && deferred.Contains(zpa[i])) list.Add(new KeyValuePair<int, string>(i, zpa[i]));
+                }
+                list.Reverse();
+                headerRequests.AddRange(list);
+                headerRequests.AddRange(visible);
+                scheduleHeaderPump();
+            }
+            return headerRequests.Count > 0 || headerLoadersActive > 0 || bmwMakePreview.IsBusy;
+        }
+
+        private void scheduleHeaderPump()
+        {
+            if (headerPumpScheduled) return;
+            headerPumpScheduled = true;
+            try
+            {
+                // 描画中に呼ばれても結果の反映が描画の中で起きないよう、メッセージループに戻ってから始める
+                BeginInvoke((MethodInvoker)(() => { headerPumpScheduled = false; pumpHeaderRequests(); }));
+            }
+            catch (InvalidOperationException) { headerPumpScheduled = false; } // ハンドルがない（閉じている）
+        }
+
+        private void pumpHeaderRequests()
+        {
+            // 見えている分は 1 本（HDD のシークを増やさない）。列で並べ替えるときは bmwMakePreview と同じだけ並列に
+            var max = headerWantAll ? Math.Max(2, Environment.ProcessorCount - 1) : 1;
+            while (headerLoadersActive < max && headerRequests.Count > 0)
+            {
+                var last = headerRequests.Count - 1;
+                var request = headerRequests[last];
+                headerRequests.RemoveAt(last);
+                // スクロールで通り過ぎただけの項目は後回しに戻す（また見えたら描画のときに取る）
+                if (!headerWantAll && !isShownNow(request.Key, request.Value))
+                {
+                    lock (headerDeferLock) { if (headerDeferGuid == loadingGuid) headerDeferred.Add(request.Value); }
+                    continue;
+                }
+                headerLoadersActive++;
+                _ = loadDeferredHeaderAsync(request.Key, request.Value, loadingGuid);
+            }
+            if (headerLoadersActive == 0 && headerRequests.Count == 0) tryFinishPendingVolatileSort();
+        }
+
+        /// <summary>項目がサムネイル一覧かファイル一覧に今表示されているか（UI スレッドで呼ぶ）</summary>
+        private bool isShownNow(int dataIndex, string path)
+        {
+            var zpa = ZipPathArray;
+            var d2s = tvCatalog.DataIndexToShowIndex;
+            if (zpa == null || d2s == null || dataIndex < 0 || dataIndex >= zpa.Length || dataIndex >= d2s.Length || zpa[dataIndex] != path) return true; // 判断できなければ取る
+            var showIndex = d2s[dataIndex];
+            if (showIndex < 0) return false;
+            if (pnlCenter.Visible && showIndex >= tvCatalog.DisplayedStartShowIndex && showIndex < tvCatalog.DisplayedStopShowIndex) return true;
+            if (dgvFileList.Visible)
+            {
+                var first = dgvFileList.FirstDisplayedScrollingRowIndex;
+                if (first >= 0 && showIndex >= first && showIndex < first + dgvFileList.DisplayedRowCount(includePartialRow: true)) return true;
+            }
+            return false;
+        }
+
+        private async Task loadDeferredHeaderAsync(int dataIndex, string path, Guid guid)
+        {
+            Tuple<string, Bitmap, bool, int, LoadResult, long, ImageInfo, Tuple<MovieInfo>> result = null;
+            try
+            {
+                result = await Task.Run(() =>
+                {
+                    if (guid != loadingGuid || CatalogForm_FormClosing_FormClosed) return null;
+                    var isDir = false;
+                    try { isDir = Directory.Exists(path); } catch { }
+                    var done = GetHeader(path, isDir, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
+                    return done ? Tuple.Create(path, null as Bitmap, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
+                });
+            }
+            catch { }
+            finally
+            {
+                headerLoadersActive--;
+            }
+            if (result != null && guid == loadingGuid && !CreatingZipPathArray && !CatalogForm_FormClosing_FormClosed)
+            {
+                try
+                {
+                    // 待っている間に項目が増減して位置がずれていたら探し直す
+                    var zpa = ZipPathArray;
+                    if (zpa != null && (dataIndex >= zpa.Length || zpa[dataIndex] != path)) dataIndex = Array.IndexOf(zpa, path);
+                    if (dataIndex >= 0) applyHeaderResult(dataIndex, result);
+                }
+                catch (Exception error)
+                {
+                    Program.AlertError(error);
+                }
+            }
+            if (!CatalogForm_FormClosing_FormClosed) pumpHeaderRequests();
+        }
+
+        /// <summary>列で並べ替えたあと、ヘッダが揃ったら同じ列でもう一度並べ替える</summary>
+        private void tryFinishPendingVolatileSort()
+        {
+            var pending = pendingVolatileSort;
+            if (pending == null) return;
+            if (pending.Guid != loadingGuid) { pendingVolatileSort = null; return; }
+            if (headerRequests.Count > 0 || headerLoadersActive > 0 || bmwMakePreview.IsBusy) return;
+            pendingVolatileSort = null;
+            applyVolatileSort(pending.Column, pending.Direction, pending.SortMode, scrollToTopIfNoSelection: false); // 待っている間に動かしたスクロールは戻さない
+        }
+
         private void bmwMakePreview_DoWork(object sender, BackgroundMultiWorker.EachDoWorkEventArgs e)
         {
             // ジョブ番号 2*i はヘッダ（ページ数・解像度・動画情報など）の取得。
@@ -9205,6 +9395,24 @@ namespace ZipPla
             if (loadingGuid != e.WorkSetGuid || zpa == null || zpa.Length <= index2) return;
 
             var zipPath = zpa[index2];
+
+            // 見えていない項目のヘッダは取らずに後回しにする（K33）。見えたとき・列で並べ替えるときに requestDeferredHeader で取る。
+            // 書庫・動画の中の項目は GetHeader がファイルを読まないので後回しにしない
+            if (!headerWantAll && zipPath.IndexOf(Path.AltDirectorySeparatorChar) < 0)
+            {
+                var shown = headerShownSet;
+                if (shown != null && !shown.Contains(index2))
+                {
+                    lock (headerDeferLock)
+                    {
+                        if (headerDeferGuid == e.WorkSetGuid)
+                        {
+                            headerDeferred.Add(zipPath);
+                            return;
+                        }
+                    }
+                }
+            }
 
             var isDir = false;
             try
@@ -9325,7 +9533,39 @@ namespace ZipPla
             }
             if (show)
             {
-                var index = e.WorkNumber / 2;
+                applyHeaderResult(e.WorkNumber / 2, ResultTuple);
+            }
+
+            // 実行順の並べ替え（全件 O(N)）はマウスが動いたときだけ、かつ 100ms に1回までにする。
+            // 間引いた回はカーソル位置を記録しないので、次の完了時に改めて並べ替える。
+            var now = Environment.TickCount;
+            var cp = Cursor.Position;
+            if (cp != bmwMakePreview_EachRunWorkerCompleted_CursorPosition && unchecked(now - bmwMakePreview_EachRunWorkerCompleted_LastOrderTick) >= 100)
+            {
+                bmwMakePreview_EachRunWorkerCompleted_CursorPosition = cp;
+                bmwMakePreview_EachRunWorkerCompleted_LastOrderTick = now;
+                SetBackgroundMode(true, 1);
+            }
+            else
+            {
+                SetBackgroundMode(false, 1);
+            }
+
+            // 進捗表示も 100ms に1回まで（最終値は AllRunWorkersCompleted で設定される）
+            if (unchecked(now - bmwMakePreview_EachRunWorkerCompleted_LastCountTick) >= 100)
+            {
+                bmwMakePreview_EachRunWorkerCompleted_LastCountTick = now;
+                loadCountToolStripMenuItem.Text = bmwMakePreview.CurrentThreadCount + "   " + e.CompletedWorksCount + " / " + ZipPathArray.Length;
+            }
+        }
+
+        /// <summary>
+        /// ヘッダ取得（GetHeader）の結果を配列・ファイル一覧・ステータスバーに反映する（UI スレッドで呼ぶ）。
+        /// bmwMakePreview のジョブと、後回しにしたヘッダの読み込み（K33）の両方から使う
+        /// </summary>
+        private void applyHeaderResult(int index, Tuple<string, Bitmap, bool, int, LoadResult, long, ImageInfo, Tuple<MovieInfo>> ResultTuple)
+        {
+            {
                 var plainFile = ResultTuple.Item3;
                 //var singlePath = "";
                 try
@@ -9498,28 +9738,6 @@ namespace ZipPla
                 {
                     Program.AlertError(error);
                 }
-            }
-
-            // 実行順の並べ替え（全件 O(N)）はマウスが動いたときだけ、かつ 100ms に1回までにする。
-            // 間引いた回はカーソル位置を記録しないので、次の完了時に改めて並べ替える。
-            var now = Environment.TickCount;
-            var cp = Cursor.Position;
-            if (cp != bmwMakePreview_EachRunWorkerCompleted_CursorPosition && unchecked(now - bmwMakePreview_EachRunWorkerCompleted_LastOrderTick) >= 100)
-            {
-                bmwMakePreview_EachRunWorkerCompleted_CursorPosition = cp;
-                bmwMakePreview_EachRunWorkerCompleted_LastOrderTick = now;
-                SetBackgroundMode(true, 1);
-            }
-            else
-            {
-                SetBackgroundMode(false, 1);
-            }
-
-            // 進捗表示も 100ms に1回まで（最終値は AllRunWorkersCompleted で設定される）
-            if (unchecked(now - bmwMakePreview_EachRunWorkerCompleted_LastCountTick) >= 100)
-            {
-                bmwMakePreview_EachRunWorkerCompleted_LastCountTick = now;
-                loadCountToolStripMenuItem.Text = bmwMakePreview.CurrentThreadCount + "   " + e.CompletedWorksCount + " / " + ZipPathArray.Length;
             }
         }
         private int bmwMakePreview_EachRunWorkerCompleted_LastOrderTick = Environment.TickCount - 1000;
@@ -9896,6 +10114,9 @@ namespace ZipPla
 #if PERFLOG
                             MakePreviewPerfLog.Finish(e.Results.Count, ZipPathArray.Length);
 #endif
+                            // 列での並べ替えがヘッダを待っていたら、後回しの分の読み込みも終わっていれば並べ直す（K33）。
+                            // この時点では IsBusy がまだ true なので、メッセージループに戻ってから確かめる
+                            if (pendingVolatileSort != null) BeginInvoke((MethodInvoker)tryFinishPendingVolatileSort);
                         }
                     })));
                 }
@@ -11442,6 +11663,11 @@ namespace ZipPla
 
                     var shownCount = idx;
                     var listCount = shownCount - thumbStop;
+
+                    // 表示中の項目だけヘッダを取り、ほかは後回しにする（K33）
+                    var shownSet = new HashSet<int>();
+                    for (var i = 0; i < shownCount; i++) shownSet.Add(Order[i] >> 1);
+                    headerShownSet = shownSet;
                     {
                         for (var i = 0; i < thumbStop; i++) Order[i + idx] = Order[i] ^ 1;
                         idx += thumbStop;
@@ -15180,6 +15406,7 @@ namespace ZipPla
                 prevSortMode = cbSortBy_SelectedValueChanged_prevSortByIndex;
             }
             cbSortBy_SelectedValueChanged_prevSortByIndex = sortMode = (SortMode)sortModeIndex;
+            pendingVolatileSort = null; // 列での並べ替えを待っていたらやめる（K33）
 
             // ここで先にファイルリストのソート矢印の向きを変更することもできるがエクスプローラーに合わせてそれは行わない
             var success = false;
@@ -15339,6 +15566,11 @@ namespace ZipPla
             }
             var info = getFileListRowInfo(e.RowIndex);
             if (info == null) return;
+            if (columnIndex == tbcFileName.Index) // 表示する行の後回しにしたヘッダを取る（K33）。名前の列は常に表示されている
+            {
+                var s2d = tvCatalog.ShowIndexToDataIndex;
+                if (s2d != null && e.RowIndex >= 0 && e.RowIndex < s2d.Length) requestDeferredHeader(s2d[e.RowIndex]);
+            }
             if (columnIndex == tbcIcon.Index) e.Value = info.Path;
             else if (columnIndex >= 0 && columnIndex < info.Texts.Length) e.Value = info.Texts[columnIndex];
         }
@@ -16678,6 +16910,44 @@ namespace ZipPla
         }
 
         private readonly Dictionary<DataGridViewColumn, int> dgvFileList_ColumnHeaderMouseClick_LastClickedTime = new Dictionary<DataGridViewColumn, int>();
+
+        /// <summary>ファイル一覧の揮発性の列（ページ数・解像度など）で並べ替える</summary>
+        private void applyVolatileSort(DataGridViewColumn tbc, SortOrder dir, SortMode sortMode, bool scrollToTopIfNoSelection = true)
+        {
+            var success = false;
+            lock (ZipPathArrayLocker)
+            {
+                if (ZipPathArray != null && !CreatingZipPathArray)
+                {
+                    success = true;
+                    foreach (DataGridViewColumn c in dgvFileList.Columns) c.HeaderCell.SortGlyphDirection = c != tbc ? SortOrder.None : dir;
+                    tvCatalog.ShowIndexToDataIndex = GetSortArray(preSortArray: tvCatalog.ShowIndexToDataIndex, sortMode: sortMode);
+                }
+            }
+            if (success)
+            {
+                var temp = cbSortBy_SelectedValueChanged_Stop;
+                cbSortBy_SelectedValueChanged_Stop = true;
+                cbSortBy.SelectedIndex = -1;
+                cbSortBy_SelectedValueChanged_Stop = temp;
+                setFileListFromThumbnailViewer(volatilitySort: true);
+                var si = tvCatalog.SelectedIndex;
+                if (si >= 0)
+                {
+                    //tvCatalog.ScrollBarToIndex(si);
+                    tvCatalog.ScrollBarToIndexWithMinimalMove(tvCatalog.DataIndexToShowIndex[si]);
+                }
+                else if (scrollToTopIfNoSelection)
+                {
+                    var s2d = tvCatalog.ShowIndexToDataIndex;
+                    if (s2d.Length > 0)
+                    {
+                        tvCatalog.ScrollBarToIndex(s2d[0]);
+                    }
+                }
+            }
+        }
+
         private void dgvFileList_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -16799,38 +17069,9 @@ namespace ZipPla
                         if (Enum.TryParse("V" + tbc.Name.Substring(3) + dirString, out sortMode))
                         {
                             //if (cbSortBy_SelectedValueChanged_Stop) return;
-                            var success = false;
-                            lock (ZipPathArrayLocker)
-                            {
-                                if (ZipPathArray != null)
-                                {
-                                    success = true;
-                                    foreach (DataGridViewColumn c in dgvFileList.Columns) c.HeaderCell.SortGlyphDirection = c != tbc ? SortOrder.None : dir;
-                                    tvCatalog.ShowIndexToDataIndex = GetSortArray(preSortArray: tvCatalog.ShowIndexToDataIndex, sortMode: sortMode);
-                                }
-                            }
-                            if (success)
-                            {
-                                var temp = cbSortBy_SelectedValueChanged_Stop;
-                                cbSortBy_SelectedValueChanged_Stop = true;
-                                cbSortBy.SelectedIndex = -1;
-                                cbSortBy_SelectedValueChanged_Stop = temp;
-                                setFileListFromThumbnailViewer(volatilitySort: true);
-                                var si = tvCatalog.SelectedIndex;
-                                if (si >= 0)
-                                {
-                                    //tvCatalog.ScrollBarToIndex(si);
-                                    tvCatalog.ScrollBarToIndexWithMinimalMove(tvCatalog.DataIndexToShowIndex[si]);
-                                }
-                                else
-                                {
-                                    var s2d = tvCatalog.ShowIndexToDataIndex;
-                                    if (s2d.Length > 0)
-                                    {
-                                        tvCatalog.ScrollBarToIndex(s2d[0]);
-                                    }
-                                }
-                            }
+                            // 後回しにしたヘッダ（K33）を全部取り、揃ったらもう一度並べ替える。それまでは今ある値で並べる
+                            pendingVolatileSort = requestAllDeferredHeaders() ? new PendingVolatileSort { Column = tbc, Direction = dir, SortMode = sortMode, Guid = loadingGuid } : null;
+                            applyVolatileSort(tbc, dir, sortMode);
                         }
                         if (dir == SortOrder.Descending) dgvFileList_ColumnHeaderMouseClick_LastClickedTime[tbc] = Environment.TickCount;
                     }
@@ -25256,6 +25497,7 @@ namespace ZipPla
         private readonly Dictionary<string, Size> tvCatalog_ThumbnailPaint_CoverStringWidthDictionary = new Dictionary<string, Size>();
         private void tvCatalog_ThumbnailPaint(ThumbViewer sender, ThumbViewer.ThumbnailPaintEventArgs e)
         {
+            requestDeferredHeader(e.DataIndex); // 見えた項目の後回しにしたヘッダを取る（K33）
             var zpa = ZipPathArray;
             var zna = ZipNameArray;
             var lra = LoadResultArray;
