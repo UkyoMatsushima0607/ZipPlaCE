@@ -16909,6 +16909,38 @@ namespace ZipPla
             
             SetStyle(ControlStyles.Opaque, true);
 
+            RaiseSharedBufferLimit();
+        }
+
+        private static bool sharedBufferLimitRaised = false;
+
+        /// <summary>
+        /// WinForms のダブルバッファは共有のバッファを使い回すが、その上限（BufferedGraphicsManager.Current.MaximumBuffer）の既定は 225x96 しかない。
+        /// これより大きいコントロールは描くたびに一時のバッファ（ウィンドウと同じ大きさの DIB）を作って捨てるので、
+        /// ビューアではページ送り・拡大鏡の移動・アニメーションのコマごとに 1080p で約 8MB、4K で約 33MB の確保と解放をしていた。
+        /// 上限をいちばん大きい画面の大きさまで上げ、共有のバッファを使い回させる（ビューアのプロセスだけ。バッファは描いた大きさの分だけ持ち続ける）
+        /// </summary>
+        private static void RaiseSharedBufferLimit()
+        {
+            if (sharedBufferLimitRaised) return;
+            sharedBufferLimitRaised = true;
+            try
+            {
+                var width = 0;
+                var height = 0;
+                foreach (var screen in Screen.AllScreens)
+                {
+                    width = Math.Max(width, screen.Bounds.Width);
+                    height = Math.Max(height, screen.Bounds.Height);
+                }
+                var context = BufferedGraphicsManager.Current;
+                var current = context.MaximumBuffer;
+                if (width > 0 && height > 0 && (long)width * height > (long)current.Width * current.Height)
+                {
+                    context.MaximumBuffer = new Size(Math.Max(width, current.Width), Math.Max(height, current.Height));
+                }
+            }
+            catch { }
         }
 
         /*
