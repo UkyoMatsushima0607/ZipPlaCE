@@ -27,6 +27,7 @@ himamon 氏の「ZipPla雑改造版」をもとに、高速化・省メモリ化
 - solid 書庫（7z・RAR5 など）は 7z.dll 経由で読み込み、ページを順に読むときの展開のやり直しをなくしました。
 - WebP は libwebp で直接デコードします（アニメーション WebP にも対応）。
 - JPEG は、exe と同じフォルダに libjpeg-turbo の turbojpeg.dll があればそれでデコードします（SIMD の IDCT・DCT の段階の縮小）。なければ従来どおり GDI+・WIC で読みます。
+- Lanczos・Spline などの縮小（ガンマ 1.0）は、exe と同じフォルダに lvresize.dll があればそれで描きます（実行時に AVX-512・AVX2 を選ぶ。結果は C# の版と同じ）。ソースは `source/native/lvresize`、ビルドは `tools/build-lvresize.ps1` です。
 
 ## 実行に必要なもの
 - .NET Framework 4.8（Windows 10 / 11 には標準で入っています）

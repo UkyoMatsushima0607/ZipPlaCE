@@ -726,6 +726,12 @@ namespace ZipPla
                                     var y0 = j * vStep;
                                     var y1 = Math.Min(y0 + vStep, dstBottomBound);
 
+                                    // ZipPla CE: ガンマ 1.0 で lvresize.dll があれば、ネイティブ版（AVX-512・AVX2）で描く。結果は同じ
+                                    if (toLinear != null || !NativeResizer.TryCore(
+                                        dstData.Scan0, x0, x1, y0, y1, dstData.Stride, dstBytesPerPixel, dstRect.Width, dstRect.Height,
+                                        srcData.Scan0, txx, tx0, txd, srcStep.Width, tyy, ty0, tyd, srcStep.Height,
+                                        srcData.Stride, srcBytesPerPixel, srcRect.Width, srcRect.Height,
+                                        rx, ry, cx0_, cy0_, buff1d, buff2d, getSuitabgleDigits(ry * 2), cancel: null))
                                     core(
                                         dstData.Scan0, x0, x1, y0, y1, dstData.Stride, dstBytesPerPixel, dstRect.Width, dstRect.Height,
                                         srcData.Scan0, txx, tx0, txd, srcStep.Width, tyy, ty0, tyd, srcStep.Height,
@@ -741,6 +747,11 @@ namespace ZipPla
                                 fixed (ulong* buff1d = new ulong[buffer1dSize])
                                 fixed (ulong* buff2d = new ulong[buffer2dSize])
                                 {
+                                    if (toLinear != null || !NativeResizer.TryCore(
+                                        dstData.Scan0, 0, dstRightBound, 0, dstBottomBound, dstData.Stride, dstBytesPerPixel, dstRect.Width, dstRect.Height,
+                                        srcData.Scan0, txx, tx0, txd, srcStep.Width, tyy, ty0, tyd, srcStep.Height,
+                                        srcData.Stride, srcBytesPerPixel, srcRect.Width, srcRect.Height,
+                                        rx, ry, cx0, cy0, buff1d, buff2d, getSuitabgleDigits(ry * 2), cancel))
                                     core(
                                         dstData.Scan0, 0, dstRightBound, 0, dstBottomBound, dstData.Stride, dstBytesPerPixel, dstRect.Width, dstRect.Height,
                                         srcData.Scan0, txx, tx0, txd, srcStep.Width, tyy, ty0, tyd, srcStep.Height,

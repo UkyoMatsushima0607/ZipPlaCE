@@ -1,6 +1,6 @@
 ﻿# ZipPla CE の配布用 zip を作る。
 # 使い方: powershell -NoProfile -ExecutionPolicy Bypass -File tools\make-dist.ps1 -Version 1.0.0 [-Commit v1.0.0] [-OutDir .work\dist]
-#         [-WebPDir <libwebp の DLL のフォルダ>] [-NoWebP] [-TurboJpegDir <turbojpeg.dll のフォルダ>] [-NoTurboJpeg] [-AllowUnpushed]
+#         [-WebPDir <libwebp の DLL のフォルダ>] [-NoWebP] [-TurboJpegDir <turbojpeg.dll のフォルダ>] [-NoTurboJpeg] [-NoLvResize] [-AllowUnpushed]
 #
 # - 指定したコミット（既定 HEAD）を一時フォルダの git worktree に取り出し、AutoBuild 構成でクリーンビルドする。
 #   作業ツリーの未コミットの変更は入らない。worktree と中間ファイルは終わったら消す。
@@ -9,7 +9,9 @@
 #   -NoWebP なら入れない（WebP は ffmpeg で読み、アニメーション WebP は読めない）。
 # - libjpeg-turbo の turbojpeg.dll は tools\build-libjpeg-turbo.ps1 -OutDir <フォルダ> で作り、-TurboJpegDir で指定する（既定 .work\tmp\libjpeg-turbo-dll）。
 #   -NoTurboJpeg なら入れない（JPEG は従来どおり GDI+・WIC で読む）。
-# - 入れるもの: ZipPla.exe、ZipPla.exe.config、libwebp の DLL、turbojpeg.dll、license\、README.txt（このスクリプトが作る）
+# - lvresize.dll（縮小のネイティブ版）は、取り出したコミットの source\native\lvresize から tools\build-lvresize.ps1 でビルドして入れる
+#   （Visual Studio の C++ ビルドツールが必要）。-NoLvResize なら入れない（縮小は C# の版で描く）。
+# - 入れるもの: ZipPla.exe、ZipPla.exe.config、libwebp の DLL、turbojpeg.dll、lvresize.dll、license\、README.txt（このスクリプトが作る）
 # - 入れないもの: ffmpeg.exe（GPL 版で大きい）、7z.dll、config.xml などの実行時に作られるファイル
 # - AGPL のため、配布する版のソースが公開リポジトリから取れるようにすること（タグを付けて push する）。
 param(
@@ -23,6 +25,7 @@ param(
     # turbojpeg.dll と、そのライセンス文（libjpeg-turbo-LICENSE.md・libjpeg-turbo-README.ijg.txt）があるフォルダ
     [string]$TurboJpegDir = ".work\tmp\libjpeg-turbo-dll",
     [switch]$NoTurboJpeg,
+    [switch]$NoLvResize,
     # 公開リポジトリに無いコミットでも作る（手元での確認用）
     [switch]$AllowUnpushed
 )
@@ -92,6 +95,9 @@ try {
     foreach ($f in "ZipPla.exe", "ZipPla.exe.config") { Copy-Item (Join-Path $buildOut $f) $stage }
     if (-not $NoWebP) { foreach ($f in $webpNames) { Copy-Item (Join-Path $WebPDir $f) $stage } }
     Copy-Item (Join-Path $wt "license") (Join-Path $stage "license") -Recurse
+    if (-not $NoLvResize) {
+        & (Join-Path $PSScriptRoot "build-lvresize.ps1") -OutDir $stage -Source (Join-Path $wt "source\native\lvresize")
+    }
     if (-not $NoTurboJpeg) {
         Copy-Item (Join-Path $TurboJpegDir "turbojpeg.dll") $stage
         foreach ($f in $turboNames | Where-Object { $_ -ne "turbojpeg.dll" }) { Copy-Item (Join-Path $TurboJpegDir $f) (Join-Path $stage "license") }
