@@ -4670,6 +4670,58 @@ namespace ZipPla
             }
         }
 
+        /// <summary>
+        /// ZipPla CE: サムネイルを作るときに書庫を開いて数えたページ数。キャッシュにない書庫は、ヘッダの取得（getFileCount）と
+        /// サムネイルの作成（GetArchiveThumbnail）が別々に書庫を開いて目録（7z・RAR のヘッダ、zip の中央ディレクトリ）を読んでいたので、
+        /// サムネイルが先に作られていればヘッダの側はこれを使い、書庫を開かない。キャッシュを使わない設定のときも効く。
+        /// ファイルの大きさと更新日時、書庫の中の探し方が同じときだけ使う
+        /// </summary>
+        private sealed class ArchiveEntryCountMemo
+        {
+            public long Length;
+            public DateTime LastWriteTimeUtc;
+            public int LeftHierarchies;
+            public PackedImageLoaderSearchMode SearchMode;
+            public int Count;
+        }
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ArchiveEntryCountMemo> archiveEntryCountMemos
+            = new System.Collections.Concurrent.ConcurrentDictionary<string, ArchiveEntryCountMemo>(StringComparer.OrdinalIgnoreCase);
+        private const int ArchiveEntryCountMemoMax = 4096;
+
+        private void rememberArchiveEntryCount(string zipPath, int count)
+        {
+            try
+            {
+                var info = new FileInfo(zipPath);
+                if (!info.Exists) return; // フォルダは対象にしない
+                if (archiveEntryCountMemos.Count >= ArchiveEntryCountMemoMax) archiveEntryCountMemos.Clear();
+                archiveEntryCountMemos[zipPath] = new ArchiveEntryCountMemo
+                {
+                    Length = info.Length,
+                    LastWriteTimeUtc = info.LastWriteTimeUtc,
+                    LeftHierarchies = packedImageLoaderLeftHierarchies,
+                    SearchMode = packedImageLoaderSearchMode,
+                    Count = count,
+                };
+            }
+            catch { }
+        }
+
+        private bool tryGetRememberedArchiveEntryCount(string zipPath, out int count)
+        {
+            count = -1;
+            if (!archiveEntryCountMemos.TryRemove(zipPath, out var memo)) return false; // 使うのは 1 回だけ（ヘッダは 1 項目につき 1 回取る）
+            if (memo.LeftHierarchies != packedImageLoaderLeftHierarchies || memo.SearchMode != packedImageLoaderSearchMode) return false;
+            try
+            {
+                var info = new FileInfo(zipPath);
+                if (!info.Exists || info.Length != memo.Length || info.LastWriteTimeUtc != memo.LastWriteTimeUtc) return false;
+            }
+            catch { return false; }
+            count = memo.Count;
+            return true;
+        }
+
         private void getFileCount(out int filecount, string zipPath)
         {
             filecount = -1;
@@ -4691,9 +4743,12 @@ namespace ZipPla
                 }
                 if (filecount == -1 && ArchivesInArchiveMode == ArchivesInArchiveMode.Ignore)
                 {
-                    using (var loader = new PackedImageLoader(zipPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode))
+                    if (!tryGetRememberedArchiveEntryCount(zipPath, out filecount))
                     {
-                        filecount = loader.GetPackedImageEntries().Count;
+                        using (var loader = new PackedImageLoader(zipPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode))
+                        {
+                            filecount = loader.GetPackedImageEntries().Count;
+                        }
                     }
                 }
             }
@@ -6105,6 +6160,7 @@ namespace ZipPla
                         //var entries = loader.GetPackedImageEntries().OrderBy(entry => entry.Path, new LogicalStringComparer());
                         entries = loader.GetPackedImageEntries();
                         filecount = entries.Count;
+                        if (loader.Type != PackedImageLoader.PackType.Directory) rememberArchiveEntryCount(zipPath, filecount);
 
                         //var byZipPlaImageFile = false;
                         //if (coverPage == null)
