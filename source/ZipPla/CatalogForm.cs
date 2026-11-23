@@ -26457,13 +26457,18 @@ namespace ZipPla
         private static int indexOfWatchedPath(string[] zpa, string path)
         {
             if (path == null) return -1;
-            var idx = Array.IndexOf(zpa, path);
-            if (idx >= 0) return idx;
+            // 完全に一致するものを優先し、なければ大文字小文字を無視して最初に一致したもの。
+            // 以前は Array.IndexOf と大文字小文字を無視した比較で一覧を 2 回なめていた（新しいファイルは必ず両方とも最後まで見る）。1 回にまとめる
+            var length = path.Length;
+            var ignoreCaseIndex = -1;
             for (var i = 0; i < zpa.Length; i++)
             {
-                if (string.Equals(zpa[i], path, StringComparison.OrdinalIgnoreCase)) return i;
+                var p = zpa[i];
+                if (p == null || p.Length != length || !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.Equals(p, path, StringComparison.Ordinal)) return i;
+                if (ignoreCaseIndex < 0) ignoreCaseIndex = i;
             }
-            return -1;
+            return ignoreCaseIndex;
         }
         
         private HashSet<string> addOrReloadItem_UserAddFileInLower = null;
