@@ -1742,6 +1742,9 @@ namespace ZipPla
             fileListRowTemplate.Cells[tbcFileName.Index] = new RainbowDataGridViewTextBoxCell();
             fileListRowTemplate.Cells[tbcRating.Index] = new RatingGridViewTextBoxCell();
             fileListRowTemplate.Cells[tbcIcon.Index] = new DataGridViewIconCell();
+            // 画像の列の既定の NullValue は空の画像。値が null のとき（行がデータと対応していない間）に文字列のセルの書式の型と合わず、
+            // 行を消すときの現在のセルの検証で DataError の既定のダイアログが出る（絞り込みで 0 件になったときなど）
+            tbcIcon.DefaultCellStyle.NullValue = null;
             fileListRowTemplate.Height = dgvFileList.RowTemplate.Height;
             dgvFileList.RowTemplate = fileListRowTemplate;
             dgvFileList.VirtualMode = true;
