@@ -457,7 +457,7 @@ namespace ZipPla
             }
         }
 
-        // FromFile（ffmpeg の起動 1 回、約 40ms）の結果を、ファイルのサイズと更新日時が変わらない間だけ覚えておく。
+        // FromFile（ffmpeg の起動 1 回、約 30〜40ms）の結果を、ファイルのサイズと更新日時が変わらない間だけ覚えておく。
         // カタログはヘッダ取得とサムネイル作成でそれぞれ動画の情報を取っていたので、2 回目を省く
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Tuple<long, DateTime, MovieInfo>> fromFileCache =
             new System.Collections.Concurrent.ConcurrentDictionary<string, Tuple<long, DateTime, MovieInfo>>(StringComparer.OrdinalIgnoreCase);
@@ -481,7 +481,8 @@ namespace ZipPla
             {
                 return cached.Item3.Clone();
             }
-            var result = FromFile(path);
+            // mp4 / mov の H.264 なら、ffmpeg を起動せずにヘッダから同じ値を読む（K32）。確かでないときは ffmpeg
+            if (!Mp4MovieInfoReader.TryRead(path, out var result)) result = FromFile(path);
             if (fromFileCache.Count >= FromFileCacheCapacity) fromFileCache.Clear();
             fromFileCache[path] = Tuple.Create(length, lastWrite, result.Clone());
             return result;
