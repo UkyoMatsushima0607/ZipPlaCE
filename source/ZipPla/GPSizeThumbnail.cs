@@ -1348,6 +1348,13 @@ namespace ZipPla
         // 後回しの書き込みの順番待ちの上限（Y15）。これを超えたら呼び出し側のスレッドで書く
         private const int MaxPendingWrites = 64;
         private static Thread pendingWriteThread = null;
+        // ZipPla CE: 最後の登録からこれだけ新しい登録がなければ、溜まった分をまとめて書く（K35）。
+        // 見えているサムネイルの読み込み・スクロールの間は書かず、HDD で読み込みと書き込みが交互になってシークが増えるのを防ぐ
+        private const int PendingWriteQuietMilliseconds = 1000;
+        // これだけ溜まったら待たずに書く（上限 MaxPendingWrites に達して呼び出し側で書くことにならないように）
+        private const int PendingWriteBatchLimit = MaxPendingWrites / 2;
+        private static int pendingWriteLastEnqueueTick;
+        private static int pendingWriteFlushRequests; // FlushPendingWrites が待っている数。0 でなければ待たずに書く。pendingWrites で lock する
 
         private static void EnqueuePendingWrite(PendingWrite job)
         {
@@ -1355,6 +1362,7 @@ namespace ZipPla
             {
                 pendingWrites.Enqueue(job);
                 pendingWriteCount++;
+                pendingWriteLastEnqueueTick = Environment.TickCount;
                 if (pendingWriteThread == null)
                 {
                     pendingWriteThread = new Thread(PendingWriteLoop) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "ThumbnailCacheWriter" };
@@ -1368,33 +1376,45 @@ namespace ZipPla
         {
             while (true)
             {
-                PendingWrite job;
+                PendingWrite[] batch;
                 lock (pendingWrites)
                 {
                     while (pendingWrites.Count == 0) Monitor.Wait(pendingWrites);
-                    job = pendingWrites.Dequeue();
-                }
-                try
-                {
-                    if (job.Focus != null)
+                    // ZipPla CE: 新しい登録が止まるまで待ってから、溜まった分をまとめて書く（K35）
+                    while (pendingWriteFlushRequests == 0 && pendingWrites.Count < PendingWriteBatchLimit)
                     {
-                        WriteFocusMemos(job);
+                        var rest = PendingWriteQuietMilliseconds - unchecked(Environment.TickCount - pendingWriteLastEnqueueTick);
+                        if (rest <= 0 || rest > PendingWriteQuietMilliseconds) break;
+                        Monitor.Wait(pendingWrites, rest);
                     }
-                    else
-                    {
-                        TrySetCore(job.CacheRoot, job.FileName, job.Index, job.RequiredSize, job.LetterBox, job.FullSizeCache, null, job.PixelRatio, job.GpData,
-                            getBiggest: false, biggestBitmap: out var dummy, biggestBitmapPixelRatio: out var dummy2, pending: job);
-                    }
+                    batch = pendingWrites.ToArray();
+                    pendingWrites.Clear();
                 }
-                catch { }
-                finally
+                // パスの順に書く（同じフォルダのファイルが続く）。OrderBy は安定なので、同じファイルの書き込みと注目点の記録の順番は保たれる
+                foreach (var job in batch.OrderBy(j => j.FileName, StringComparer.OrdinalIgnoreCase))
                 {
-                    job.Biggest?.Dispose();
-                    job.Biggest = null;
-                    lock (pendingWrites)
+                    try
                     {
-                        pendingWriteCount--;
-                        Monitor.PulseAll(pendingWrites);
+                        if (job.Focus != null)
+                        {
+                            WriteFocusMemos(job);
+                        }
+                        else
+                        {
+                            TrySetCore(job.CacheRoot, job.FileName, job.Index, job.RequiredSize, job.LetterBox, job.FullSizeCache, null, job.PixelRatio, job.GpData,
+                                getBiggest: false, biggestBitmap: out var dummy, biggestBitmapPixelRatio: out var dummy2, pending: job);
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        job.Biggest?.Dispose();
+                        job.Biggest = null;
+                        lock (pendingWrites)
+                        {
+                            pendingWriteCount--;
+                            Monitor.PulseAll(pendingWrites);
+                        }
                     }
                 }
             }
@@ -1408,13 +1428,23 @@ namespace ZipPla
             var limit = Environment.TickCount + millisecondsTimeout;
             lock (pendingWrites)
             {
-                while (pendingWriteCount > 0)
+                // ZipPla CE: 書き込みのスレッドが新しい登録を待っていれば、待たずに書かせる（K35）
+                pendingWriteFlushRequests++;
+                Monitor.PulseAll(pendingWrites);
+                try
                 {
-                    var rest = limit - Environment.TickCount;
-                    if (rest <= 0) return false;
-                    Monitor.Wait(pendingWrites, rest);
+                    while (pendingWriteCount > 0)
+                    {
+                        var rest = limit - Environment.TickCount;
+                        if (rest <= 0) return false;
+                        Monitor.Wait(pendingWrites, rest);
+                    }
+                    return true;
                 }
-                return true;
+                finally
+                {
+                    pendingWriteFlushRequests--;
+                }
             }
         }
 
