@@ -463,10 +463,10 @@ namespace ZipPla
                         }
                         break;
                     case PackedImageLoaderOnMemoryMode.Releasable:
-                        stream = new ReleasableStream(File.OpenRead(path));
+                        stream = new ReleasableStream(OpenArchiveFile(path));
                         break;
                     default:
-                        stream = File.OpenRead(path);
+                        stream = OpenArchiveFile(path);
                         break;
                 }
                 setType();
@@ -531,6 +531,13 @@ namespace ZipPla
                 throw;
             }
         }
+
+        /// <summary>
+        /// 書庫のファイルを開く。File.OpenRead と同じ共有モードで、読み込みのバッファだけ 64KB にする。
+        /// 既定の 4KB では、ZipArchive の Deflate が 8KB ずつ読むたびにバッファを通らず ReadFile になり、
+        /// 1 ページ（数 MB）で数百回の ReadFile（NAS では同じ数の要求）になる
+        /// </summary>
+        private static FileStream OpenArchiveFile(string path) => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024);
 
         public class PackedImageEntry
         {
