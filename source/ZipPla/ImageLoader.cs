@@ -509,7 +509,9 @@ namespace ZipPla
                     s.Position = 0;
                     var image = new System.Windows.Media.Imaging.BitmapImage();
                     image.BeginInit();
-                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    // ZipPla CE: OnLoad では WPF のキャッシュに全部デコードしてから CopyPixels でもう一度コピーしていた。
+                    // None なら GetBitmap の CopyPixels のときに WIC が GDI+ のバッファに直接書く。s は using の中なので開いている
+                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.None;
                     image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
                     // 1/2・1/4・1/8 ちょうどの大きさを求め、WIC が DCT の段階の縮小だけで済むようにする。
                     // 半端な大きさを求めると WIC がさらに再標本化し、呼び出し側の縮小と合わせて 2 回になっていた（D10）
@@ -580,7 +582,9 @@ namespace ZipPla
                 stream.Position = start;
                 var image = new System.Windows.Media.Imaging.BitmapImage();
                 image.BeginInit();
-                image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                // ZipPla CE: OnLoad では WPF のキャッシュに全部デコードしてから CopyPixels でもう一度コピーしていた。
+                // None なら CopyPixels のときに WIC が（縮小・変換して）GDI+ のバッファに直接書く。stream は CopyPixels が終わるまで開いている
+                image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.None;
                 image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
                 image.DecodePixelWidth = (width + denom - 1) / denom;
                 image.StreamSource = stream;
