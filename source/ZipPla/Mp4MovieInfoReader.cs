@@ -226,7 +226,7 @@ namespace ZipPla
             }
             else if (!VfrRateEstimator.TryEstimate(video, out rateNum, out rateDen)) return false;
             if (!tryFormatFps(rateNum, rateDen, out var fpsString)) return false;
-            if (!double.TryParse(fpsString, out var fps)) return false; // FromFile と同じ読み方
+            if (!double.TryParse(fpsString, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fps)) return false; // FromFile と同じ読み方
 
             // 大きさと SAR: H.264・HEVC の SPS から（ffmpeg はデコーダの値を表示する）。SPS に SAR がなければ pasp
             var entry = video.SampleEntry;

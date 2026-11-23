@@ -1170,7 +1170,7 @@ namespace ZipPla
                 }
                 , (y, state, resource) =>
                 {
-                    var localHist = (byte*)resource.Item1;
+                    var localHist = (ulong*)resource.Item1;
                     var scan = scan0 + y * stride;
                     for (var x3 = 0; x3 < w3; x3 += 3)
                     {
@@ -1183,8 +1183,10 @@ namespace ZipPla
                 },
                 resource =>
                 {
-                    var localHist = (byte*)resource.Item1;
-                    for (var i = 0; i < 256; i++) hist[i] += localHist[i];
+                    // ZipPla CE: 確保したのは ulong[256] なので ulong* で数える（byte* では 256 で一周していた）。
+                    // localFinally は複数のスレッドから同時に呼ばれるので、足し込みはロックの中で行う
+                    var localHist = (ulong*)resource.Item1;
+                    lock (hist) for (var i = 0; i < 256; i++) hist[i] += localHist[i];
                     resource.Item2.Free();
                 });
 
@@ -1539,7 +1541,7 @@ namespace ZipPla
                 }
                 , (y, state, resource) =>
                 {
-                    var localHist = (byte*)resource.Item1;
+                    var localHist = (ulong*)resource.Item1;
                     var scan = scan0 + y * stride;
                     for (var x3 = 0; x3 < w3; x3 += 3)
                     {
@@ -1549,8 +1551,10 @@ namespace ZipPla
                 },
                 resource =>
                 {
-                    var localHist = (byte*)resource.Item1;
-                    for (var i = 0; i < 256; i++) hist[i] += localHist[i];
+                    // ZipPla CE: 確保したのは ulong[256] なので ulong* で数える（byte* では 256 で一周していた）。
+                    // localFinally は複数のスレッドから同時に呼ばれるので、足し込みはロックの中で行う
+                    var localHist = (ulong*)resource.Item1;
+                    lock (hist) for (var i = 0; i < 256; i++) hist[i] += localHist[i];
                     resource.Item2.Free();
                 });
 
