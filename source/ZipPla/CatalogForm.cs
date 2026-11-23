@@ -4707,22 +4707,49 @@ namespace ZipPla
             catch { }
         }
 
-        private bool tryGetRememberedArchiveEntryCount(string zipPath, out int count)
+        private bool tryGetRememberedArchiveEntryCount(string zipPath, FileStat stat, out int count)
         {
             count = -1;
             if (!archiveEntryCountMemos.TryRemove(zipPath, out var memo)) return false; // 使うのは 1 回だけ（ヘッダは 1 項目につき 1 回取る）
             if (memo.LeftHierarchies != packedImageLoaderLeftHierarchies || memo.SearchMode != packedImageLoaderSearchMode) return false;
-            try
-            {
-                var info = new FileInfo(zipPath);
-                if (!info.Exists || info.Length != memo.Length || info.LastWriteTimeUtc != memo.LastWriteTimeUtc) return false;
-            }
-            catch { return false; }
+            if (stat == null || stat.IsDirectory || stat.Length != memo.Length || stat.LastWriteTimeUtc != memo.LastWriteTimeUtc) return false;
             count = memo.Count;
             return true;
         }
 
-        private void getFileCount(out int filecount, string zipPath)
+        /// <summary>
+        /// ZipPla CE: ヘッダの取得で使う、元のファイルの属性・大きさ・更新日時。1 回の問い合わせ（FileInfo）で取り、
+        /// 以前のようにフォルダかどうか（Directory.Exists）・大きさ（FileInfo.Length）・キャッシュの確かめの更新日時（File.GetLastWriteTime）を
+        /// 別々にファイルシステムに問い合わせない。HDD・NAS では 1 回ごとにシークや往復が起きうる
+        /// </summary>
+        internal sealed class FileStat
+        {
+            public bool IsDirectory;
+            public long Length;
+            public DateTime LastWriteTimeUtc;
+            public DateTime LastWriteTime; // ローカル時刻（GPSizeThumbnail の比べ方に合わせる）
+
+            /// <summary>取れなければ（ない・読めない）null</summary>
+            public static FileStat TryGet(string path)
+            {
+                try
+                {
+                    var info = new FileInfo(path);
+                    var attributes = info.Attributes; // ここで 1 回だけ問い合わせ、以後の値はこの結果から返る
+                    if ((int)attributes == -1) return null; // ない
+                    var isDir = (attributes & FileAttributes.Directory) != 0;
+                    var utc = info.LastWriteTimeUtc;
+                    return new FileStat { IsDirectory = isDir, Length = isDir ? -1 : info.Length, LastWriteTimeUtc = utc, LastWriteTime = utc.ToLocalTime() };
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
+
+        private void getFileCount(out int filecount, string zipPath) => getFileCount(out filecount, zipPath, null);
+        private void getFileCount(out int filecount, string zipPath, FileStat stat)
         {
             filecount = -1;
             try
@@ -4732,7 +4759,7 @@ namespace ZipPla
 
                     byte[] data;
                     //if (GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, out data))
-                    if (GPSizeThumbnail.TryGet(thumbnailCache, zipPath, getArchiveIndexWithAIAInfo(zipPath), out data))
+                    if (GPSizeThumbnail.TryGet(thumbnailCache, zipPath, getArchiveIndexWithAIAInfo(zipPath), stat?.LastWriteTime, out data))
                     {
                         try
                         {
@@ -4743,7 +4770,7 @@ namespace ZipPla
                 }
                 if (filecount == -1 && ArchivesInArchiveMode == ArchivesInArchiveMode.Ignore)
                 {
-                    if (!tryGetRememberedArchiveEntryCount(zipPath, out filecount))
+                    if (!tryGetRememberedArchiveEntryCount(zipPath, stat ?? FileStat.TryGet(zipPath), out filecount))
                     {
                         using (var loader = new PackedImageLoader(zipPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode))
                         {
@@ -4759,7 +4786,7 @@ namespace ZipPla
             }
         }
 
-        private void getImageHeader(out ImageInfo imageInfo, string zipPath)
+        private void getImageHeader(out ImageInfo imageInfo, string zipPath, FileStat stat = null)
         {
             imageInfo = null;
             if (ImageInfo.Supports(zipPath))
@@ -4769,19 +4796,19 @@ namespace ZipPla
             else
             {
                 byte[] data;
-                if (thumbnailCache != null && GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, out data))
+                if (thumbnailCache != null && GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, stat?.LastWriteTime, out data))
                 {
                     imageInfo = ImageInfo.FromData(data);
                 }
             }
         }
 
-        private void getMovieHeader(out MovieInfo movieInfo, string zipPath)
+        private void getMovieHeader(out MovieInfo movieInfo, string zipPath, FileStat stat = null)
         {
             movieInfo = null;
 
             byte[] data;
-            if (thumbnailCache != null && GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, out data))
+            if (thumbnailCache != null && GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, stat?.LastWriteTime, out data))
             {
                 try
                 {
@@ -4799,6 +4826,9 @@ namespace ZipPla
         internal enum LoadResult { Success, FileNotFound, LoadError, NotYet }
 
         private bool GetHeader(string zipPath, bool isDir, out bool plainFile, out int filecount, out LoadResult loadResult, out long fileSize, out ImageInfo imageInfo, out MovieInfo movieInfo)
+            => GetHeader(zipPath, isDir, null, out plainFile, out filecount, out loadResult, out fileSize, out imageInfo, out movieInfo);
+        /// <param name="stat">ZipPla CE: 呼び出し側で FileStat.TryGet を済ませていれば渡す（isDir はそれと同じ値にすること）</param>
+        private bool GetHeader(string zipPath, bool isDir, FileStat stat, out bool plainFile, out int filecount, out LoadResult loadResult, out long fileSize, out ImageInfo imageInfo, out MovieInfo movieInfo)
         {
             filecount = MetaPageCount_NotBook;
             loadResult = LoadResult.NotYet;
@@ -4826,7 +4856,7 @@ namespace ZipPla
                 }
                 else
                 {
-                    fileSize = (new FileInfo(zipPath)).Length;
+                    fileSize = stat != null ? stat.Length : (new FileInfo(zipPath)).Length;
                 }
 
                 bool? ffmpegExists = null;
@@ -4864,7 +4894,7 @@ namespace ZipPla
                         throw;
                     }
                     */
-                    getFileCount(out filecount, zipPath);
+                    getFileCount(out filecount, zipPath, stat);
                 }
                 else if (ImageLoader.SupportsAtLeastThumbnailReading(zipPath, ref ffmpegExists))
                 {
@@ -4882,7 +4912,7 @@ namespace ZipPla
                         }
                     }
                     */
-                    getImageHeader(out imageInfo, zipPath);
+                    getImageHeader(out imageInfo, zipPath, stat);
                 }
                 else if (MovieThumbnailLoader.Supports(zipPath) && (ffmpegExists ?? MovieThumbnailLoader.ffmpegExists()))
                 {
@@ -4904,7 +4934,7 @@ namespace ZipPla
                         movieInfo = MovieInfo.FromFile(zipPath);
                     }
                     */
-                    getMovieHeader(out movieInfo, zipPath);
+                    getMovieHeader(out movieInfo, zipPath, stat);
                 }
                 else
                 {
@@ -9396,9 +9426,9 @@ namespace ZipPla
                 result = await Task.Run(() =>
                 {
                     if (guid != loadingGuid || CatalogForm_FormClosing_FormClosed) return null;
-                    var isDir = false;
-                    try { isDir = Directory.Exists(path); } catch { }
-                    var done = GetHeader(path, isDir, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
+                    var stat = FileStat.TryGet(path); // フォルダか・大きさ・更新日時を 1 回の問い合わせで取る
+                    var isDir = stat != null && stat.IsDirectory;
+                    var done = GetHeader(path, isDir, stat, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
                     return done ? Tuple.Create(path, null as Bitmap, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
                 });
             }
@@ -9470,12 +9500,8 @@ namespace ZipPla
                 }
             }
 
-            var isDir = false;
-            try
-            {
-                isDir = Directory.Exists(zipPath);
-            }
-            catch { }
+            var stat = FileStat.TryGet(zipPath); // フォルダか・大きさ・更新日時を 1 回の問い合わせで取る
+            var isDir = stat != null && stat.IsDirectory;
 
             if (bmwMakePreview.CancellationPending) return;
 
@@ -9483,7 +9509,7 @@ namespace ZipPla
             {
                 try
                 {
-                    var done = GetHeader(zipPath, isDir, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
+                    var done = GetHeader(zipPath, isDir, stat, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
                     e.Result = done ? Tuple.Create(zipPath, null as Bitmap, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
                 }
                 catch { }
