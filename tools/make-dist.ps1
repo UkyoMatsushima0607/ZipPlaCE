@@ -1,13 +1,15 @@
 ﻿# ZipPla CE の配布用 zip を作る。
 # 使い方: powershell -NoProfile -ExecutionPolicy Bypass -File tools\make-dist.ps1 -Version 1.0.0 [-Commit v1.0.0] [-OutDir .work\dist]
-#         [-WebPDir <libwebp の DLL のフォルダ>] [-NoWebP] [-AllowUnpushed]
+#         [-WebPDir <libwebp の DLL のフォルダ>] [-NoWebP] [-TurboJpegDir <turbojpeg.dll のフォルダ>] [-NoTurboJpeg] [-AllowUnpushed]
 #
 # - 指定したコミット（既定 HEAD）を一時フォルダの git worktree に取り出し、AutoBuild 構成でクリーンビルドする。
 #   作業ツリーの未コミットの変更は入らない。worktree と中間ファイルは終わったら消す。
 # - 必要なもの: git、Visual Studio 2022（MSBuild と .NET Framework 4.8 の開発パック）
 # - libwebp の DLL は tools\build-libwebp.ps1 -OutDir <フォルダ> で作り、-WebPDir で指定する（既定 .work\tmp\libwebp-dll）。
 #   -NoWebP なら入れない（WebP は ffmpeg で読み、アニメーション WebP は読めない）。
-# - 入れるもの: ZipPla.exe、ZipPla.exe.config、libwebp の DLL、license\、README.txt（このスクリプトが作る）
+# - libjpeg-turbo の turbojpeg.dll は tools\build-libjpeg-turbo.ps1 -OutDir <フォルダ> で作り、-TurboJpegDir で指定する（既定 .work\tmp\libjpeg-turbo-dll）。
+#   -NoTurboJpeg なら入れない（JPEG は従来どおり GDI+・WIC で読む）。
+# - 入れるもの: ZipPla.exe、ZipPla.exe.config、libwebp の DLL、turbojpeg.dll、license\、README.txt（このスクリプトが作る）
 # - 入れないもの: ffmpeg.exe（GPL 版で大きい）、7z.dll、config.xml などの実行時に作られるファイル
 # - AGPL のため、配布する版のソースが公開リポジトリから取れるようにすること（タグを付けて push する）。
 param(
@@ -18,6 +20,9 @@ param(
     # libwebp の DLL（libwebpdecoder.dll・libwebpdemux.dll・libwebp.dll・libsharpyuv.dll）があるフォルダ
     [string]$WebPDir = ".work\tmp\libwebp-dll",
     [switch]$NoWebP,
+    # turbojpeg.dll と、そのライセンス文（libjpeg-turbo-LICENSE.md・libjpeg-turbo-README.ijg.txt）があるフォルダ
+    [string]$TurboJpegDir = ".work\tmp\libjpeg-turbo-dll",
+    [switch]$NoTurboJpeg,
     # 公開リポジトリに無いコミットでも作る（手元での確認用）
     [switch]$AllowUnpushed
 )
@@ -26,6 +31,13 @@ $ErrorActionPreference = "Stop"
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 if (-not [IO.Path]::IsPathRooted($OutDir)) { $OutDir = Join-Path $repo $OutDir }
 if (-not [IO.Path]::IsPathRooted($WebPDir)) { $WebPDir = Join-Path $repo $WebPDir }
+if (-not [IO.Path]::IsPathRooted($TurboJpegDir)) { $TurboJpegDir = Join-Path $repo $TurboJpegDir }
+$turboNames = "turbojpeg.dll", "libjpeg-turbo-LICENSE.md", "libjpeg-turbo-README.ijg.txt"
+if (-not $NoTurboJpeg) {
+    foreach ($f in $turboNames) {
+        if (-not (Test-Path (Join-Path $TurboJpegDir $f))) { throw "$f がありません: $TurboJpegDir（tools\build-libjpeg-turbo.ps1 -OutDir で作るか、-NoTurboJpeg を付けてください）" }
+    }
+}
 $webpNames = "libwebpdecoder.dll", "libwebpdemux.dll", "libwebp.dll", "libsharpyuv.dll"
 if (-not $NoWebP) {
     foreach ($f in $webpNames) {
@@ -80,6 +92,10 @@ try {
     foreach ($f in "ZipPla.exe", "ZipPla.exe.config") { Copy-Item (Join-Path $buildOut $f) $stage }
     if (-not $NoWebP) { foreach ($f in $webpNames) { Copy-Item (Join-Path $WebPDir $f) $stage } }
     Copy-Item (Join-Path $wt "license") (Join-Path $stage "license") -Recurse
+    if (-not $NoTurboJpeg) {
+        Copy-Item (Join-Path $TurboJpegDir "turbojpeg.dll") $stage
+        foreach ($f in $turboNames | Where-Object { $_ -ne "turbojpeg.dll" }) { Copy-Item (Join-Path $TurboJpegDir $f) (Join-Path $stage "license") }
+    }
 
 $exeVersion = (Get-Item (Join-Path $stage "ZipPla.exe")).VersionInfo.FileVersion
 $origin = (git -C $repo remote get-url origin).Trim() -replace '\.git$', ''
@@ -120,7 +136,9 @@ ZipPla CE $Version
 ----------
 GNU Affero General Public License v3.0（license\AGPL.txt）です。
 同梱ライブラリの著作権表示は license\About.txt を、
-libwebp のライセンスは license\libwebp-COPYING.txt・libwebp-PATENTS.txt を見てください。
+libwebp のライセンスは license\libwebp-COPYING.txt・libwebp-PATENTS.txt を、
+libjpeg-turbo（turbojpeg.dll）のライセンスは license\libjpeg-turbo-LICENSE.md・libjpeg-turbo-README.ijg.txt を見てください。
+This software is based in part on the work of the Independent JPEG Group.（turbojpeg.dll）
 "@
 # メモ帳などで文字化けしないよう BOM 付き UTF-8・CRLF で書く
 [IO.File]::WriteAllText((Join-Path $stage "README.txt"), ($readme -replace "`r?`n", "`r`n"), (New-Object Text.UTF8Encoding $true))

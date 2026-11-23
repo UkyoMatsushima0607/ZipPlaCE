@@ -26,6 +26,7 @@ himamon 氏の「ZipPla雑改造版」をもとに、高速化・省メモリ化
 ### 圧縮ファイル・画像形式
 - solid 書庫（7z・RAR5 など）は 7z.dll 経由で読み込み、ページを順に読むときの展開のやり直しをなくしました。
 - WebP は libwebp で直接デコードします（アニメーション WebP にも対応）。
+- JPEG は、exe と同じフォルダに libjpeg-turbo の turbojpeg.dll があればそれでデコードします（SIMD の IDCT・DCT の段階の縮小）。なければ従来どおり GDI+・WIC で読みます。
 
 ## 実行に必要なもの
 - .NET Framework 4.8（Windows 10 / 11 には標準で入っています）
@@ -38,4 +39,5 @@ Releaseビルドの場合サムネイルの読み込み失敗時にエラーダ�
 AutoBuildビルドの場合はエラーダイアログが表示されないため、こちらを利用を推奨します。
 
 ## ライセンス
-オリジナルのZipPlaと同じく、AGPLでライセンスされています。
+オリジナルのZipPlaと同じく、AGPLでライセンスされています。  
+同梱の turbojpeg.dll（libjpeg-turbo）は IJG・修正 BSD・zlib のライセンスです。This software is based in part on the work of the Independent JPEG Group.

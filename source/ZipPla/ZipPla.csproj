@@ -2127,6 +2127,7 @@
     <Compile Include="MovieThumbnailLoader.cs" />
     <Compile Include="StorageInfo.cs" />
     <Compile Include="TimerResolution.cs" />
+    <Compile Include="TurboJpegDecoder.cs" />
     <Compile Include="Mp4MovieInfoReader.cs" />
     <Compile Include="NgenManager.cs" />
     <Compile Include="QuickGraphic.cs" />
