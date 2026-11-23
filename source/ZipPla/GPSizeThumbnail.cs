@@ -1106,7 +1106,7 @@ namespace ZipPla
                 // 後回しの書き込みは 1 件ごとに最大サイズの画像の複製を持つ。書き込みが追いつかずにたまったら、ここで書く（Y15。
                 // 以前は上限がなく、CPU が埋まった状態で多くのファイルをすばやくスクロールすると溜まり続け、閉じるときも最大 10 秒待った）
                 int pendingCount;
-                lock (pendingWrites) pendingCount = pendingWriteCount;
+                lock (pendingWrites) pendingCount = pendingImageWriteCount; // ZipPla CE: 画像を持つ書き込みだけ数える（K36）
                 if (pendingCount >= MaxPendingWrites)
                 {
                     return TrySetCore(cacheRoot, fileName, index, requiredSize, letterBox, fullSizeCache, thumbnail, pixelRatio, gpData, getBiggest: true,
@@ -1135,6 +1135,7 @@ namespace ZipPla
             public Bitmap Biggest; // 最大サイズの縮小画像の複製。書き込み処理が持ち、使い終わったら Dispose する
             public DateTime ExpectedLastWriteTime; // サムネイルを作ったときの元ファイルの更新日時。書くときに変わっていたら書かない
             public FocusMemo[] Focus; // null でなければ、画像は書かずに注目点の記録だけを書き換える（P4）
+            public bool SeekPenalty; // ZipPla CE: 元ファイルが HDD（シークに時間のかかるドライブ）にある（K36）。EnqueuePendingWrite で入れる
         }
 
         private static bool TrySetDeferred(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, bool fullSizeCache, Bitmap thumbnail,
@@ -1345,6 +1346,7 @@ namespace ZipPla
 
         private static readonly Queue<PendingWrite> pendingWrites = new Queue<PendingWrite>();
         private static int pendingWriteCount = 0; // 順番待ち＋処理中。pendingWrites で lock する
+        private static int pendingImageWriteCount = 0; // ZipPla CE: そのうち画像を書くもの（注目点の記録を除く、K36）。pendingWrites で lock する
         // 後回しの書き込みの順番待ちの上限（Y15）。これを超えたら呼び出し側のスレッドで書く
         private const int MaxPendingWrites = 64;
         private static Thread pendingWriteThread = null;
@@ -1353,16 +1355,28 @@ namespace ZipPla
         private const int PendingWriteQuietMilliseconds = 1000;
         // これだけ溜まったら待たずに書く（上限 MaxPendingWrites に達して呼び出し側で書くことにならないように）
         private const int PendingWriteBatchLimit = MaxPendingWrites / 2;
+        // ZipPla CE: HDD のファイルの書き込みが溜まっているときは、もっと長く待つ（K36）
+        private const int PendingWriteQuietMillisecondsOnHdd = 3000;
+        // HDD のファイルがあるときは、溜まっても待つ数を増やす（書いている途中の中断も、合わせてこの数まではする）。
+        // MaxPendingWrites に達すると呼び出し側で書くことになるので、少し余裕を残す
+        private const int PendingWriteBatchLimitOnHdd = MaxPendingWrites * 3 / 4;
         private static int pendingWriteLastEnqueueTick;
+        private static long pendingWriteEnqueueSerial; // 登録のたびに増やす（書いている途中に新しい登録があったかを見る、K36）。pendingWrites で lock する
         private static int pendingWriteFlushRequests; // FlushPendingWrites が待っている数。0 でなければ待たずに書く。pendingWrites で lock する
 
         private static void EnqueuePendingWrite(PendingWrite job)
         {
+            try { job.SeekPenalty = StorageInfo.HasSeekPenalty(job.FileName) == true; } catch { } // ドライブごとに 1 回だけ調べる
             lock (pendingWrites)
             {
                 pendingWrites.Enqueue(job);
                 pendingWriteCount++;
+                if (job.Focus == null) pendingImageWriteCount++;
                 pendingWriteLastEnqueueTick = Environment.TickCount;
+                pendingWriteEnqueueSerial++;
+#if PERFLOG
+                PerfTrace.Write($"cacheWrite enqueue {Path.GetFileName(job.FileName)}{(job.Focus != null ? " (focus)" : "")}");
+#endif
                 if (pendingWriteThread == null)
                 {
                     pendingWriteThread = new Thread(PendingWriteLoop) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "ThumbnailCacheWriter" };
@@ -1377,22 +1391,48 @@ namespace ZipPla
             while (true)
             {
                 PendingWrite[] batch;
+                bool interruptible; // 新しい登録が来たら HDD のファイルの書き込みを中断してよいか（K36）
+                long batchSerial;
                 lock (pendingWrites)
                 {
                     while (pendingWrites.Count == 0) Monitor.Wait(pendingWrites);
-                    // ZipPla CE: 新しい登録が止まるまで待ってから、溜まった分をまとめて書く（K35）
-                    while (pendingWriteFlushRequests == 0 && pendingWrites.Count < PendingWriteBatchLimit)
+                    // ZipPla CE: 新しい登録が止まるまで待ってから、溜まった分をまとめて書く（K35）。HDD のファイルがあれば長く待つ（K36）
+                    interruptible = true;
+                    while (true)
                     {
-                        var rest = PendingWriteQuietMilliseconds - unchecked(Environment.TickCount - pendingWriteLastEnqueueTick);
-                        if (rest <= 0 || rest > PendingWriteQuietMilliseconds) break;
+                        var hdd = pendingWrites.Any(j => j.SeekPenalty);
+                        if (pendingWriteFlushRequests != 0 || countImageWrites(pendingWrites) >= (hdd ? PendingWriteBatchLimitOnHdd : PendingWriteBatchLimit))
+                        {
+                            interruptible = false; // 閉じるとき・溜まりすぎたときは中断せずに書ききる
+                            break;
+                        }
+                        var quiet = hdd ? PendingWriteQuietMillisecondsOnHdd : PendingWriteQuietMilliseconds;
+                        var rest = quiet - unchecked(Environment.TickCount - pendingWriteLastEnqueueTick);
+                        if (rest <= 0 || rest > quiet) break;
                         Monitor.Wait(pendingWrites, rest);
                     }
-                    batch = pendingWrites.ToArray();
+                    // パスの順に書く（同じフォルダのファイルが続く）。OrderBy は安定なので、同じファイルの書き込みと注目点の記録の順番は保たれる
+                    batch = dropSupersededFocusWrites(pendingWrites.ToArray()).OrderBy(j => j.FileName, StringComparer.OrdinalIgnoreCase).ToArray();
                     pendingWrites.Clear();
+                    batchSerial = pendingWriteEnqueueSerial;
                 }
-                // パスの順に書く（同じフォルダのファイルが続く）。OrderBy は安定なので、同じファイルの書き込みと注目点の記録の順番は保たれる
-                foreach (var job in batch.OrderBy(j => j.FileName, StringComparer.OrdinalIgnoreCase))
+#if PERFLOG
+                PerfTrace.Write($"cacheWrite batch n={batch.Length} interruptible={interruptible}");
+#endif
+                for (var k = 0; k < batch.Length; k++)
                 {
+                    var job = batch[k];
+                    if (interruptible && job.SeekPenalty && requeueIfResumed(batch, k, batchSerial))
+                    {
+#if PERFLOG
+                        PerfTrace.Write($"cacheWrite requeue rest={batch.Length - k}");
+#endif
+                        break;
+                    }
+#if PERFLOG
+                    // 計測用: 環境変数 ZIPPLA_CACHE_WRITE_DELAY_MS で 1 件ごとの書き込みを遅くする（SSD で HDD の遅さをまねて中断を確かめる）
+                    if (int.TryParse(Environment.GetEnvironmentVariable("ZIPPLA_CACHE_WRITE_DELAY_MS"), out var perfDelay) && perfDelay > 0) Thread.Sleep(perfDelay);
+#endif
                     try
                     {
                         if (job.Focus != null)
@@ -1408,15 +1448,72 @@ namespace ZipPla
                     catch { }
                     finally
                     {
+#if PERFLOG
+                        PerfTrace.Write($"cacheWrite done {Path.GetFileName(job.FileName)}{(job.Focus != null ? " (focus)" : "")}");
+#endif
                         job.Biggest?.Dispose();
                         job.Biggest = null;
                         lock (pendingWrites)
                         {
                             pendingWriteCount--;
+                            if (job.Focus == null) pendingImageWriteCount--;
                             Monitor.PulseAll(pendingWrites);
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// ZipPla CE: 画像を書く登録の数（注目点の記録（P4）は画像を持たず小さいので数えない）。
+        /// 表示するたびに画像の書き込みと注目点の記録の 2 つが登録されるので、まとめて数えると半分の件数で上限に達していた（K36）
+        /// </summary>
+        private static int countImageWrites(IEnumerable<PendingWrite> jobs)
+        {
+            var n = 0;
+            foreach (var j in jobs) if (j.Focus == null) n++;
+            return n;
+        }
+
+        /// <summary>
+        /// ZipPla CE: 同じキャッシュの注目点の記録が複数あれば、最後のものだけを残す（記録は全部を書き直し、
+        /// 登録のたびにそれまでの記録をすべて含むので、最後の 1 回で足りる。K36）。pendingWrites の lock の中で呼ぶ
+        /// </summary>
+        private static List<PendingWrite> dropSupersededFocusWrites(PendingWrite[] jobs)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var keep = new bool[jobs.Length];
+            for (var i = jobs.Length - 1; i >= 0; i--)
+            {
+                var j = jobs[i];
+                keep[i] = j.Focus == null || seen.Add(j.CacheRoot + "\n" + j.FileName + "\n" + j.Index);
+            }
+            var result = new List<PendingWrite>(jobs.Length);
+            for (var i = 0; i < jobs.Length; i++)
+            {
+                if (keep[i]) result.Add(jobs[i]);
+                else pendingWriteCount--; // 書かずに済ませた分
+            }
+            if (result.Count != jobs.Length) Monitor.PulseAll(pendingWrites);
+            return result;
+        }
+
+        /// <summary>
+        /// ZipPla CE: まとめて書いている途中に新しい登録があった（表示・スクロールが再開した）なら、batch の k 番目からの残りを
+        /// 順番待ちの先頭に戻して true を返す（HDD で、読み込みと書き込みが交互になってシークが増えるのを防ぐ、K36）。
+        /// 閉じるとき・戻すと溜まりすぎるときは戻さない
+        /// </summary>
+        private static bool requeueIfResumed(PendingWrite[] batch, int k, long batchSerial)
+        {
+            lock (pendingWrites)
+            {
+                if (pendingWriteEnqueueSerial == batchSerial || pendingWriteFlushRequests != 0) return false;
+                if (countImageWrites(pendingWrites) + countImageWrites(batch.Skip(k)) >= PendingWriteBatchLimitOnHdd) return false; // 戻すとすぐに書くことになる
+                var newer = pendingWrites.ToArray();
+                pendingWrites.Clear();
+                for (var i = k; i < batch.Length; i++) pendingWrites.Enqueue(batch[i]); // 先に登録された分を前に（同じファイルの順番を保つ）
+                foreach (var job in newer) pendingWrites.Enqueue(job);
+                return true;
             }
         }
 

@@ -17,6 +17,12 @@ namespace ZipPla
 
         public static bool? HasSeekPenalty(string path)
         {
+#if PERFLOG
+            // 計測用: 環境変数 ZIPPLA_ASSUME_HDD=1 ですべて HDD とみなす、0 でみなさない（CatalogForm の並べ替えの判定と同じ変数）
+            var forced = Environment.GetEnvironmentVariable("ZIPPLA_ASSUME_HDD");
+            if (forced == "1") return true;
+            if (forced == "0") return false;
+#endif
             string root;
             try
             {
