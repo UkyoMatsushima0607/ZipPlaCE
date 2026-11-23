@@ -7768,6 +7768,11 @@ namespace ZipPla
 
         public static void lockBits(Bitmap bmp, BitmapEx locker, Rectangle rect, ImageLockMode flags, string purpose, Action<BitmapData> body)
         {
+            lockBits(bmp, locker, rect, flags, PixelFormat.Format24bppRgb, purpose, body);
+        }
+
+        public static void lockBits(Bitmap bmp, BitmapEx locker, Rectangle rect, ImageLockMode flags, PixelFormat format, string purpose, Action<BitmapData> body)
+        {
             if (rect.IsEmpty) return;
             if (!new Rectangle(Point.Empty, bmp.Size).Contains(rect)) return;
             lock (locker)
@@ -7775,7 +7780,7 @@ namespace ZipPla
                 BitmapData data;
                 try
                 {
-                    data = bmp.LockBits(rect, flags, PixelFormat.Format24bppRgb);
+                    data = bmp.LockBits(rect, flags, format);
                 }
                 catch (Exception e)
                 {
@@ -8484,6 +8489,59 @@ namespace ZipPla
         public static void DrawBitmapDataUnscaled(BitmapData dst, BitmapData src)
         {
             DrawBitmapDataUnscaled(dst, 0, 0, src);
+        }
+
+        /// <summary>
+        /// 8bpp インデックスの src を、パレットで引いて 24bpp の dst に描く（クリップは DrawBitmapDataUnscaled と同じ）。
+        /// 8bpp のページを 24bpp で LockBits すると、GDI+ がロックした範囲全体を一時のバッファに変換してからコピーすることになるので、
+        /// 見えている範囲だけを 1 回で展開する。palette は不透明の色だけであること（呼び出し側で確かめる）
+        /// </summary>
+        public static unsafe void DrawIndexedBitmapDataUnscaled(BitmapData dst, int xDst, int yDst, BitmapData src, Color[] palette)
+        {
+            if (src.PixelFormat != PixelFormat.Format8bppIndexed || dst.PixelFormat != PixelFormat.Format24bppRgb) throw new InvalidEnumArgumentException();
+            var rect = new Rectangle(-xDst, -yDst, dst.Width, dst.Height);
+            rect.Intersect(new Rectangle(0, 0, src.Width, src.Height));
+            if (rect.Width <= 0 || rect.Height <= 0) return;
+            // BGR を下位 3 バイトに入れた表。4 バイトまとめて書き、4 バイト目は次の画素で上書きされる（行の最後の画素だけは 3 バイトずつ書く）
+            var lut = stackalloc uint[256];
+            for (var i = 0; i < 256 && i < palette.Length; i++)
+            {
+                var c = palette[i];
+                lut[i] = (uint)(c.B | c.G << 8 | c.R << 16);
+            }
+            var width = rect.Width;
+            var height = rect.Height;
+            var dstStride = dst.Stride;
+            var srcStride = src.Stride;
+            var dstLeft = (byte*)dst.Scan0 + (yDst + rect.Y) * dstStride + (xDst + rect.X) * 3;
+            var srcLeft = (byte*)src.Scan0 + rect.Y * srcStride + rect.X;
+            for (var j = 0; j < height; j++)
+            {
+                var d = dstLeft;
+                var sp = srcLeft;
+                var last = srcLeft + width - 1;
+                while (sp < last)
+                {
+                    *(uint*)d = lut[*sp++];
+                    d += 3;
+                }
+                var v = lut[*sp];
+                d[0] = (byte)v;
+                d[1] = (byte)(v >> 8);
+                d[2] = (byte)(v >> 16);
+                dstLeft += dstStride;
+                srcLeft += srcStride;
+            }
+        }
+
+        /// <summary>
+        /// パレットがすべて不透明なら、その色の配列を返す。そうでなければ null（GDI+ の変換に任せる）
+        /// </summary>
+        public static Color[] GetOpaquePaletteEntries(Bitmap bmp)
+        {
+            var entries = bmp.Palette.Entries;
+            foreach (var c in entries) if (c.A != 255) return null;
+            return entries;
         }
 
         public static void DrawBitmapDataUnscaled(BitmapData dst, int xDst, int yDst, BitmapData src)
@@ -16909,6 +16967,38 @@ namespace ZipPla
             
             SetStyle(ControlStyles.Opaque, true);
 
+            RaiseSharedBufferLimit();
+        }
+
+        private static bool sharedBufferLimitRaised = false;
+
+        /// <summary>
+        /// WinForms のダブルバッファは共有のバッファを使い回すが、その上限（BufferedGraphicsManager.Current.MaximumBuffer）の既定は 225x96 しかない。
+        /// これより大きいコントロールは描くたびに一時のバッファ（ウィンドウと同じ大きさの DIB）を作って捨てるので、
+        /// ビューアではページ送り・拡大鏡の移動・アニメーションのコマごとに 1080p で約 8MB、4K で約 33MB の確保と解放をしていた。
+        /// 上限をいちばん大きい画面の大きさまで上げ、共有のバッファを使い回させる（ビューアのプロセスだけ。バッファは描いた大きさの分だけ持ち続ける）
+        /// </summary>
+        private static void RaiseSharedBufferLimit()
+        {
+            if (sharedBufferLimitRaised) return;
+            sharedBufferLimitRaised = true;
+            try
+            {
+                var width = 0;
+                var height = 0;
+                foreach (var screen in Screen.AllScreens)
+                {
+                    width = Math.Max(width, screen.Bounds.Width);
+                    height = Math.Max(height, screen.Bounds.Height);
+                }
+                var context = BufferedGraphicsManager.Current;
+                var current = context.MaximumBuffer;
+                if (width > 0 && height > 0 && (long)width * height > (long)current.Width * current.Height)
+                {
+                    context.MaximumBuffer = new Size(Math.Max(width, current.Width), Math.Max(height, current.Height));
+                }
+            }
+            catch { }
         }
 
         /*

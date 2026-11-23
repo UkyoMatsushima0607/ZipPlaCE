@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
@@ -6,56 +6,69 @@ namespace SevenZipExtractor
 {
     internal class SevenZipHandle : IDisposable
     {
-        private SafeLibraryHandle sevenZipSafeHandle;
+        // ZipPla CE 追記: 7z.dll は書庫を開くたびに LoadLibrary し、閉じるたびに FreeLibrary していた。
+        // カタログで書庫のサムネイルを作るときのように書庫を次々に開くと、ほかに使っている書庫がなければ毎回 DLL の読み込みと初期化をやり直すことになる。
+        // パスごとに 1 回だけ読み込み、CreateObject の関数ポインターのデリゲートと一緒にプロセスの終わりまで持つ
+        // （解放しないので、COM オブジェクトが残っている間に DLL が外れることもない）
+        private sealed class Library
+        {
+            public SafeLibraryHandle Handle;
+            public CreateObjectDelegate CreateObject;
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<string, Library> Libraries =
+            new System.Collections.Generic.Dictionary<string, Library>(StringComparer.OrdinalIgnoreCase);
+
+        private Library library;
 
         public SevenZipHandle(string sevenZipLibPath)
         {
-            this.sevenZipSafeHandle = Kernel32Dll.LoadLibrary(sevenZipLibPath);
-            if (this.sevenZipSafeHandle.IsInvalid)
+            lock (Libraries)
             {
-                throw new Win32Exception();
+                if (!Libraries.TryGetValue(sevenZipLibPath, out var lib))
+                {
+                    var handle = Kernel32Dll.LoadLibrary(sevenZipLibPath);
+                    if (handle.IsInvalid)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    IntPtr functionPtr = Kernel32Dll.GetProcAddress(handle, "GetHandlerProperty");
+
+                    // Not valid dll
+                    if (functionPtr == IntPtr.Zero)
+                    {
+                        handle.Close();
+                        throw new ArgumentException();
+                    }
+
+                    IntPtr procAddress = Kernel32Dll.GetProcAddress(handle, "CreateObject");
+                    lib = new Library
+                    {
+                        Handle = handle,
+                        CreateObject = procAddress == IntPtr.Zero ? null : (CreateObjectDelegate)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(CreateObjectDelegate)),
+                    };
+                    Libraries.Add(sevenZipLibPath, lib);
+                }
+                this.library = lib;
             }
-
-            IntPtr functionPtr = Kernel32Dll.GetProcAddress(this.sevenZipSafeHandle, "GetHandlerProperty");
-            
-            // Not valid dll
-            if (functionPtr == IntPtr.Zero)
-            {
-                this.sevenZipSafeHandle.Close();
-                throw new ArgumentException();
-            }
-        }
-
-        ~SevenZipHandle()
-        {
-            this.Dispose(false);
-        }
-
-        protected void Dispose(bool disposing)
-        {
-            if ((this.sevenZipSafeHandle != null) && !this.sevenZipSafeHandle.IsClosed)
-            {
-                this.sevenZipSafeHandle.Close();
-            }
-
-            this.sevenZipSafeHandle = null;
         }
 
         public void Dispose()
         {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
+            // DLL はほかの書庫でも使い回すので解放しない
+            this.library = null;
         }
 
         public IInArchive CreateInArchive(Guid classId)
         {
-            if (this.sevenZipSafeHandle == null)
+            var lib = this.library;
+            if (lib == null)
             {
                 throw new ObjectDisposedException("SevenZipHandle");
             }
 
-            IntPtr procAddress = Kernel32Dll.GetProcAddress(this.sevenZipSafeHandle, "CreateObject");
-            CreateObjectDelegate createObject = (CreateObjectDelegate) Marshal.GetDelegateForFunctionPointer(procAddress, typeof (CreateObjectDelegate));
+            CreateObjectDelegate createObject = lib.CreateObject;
 
             if (createObject != null)
             {

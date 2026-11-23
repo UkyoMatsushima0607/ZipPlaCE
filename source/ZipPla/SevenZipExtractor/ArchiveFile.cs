@@ -207,6 +207,24 @@ namespace SevenZipExtractor
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// 渡された stream を閉じずに片付ける（ZipPla CE 追記）。7z.dll で開けなかった書庫を、同じ stream から別の方法で読み直すときに使う
+        /// </summary>
+        public void DisposeWithoutClosingStream()
+        {
+            if (this.archive != null)
+            {
+                Marshal.ReleaseComObject(this.archive);
+            }
+
+            if (this.sevenZipHandle != null)
+            {
+                this.sevenZipHandle.Dispose();
+            }
+
+            GC.SuppressFinalize(this);
+        }
+
         // Rio's 追記
         
             

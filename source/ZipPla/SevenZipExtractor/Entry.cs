@@ -87,6 +87,19 @@ namespace SevenZipExtractor
             }
         }
 
+        /// <summary>
+        /// 項目が暗号化されているか（ZipPla CE 追記）。VT_BOOL の VARIANT_TRUE（-1）なら true
+        /// </summary>
+        public bool IsEncrypted
+        {
+            get
+            {
+                PropVariant value = new PropVariant();
+                archive.GetProperty(index, ItemPropId.kpidEncrypted, ref value);
+                return value.VarType == System.Runtime.InteropServices.VarEnum.VT_BOOL && (short)(value.longValue & 0xFFFF) != 0;
+            }
+        }
+
         public bool IsSolid
         {
             get
