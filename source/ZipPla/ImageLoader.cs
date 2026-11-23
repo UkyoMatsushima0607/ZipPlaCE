@@ -2055,7 +2055,23 @@ namespace ZipPla
             if (srcSize == Size)
             {
                 if (rect.Width <= 0 || rect.Height <= 0) return;
-                ViewerForm.lockBits(source.GetBitmap(source.GetCurrentIndex(now)), source, rect,
+                var bitmap = source.GetBitmap(source.GetCurrentIndex(now));
+                if (dst.PixelFormat == System.Drawing.Imaging.PixelFormat.Format24bppRgb && bitmap.PixelFormat == System.Drawing.Imaging.PixelFormat.Format8bppIndexed)
+                {
+                    // 灰色のページは 8bpp のまま持っている（C2）。24bpp でロックすると描くたびに GDI+ がロックした範囲全体を変換するので、
+                    // 8bpp のままロックして見えている範囲だけをパレットで引いて描く
+                    var drawn = false;
+                    ViewerForm.lockBits(bitmap, source, rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format8bppIndexed,
+                        "zoomed image (source, noscaling, 8bpp)", src =>
+                        {
+                            var palette = ViewerForm.GetOpaquePaletteEntries(bitmap); // GDI+ のビットマップに触るのでロックの中で
+                            if (palette == null) return;
+                            ViewerForm.DrawIndexedBitmapDataUnscaled(dst, dstX, dstY, src, palette);
+                            drawn = true;
+                        });
+                    if (drawn) return;
+                }
+                ViewerForm.lockBits(bitmap, source, rect,
                     System.Drawing.Imaging.ImageLockMode.ReadOnly, "zoomed image (source, noscaling)", src =>
                     {
                         ViewerForm.DrawBitmapDataUnscaled(dst, dstX, dstY, src);
