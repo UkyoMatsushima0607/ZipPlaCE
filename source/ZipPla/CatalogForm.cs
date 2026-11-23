@@ -9380,10 +9380,23 @@ namespace ZipPla
             catch (InvalidOperationException) { headerPumpScheduled = false; } // ハンドルがない（閉じている）
         }
 
+        private bool headerRequestsOnSeekPenaltyDrive()
+        {
+#if PERFLOG
+            // 計測用: 環境変数 ZIPPLA_ASSUME_HDD=1 で HDD とみなす、0 でみなさない
+            var forced = Environment.GetEnvironmentVariable("ZIPPLA_ASSUME_HDD");
+            if (forced == "1") return true;
+            if (forced == "0") return false;
+#endif
+            if (headerRequests.Count == 0) return false;
+            return StorageInfo.HasSeekPenalty(headerRequests[headerRequests.Count - 1].Value) == true;
+        }
+
         private void pumpHeaderRequests()
         {
             // 見えている分は 1 本（HDD のシークを増やさない）。列で並べ替えるときは bmwMakePreview と同じだけ並列に
-            var max = headerWantAll ? Math.Max(2, Environment.ProcessorCount - 1) : 1;
+            // ZipPla CE: HDD（シークに時間のかかるドライブ）では、並べ替えのために全部取るときも 1 本にする（並べて読むとシークが増えるだけ）
+            var max = headerWantAll ? (headerRequestsOnSeekPenaltyDrive() ? 1 : Math.Max(2, Environment.ProcessorCount - 1)) : 1;
             while (headerLoadersActive < max && headerRequests.Count > 0)
             {
                 var last = headerRequests.Count - 1;
