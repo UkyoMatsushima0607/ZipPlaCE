@@ -983,6 +983,8 @@ namespace ZipPla
         private static bool PreferSevenZipDll(PackType type) => type == PackType.SevenZip || type == PackType.Cab;
 
         private bool UseZipArchiveClass = true;
+        // ZipArchive に渡す名前の文字コード。null なら UTF-8 フラグのない名前をシステムの既定のコードページで読む
+        private Encoding ZipArchiveEntryNameEncoding = null;
 
         public bool HasAnyEntry()
         {
@@ -1338,7 +1340,7 @@ namespace ZipPla
             {
                 if (zipArchive == null)
                 {
-                    zipArchive = new ZipArchive(stream, ZipArchiveMode.Read);
+                    zipArchive = new ZipArchive(stream, ZipArchiveMode.Read, false, ZipArchiveEntryNameEncoding);
                 }
                 var ffmpegEixsts = MovieThumbnailLoader.ffmpegExists();
                 var h = leftHierarchies - 1;
@@ -1346,7 +1348,7 @@ namespace ZipPla
                 var zipEntries = hNN ? new List<ZipArchiveEntry>() : null;
                 foreach (var entry in zipArchive.Entries)
                 {
-                    if (ImageLoader.SupportsFullReading(entry.FullName, ffmpegEixsts))
+                    if (ImageLoader.SupportsFullReading(entry.FullName, ffmpegEixsts) && !maxosxIgnore(entry.FullName))
                     {
                         return true;
                     }
@@ -1366,7 +1368,7 @@ namespace ZipPla
             {
                 if (zipArchive == null)
                 {
-                    zipArchive = new ZipArchive(stream, ZipArchiveMode.Read);
+                    zipArchive = new ZipArchive(stream, ZipArchiveMode.Read, false, ZipArchiveEntryNameEncoding);
                 }
                 zipArchiveEntries = zipArchive.Entries.ToArray();
                 var result = new List<PackedImageEntry>();
@@ -1381,6 +1383,8 @@ namespace ZipPla
                     var path = entry.FullName;
                     if (ImageLoader.SupportsFullReading(path, ffmpegEixsts))
                     {
+                        // macOS の Finder が作る zip の __MACOSX/._* は画像ではない（SharpCompress の経路と同じく除く）
+                        if (maxosxIgnore(path)) continue;
                         result.Add(new PackedImageEntry(-1, i, path, needTime ? entry.LastWriteTime.DateTime : new DateTime(), needSize ? entry.Length : -1));
                     }
                 }
@@ -2878,6 +2882,55 @@ namespace ZipPla
             return true;
         }
 
+        /// <summary>
+        /// zip のセントラルディレクトリを読み、すべての項目が無圧縮か Deflate か（.NET Framework の ZipArchive で読めるか）を返す。
+        /// ZIP64 や、読めない・形の合わない書庫では false（従来どおり SharpCompress で読む）。stream の位置は戻さない
+        /// </summary>
+        private static bool zipUsesOnlyStoreOrDeflate(Stream stream)
+        {
+            try
+            {
+                const int eocdSize = 22;
+                var length = stream.Length;
+                if (length < eocdSize) return false;
+                var tailLength = (int)Math.Min(length, eocdSize + 0xFFFF);
+                var tail = new byte[tailLength];
+                stream.Seek(length - tailLength, SeekOrigin.Begin);
+                if (!readFully(stream, tail, tailLength)) return false;
+                var eocd = -1;
+                for (var i = tailLength - eocdSize; i >= 0; i--)
+                {
+                    if (tail[i] == 0x50 && tail[i + 1] == 0x4B && tail[i + 2] == 0x05 && tail[i + 3] == 0x06) { eocd = i; break; }
+                }
+                if (eocd < 0) return false;
+                int u16(byte[] b, int o) => b[o] | b[o + 1] << 8;
+                long u32(byte[] b, int o) => b[o] | b[o + 1] << 8 | b[o + 2] << 16 | (long)b[o + 3] << 24;
+                var entryCount = u16(tail, eocd + 10);
+                var cdSize = u32(tail, eocd + 12);
+                var cdOffset = u32(tail, eocd + 16);
+                if (entryCount == 0xFFFF || cdSize == 0xFFFFFFFF || cdOffset == 0xFFFFFFFF) return false; // ZIP64
+                if (cdSize > 64 * 1024 * 1024 || cdOffset + cdSize > length) return false;
+                var cd = new byte[cdSize];
+                stream.Seek(cdOffset, SeekOrigin.Begin);
+                if (!readFully(stream, cd, (int)cdSize)) return false;
+                var pos = 0;
+                var count = 0;
+                while (pos + 46 <= cd.Length)
+                {
+                    if (cd[pos] != 0x50 || cd[pos + 1] != 0x4B || cd[pos + 2] != 0x01 || cd[pos + 3] != 0x02) return false;
+                    var method = u16(cd, pos + 10);
+                    if (method != 0 && method != 8) return false;
+                    pos += 46 + u16(cd, pos + 28) + u16(cd, pos + 30) + u16(cd, pos + 32);
+                    count++;
+                }
+                return count == entryCount;
+            }
+            catch (Exception)
+            {
+                return false; // 判定できなければ従来どおり SharpCompress で読む
+            }
+        }
+
         private PackType GetTypeFromStreamAndSeekFirst(Stream stream)
         {
             const int bufferSize = 8;
@@ -2927,7 +2980,19 @@ namespace ZipPla
                 }
                 stream.Seek(0, SeekOrigin.Begin);
 
-                UseZipArchiveClass = !foundUtf8;
+                // UTF-8 の名前の zip も、ZipArchive に UTF-8 を指定すれば正しい名前で読める（UTF-8 フラグのある名前は常に UTF-8 で読まれる）。
+                // SharpCompress の Deflate は managed の実装で、ZipArchive（ネイティブの zlib）の 2 倍以上遅い（70MB の書庫で 790ms→340ms）。
+                // ただし .NET Framework の ZipArchive は無圧縮と Deflate しか読めないので、それ以外の方式の項目があれば従来どおり SharpCompress で読む
+                if (foundUtf8 && zipUsesOnlyStoreOrDeflate(stream))
+                {
+                    UseZipArchiveClass = true;
+                    ZipArchiveEntryNameEncoding = Encoding.UTF8;
+                }
+                else
+                {
+                    UseZipArchiveClass = !foundUtf8;
+                }
+                stream.Seek(0, SeekOrigin.Begin);
 
                 /*
                 if ((buffer[7] & 0x8) == 0x8) // UTF-8 フラグ

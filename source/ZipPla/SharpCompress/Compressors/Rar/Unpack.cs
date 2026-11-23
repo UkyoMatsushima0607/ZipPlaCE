@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using SharpCompress.Common;
@@ -114,7 +114,13 @@ namespace SharpCompress.Compressors.Rar
         {
             if (window == null)
             {
-                this.window = new byte[Compress.MAXWINSIZE];
+                // ZipPla: 非 solid の項目ごとに 4MB の窓を作り直すと、大きなオブジェクトのヒープを使い捨てて gen2 の GC が項目の数だけ走る。
+                // 同じ書庫（Unpack は書庫ごとに 1 つ）の窓は使い回す。正しい書庫の非 solid の項目は、その項目で書いた位置より前を参照しないので
+                // 消さなくても結果は変わらない（unrar 3.x も窓を確保し直さず消さずに使い回していた）
+                if (this.window == null || this.window.Length != Compress.MAXWINSIZE)
+                {
+                    this.window = new byte[Compress.MAXWINSIZE];
+                }
             }
             else
             {

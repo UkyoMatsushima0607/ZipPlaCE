@@ -112,7 +112,8 @@ namespace ZipPla
                 {
                     if (searchOption == SearchOption.AllDirectories)
                     {
-                        var infos = Program.GetFilesInAllDirectoriesOnErrorResumeNext(new DirectoryInfo(item.Path), searchPattern, bw);
+                        var dirInfo = new DirectoryInfo(item.Path);
+                        var infos = searchPattern == "*" ? Program.GetFilesInAllDirectoriesOnErrorResumeNext(dirInfo, bw) : dirInfo.GetFiles(searchPattern, SearchOption.AllDirectories);
                         if (bw?.CancellationPending == true) return null;
                         result.UnionWith(from info in infos
                                          where condition == null || condition.Test(info)
@@ -144,7 +145,21 @@ namespace ZipPla
                 if (condition == null) condition = DefaultCondition;
                 try
                 {
-                    result.UnionWith(from info in (new DirectoryInfo(item.Path)).GetDirectories(searchPattern, searchOption)
+                    var dirInfo = new DirectoryInfo(item.Path);
+                    DirectoryInfo[] infos;
+                    if (searchOption == SearchOption.AllDirectories && searchPattern == "*")
+                    {
+                        // .NET の AllDirectories は読めないサブフォルダが 1 つでもあると全体が失敗するので、ファイルと同じく読めないフォルダを飛ばしてたどる
+                        var dirList = new List<DirectoryInfo>();
+                        Program.GetFilesInAllDirectoriesOnErrorResumeNext(dirInfo, bw, dirList);
+                        if (bw?.CancellationPending == true) return null;
+                        infos = dirList.ToArray();
+                    }
+                    else
+                    {
+                        infos = dirInfo.GetDirectories(searchPattern, searchOption);
+                    }
+                    result.UnionWith(from info in infos
                                 where condition == null || condition.Test(info)
                                 select new Equivalence<string, DirectoryInfo>(info.FullName, info));
                 }

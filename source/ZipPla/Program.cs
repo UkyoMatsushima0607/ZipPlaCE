@@ -1578,51 +1578,35 @@ namespace ZipPla
         }
         */
 
-        public static DirectoryInfo[] GetDirectoriesInAllDirectoriesOnErrorResumeNext(DirectoryInfo dirInfo, string searchPattern, BackgroundWorker bw)
-        {
-            var result = new List<DirectoryInfo>();
-            GetDirectoriesInAllDirectoriesOnErrorResumeNext(result, dirInfo, searchPattern, bw);
-            return result.ToArray();
-        }
-
-        private static void GetDirectoriesInAllDirectoriesOnErrorResumeNext(List<DirectoryInfo> subDirectoryInfo, DirectoryInfo dirInfo, string searchPattern, BackgroundWorker bw)
-        {
-            try
-            {
-                subDirectoryInfo.AddRange(dirInfo.GetDirectories(searchPattern, SearchOption.TopDirectoryOnly));
-            }
-            catch { }
-            foreach (var child in dirInfo.GetDirectories())
-            {
-                if (bw.CancellationPending) return;
-                try
-                {
-                    GetDirectoriesInAllDirectoriesOnErrorResumeNext(subDirectoryInfo, child, searchPattern, bw);
-                }
-                catch { }
-            }
-        }
-
-        public static FileInfo[] GetFilesInAllDirectoriesOnErrorResumeNext(DirectoryInfo dirInfo, string searchPattern, BackgroundWorker bw)
+        /// <summary>
+        /// サブフォルダを含むすべてのファイルを返す。dirInfos を受け取る場合はすべてのサブフォルダも返す。
+        /// フォルダごとに 1 回だけ列挙する（以前はファイルとフォルダで別に列挙し、さらに子をたどるためにもう 1 回列挙していたので、
+        /// ファイルとフォルダの両方を取ると 1 つのフォルダを 4 回列挙していた）。
+        /// 順番は従来と同じ（フォルダの中の項目、続いて子フォルダごとにその中を深さ優先）。
+        /// 最上位のフォルダが読めなければ例外を投げ、子のフォルダが読めなければその子は飛ばす
+        /// </summary>
+        public static FileInfo[] GetFilesInAllDirectoriesOnErrorResumeNext(DirectoryInfo dirInfo, BackgroundWorker bw, List<DirectoryInfo> dirInfos = null)
         {
             var result = new List<FileInfo>();
-            GetFilesInAllDirectoriesOnErrorResumeNext(result, dirInfo, searchPattern, bw);
+            GetFilesInAllDirectoriesOnErrorResumeNext(result, dirInfos, dirInfo, bw);
             return result.ToArray();
         }
 
-        private static void GetFilesInAllDirectoriesOnErrorResumeNext(List<FileInfo> fileInfos, DirectoryInfo dirInfo, string searchPattern, BackgroundWorker bw)
+        private static void GetFilesInAllDirectoriesOnErrorResumeNext(List<FileInfo> fileInfos, List<DirectoryInfo> dirInfos, DirectoryInfo dirInfo, BackgroundWorker bw)
         {
-            try
+            var children = new List<DirectoryInfo>();
+            foreach (var info in dirInfo.GetFileSystemInfos("*", SearchOption.TopDirectoryOnly))
             {
-                fileInfos.AddRange(dirInfo.GetFiles(searchPattern, SearchOption.TopDirectoryOnly));
+                if (info is FileInfo fi) fileInfos.Add(fi);
+                else if (info is DirectoryInfo di) children.Add(di);
             }
-            catch { }
-            foreach (var child in dirInfo.GetDirectories())
+            dirInfos?.AddRange(children);
+            foreach (var child in children)
             {
-                if (bw.CancellationPending) return;
+                if (bw?.CancellationPending == true) return;
                 try
                 {
-                    GetFilesInAllDirectoriesOnErrorResumeNext(fileInfos, child, searchPattern, bw);
+                    GetFilesInAllDirectoriesOnErrorResumeNext(fileInfos, dirInfos, child, bw);
                 }
                 catch { }
             }

@@ -393,8 +393,12 @@ namespace ZipPla
         /// 利用する場合はその部分を修正して下さい
         /// </summary>
         public Func<string, string[]> GetDirectoriesOverrider;
-        private string[] localGetDirectories(string path, bool isNRoot)
+        private string[] localGetDirectories(string path, bool isNRoot) => localGetDirectories(path, isNRoot, out _);
+
+        /// <param name="hidden">隠しまたはシステムのフォルダ（列挙の結果の属性で判定したもの）。null なら呼び出し側で判定する</param>
+        private string[] localGetDirectories(string path, bool isNRoot, out HashSet<string> hidden)
         {
+            hidden = null;
             try
             {
                 if (string.IsNullOrEmpty(path))
@@ -413,7 +417,18 @@ namespace ZipPla
                         }
                         else
                         {
-                            return Directory.GetDirectories(path);
+                            // 属性は列挙の結果に入っているので、ここで隠しフォルダも判定しておく（以前はメニューを作るときに子フォルダごとに属性を取り直していた）
+                            var infos = new DirectoryInfo(path).GetDirectories();
+                            var result = new string[infos.Length];
+                            for (var i = 0; i < infos.Length; i++)
+                            {
+                                var info = infos[i];
+                                var full = path + info.Name; // Directory.GetDirectories と同じく、渡したパスに名前をつなげる
+                                result[i] = full;
+                                if (DirectoryShouldBeHidden(info)) (hidden ?? (hidden = new HashSet<string>())).Add(full);
+                            }
+                            if (hidden == null) hidden = new HashSet<string>();
+                            return result;
                         }
                     }
                     else
@@ -529,7 +544,7 @@ namespace ZipPla
                     }
                     else
                     {
-                        return Directory.EnumerateDirectories(path).Any(dir => !DirectoryShouldBeHidden(dir));
+                        return new DirectoryInfo(path).EnumerateDirectories().Any(dir => !DirectoryShouldBeHidden(dir)); // 属性は列挙の結果のものを使う
                     }
                 }
                 else
@@ -1729,7 +1744,7 @@ namespace ZipPla
         private ToolStripItem[] getDirectorySeekingMenuItemArray2(string path, string curPath, object sender, EventArgs e, ContextMenuStripEx cms)
         {
             var isNRoot = isNetworkRoot(path);
-            var directories = localGetDirectories(path, isNRoot);
+            var directories = localGetDirectories(path, isNRoot, out var hiddenDirectories);
             var itemsList = new List<ToolStripItem>(directories.Length);
             var curPathInLower = curPath?.ToLower();
             var allowDrop = AllowDrop && SubControlDragEnter != null && SubControlDragDrop != null;
@@ -1757,7 +1772,7 @@ namespace ZipPla
                         }
                         else
                         {
-                            if (DirectoryShouldBeHidden(subdir)) continue;
+                            if (hiddenDirectories != null ? hiddenDirectories.Contains(subdir) : DirectoryShouldBeHidden(subdir)) continue;
                         }
                     }
                 }

@@ -942,6 +942,7 @@ namespace ZipPla
         {
             var dMax = GetMaxColorDiff(data);
             if (dMax > GrayScaleThreshold) return dMax;
+            var dMaxSync = new object();
 
             var w = data.Width;
             var h = data.Height;
@@ -961,7 +962,8 @@ namespace ZipPla
                         var d = getMaxDiff(v[0], v[1], v[2]);
                         if (d > GrayScaleThreshold)
                         {
-                            state.Break();
+                            // 呼び出し側はしきい値を超えたかだけを見るので、残りの行は調べなくてよい
+                            state.Stop();
                             return d;
                         }
                         if (d > localMax)
@@ -973,7 +975,11 @@ namespace ZipPla
                 },
                 localMax =>
                 {
-                    if (localMax > dMax) dMax = localMax;
+                    // localFinally は複数のスレッドから同時に呼ばれる
+                    lock (dMaxSync)
+                    {
+                        if (localMax > dMax) dMax = localMax;
+                    }
                 });
             }
 
@@ -984,6 +990,7 @@ namespace ZipPla
         {
             var dMax = GetMaxColorDiff(data);
             if (dMax > GrayScaleThreshold) return dMax;
+            var dMaxSync = new object();
             
             var w = data.Width;
             var h = data.Height;
@@ -1001,7 +1008,7 @@ namespace ZipPla
                     if (bw.CancellationPending)
                     {
                         canceled = true;
-                        state.Break();
+                        state.Stop();
                         return localMax;
                     }
 
@@ -1012,7 +1019,8 @@ namespace ZipPla
                         var d = getMaxDiff(v[0], v[1], v[2]);
                         if (d > GrayScaleThreshold)
                         {
-                            state.Break();
+                            // 呼び出し側はしきい値を超えたかだけを見るので、残りの行は調べなくてよい
+                            state.Stop();
                             return d;
                         }
                         if (d > localMax)
@@ -1024,7 +1032,11 @@ namespace ZipPla
                 },
                 localMax =>
                 {
-                    if (localMax > dMax) dMax = localMax;
+                    // localFinally は複数のスレッドから同時に呼ばれる
+                    lock (dMaxSync)
+                    {
+                        if (localMax > dMax) dMax = localMax;
+                    }
                 });
             }
 
@@ -1052,7 +1064,7 @@ namespace ZipPla
                 var scan0 = (byte*)data.Scan0;
                 var stride = data.Stride;
                 var w3 = data.Width * 3;
-                for (var y = yStart; y < h; y++)
+                for (var y = yStart; y < h; y += yStep)
                 {
                     var left = scan0 + y * stride;
                     for (var x3 = xStart3; x3 < w3; x3 += xStep3)

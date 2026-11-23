@@ -127,7 +127,15 @@ namespace SevenZipExtractor
         {
             PropVariant propVariant = new PropVariant();
             this.archive.GetProperty(fileIndex, name, ref propVariant);
-            return (T) propVariant.GetObject();
+            try
+            {
+                return (T) propVariant.GetObject();
+            }
+            finally
+            {
+                // kpidPath は BSTR で返るので、解放しないと項目ごとに文字列のメモリがリークする
+                propVariant.Clear();
+            }
         }
 
         private void InitializeAndValidateLibrary()

@@ -8416,7 +8416,10 @@ namespace ZipPla
                     var subfolderIsSearched = SubfolderIsSearched(subfolderMode);
                     if (subfolderIsSearched)
                     {
-                        fileInfos = Program.GetFilesInAllDirectoriesOnErrorResumeNext(dirInfo, searchPatternForFiles, bwMakePreviewPrepare);
+                        // フォルダも表示する場合は、ファイルと一緒にサブフォルダも 1 回の列挙で取る
+                        var dirList = IsDisplay(subfolderMode) ? new List<DirectoryInfo>() : null;
+                        fileInfos = Program.GetFilesInAllDirectoriesOnErrorResumeNext(dirInfo, bwMakePreviewPrepare, dirList);
+                        if (dirList != null) dirInfos = dirList.ToArray();
                     }
                     else if (IsDisplay(subfolderMode))
                     {
@@ -8448,11 +8451,7 @@ namespace ZipPla
 
                     if (IsDisplay(subfolderMode))
                     {
-                        if (subfolderIsSearched)
-                        {
-                            dirInfos = Program.GetDirectoriesInAllDirectoriesOnErrorResumeNext(dirInfo, "*", bwMakePreviewPrepare);
-                        }
-                        else if (dirInfos == null) // 上でファイルと一緒に取っていなければ
+                        if (dirInfos == null) // 上でファイルと一緒に取っていなければ
                         {
                             dirInfos = dirInfo.GetDirectories("*", SearchOption.TopDirectoryOnly);
                         }
@@ -25358,7 +25357,7 @@ namespace ZipPla
 
             Graphics g = null;
 
-            if (tvCatalog_MouseMove_RatingChangePart_TempIndex > 0 && dataIndex != tvCatalog_MouseMove_RatingChangePart_TempIndex)
+            if (tvCatalog_MouseMove_RatingChangePart_TempIndex >= 0 && dataIndex != tvCatalog_MouseMove_RatingChangePart_TempIndex) // 先頭（0）の項目も戻す
             {
                 if (tvCatalog_MouseMove_RatingChangePart_TempIndex < tvCatalog.Count)
                 {
@@ -25404,9 +25403,10 @@ namespace ZipPla
                     tvCatalog_MouseMove_RatingChangePart_TempIndex = dataIndex;
 
                     toolTip.Hide(tvCatalog);
-                    Task.Run(() =>
+                    // 待つ間スレッドプールのスレッドを止めないよう Thread.Sleep ではなく Task.Delay で待つ（星の上を横切るとサムネイルの読み込みと同じプールのスレッドを数秒ずつ塞いでいた）
+                    Task.Run(async () =>
                     {
-                        Thread.Sleep(toolTip.InitialDelay);
+                        await Task.Delay(toolTip.InitialDelay);
                         Point point = default(Point);
                         try
                         {
@@ -25433,7 +25433,7 @@ namespace ZipPla
                                 }));
                             }
                             catch (ObjectDisposedException) { }
-                            Thread.Sleep(toolTip.AutoPopDelay);
+                            await Task.Delay(toolTip.AutoPopDelay);
                             try
                             {
                                 Invoke((MethodInvoker)(() =>

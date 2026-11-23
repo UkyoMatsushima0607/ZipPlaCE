@@ -2079,7 +2079,7 @@ namespace ZipPla
                 var dstRect = new Rectangle(dstX, dstY, rect.Width, rect.Height);
                 dstRect.Intersect(new Rectangle(0, 0, dst.Width, dst.Height));
 
-                var scaleUp = dstRect.Width >= 2 * onSrcRect.Width && dstRect.Height >= 2 * onSrcRect.Width;
+                var scaleUp = dstRect.Width >= 2 * onSrcRect.Width && dstRect.Height >= 2 * onSrcRect.Height;
 
 
                 // Parallel はスレッドの譲渡が発生するので Paint イベントが二重起動しないようにコントロールに特別な実装が必要

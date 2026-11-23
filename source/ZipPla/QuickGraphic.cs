@@ -8,6 +8,51 @@ namespace ZipPla
 {
     public static class QuickGraphic
     {
+        /// <summary>
+        /// 2 倍のアンチエイリアスで、出力の列ごとに使う入力の 2 列。以前は画素ごとに整数の割り算 2 回で求め直していた（計算式は同じ）
+        /// </summary>
+        private sealed class AntiAliasing2xXTable
+        {
+            public readonly int[] Src0, Src1;
+            public AntiAliasing2xXTable(int srcWidth, int dstWidth)
+            {
+                Src0 = new int[dstWidth];
+                Src1 = new int[dstWidth];
+                for (var xDst = 0; xDst < dstWidth; xDst++)
+                {
+                    Src0[xDst] = ((xDst << 2) + 1) * srcWidth / (dstWidth << 2);
+                    Src1[xDst] = ((xDst << 2) + 3) * srcWidth / (dstWidth << 2);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 双線形補間で、出力の列ごとに使う入力の 2 列と重み。以前は画素ごとに浮動小数点の割り算と Floor で求め直していた（計算式は同じ）
+        /// </summary>
+        private sealed class BilinearXTable
+        {
+            public readonly int[] Src0, Src1;
+            public readonly double[] T1;
+            public BilinearXTable(int srcWidth, int dstWidth)
+            {
+                Src0 = new int[dstWidth];
+                Src1 = new int[dstWidth];
+                T1 = new double[dstWidth];
+                for (var xDst = 0; xDst < dstWidth; xDst++)
+                {
+                    var xSrc = (xDst + 0.5) * srcWidth / dstWidth - 0.5;
+                    var xSrc0d = Math.Floor(xSrc);
+                    T1[xDst] = xSrc - xSrc0d;
+                    var xSrc0 = (int)xSrc0d;
+                    var xSrc1 = xSrc0 + 1;
+                    if (xSrc0 < 0) xSrc0 = 0;
+                    else if (xSrc1 >= srcWidth) xSrc1 = srcWidth - 1;
+                    Src0[xDst] = xSrc0;
+                    Src1[xDst] = xSrc1;
+                }
+            }
+        }
+
         public static Bitmap CreateNew(Bitmap src, Size newSize, bool parallel, BackgroundWorker backgroundWorker = null)
         {
             //var result = new Bitmap(newSize.Width, newSize.Height, PixelFormat.Format24bppRgb);
@@ -250,30 +295,32 @@ namespace ZipPla
 
         private unsafe static void BilinearForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
         {
+            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
-                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
             {
                 Parallel.For(0, dstHeight, yDst =>
                 {
-                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 });
             }
         }
 
         private unsafe static void BilinearForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
             {
+            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
                     if (backgroundWorker.CancellationPending) return;
-                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
@@ -286,12 +333,12 @@ namespace ZipPla
                 state.Break();
                 return;
             }
-            Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+            Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
         });
             }
         }
 
-        private unsafe static void Bilinear1DForAlpha(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel)
+        private unsafe static void Bilinear1DForAlpha(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, BilinearXTable xt)
         {
             var ySrc = (yDst + 0.5) * srcHeight / dstHeight - 0.5;
             var ySrc0d = Math.Floor(ySrc);
@@ -308,14 +355,10 @@ namespace ZipPla
             var dstBytePerPixel1 = dstBytesPerPixel - 1;
             for (var xDst = 0; xDst < dstWidth; xDst++)
             {
-                var xSrc = (xDst + 0.5) * srcWidth / dstWidth - 0.5;
-                var xSrc0d = Math.Floor(xSrc);
-                var xT1 = xSrc - xSrc0d;
+                var xT1 = xt.T1[xDst];
                 var xT0 = 1 - xT1;
-                var xSrc0 = (int)xSrc0d;
-                var xSrc1 = xSrc0 + 1;
-                if (xSrc0 < 0) xSrc0 = 0;
-                else if (xSrc1 >= srcWidth) xSrc1 = srcWidth - 1;
+                var xSrc0 = xt.Src0[xDst];
+                var xSrc1 = xt.Src1[xDst];
                 var xSrc0BytePerPixel = xSrc0 * srcBytesPerPixel;
                 var xSrc1BytePerPixel = xSrc1 * srcBytesPerPixel;
                 var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -343,11 +386,12 @@ namespace ZipPla
 
         private unsafe static void Bilinear(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
         {
+            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
@@ -355,19 +399,20 @@ namespace ZipPla
 
                 Parallel.For(0, dstHeight, yDst =>
                 {
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 });
             }
         }
 
         private unsafe static void Bilinear(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
         {
+            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
                     if (backgroundWorker.CancellationPending) return;
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
@@ -379,12 +424,12 @@ namespace ZipPla
                         state.Break();
                         return;
                     }
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 });
             }
         }
         
-        private unsafe static void Bilinear1D(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel)
+        private unsafe static void Bilinear1D(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, BilinearXTable xt)
         {
             var ySrc = (yDst + 0.5) * srcHeight / dstHeight - 0.5;
             var ySrc0d = Math.Floor(ySrc);
@@ -402,14 +447,10 @@ namespace ZipPla
                 case 1 << 16 | 1:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc = (xDst + 0.5) * srcWidth / dstWidth - 0.5;
-                        var xSrc0d = Math.Floor(xSrc);
-                        var xT1 = xSrc - xSrc0d;
+                        var xT1 = xt.T1[xDst];
                         var xT0 = 1 - xT1;
-                        var xSrc0 = (int)xSrc0d;
-                        var xSrc1 = xSrc0 + 1;
-                        if (xSrc0 < 0) xSrc0 = 0;
-                        else if (xSrc1 >= srcWidth) xSrc1 = srcWidth - 1;
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0;
                         var xSrc1BytePerPixel = xSrc1;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -434,14 +475,10 @@ namespace ZipPla
                 case 3 << 16 | 1:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc = (xDst + 0.5) * srcWidth / dstWidth - 0.5;
-                        var xSrc0d = Math.Floor(xSrc);
-                        var xT1 = xSrc - xSrc0d;
+                        var xT1 = xt.T1[xDst];
                         var xT0 = 1 - xT1;
-                        var xSrc0 = (int)xSrc0d;
-                        var xSrc1 = xSrc0 + 1;
-                        if (xSrc0 < 0) xSrc0 = 0;
-                        else if (xSrc1 >= srcWidth) xSrc1 = srcWidth - 1;
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0;
                         var xSrc1BytePerPixel = xSrc1;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -470,14 +507,10 @@ namespace ZipPla
                 case 3 << 16 | 3:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc = (xDst + 0.5) * srcWidth / dstWidth - 0.5;
-                        var xSrc0d = Math.Floor(xSrc);
-                        var xT1 = xSrc - xSrc0d;
+                        var xT1 = xt.T1[xDst];
                         var xT0 = 1 - xT1;
-                        var xSrc0 = (int)xSrc0d;
-                        var xSrc1 = xSrc0 + 1;
-                        if (xSrc0 < 0) xSrc0 = 0;
-                        else if (xSrc1 >= srcWidth) xSrc1 = srcWidth - 1;
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0 * 3;
                         var xSrc1BytePerPixel = xSrc1 * 3;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -516,14 +549,10 @@ namespace ZipPla
                 default:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc = (xDst + 0.5) * srcWidth / dstWidth - 0.5;
-                        var xSrc0d = Math.Floor(xSrc);
-                        var xT1 = xSrc - xSrc0d;
+                        var xT1 = xt.T1[xDst];
                         var xT0 = 1 - xT1;
-                        var xSrc0 = (int)xSrc0d;
-                        var xSrc1 = xSrc0 + 1;
-                        if (xSrc0 < 0) xSrc0 = 0;
-                        else if (xSrc1 >= srcWidth) xSrc1 = srcWidth - 1;
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0 * srcBytesPerPixel;
                         var xSrc1BytePerPixel = xSrc1 * srcBytesPerPixel;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -550,11 +579,12 @@ namespace ZipPla
 
         private unsafe static void AntiAliasing2xForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
         {
+            var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
@@ -562,19 +592,20 @@ namespace ZipPla
 
                 Parallel.For(0, dstHeight, yDst =>
                 {
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 });
             }
         }
 
         private unsafe static void AntiAliasing2xForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
         {
+            var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
                     if (backgroundWorker.CancellationPending) return;
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
@@ -587,13 +618,13 @@ namespace ZipPla
                         state.Break();
                         return;
                     }
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 });
             }
 
         }
 
-        private unsafe static void AntiAliasing2x1DForAlpha(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel)
+        private unsafe static void AntiAliasing2x1DForAlpha(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, AntiAliasing2xXTable xt)
         {
             var ySrc0 = ((yDst << 2) + 1) * srcHeight / (dstHeight << 2);
             var ySrc1 = ((yDst << 2) + 3) * srcHeight / (dstHeight << 2);
@@ -604,8 +635,8 @@ namespace ZipPla
             var dstBytePerPixel1 = dstBytesPerPixel - 1;
             for (var xDst = 0; xDst < dstWidth; xDst++)
             {
-                var xSrc0 = ((xDst << 2) + 1) * srcWidth / (dstWidth << 2);
-                var xSrc1 = ((xDst << 2) + 3) * srcWidth / (dstWidth << 2);
+                var xSrc0 = xt.Src0[xDst];
+                var xSrc1 = xt.Src1[xDst];
                 var xSrc0BytePerPixel = xSrc0 * srcBytesPerPixel;
                 var xSrc1BytePerPixel = xSrc1 * srcBytesPerPixel;
                 var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -646,30 +677,32 @@ namespace ZipPla
 
         private unsafe static void AntiAliasing2x(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
         {
+            var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
             {
                 Parallel.For(0, dstHeight, yDst =>
                 {
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 });
             }
         }
 
         private unsafe static void AntiAliasing2x(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
         {
+            var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
             if (!parallel)
             {
                 for (var yDst = 0; yDst < dstHeight; yDst++)
                 {
                     if (backgroundWorker.CancellationPending) return;
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 }
             }
             else
@@ -682,12 +715,12 @@ namespace ZipPla
                         state.Break();
                         return;
                     }
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel);
+                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
                 });
             }
         }
 
-        private unsafe static void AntiAliasing2x1D(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel)
+        private unsafe static void AntiAliasing2x1D(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, AntiAliasing2xXTable xt)
         {
             var ySrc0 = ((yDst << 2) + 1) * srcHeight / (dstHeight << 2);
             var ySrc1 = ((yDst << 2) + 3) * srcHeight / (dstHeight << 2);
@@ -699,8 +732,8 @@ namespace ZipPla
                 case 1 << 16 | 1:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc0 = ((xDst << 2) + 1) * srcWidth / (dstWidth << 2);
-                        var xSrc1 = ((xDst << 2) + 3) * srcWidth / (dstWidth << 2);
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0;
                         var xSrc1BytePerPixel = xSrc1;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -720,8 +753,8 @@ namespace ZipPla
                 case 3 << 16 | 1:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc0 = ((xDst << 2) + 1) * srcWidth / (dstWidth << 2);
-                        var xSrc1 = ((xDst << 2) + 3) * srcWidth / (dstWidth << 2);
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0;
                         var xSrc1BytePerPixel = xSrc1;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -745,8 +778,8 @@ namespace ZipPla
                 case 3 << 16 | 3:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc0 = ((xDst << 2) + 1) * srcWidth / (dstWidth << 2);
-                        var xSrc1 = ((xDst << 2) + 3) * srcWidth / (dstWidth << 2);
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0 * 3;
                         var xSrc1BytePerPixel = xSrc1 * 3;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
@@ -780,8 +813,8 @@ namespace ZipPla
                 default:
                     for (var xDst = 0; xDst < dstWidth; xDst++)
                     {
-                        var xSrc0 = ((xDst << 2) + 1) * srcWidth / (dstWidth << 2);
-                        var xSrc1 = ((xDst << 2) + 3) * srcWidth / (dstWidth << 2);
+                        var xSrc0 = xt.Src0[xDst];
+                        var xSrc1 = xt.Src1[xDst];
                         var xSrc0BytePerPixel = xSrc0 * srcBytesPerPixel;
                         var xSrc1BytePerPixel = xSrc1 * srcBytesPerPixel;
                         var srcLocal00 = srcTop0 + xSrc0BytePerPixel;
