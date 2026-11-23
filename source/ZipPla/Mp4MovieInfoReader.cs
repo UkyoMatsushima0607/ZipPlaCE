@@ -9,7 +9,7 @@ namespace ZipPla
     /// <summary>
     /// mp4 / mov の動画の情報（大きさ・SAR・fps・長さ）を、ffmpeg を起動せずにファイルのヘッダから読む（K32）。
     /// MovieInfo.FromFile（ffmpeg の起動 1 回、約 30ms）と同じ値になる場合だけ結果を返し、
-    /// 少しでも確かでないとき（H.264 以外、VFR、断片化 mp4、表紙の画像が先にある、など）は false を返して ffmpeg に任せる。
+    /// 少しでも確かでないとき（H.264・HEVC 以外、VFR、断片化 mp4、表紙の画像が先にある、など）は false を返して ffmpeg に任せる。
     /// ffmpeg の表示の規則（av_dump_format・avcodec_string・print_fps）と、FromFile の読み取りの癖（小数部の 2 桁をミリ秒として読む）を再現している
     /// </summary>
     internal static class Mp4MovieInfoReader
@@ -216,17 +216,20 @@ namespace ZipPla
             if (!tryFormatFps(video.MediaTimeScale, delta, out var fpsString)) return false;
             if (!double.TryParse(fpsString, out var fps)) return false; // FromFile と同じ読み方
 
-            // 大きさと SAR: H.264 の SPS から（ffmpeg はデコーダの値を表示する）。SPS に SAR がなければ pasp
+            // 大きさと SAR: H.264・HEVC の SPS から（ffmpeg はデコーダの値を表示する）。SPS に SAR がなければ pasp
             var entry = video.SampleEntry;
             var format = Encoding.ASCII.GetString(entry, 4, 4);
-            if (format != "avc1" && format != "avc3") return false;
+            var isAvc = format == "avc1" || format == "avc3";
+            var isHevc = format == "hvc1" || format == "hev1";
+            if (!isAvc && !isHevc) return false;
             const int visualEntryHeader = 8 + 78;
             if (entry.Length < visualEntryHeader) return false;
             byte[] sps = null;
             Fraction? pasp = null;
             foreach (var box in children(entry, visualEntryHeader, entry.Length - visualEntryHeader))
             {
-                if (box.Type == "avcC") sps = firstSps(entry, box.BodyStart, box.BodyLength);
+                if (isAvc && box.Type == "avcC") sps = firstSps(entry, box.BodyStart, box.BodyLength);
+                else if (isHevc && box.Type == "hvcC") sps = firstHevcSps(entry, box.BodyStart, box.BodyLength);
                 else if (box.Type == "pasp" && box.BodyLength >= 8)
                 {
                     var h = readU32(entry, box.BodyStart);
@@ -235,7 +238,10 @@ namespace ZipPla
                     if (h != 0 && v != 0) pasp = (Fraction)(int)h / (int)v;
                 }
             }
-            if (sps == null || !H264Sps.TryParse(sps, out var size, out var spsSar)) return false;
+            if (sps == null) return false;
+            Size size;
+            Fraction? spsSar;
+            if (!(isAvc ? H264Sps.TryParse(sps, out size, out spsSar) : HevcSps.TryParse(sps, out size, out spsSar))) return false;
 
             info = new MovieInfo { SizeByPixel = size, FPS = fps, FPSString = fpsString, Duration = duration };
             if (spsSar.HasValue) info.SAR = spsSar.Value;
@@ -370,6 +376,38 @@ namespace ZipPla
             return true;
         }
 
+        private static byte[] firstHevcSps(byte[] data, int start, int length)
+        {
+            // HEVCDecoderConfigurationRecord: 22 バイトの見出し、numOfArrays、[種類(下位 6 ビット), numNalus 2 バイト, [長さ 2 バイト, NAL]...]...
+            if (length < 23 || data[start] != 1) return null;
+            var end = start + length;
+            var p = start + 23;
+            var arrays = data[start + 22];
+            for (var a = 0; a < arrays; a++)
+            {
+                if (p + 3 > end) return null;
+                var type = data[p] & 0x3F;
+                var count = (data[p + 1] << 8) | data[p + 2];
+                p += 3;
+                for (var n = 0; n < count; n++)
+                {
+                    if (p + 2 > end) return null;
+                    var nalLength = (data[p] << 8) | data[p + 1];
+                    p += 2;
+                    if (p + nalLength > end) return null;
+                    if (type == 33)
+                    {
+                        if (nalLength < 3) return null;
+                        var sps = new byte[nalLength];
+                        Array.Copy(data, p, sps, 0, nalLength);
+                        return sps;
+                    }
+                    p += nalLength;
+                }
+            }
+            return null;
+        }
+
         private static byte[] firstSps(byte[] data, int start, int length)
         {
             // AVCDecoderConfigurationRecord: version, profile, compat, level, lengthSizeMinusOne, numOfSPS(下位 5 ビット), [長さ 2 バイト, SPS]...
@@ -444,10 +482,6 @@ namespace ZipPla
         /// <summary>H.264 の SPS から、ffmpeg のデコーダと同じ表示の大きさ（切り抜き後）と SAR（VUI）を読む</summary>
         private static class H264Sps
         {
-            private static readonly int[,] pixelAspect = {
-                { 0, 1 }, { 1, 1 }, { 12, 11 }, { 10, 11 }, { 16, 11 }, { 40, 33 }, { 24, 11 }, { 20, 11 }, { 32, 11 },
-                { 80, 33 }, { 18, 11 }, { 15, 11 }, { 64, 33 }, { 160, 99 }, { 4, 3 }, { 3, 2 }, { 2, 1 } };
-
             public static bool TryParse(byte[] nal, out Size size, out Fraction? sar)
             {
                 size = Size.Empty;
@@ -515,15 +549,7 @@ namespace ZipPla
 
                 if (r.Bit()) // vui_parameters_present
                 {
-                    if (r.Bit()) // aspect_ratio_info_present
-                    {
-                        var idc = r.Bits(8);
-                        int num, den;
-                        if (idc == 255) { num = r.Bits(16); den = r.Bits(16); if (num == 0 || den == 0) return false; }
-                        else if (idc < pixelAspect.GetLength(0)) { num = pixelAspect[idc, 0]; den = pixelAspect[idc, 1]; }
-                        else return false;
-                        if (num != 0) sar = (Fraction)num / den;
-                    }
+                    if (!tryReadVuiSar(r, out sar)) return false;
                 }
                 return true;
             }
@@ -538,52 +564,211 @@ namespace ZipPla
                 }
             }
 
-            private static byte[] removeEmulationPrevention(byte[] nal, int start)
+        }
+
+        /// <summary>
+        /// HEVC の SPS から、ffmpeg のデコーダと同じ表示の大きさ（conformance window の切り抜き後）と SAR（VUI）を読む。
+        /// VUI の先頭（aspect_ratio_info）まで読めばよいが、その前の参照ピクチャセットなどは読み飛ばす必要がある
+        /// </summary>
+        private static class HevcSps
+        {
+            private static readonly int[] subWidthC = { 1, 2, 2, 1 };
+            private static readonly int[] subHeightC = { 1, 2, 1, 1 };
+
+            public static bool TryParse(byte[] nal, out Size size, out Fraction? sar)
             {
-                var result = new List<byte>(nal.Length);
-                var zeros = 0;
-                for (var i = start; i < nal.Length; i++)
+                size = Size.Empty;
+                sar = null;
+                if (nal.Length < 3 || ((nal[0] >> 1) & 0x3F) != 33) return false;
+                var r = new BitReader(removeEmulationPrevention(nal, 2));
+                r.Bits(4); // sps_video_parameter_set_id
+                var maxSubLayersMinus1 = r.Bits(3);
+                if (maxSubLayersMinus1 > 6) return false;
+                r.Bit(); // temporal_id_nesting
+                skipProfileTierLevel(r, maxSubLayersMinus1);
+                if (r.Ue() > 15) return false; // sps_seq_parameter_set_id
+                var chromaFormat = r.Ue();
+                if (chromaFormat > 3) return false;
+                if (chromaFormat == 3 && r.Bit()) chromaFormat = 0; // separate_colour_plane（ffmpeg も 0 として扱う）
+                var width = r.Ue();
+                var height = r.Ue();
+                int left = 0, right = 0, top = 0, bottom = 0;
+                if (r.Bit()) // conformance_window
                 {
-                    var b = nal[i];
-                    if (zeros >= 2 && b == 3) { zeros = 0; continue; }
-                    zeros = b == 0 ? zeros + 1 : 0;
-                    result.Add(b);
+                    left = r.Ue(); right = r.Ue(); top = r.Ue(); bottom = r.Ue();
                 }
-                return result.ToArray();
+                var bitDepth = r.Ue() + 8;
+                r.Ue(); // bit_depth_chroma
+                var log2MaxPocLsb = r.Ue() + 4;
+                if (log2MaxPocLsb > 16) return false;
+                var subLayerOrderingInfo = r.Bit();
+                for (var i = subLayerOrderingInfo ? 0 : maxSubLayersMinus1; i <= maxSubLayersMinus1; i++) { r.Ue(); r.Ue(); r.Ue(); }
+                r.Ue(); r.Ue(); r.Ue(); r.Ue(); // 符号化ブロック・変換ブロックの大きさ
+                r.Ue(); r.Ue(); // max_transform_hierarchy_depth
+                if (r.Bit() && r.Bit()) skipScalingListData(r); // scaling_list_enabled && sps_scaling_list_data_present
+                r.Bit(); r.Bit(); // amp、sample_adaptive_offset
+                if (r.Bit()) // pcm_enabled
+                {
+                    r.Bits(4); r.Bits(4); r.Ue(); r.Ue(); r.Bit();
+                }
+                var numShortTermRefPicSets = r.Ue();
+                if (numShortTermRefPicSets > 64) return false;
+                var numDeltaPocs = new int[numShortTermRefPicSets];
+                for (var i = 0; i < numShortTermRefPicSets; i++)
+                {
+                    if (!skipShortTermRefPicSet(r, i, numDeltaPocs)) return false;
+                }
+                if (r.Bit()) // long_term_ref_pics_present
+                {
+                    var n = r.Ue();
+                    if (n > 32) return false;
+                    for (var i = 0; i < n; i++) { r.Bits(log2MaxPocLsb); r.Bit(); }
+                }
+                r.Bit(); r.Bit(); // temporal_mvp、strong_intra_smoothing
+
+                long sw = subWidthC[chromaFormat], sh = subHeightC[chromaFormat];
+                long cl = left * sw, cr = right * sw, ct = top * sh, cb = bottom * sh;
+                if (width <= 0 || height <= 0 || cl + cr >= width || ct + cb >= height) return false;
+                // ffmpeg は左の切り抜きを、配置をそろえるために減らすことがある。その場合は任せる
+                if ((cl & (0x1F >> (bitDepth > 8 ? 1 : 0))) != 0) return false;
+                size = new Size((int)(width - cl - cr), (int)(height - ct - cb));
+
+                if (r.Bit()) // vui_parameters_present
+                {
+                    if (!tryReadVuiSar(r, out sar)) return false;
+                }
+                return true;
             }
 
-            private sealed class BitReader
+            private static void skipProfileTierLevel(BitReader r, int maxSubLayersMinus1)
             {
-                private readonly byte[] data;
-                private long pos;
-                public BitReader(byte[] data) { this.data = data; }
-                public bool Bit()
+                r.Skip(88); // general_profile_space 〜 general_inbld/reserved
+                r.Bits(8); // general_level_idc
+                var profilePresent = new bool[maxSubLayersMinus1];
+                var levelPresent = new bool[maxSubLayersMinus1];
+                for (var i = 0; i < maxSubLayersMinus1; i++) { profilePresent[i] = r.Bit(); levelPresent[i] = r.Bit(); }
+                if (maxSubLayersMinus1 > 0) for (var i = maxSubLayersMinus1; i < 8; i++) r.Bits(2);
+                for (var i = 0; i < maxSubLayersMinus1; i++)
                 {
-                    if (pos >= (long)data.Length * 8) throw new InvalidDataException();
-                    var b = (data[pos >> 3] >> (7 - (int)(pos & 7))) & 1;
-                    pos++;
-                    return b != 0;
+                    if (profilePresent[i]) r.Skip(88);
+                    if (levelPresent[i]) r.Bits(8);
                 }
-                public int Bits(int n)
+            }
+
+            private static void skipScalingListData(BitReader r)
+            {
+                for (var sizeId = 0; sizeId < 4; sizeId++)
                 {
-                    var v = 0;
-                    for (var i = 0; i < n; i++) v = (v << 1) | (Bit() ? 1 : 0);
-                    return v;
+                    for (var matrixId = 0; matrixId < 6; matrixId += sizeId == 3 ? 3 : 1)
+                    {
+                        if (!r.Bit()) r.Ue(); // scaling_list_pred_matrix_id_delta
+                        else
+                        {
+                            var coefNum = Math.Min(64, 1 << (4 + (sizeId << 1)));
+                            if (sizeId > 1) r.Se(); // dc
+                            for (var i = 0; i < coefNum; i++) r.Se();
+                        }
+                    }
                 }
-                public int Ue()
+            }
+
+            private static bool skipShortTermRefPicSet(BitReader r, int index, int[] numDeltaPocs)
+            {
+                if (index != 0 && r.Bit()) // inter_ref_pic_set_prediction
                 {
-                    var zeros = 0;
-                    while (!Bit()) { if (++zeros > 31) throw new InvalidDataException(); }
-                    if (zeros == 0) return 0;
-                    var v = ((1L << zeros) - 1) + Bits(zeros);
-                    if (v > int.MaxValue) throw new InvalidDataException();
-                    return (int)v;
+                    r.Bit(); // delta_rps_sign
+                    r.Ue(); // abs_delta_rps_minus1
+                    var refCount = numDeltaPocs[index - 1]; // SPS の中では delta_idx_minus1 は 0
+                    var count = 0;
+                    for (var j = 0; j <= refCount; j++)
+                    {
+                        var used = r.Bit();
+                        var useDelta = used || r.Bit();
+                        if (useDelta) count++;
+                    }
+                    numDeltaPocs[index] = count;
                 }
-                public int Se()
+                else
                 {
-                    var k = Ue();
-                    return (k & 1) != 0 ? (k + 1) / 2 : -(k / 2);
+                    var negative = r.Ue();
+                    var positive = r.Ue();
+                    if (negative > 16 || positive > 16) return false;
+                    for (var i = 0; i < negative + positive; i++) { r.Ue(); r.Bit(); }
+                    numDeltaPocs[index] = negative + positive;
                 }
+                return true;
+            }
+        }
+
+        // H.264・HEVC の VUI の先頭の aspect_ratio_info を読む（ffmpeg の ff_h2645_decode_common_vui_params と同じ表）。
+        // 表にない番号は ffmpeg が警告だけ出して読み進めるが、ここでは任せる
+        private static readonly int[,] pixelAspect = {
+            { 0, 1 }, { 1, 1 }, { 12, 11 }, { 10, 11 }, { 16, 11 }, { 40, 33 }, { 24, 11 }, { 20, 11 }, { 32, 11 },
+            { 80, 33 }, { 18, 11 }, { 15, 11 }, { 64, 33 }, { 160, 99 }, { 4, 3 }, { 3, 2 }, { 2, 1 } };
+
+        private static bool tryReadVuiSar(BitReader r, out Fraction? sar)
+        {
+            sar = null;
+            if (!r.Bit()) return true; // aspect_ratio_info_present
+            var idc = r.Bits(8);
+            int num, den;
+            if (idc == 255) { num = r.Bits(16); den = r.Bits(16); if (num == 0 || den == 0) return false; }
+            else if (idc < pixelAspect.GetLength(0)) { num = pixelAspect[idc, 0]; den = pixelAspect[idc, 1]; }
+            else return false;
+            if (num != 0) sar = (Fraction)num / den;
+            return true;
+        }
+
+        private static byte[] removeEmulationPrevention(byte[] nal, int start)
+        {
+            var result = new List<byte>(nal.Length);
+            var zeros = 0;
+            for (var i = start; i < nal.Length; i++)
+            {
+                var b = nal[i];
+                if (zeros >= 2 && b == 3) { zeros = 0; continue; }
+                zeros = b == 0 ? zeros + 1 : 0;
+                result.Add(b);
+            }
+            return result.ToArray();
+        }
+
+        private sealed class BitReader
+        {
+            private readonly byte[] data;
+            private long pos;
+            public BitReader(byte[] data) { this.data = data; }
+            public bool Bit()
+            {
+                if (pos >= (long)data.Length * 8) throw new InvalidDataException();
+                var b = (data[pos >> 3] >> (7 - (int)(pos & 7))) & 1;
+                pos++;
+                return b != 0;
+            }
+            public int Bits(int n)
+            {
+                var v = 0;
+                for (var i = 0; i < n; i++) v = (v << 1) | (Bit() ? 1 : 0);
+                return v;
+            }
+            public void Skip(int n)
+            {
+                if (pos + n > (long)data.Length * 8) throw new InvalidDataException();
+                pos += n;
+            }
+            public int Ue()
+            {
+                var zeros = 0;
+                while (!Bit()) { if (++zeros > 31) throw new InvalidDataException(); }
+                if (zeros == 0) return 0;
+                var v = ((1L << zeros) - 1) + Bits(zeros);
+                if (v > int.MaxValue) throw new InvalidDataException();
+                return (int)v;
+            }
+            public int Se()
+            {
+                var k = Ue();
+                return (k & 1) != 0 ? (k + 1) / 2 : -(k / 2);
             }
         }
     }

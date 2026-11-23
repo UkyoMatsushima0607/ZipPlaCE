@@ -481,7 +481,7 @@ namespace ZipPla
             {
                 return cached.Item3.Clone();
             }
-            // mp4 / mov の H.264 なら、ffmpeg を起動せずにヘッダから同じ値を読む（K32）。確かでないときは ffmpeg
+            // mp4 / mov の H.264・HEVC なら、ffmpeg を起動せずにヘッダから同じ値を読む（K32）。確かでないときは ffmpeg
             if (!Mp4MovieInfoReader.TryRead(path, out var result)) result = FromFile(path);
             if (fromFileCache.Count >= FromFileCacheCapacity) fromFileCache.Clear();
             fromFileCache[path] = Tuple.Create(length, lastWrite, result.Clone());
