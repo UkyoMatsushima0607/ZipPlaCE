@@ -8450,6 +8450,7 @@ namespace ZipPla
         {
             if (targets.Length <= 0)
             {
+                TimerResolution.SetHighResolution(false);
                 ReserveNextInvadiateForAnimation_LastVisible.Clear();
                 now = default(DateTime);
                 ReserveNextInvadiateForAnimation_ReservedTime = default(DateTime);
@@ -8466,10 +8467,13 @@ namespace ZipPla
             var reserveTime = (from t in targets select t.GetNextChangeTime(now_)).Min();
             if (reserveTime > now)
             {
+                // 次のコマを既定の約 15.6ms 単位に切り上げずに待てるよう、アニメーションの間だけタイマーの分解能を上げる
+                TimerResolution.SetHighResolution(true);
                 ReserveNextInvadiateForAnimation_AsyncPart(reserveTime, now, targets);
             }
             else
             {
+                TimerResolution.SetHighResolution(false);
                 ReserveNextInvadiateForAnimation_LastVisible.Clear();
                 now = default(DateTime);
                 ReserveNextInvadiateForAnimation_ReservedTime = default(DateTime);
@@ -8483,6 +8487,8 @@ namespace ZipPla
             await Task.Delay(reserveTime - now);
             if (ReserveNextInvadiateForAnimation_ReservedTime != reserveTime
                 || !ReserveNextInvadiateForAnimation_LastVisible.SetEquals(targets)) return;
+            // 隠れている・最小化しているときは描かれず次の予約も起きないので、分解能を戻しておく（また描かれたときに上げ直す）
+            if (!Visible || WindowState == FormWindowState.Minimized) TimerResolution.SetHighResolution(false);
             pbView.Invalidate();
         }
 

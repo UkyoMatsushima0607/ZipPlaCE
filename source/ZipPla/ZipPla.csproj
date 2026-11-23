@@ -2125,6 +2125,7 @@
       <DependentUpon>MouseGestureSettingForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MovieThumbnailLoader.cs" />
+    <Compile Include="TimerResolution.cs" />
     <Compile Include="Mp4MovieInfoReader.cs" />
     <Compile Include="NgenManager.cs" />
     <Compile Include="QuickGraphic.cs" />
