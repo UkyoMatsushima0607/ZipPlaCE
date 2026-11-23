@@ -31484,6 +31484,7 @@ namespace ZipPla
             {
                 var lenChanged = showIndexToDataIndex.Length != value.Length;
                 showIndexToDataIndex = value;
+                itemsVersion++;
 
                 dataIndexToShowIndex = new int[items.Count];
                 for (var i = 0; i < dataIndexToShowIndex.Length; i++)
@@ -31826,6 +31827,7 @@ namespace ZipPla
 
             }
             items.Add(item);
+            itemsVersion++;
             var newD2S = new int[dataIndexToShowIndex.Length + 1];
             Array.Copy(dataIndexToShowIndex, newD2S, dataIndexToShowIndex.Length);
             newD2S[dataIndexToShowIndex.Length] = -1;
@@ -31835,6 +31837,7 @@ namespace ZipPla
         public void ItemBuffSizeChange(int newLength)
         {
             items.AddRange(new ThumbViewerItem[newLength - items.Count]);
+            itemsVersion++;
             var newD2S = new int[newLength];
             Array.Copy(dataIndexToShowIndex, newD2S, dataIndexToShowIndex.Length);
             for (var i = dataIndexToShowIndex.Length; i < newLength; i++) newD2S[i] = -1;
@@ -31873,6 +31876,7 @@ namespace ZipPla
                         value.selected = selectedSet.Contains(index);
                     }
                     items[index] = value;
+                    itemsVersion++;
                     // 追加されたサムネイルを表示
                     using (Graphics g = this.CreateGraphics())
                     {
@@ -31909,6 +31913,7 @@ namespace ZipPla
                     item.index = index;
                 }
                 items[index] = item;
+                itemsVersion++;
             }
             else
             {
@@ -33520,6 +33525,7 @@ namespace ZipPla
             }
             dataIndexToShowIndex = new int[initialImageCount];
             this.showIndexToDataIndex = showIndexToDataIndex;
+            itemsVersion++;
             for (var i = 0; i < initialImageCount; i++)
             {
                 items.Add(null);
@@ -33617,6 +33623,16 @@ namespace ZipPla
 
         // サムネイルを読み込む範囲（表示中＋前後1行、表示順のインデックス）と、そのときの項目数
         private int loadRangeStart, loadRangeStop, loadRangeItemCount = -1;
+
+        // 範囲外の項目を捨てるとき、以前は描くたびに一覧の全項目の Clear を呼んでいた（10 万項目なら 1 回のスクロールで 10 万回）。
+        // 項目が画像を持つ・待ち行列に入るのは PaintPart の LoadAsync からなので、項目の差し替え・並べ替えがなければ、
+        // 前回までに LoadAsync を呼んだ項目のうち範囲から外れたものだけを Clear すればよい。
+        // 差し替え・並べ替え・作り直しで itemsVersion が変わったら、従来どおり全項目を見る
+        private int itemsVersion = 0;
+        private int sweptItemsVersion = -1;
+        private readonly HashSet<int> loadRequestedDataIndices = new HashSet<int>();
+        private readonly HashSet<int> loadRangeDataIndices = new HashSet<int>();
+        private readonly List<int> leftRangeDataIndices = new List<int>();
 #if PERFLOG
         // 調査用: 読み込み範囲（表示中＋前後1行）の項目がすべてサムネイルを持っているか
         internal bool IsLoadRangeReady()
@@ -33665,24 +33681,42 @@ namespace ZipPla
                 $"scrollY={AutoScrollPosition.Y} height={Height} gridV={gridSizeV} cols={cols} clip={clipRectangle} paintY={autoScrollPositionY} items={ShowIndexToDataIndex.Length}");
             PerfTrace.CheckRangeReady(IsLoadRangeReady(), CountLoadedImages);
 #endif
-            for(int i=0;i<clearBefore*cols;i++)
+            var s2d = ShowIndexToDataIndex;
+            if (sweptItemsVersion != itemsVersion)
             {
-                var dataIndex = ShowIndexToDataIndex[i];
-                var item = items[dataIndex];
-                item.Clear();
+                for (int i = 0; i < clearBefore * cols; i++)
+                {
+                    items[s2d[i]]?.Clear();
+                }
+                for (int i = clearAfter * cols; i < s2d.Length; i++)
+                {
+                    items[s2d[i]]?.Clear();
+                }
+                loadRequestedDataIndices.Clear();
+                sweptItemsVersion = itemsVersion;
+            }
+            else if (loadRequestedDataIndices.Count > 0)
+            {
+                loadRangeDataIndices.Clear();
+                for (int i = rangeStart; i < rangeStop; i++) loadRangeDataIndices.Add(s2d[i]);
+                leftRangeDataIndices.Clear();
+                foreach (var dataIndex in loadRequestedDataIndices)
+                {
+                    if (!loadRangeDataIndices.Contains(dataIndex)) leftRangeDataIndices.Add(dataIndex);
+                }
+                foreach (var dataIndex in leftRangeDataIndices)
+                {
+                    if (dataIndex < items.Count) items[dataIndex]?.Clear();
+                    loadRequestedDataIndices.Remove(dataIndex);
+                }
             }
             // 待ち行列は新しく依頼されたものから処理するので、下から依頼して上から読み込まれるようにする
             for(int i = rangeStop - 1; i >= rangeStart; i--)
             {
-                var dataIndex = ShowIndexToDataIndex[i];
+                var dataIndex = s2d[i];
                 var item = items[dataIndex];
                 _ = item.LoadAsync();
-            }
-            for(int i=clearAfter*cols;i<showIndexToDataIndex.Length;i++)
-            {
-                var dataIndex = ShowIndexToDataIndex[i];
-                var item = items[dataIndex];
-                item.Clear();
+                loadRequestedDataIndices.Add(dataIndex);
             }
 
         }
