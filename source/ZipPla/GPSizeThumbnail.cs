@@ -1475,11 +1475,20 @@ namespace ZipPla
                 try
                 {
 
-                    // 一旦先にチェック
+                    bool isFile;
+                    DateTime lastWriteTime0 = default(DateTime);
                     if (ads)
                     {
-                        att = File.GetAttributes(fileName);
-                        readOnly = (att & FileAttributes.ReadOnly) == FileAttributes.ReadOnly; ;
+                        // ZipPla CE: 属性・フォルダか・更新日時を 1 回の問い合わせで取る（K34）。
+                        // 以前は GetAttributes・Exists・GetLastWriteTime を別々に問い合わせたうえ、書けるかを確かめるために
+                        // 更新日時を同じ値で書き直していた（メタデータの書き込みとフォルダ監視の Changed が 1 回ずつ増え、HDD ではシークが起きる）。
+                        // 書けないファイルは ADS を開くところで例外になり、従来どおり false を返す
+                        var info = new FileInfo(fileName); // フォルダでも属性と更新日時は取れる
+                        att = info.Attributes;
+                        if ((int)att == -1) throw new FileNotFoundException(null, fileName);
+                        isFile = (att & FileAttributes.Directory) == 0;
+                        lastWriteTime0 = info.LastWriteTime;
+                        readOnly = (att & FileAttributes.ReadOnly) == FileAttributes.ReadOnly;
                         if (readOnly)
                         {
                             readOnly = false;
@@ -1487,40 +1496,11 @@ namespace ZipPla
                             readOnly = true;
                         }
                     }
-
-                    var isFile = File.Exists(fileName);
-                    //string fileNameLowerCase = null;
-                    DateTime lastWriteTime0 = default(DateTime);
-                    if (ads)
+                    else
                     {
-                        /*
-                        fileNameLowerCase = fileName.ToLower();
-                        lock (blackList)
-                        {
-                            blackList[fileNameLowerCase] = 1;
-                        }
-                        */
-                        EnterEditing(fileName);
-                        try
-                        {
-                            // 積極的な例外発生
-                            if (isFile)
-                            {
-                                lastWriteTime0 = File.GetLastWriteTime(fileName);
-                                File.SetLastWriteTime(fileName, lastWriteTime0);
-                            }
-                            else
-                            {
-                                lastWriteTime0 = Directory.GetLastWriteTime(fileName);
-                                Directory.SetLastWriteTime(fileName, lastWriteTime0);
-                            }
-                        }
-                        finally
-                        {
-                            ExitedEditing(fileName);
-                        }
+                        isFile = File.Exists(fileName);
                     }
-                    
+
                     // 大きい方から順番に縮小していく
                     // 最初の一回以外の縮小のコストが大幅に削減される
                     // 量子化は統計上公比 √(1/4) の等比級数になるので問題にならない
@@ -1688,36 +1668,7 @@ namespace ZipPla
 
                             if (ads)
                             {
-                                // 書き込みチェック
-                                /*
-                                lock (blackList)
-                                {
-                                    if (!blackList.ContainsKey(fileNameLowerCase))
-                                    {
-                                        blackList[fileNameLowerCase] = 1;
-                                    }
-                                    else
-                                    {
-                                        blackList[fileNameLowerCase]++;
-                                    }
-                                }
-                                */
-                                EnterEditing(fileName);
-                                try
-                                {
-                                    if (isFile)
-                                    {
-                                        File.SetLastWriteTime(fileName, lastWriteTime);
-                                    }
-                                    else
-                                    {
-                                        Directory.SetLastWriteTime(fileName, lastWriteTime);
-                                    }
-                                }
-                                finally
-                                {
-                                    ExitedEditing(fileName);
-                                }
+                                // ZipPla CE: 以前はここでも書けるかを確かめるために更新日時を同じ値で書き直していた（K34 でやめた）
 
                                 // 既に存在する場合、そのまま上書きすると Changed イベントが１回多く発生する
                                 // 削除ではイベントは何も発生しない
@@ -1737,34 +1688,27 @@ namespace ZipPla
                                     {
                                         var buf = new byte[memoryStream.Length];
                                         memoryStream.Read(buf, 0, buf.Length);
-                                        result = NTFSMultiStream.WriteFile(fileName, STREAM_NAME, buf);
+                                        // ZipPla CE: ADS のハンドルで元ファイルの更新日時が変わらないようにして書く（K34）
+                                        result = NTFSMultiStream.WriteFile(fileName, STREAM_NAME, buf, preserveTimes: true);
                                         leftoverAdsChecked.TryRemove(fileName, out var dummy);
                                     }
                                     finally
                                     {
-                                    // 読み込み専用属性を治す前に更新日時を変更するために editFile の中で
-                                    if (result != StreamWriteResult.NotEdited)
+                                        // 読み込み専用属性を治す前に更新日時を変更するために editFile の中で。
+                                        // ZipPla CE: 更新日時が変わっていたときだけ戻す（K34。SMB など、ハンドルでの指定が効かない場合の保険）
+                                        if (result != StreamWriteResult.NotEdited)
                                         {
-                                            /*
-                                            lock (blackList)
+                                            var current = isFile ? File.GetLastWriteTime(fileName) : Directory.GetLastWriteTime(fileName);
+                                            if (current != lastWriteTime)
                                             {
-                                                if (!blackList.ContainsKey(fileNameLowerCase))
+                                                if (isFile)
                                                 {
-                                                    blackList[fileNameLowerCase] = 1;
+                                                    File.SetLastWriteTime(fileName, lastWriteTime);
                                                 }
                                                 else
                                                 {
-                                                    blackList[fileNameLowerCase]++;
+                                                    Directory.SetLastWriteTime(fileName, lastWriteTime);
                                                 }
-                                            }
-                                            */
-                                            if (isFile)
-                                            {
-                                                File.SetLastWriteTime(fileName, lastWriteTime);
-                                            }
-                                            else
-                                            {
-                                                Directory.SetLastWriteTime(fileName, lastWriteTime);
                                             }
                                         }
                                     }
@@ -2205,12 +2149,22 @@ namespace ZipPla
             base.Dispose(disposing);
         }
 
-        public static StreamWriteResult WriteFile(string fileName,string streamName, byte[] buff)
+        public static StreamWriteResult WriteFile(string fileName,string streamName, byte[] buff) => WriteFile(fileName, streamName, buff, preserveTimes: false);
+
+        /// <param name="preserveTimes">ZipPla CE: true なら、このハンドルでの操作で元ファイルの更新日時・最終アクセス日時が変わらないようにする（K34）。
+        /// SetFileTime に 0xFFFFFFFF を渡すと、そのハンドルでの以後の操作でファイルシステムが日時を更新しなくなる</param>
+        public static StreamWriteResult WriteFile(string fileName, string streamName, byte[] buff, bool preserveTimes)
         {
             var fileHandle = GetFileHandle(fileName, streamName, FileAccess.Write);
             if (fileHandle == INVALID_HANDLE_VALUE) return StreamWriteResult.NotEdited;
             try
             {
+                if (preserveTimes)
+                {
+                    long keep = -1; // dwLowDateTime・dwHighDateTime とも 0xFFFFFFFF
+                    long keep2 = -1;
+                    SetFileTime(fileHandle, IntPtr.Zero, ref keep, ref keep2); // 失敗しても書き込みは続ける（呼び出し側が日時を確かめて戻す）
+                }
                 uint written = 0;
                 var result = WriteFile(fileHandle, buff, (uint)buff.Length, ref written, IntPtr.Zero);
                 if (result && written == buff.Length) return StreamWriteResult.Success;
@@ -2235,6 +2189,10 @@ namespace ZipPla
             FlagsAndAttributes dwFlagsAndAttributes, // ファイル属性
             IntPtr hTemplateFile // テンプレートファイルのハンドル
             );
+
+        [System.Security.SuppressUnmanagedCodeSecurity]
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool SetFileTime(IntPtr hFile, IntPtr lpCreationTime, ref long lpLastAccessTime, ref long lpLastWriteTime);
 
         [System.Security.SuppressUnmanagedCodeSecurity] // 呼び出しごとのセキュリティのスタックウォークを省く（K5）
         [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
