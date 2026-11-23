@@ -1136,6 +1136,7 @@ namespace ZipPla
             public DateTime ExpectedLastWriteTime; // サムネイルを作ったときの元ファイルの更新日時。書くときに変わっていたら書かない
             public FocusMemo[] Focus; // null でなければ、画像は書かずに注目点の記録だけを書き換える（P4）
             public bool SeekPenalty; // ZipPla CE: 元ファイルが HDD（シークに時間のかかるドライブ）にある（K36）。EnqueuePendingWrite で入れる
+            public FocusMemo[] AppendFocus; // ZipPla CE: 画像のあとに続けて書く注目点の記録（K37）。同じまとまりの注目点の記録の登録を付けたもの
         }
 
         private static bool TrySetDeferred(string cacheRoot, string fileName, int index, Size requiredSize, bool letterBox, bool fullSizeCache, Bitmap thumbnail,
@@ -1214,8 +1215,12 @@ namespace ZipPla
                 var ads = cacheRoot == AlternateDataStream;
                 var cachePath = ads ? null : GetCachePath(fileName, cacheRoot);
                 if (ads ? !NTFSMultiStream.Exists(fileName, STREAM_NAME) : !File.Exists(cachePath)) return;
-                var isFile = File.Exists(fileName);
-                var lastWriteTime = isFile ? File.GetLastWriteTime(fileName) : Directory.GetLastWriteTime(fileName);
+                // ZipPla CE: 属性・フォルダか・更新日時を 1 回の問い合わせで取る（K37。K34 と同じ）
+                var info = new FileInfo(fileName); // フォルダでも属性と更新日時は取れる
+                var attributes = info.Attributes;
+                if ((int)attributes == -1) return;
+                var isFile = (attributes & FileAttributes.Directory) == 0;
+                var lastWriteTime = info.LastWriteTime;
                 byte[] all;
                 using (var s = ads ? new NTFSMultiStream(fileName, STREAM_NAME, FileAccess.Read) : new FileStream(cachePath, FileMode.Open, FileAccess.Read) as Stream)
                 {
@@ -1255,7 +1260,7 @@ namespace ZipPla
                 if (ads)
                 {
                     if (SupportADSSize(fileName, checkNew: false) < newBytes.Length) return;
-                    att = File.GetAttributes(fileName);
+                    att = attributes;
                     if ((att & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
                     {
                         File.SetAttributes(fileName, att & ~FileAttributes.ReadOnly);
@@ -1271,14 +1276,19 @@ namespace ZipPla
                             {
                                 try { NTFSMultiStream.Delete(fileName, STREAM_NAME); } catch { }
                             }
-                            NTFSMultiStream.WriteFile(fileName, STREAM_NAME, newBytes);
+                            // ZipPla CE: ハンドルで元ファイルの更新日時が変わらないようにして書く（K37。K34 と同じ）
+                            NTFSMultiStream.WriteFile(fileName, STREAM_NAME, newBytes, preserveTimes: true);
                             leftoverAdsChecked.TryRemove(fileName, out var dummy);
                         }
                         finally
                         {
-                            // ストリームの書き換えで元ファイルの更新日時が変わるので戻す
-                            if (isFile) File.SetLastWriteTime(fileName, lastWriteTime);
-                            else Directory.SetLastWriteTime(fileName, lastWriteTime);
+                            // ストリームの書き換えで元ファイルの更新日時が変わっていたら戻す（ZipPla CE: 変わっていたときだけ。以前は必ず書き直していた）
+                            var now = isFile ? File.GetLastWriteTime(fileName) : Directory.GetLastWriteTime(fileName);
+                            if (now != lastWriteTime)
+                            {
+                                if (isFile) File.SetLastWriteTime(fileName, lastWriteTime);
+                                else Directory.SetLastWriteTime(fileName, lastWriteTime);
+                            }
                         }
                     });
                 }
@@ -1412,7 +1422,7 @@ namespace ZipPla
                         Monitor.Wait(pendingWrites, rest);
                     }
                     // パスの順に書く（同じフォルダのファイルが続く）。OrderBy は安定なので、同じファイルの書き込みと注目点の記録の順番は保たれる
-                    batch = dropSupersededFocusWrites(pendingWrites.ToArray()).OrderBy(j => j.FileName, StringComparer.OrdinalIgnoreCase).ToArray();
+                    batch = mergeFocusIntoImageWrites(dropSupersededFocusWrites(pendingWrites.ToArray())).OrderBy(j => j.FileName, StringComparer.OrdinalIgnoreCase).ToArray();
                     pendingWrites.Clear();
                     batchSerial = pendingWriteEnqueueSerial;
                 }
@@ -1449,7 +1459,7 @@ namespace ZipPla
                     finally
                     {
 #if PERFLOG
-                        PerfTrace.Write($"cacheWrite done {Path.GetFileName(job.FileName)}{(job.Focus != null ? " (focus)" : "")}");
+                        PerfTrace.Write($"cacheWrite done {Path.GetFileName(job.FileName)}{(job.Focus != null ? " (focus)" : job.AppendFocus != null ? " (+focus)" : "")}");
 #endif
                         job.Biggest?.Dispose();
                         job.Biggest = null;
@@ -1495,6 +1505,37 @@ namespace ZipPla
                 else pendingWriteCount--; // 書かずに済ませた分
             }
             if (result.Count != jobs.Length) Monitor.PulseAll(pendingWrites);
+            return result;
+        }
+
+        /// <summary>
+        /// ZipPla CE: 注目点の記録の登録の前に、同じキャッシュの画像の書き込みがあれば、記録をその書き込みに付けて（AppendFocus）
+        /// 注目点の記録の登録は書かずに済ませる（K37。初めて表示したファイルのキャッシュを 2 回書かない）。
+        /// dropSupersededFocusWrites のあとに、pendingWrites の lock の中で呼ぶ
+        /// </summary>
+        private static List<PendingWrite> mergeFocusIntoImageWrites(List<PendingWrite> jobs)
+        {
+            var imageWrites = new Dictionary<string, PendingWrite>(StringComparer.OrdinalIgnoreCase);
+            var result = new List<PendingWrite>(jobs.Count);
+            foreach (var j in jobs)
+            {
+                var key = j.CacheRoot + "\n" + j.FileName + "\n" + j.Index;
+                if (j.Focus == null)
+                {
+                    imageWrites[key] = j;
+                    result.Add(j);
+                }
+                else if (imageWrites.TryGetValue(key, out var image))
+                {
+                    image.AppendFocus = j.Focus; // 記録は登録のたびにそれまでの分をすべて含むので、最後のもので置き換えてよい
+                    pendingWriteCount--; // 書かずに済ませた分
+                    Monitor.PulseAll(pendingWrites);
+                }
+                else
+                {
+                    result.Add(j);
+                }
+            }
             return result;
         }
 
@@ -1787,6 +1828,15 @@ namespace ZipPla
                                 m.WriteTo(memoryStream);
                                 m.Dispose();
                                 compressed[i] = null;
+                            }
+
+                            // ZipPla CE: 同じまとまりで登録された注目点の記録を続けて書く（K37。WriteFocusMemos が作るのと同じ並び）。
+                            // 以前は画像を書いたあと、WriteFocusMemos がキャッシュを読み直して全体を書き直していた
+                            var appendFocus = pending?.AppendFocus;
+                            if (appendFocus != null && sizeBound - (long)appendFocus.Length * (4 + 4 + 4 + 4 + 8 + FOCUS_PAYLOAD_LENGTH) > 0)
+                            {
+                                foreach (var memo in appendFocus) memo.WriteEntry(w);
+                                w.Flush();
                             }
 
                             memoryStream.Seek(0, SeekOrigin.Begin);
