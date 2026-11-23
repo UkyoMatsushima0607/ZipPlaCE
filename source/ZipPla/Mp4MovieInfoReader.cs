@@ -9,7 +9,7 @@ namespace ZipPla
     /// <summary>
     /// mp4 / mov の動画の情報（大きさ・SAR・fps・長さ）を、ffmpeg を起動せずにファイルのヘッダから読む（K32）。
     /// MovieInfo.FromFile（ffmpeg の起動 1 回、約 30ms）と同じ値になる場合だけ結果を返し、
-    /// 少しでも確かでないとき（H.264・HEVC 以外、VFR、断片化 mp4、表紙の画像が先にある、など）は false を返して ffmpeg に任せる。
+    /// 少しでも確かでないとき（H.264・HEVC 以外、断片化 mp4、表紙の画像が先にある、VFR で fps が mov の段階で決まらない、など）は false を返して ffmpeg に任せる。
     /// ffmpeg の表示の規則（av_dump_format・avcodec_string・print_fps）と、FromFile の読み取りの癖（小数部の 2 桁をミリ秒として読む）を再現している
     /// </summary>
     internal static class Mp4MovieInfoReader
@@ -90,6 +90,10 @@ namespace ZipPla
             public ulong EditSegmentDuration; // ムービーの時間単位
             public bool EditRateIsOne = true;
             public List<KeyValuePair<long, long>> Ctts; // (count, offset)。なければ null
+            // tkhd
+            public int[] Matrix;     // 3×3（16.16、16.16、2.30）
+            public int TkhdWidth, TkhdHeight; // 整数部
+            public uint SampleCount;     // stsz のサンプル数
         }
 
         /// <summary>
@@ -143,6 +147,7 @@ namespace ZipPla
             long movieTimeScale = 0;
             ulong movieDuration = 0;
             var mvhdFound = false;
+            int[] movieMatrix = null;
             var tracks = new List<Track>();
             var coverBeforeTrack = false;
             foreach (var box in children(moov, 0, moov.Length))
@@ -156,15 +161,17 @@ namespace ZipPla
                     var version = moov[p];
                     if (version == 1)
                     {
-                        if (box.BodyLength < 32) return false;
+                        if (box.BodyLength < 48 + 36) return false;
                         movieTimeScale = readU32(moov, p + 20);
                         movieDuration = readU64(moov, p + 24);
+                        movieMatrix = readMatrix(moov, p + 48);
                     }
                     else if (version == 0)
                     {
-                        if (box.BodyLength < 20) return false;
+                        if (box.BodyLength < 36 + 36) return false;
                         movieTimeScale = readU32(moov, p + 12);
                         movieDuration = readU32(moov, p + 16);
+                        movieMatrix = readMatrix(moov, p + 36);
                     }
                     else return false;
                 }
@@ -208,12 +215,17 @@ namespace ZipPla
             if (hours >= 100) return false; // FromFile の正規表現は 2 桁の時間しか読まない
             var duration = new TimeSpan(0, (int)hours, (int)(secs / 60 % 60), (int)(secs % 60), centi); // FromFile と同じく、1/100 秒の 2 桁をミリ秒として入れる
 
-            // fps（tbr）: ffmpeg の mov は、stts の項目が 1 つ（または 2 つで最後が 1 サンプル）のとき時間単位 ÷ 1 フレームの長さにする
-            var stts = video.Stts;
-            if (!(stts.Count == 1 || (stts.Count == 2 && stts[1].Key == 1))) return false;
-            var delta = stts[0].Value;
-            if (delta <= 0 || stts[0].Key <= 0) return false;
-            if (!tryFormatFps(video.MediaTimeScale, delta, out var fpsString)) return false;
+            // fps（tbr）: ffmpeg の mov は、最後のサンプル以外の長さがすべて同じとき 時間単位 ÷ 1 フレームの長さ にする（mov_read_trak）。
+            // そうでなければ（VFR）、avformat_find_stream_info が最初に読んだパケットの dts の間隔から推定する
+            long rateNum, rateDen;
+            if (isConstantFrameDuration(video))
+            {
+                rateNum = video.MediaTimeScale;
+                rateDen = video.Stts[0].Value;
+                if (rateDen <= 0) return false;
+            }
+            else if (!VfrRateEstimator.TryEstimate(video, out rateNum, out rateDen)) return false;
+            if (!tryFormatFps(rateNum, rateDen, out var fpsString)) return false;
             if (!double.TryParse(fpsString, out var fps)) return false; // FromFile と同じ読み方
 
             // 大きさと SAR: H.264・HEVC の SPS から（ffmpeg はデコーダの値を表示する）。SPS に SAR がなければ pasp
@@ -244,9 +256,16 @@ namespace ZipPla
             if (!(isAvc ? H264Sps.TryParse(sps, out size, out spsSar) : HevcSps.TryParse(sps, out size, out spsSar))) return false;
 
             info = new MovieInfo { SizeByPixel = size, FPS = fps, FPSString = fpsString, Duration = duration };
+            // SAR: ffmpeg はコーデック（SPS）の SAR を先に、なければストリームの SAR を表示する。
+            // ストリームの SAR は pasp、なければ tkhd の変換行列の縦横の倍率の比、なければ tkhd と stsd の大きさの比（mov_read_tkhd・mov_read_trak）
             if (spsSar.HasValue) info.SAR = spsSar.Value;
             else if (pasp.HasValue) info.SAR = pasp.Value;
-            // どちらもなければ FromFile と同じく MovieInfo の初期値（0）のまま
+            else
+            {
+                if (!tryGetStreamSarFromTkhd(video, movieMatrix, entry, out var streamSar)) return false;
+                if (streamSar.HasValue) info.SAR = streamSar.Value;
+                // なければ FromFile と同じく MovieInfo の初期値（0）のまま
+            }
             return true;
         }
 
@@ -275,6 +294,17 @@ namespace ZipPla
                             track.EditRateIsOne = readU32(data, q + entrySize - 4) == 0x00010000;
                         }
                     }
+                    continue;
+                }
+                if (box.Type == "tkhd")
+                {
+                    var p = box.BodyStart;
+                    var version = data[p];
+                    var matrixOffset = version == 1 ? 52 : 40;
+                    if (version > 1 || box.BodyLength < matrixOffset + 44) return null;
+                    track.Matrix = readMatrix(data, p + matrixOffset);
+                    track.TkhdWidth = (int)readU32(data, p + matrixOffset + 36) >> 16;
+                    track.TkhdHeight = (int)readU32(data, p + matrixOffset + 40) >> 16;
                     continue;
                 }
                 if (box.Type != "mdia") continue;
@@ -329,12 +359,238 @@ namespace ZipPla
                                     track.Ctts = readPairs(data, s.BodyStart + 8, (int)count, signedSecond: true); // ffmpeg は版 0 でも符号付きで読む
                                     foreach (var c in track.Ctts) if (c.Value < 0) return null; // 負の表示時刻のずれ（dts_shift）は任せる
                                 }
+                                else if (s.Type == "stsz")
+                                {
+                                    if (s.BodyLength < 12) return null;
+                                    track.SampleCount = readU32(data, s.BodyStart + 8);
+                                }
                             }
                         }
                     }
                 }
             }
             return track;
+        }
+
+        // ffmpeg の mov_read_trak の stts_constant: 最後のサンプル以外の長さがすべて最初と同じ
+        private static bool isConstantFrameDuration(Track t)
+        {
+            if (t.Stts == null || t.Stts.Count == 0) return false;
+            long total = 0;
+            foreach (var e in t.Stts) total += e.Key;
+            if (t.SampleCount > 0 && t.SampleCount < total) total = t.SampleCount;
+            var d0 = t.Stts[0].Value;
+            long index = 0;
+            foreach (var e in t.Stts)
+            {
+                if (e.Key > 0 && e.Value != d0)
+                {
+                    // この項目のサンプル index 〜 index+count-1 のうち、1 〜 total-2 の範囲に入るものがあれば一定でない
+                    var first = Math.Max(index, 1);
+                    var last = Math.Min(index + e.Key - 1, total - 2);
+                    if (first <= last) return false;
+                }
+                index += e.Key;
+            }
+            return true;
+        }
+
+        // ストリームの SAR のうち、tkhd から決まるもの（pasp がないとき）。確かでないときは false
+        private static bool tryGetStreamSarFromTkhd(Track video, int[] movieMatrix, byte[] sampleEntry, out Fraction? sar)
+        {
+            sar = null;
+            if (video.Matrix == null || movieMatrix == null || video.TkhdWidth < 0 || video.TkhdHeight < 0) return false;
+            // tkhd の行列に mvhd の行列を掛け、縦横の倍率が 1% 以上違えば ffmpeg は av_d2q で SAR を作る（その場合は任せる）
+            var sh = new[] { 16, 16, 30 };
+            var res = new long[9];
+            for (var i = 0; i < 3; i++)
+                for (var j = 0; j < 3; j++)
+                {
+                    var sum = 0;
+                    for (var e = 0; e < 3; e++) sum += (int)(((long)video.Matrix[i * 3 + e] * movieMatrix[e * 3 + j]) >> sh[e]);
+                    res[i * 3 + j] = sum;
+                }
+            var identity = res[0] == 65536 && res[1] == 0 && res[2] == 0 && res[3] == 0 && res[4] == 65536 && res[5] == 0 && res[6] == 0 && res[7] == 0 && res[8] == 1 << 30;
+            if (!identity && video.TkhdWidth != 0 && video.TkhdHeight != 0)
+            {
+                var d0 = Math.Sqrt((double)res[0] * res[0] + (double)res[3] * res[3]);
+                var d1 = Math.Sqrt((double)res[1] * res[1] + (double)res[4] * res[4]);
+                if (d0 > 1 && d1 > 1 && d0 < (1 << 24) && d1 < (1 << 24) && Math.Abs(d0 / d1 - 1.0) > 0.01) return false;
+            }
+            // stsd と tkhd の大きさが違えば、その比
+            var stsdWidth = (sampleEntry[32] << 8) | sampleEntry[33];
+            var stsdHeight = (sampleEntry[34] << 8) | sampleEntry[35];
+            if (stsdWidth != 0 && stsdHeight != 0 && video.TkhdWidth > 0 && video.TkhdHeight > 0 &&
+                (stsdWidth != video.TkhdWidth || stsdHeight != video.TkhdHeight))
+            {
+                long num = (long)stsdHeight * video.TkhdWidth, den = (long)stsdWidth * video.TkhdHeight;
+                var g = gcd(num, den);
+                num /= g; den /= g;
+                if (num > int.MaxValue || den > int.MaxValue) return false;
+                sar = new Fraction((int)num, (int)den);
+            }
+            return true;
+        }
+
+        private static long gcd(long a, long b)
+        {
+            while (b != 0) { var t = a % b; a = b; b = t; }
+            return a < 0 ? -a : a;
+        }
+
+        /// <summary>
+        /// VFR の映像の tbr（r_frame_rate）を、ffmpeg 8.0 の mov と同じ手順で求める。
+        /// mov_build_index が映像の最初の 99 サンプルの dts（編集リストを当てる前の、0 から始まる値）で ff_rfps_add_frame を行い、
+        /// mov_read_header の最後の ff_rfps_calculate で決める。そこで決まらない場合は avformat_find_stream_info が
+        /// 実際に読んだパケットから決めるので、false を返して任せる
+        /// </summary>
+        private static class VfrRateEstimator
+        {
+            private const int MaxStdTimebases = 30 * 12 + 30 + 3 + 6;
+            private const int MovRfpsFrames = 99; // nb_index_entries < 100
+
+            public static bool TryEstimate(Track video, out long rateNum, out long rateDen)
+            {
+                rateNum = rateDen = 0;
+                if (video.MediaTimeScale <= 0 || video.Stts == null) return false;
+                var rfps = new RfpsInfo(video.MediaTimeScale);
+                long dts = 0;
+                var n = 0;
+                var limit = (long)Math.Min(MovRfpsFrames, video.SampleCount > 0 ? video.SampleCount : long.MaxValue);
+                foreach (var e in video.Stts)
+                {
+                    if (e.Value > int.MaxValue) return false;
+                    for (long i = 0; i < e.Key && n < limit; i++, n++)
+                    {
+                        rfps.AddFrame(dts);
+                        dts += e.Value;
+                    }
+                    if (n >= limit) break;
+                }
+                // ヘッダを読んだ時点では codec_info_duration は 0
+                return rfps.Calculate(0, out rateNum, out rateDen);
+            }
+            /// <summary>ffmpeg の FFStreamInfo の rfps の部分（ff_rfps_add_frame・ff_rfps_calculate）</summary>
+            private sealed class RfpsInfo
+            {
+                private readonly long timeScale;
+                private readonly double[,,] durationError = new double[2, 2, MaxStdTimebases];
+                private long lastDts = long.MinValue;
+                private long durationGcd;
+                private long rfpsDurationSum;
+                public int DurationCount;
+
+                public RfpsInfo(long timeScale) { this.timeScale = timeScale; }
+
+                private static int stdFramerate(int i)
+                {
+                    if (i < 30 * 12) return (i + 1) * 1001;
+                    i -= 30 * 12;
+                    if (i < 30) return (i + 31) * 1001 * 12;
+                    i -= 30;
+                    if (i < 3) return new[] { 80, 120, 240 }[i] * 1001 * 12;
+                    i -= 3;
+                    return new[] { 24, 30, 60, 12, 15, 48 }[i] * 1000 * 12;
+                }
+
+                public void AddFrame(long ts)
+                {
+                    var last = lastDts;
+                    if (last != long.MinValue && ts > last)
+                    {
+                        var dts = ts * (1.0 / timeScale);
+                        var duration = ts - last;
+                        for (var i = 0; i < MaxStdTimebases; i++)
+                        {
+                            if (durationError[0, 1, i] < 1e10)
+                            {
+                                var framerate = stdFramerate(i);
+                                var sdts = dts * framerate / (1001 * 12);
+                                for (var j = 0; j < 2; j++)
+                                {
+                                    var ticks = Math.Round(sdts + j * 0.5, MidpointRounding.ToEven); // llrint
+                                    var error = sdts - ticks + j * 0.5;
+                                    durationError[j, 0, i] += error;
+                                    durationError[j, 1, i] += error * error;
+                                }
+                            }
+                        }
+                        DurationCount++;
+                        rfpsDurationSum += duration;
+                        if (DurationCount % 10 == 0)
+                        {
+                            var n = DurationCount;
+                            for (var i = 0; i < MaxStdTimebases; i++)
+                            {
+                                if (durationError[0, 1, i] < 1e10)
+                                {
+                                    var a0 = durationError[0, 0, i] / n;
+                                    var error0 = durationError[0, 1, i] / n - a0 * a0;
+                                    var a1 = durationError[1, 0, i] / n;
+                                    var error1 = durationError[1, 1, i] / n - a1 * a1;
+                                    if (error0 > 0.04 && error1 > 0.04)
+                                    {
+                                        durationError[0, 1, i] = 2e10;
+                                        durationError[1, 1, i] = 2e10;
+                                    }
+                                }
+                            }
+                        }
+                        if (DurationCount > 3) durationGcd = gcd(durationGcd, duration); // 最初の 4 つは使わない
+                    }
+                    lastDts = ts;
+                }
+
+                public bool Calculate(long codecInfoDuration, out long num, out long den)
+                {
+                    num = den = 0;
+                    if (DurationCount > 15 && durationGcd > Math.Max(1, timeScale / 500))
+                    {
+                        var g = gcd(timeScale, durationGcd);
+                        num = timeScale / g; den = durationGcd / g;
+                        return num <= int.MaxValue && den <= int.MaxValue;
+                    }
+                    if (DurationCount > 1)
+                    {
+                        var best = 0;
+                        var bestError = 0.01;
+                        var q = 1.0 / timeScale;
+                        for (var j = 0; j < MaxStdTimebases; j++)
+                        {
+                            var std = stdFramerate(j);
+                            if (codecInfoDuration != 0 && codecInfoDuration * q < (1001 * 11.5) / std) continue;
+                            if (codecInfoDuration == 0 && std < 1001 * 12) continue;
+                            if (q * rfpsDurationSum / DurationCount < (1001 * 12.0 * 0.8) / std) continue;
+                            for (var k = 0; k < 2; k++)
+                            {
+                                var n = DurationCount;
+                                var a = durationError[k, 0, j] / n;
+                                var error = durationError[k, 1, j] / n - a * a;
+                                if (error < bestError && bestError > 0.000000001)
+                                {
+                                    bestError = error;
+                                    best = std;
+                                }
+                            }
+                        }
+                        // 標準の fps に合わせるために 1% より大きく上げない
+                        if (best != 0 && (double)best / (12 * 1001) < 1.01 * timeScale)
+                        {
+                            var g = gcd(best, 12 * 1001);
+                            num = best / g; den = 12 * 1001 / g;
+                            return true;
+                        }
+                    }
+                    return false; // コーデックの fps か時間単位になる。任せる
+                }
+            }
+        }
+
+        private static int[] readMatrix(byte[] data, int start)
+        {
+            var m = new int[9];
+            for (var i = 0; i < 9; i++) m[i] = (int)readU32(data, start + i * 4);
+            return m;
         }
 
         private static List<KeyValuePair<long, long>> readPairs(byte[] data, int start, int count, bool signedSecond)
