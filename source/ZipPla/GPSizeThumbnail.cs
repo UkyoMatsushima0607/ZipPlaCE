@@ -537,7 +537,16 @@ namespace ZipPla
         {
             return TryGet(cacheRoot, fileName, null, out gpData);
         }
+        /// <param name="knownLastWriteTime">ZipPla CE: 呼び出し側で元のファイルの更新日時（ローカル時刻）を取ってあれば渡す。ファイルへの問い合わせを 1 回減らす</param>
+        public static bool TryGetWithIgnoredIndex(string cacheRoot, string fileName, DateTime? knownLastWriteTime, out byte[] gpData)
+        {
+            return TryGet(cacheRoot, fileName, null, knownLastWriteTime, out gpData);
+        }
         public static bool TryGet(string cacheRoot, string fileName, int? index, out byte[] gpData)
+        {
+            return TryGet(cacheRoot, fileName, index, null, out gpData);
+        }
+        public static bool TryGet(string cacheRoot, string fileName, int? index, DateTime? knownLastWriteTime, out byte[] gpData)
         {
             gpData = null;
             if (cacheRoot == AlternateDataStream)
@@ -545,7 +554,7 @@ namespace ZipPla
                 if (!NTFSMultiStream.Exists(fileName, STREAM_NAME)) return false;
                 try
                 {
-                    var lastWriteTime = File.GetLastWriteTime(fileName);
+                    var lastWriteTime = knownLastWriteTime ?? File.GetLastWriteTime(fileName);
                     using (var s = new NTFSMultiStream(fileName, STREAM_NAME, FileAccess.Read))
                     using (var r = new BinaryReader(s))
                     {
@@ -564,7 +573,7 @@ namespace ZipPla
                 {
                     var cachePath = GetCachePath(fileName, cacheRoot);
                     if (!File.Exists(cachePath)) return false;
-                    var lastWriteTime = File.GetLastWriteTime(fileName);
+                    var lastWriteTime = knownLastWriteTime ?? File.GetLastWriteTime(fileName);
                     using (var s = new FileStream(cachePath, FileMode.Open, FileAccess.Read))
                     using (var r = new BinaryReader(s))
                     {

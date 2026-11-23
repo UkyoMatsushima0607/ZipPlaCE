@@ -178,7 +178,8 @@ namespace ZipPla
             string cmd;
             if (position < TimeSpan.MaxValue)
             {
-                cmd = $"-ss {position.TotalSeconds} -i \"{filePath}\"" + (originalSize ? "" : $" -s {size.Width}x{size.Height}") + " -vframes 1 -an -vcodec bmp -f image2 pipe:1";
+                // ZipPla CE: 小数点がカンマの地域（de-DE など）でも ffmpeg が読める形にする
+                cmd = $"-ss {position.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)} -i \"{filePath}\"" + (originalSize ? "" : $" -s {size.Width}x{size.Height}") + " -vframes 1 -an -vcodec bmp -f image2 pipe:1";
             }
             else
             {
@@ -525,12 +526,13 @@ namespace ZipPla
                     if(fpsMatch.Success)
                     {
                         double d;
-                        if(double.TryParse(fpsMatch.Groups[1].Value, out d))
+                        // ZipPla CE: ffmpeg は小数点に常に . を使うので、地域の設定によらずに読む
+                        if(double.TryParse(fpsMatch.Groups[1].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d))
                         {
                             result.FPSString = fpsMatch.Groups[1].Value;
                             result.FPS = d;
                         }
-                        else if(double.TryParse(fpsMatch.Groups[2].Value, out d))
+                        else if(double.TryParse(fpsMatch.Groups[2].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d))
                         {
                             result.FPSString = fpsMatch.Groups[2].Value;
                             result.FPS = d;

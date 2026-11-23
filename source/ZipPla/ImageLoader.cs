@@ -495,6 +495,16 @@ namespace ZipPla
                     s.Position = 0;
                     var orientation = GetJpegOrientation(s);
                     s.Position = 0;
+                    // ZipPla CE: libjpeg-turbo があればそれで縮小して読む。縮小率の決め方は下の WIC の経路と同じ
+                    if (TurboJpegDecoder.Available && TurboJpegDecoder.TryReadAll(s, out var jpegData, out var jpegOffset, out var jpegLength) &&
+                        TurboJpegDecoder.TryReadHeader(jpegData, jpegOffset, jpegLength, out var jpegHeader))
+                    {
+                        var turboDenominator = ReducedJpegDenominatorForThumbnail(jpegHeader.Width, jpegHeader.Height, orientation, minSize);
+                        if (turboDenominator <= 1) return null;
+                        var turbo = TurboJpegDecoder.TryDecode(jpegData, jpegOffset, jpegLength, turboDenominator, grayAsIndexed: false); // WIC の経路と同じく灰色も 24bpp
+                        if (turbo != null) return ViewerFormImageFilter.Rotate(new Bitmap(turbo), orientation);
+                    }
+                    s.Position = 0;
                     var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(s,
                         System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile | System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation,
                         System.Windows.Media.Imaging.BitmapCacheOption.None);
@@ -509,7 +519,9 @@ namespace ZipPla
                     s.Position = 0;
                     var image = new System.Windows.Media.Imaging.BitmapImage();
                     image.BeginInit();
-                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    // ZipPla CE: OnLoad では WPF のキャッシュに全部デコードしてから CopyPixels でもう一度コピーしていた。
+                    // None なら GetBitmap の CopyPixels のときに WIC が GDI+ のバッファに直接書く。s は using の中なので開いている
+                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.None;
                     image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
                     // 1/2・1/4・1/8 ちょうどの大きさを求め、WIC が DCT の段階の縮小だけで済むようにする。
                     // 半端な大きさを求めると WIC がさらに再標本化し、呼び出し側の縮小と合わせて 2 回になっていた（D10）
@@ -534,6 +546,22 @@ namespace ZipPla
             }
         }
 
+        /// <summary>
+        /// TryLoadReducedJpeg の縮小率（2・4・8）。縮小の効果がなければ 1。WIC の経路の計算と同じ
+        /// </summary>
+        private static int ReducedJpegDenominatorForThumbnail(int width, int height, DihedralFraction orientation, Size minSize)
+        {
+            var swap = orientation == new DihedralFraction(1, 4) || orientation == new DihedralFraction(3, 4) ||
+                orientation == new DihedralFraction(1, -4) || orientation == new DihedralFraction(3, -4);
+            int needW = swap ? minSize.Height : minSize.Width, needH = swap ? minSize.Width : minSize.Height;
+            var scale = Math.Max((double)needW / width, (double)needH / height);
+            if (scale > 0.5) return 1;
+            var denominator = 2;
+            while (denominator < 8 && (width + denominator * 2 - 1) / (denominator * 2) >= Math.Ceiling(width * scale) &&
+                (height + denominator * 2 - 1) / (denominator * 2) >= Math.Ceiling(height * scale)) denominator *= 2;
+            return denominator;
+        }
+
         private static Bitmap LoadRotateBitmap(Stream stream)
         {
             using (var seekable = SeekableStream.Seekablize(stream, long.MaxValue, leaveOpen: true))
@@ -545,6 +573,9 @@ namespace ZipPla
                     var reduced = TryDecodeReducedJpeg(seekable, orientation, request);
                     if (reduced != null) return reduced;
                 }
+                // ZipPla CE: libjpeg-turbo があればそれで読む（灰色は GDI+ と同じく 8bppIndexed）。読めなければ従来どおり GDI+
+                var turbo = TurboJpegDecoder.TryDecode(seekable, 1, grayAsIndexed: true);
+                if (turbo != null) return ViewerFormImageFilter.Rotate(new Bitmap(turbo), orientation);
                 (seekable as SeekableStream)?.StopBuffering();
                 return ViewerFormImageFilter.Rotate(new Bitmap(seekable), orientation);
             }
@@ -560,6 +591,12 @@ namespace ZipPla
         {
             var start = stream.Position;
             System.Drawing.Bitmap result = null;
+            // ZipPla CE: libjpeg-turbo があればそれで縮小して読む。ヘッダが読めたら（縮小しないと決まったときも）WIC の経路は通らない
+            if (TurboJpegDecoder.Available)
+            {
+                if (tryDecodeReducedJpegWithTurbo(stream, orientation, request, out var turbo)) return turbo;
+                stream.Position = start;
+            }
             try
             {
                 var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(stream,
@@ -580,7 +617,9 @@ namespace ZipPla
                 stream.Position = start;
                 var image = new System.Windows.Media.Imaging.BitmapImage();
                 image.BeginInit();
-                image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                // ZipPla CE: OnLoad では WPF のキャッシュに全部デコードしてから CopyPixels でもう一度コピーしていた。
+                // None なら CopyPixels のときに WIC が（縮小・変換して）GDI+ のバッファに直接書く。stream は CopyPixels が終わるまで開いている
+                image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.None;
                 image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
                 image.DecodePixelWidth = (width + denom - 1) / denom;
                 image.StreamSource = stream;
@@ -628,6 +667,35 @@ namespace ZipPla
                 result?.Dispose();
                 return rewind(stream, start);
             }
+        }
+
+        /// <summary>
+        /// TryDecodeReducedJpeg の libjpeg-turbo の経路。ヘッダが読めれば true を返し、bitmap は縮小して読んだもの（縮小しないときは null で、
+        /// stream の位置は戻してある）。ヘッダが読めない・対応していない（CMYK など）・デコードに失敗したときは false（呼び出し側は WIC で読む）
+        /// </summary>
+        private static bool tryDecodeReducedJpegWithTurbo(Stream stream, DihedralFraction orientation, ReducedJpegDecodeRequest request, out Bitmap bitmap)
+        {
+            bitmap = null;
+            var start = stream.Position;
+            if (!TurboJpegDecoder.TryReadAll(stream, out var data, out var offset, out var length)) return false;
+            if (!TurboJpegDecoder.TryReadHeader(data, offset, length, out var header)) return false;
+            int width = header.Width, height = header.Height;
+            var swap = orientation == new DihedralFraction(1, 4) || orientation == new DihedralFraction(3, 4) ||
+                orientation == new DihedralFraction(1, -4) || orientation == new DihedralFraction(3, -4);
+            var originalSize = swap ? new Size(height, width) : new Size(width, height);
+            var minSize = request.MinimumSizeProvider(originalSize);
+            stream.Position = start;
+            if (minSize.Width <= 0 || minSize.Height <= 0) return true;
+            int needW = swap ? minSize.Height : minSize.Width, needH = swap ? minSize.Width : minSize.Height;
+            var denom = 1;
+            while (denom < 8 && (width + denom * 2 - 1) / (denom * 2) >= needW && (height + denom * 2 - 1) / (denom * 2) >= needH) denom *= 2;
+            if (denom == 1) return true;
+            var decoded = TurboJpegDecoder.TryDecode(data, offset, length, denom, grayAsIndexed: true); // GDI+ と同じく、灰色は 8bppIndexed、カラーは 24bpp
+            if (decoded == null) return false;
+            bitmap = ViewerFormImageFilter.Rotate(new Bitmap(decoded), orientation);
+            request.OriginalSize = originalSize;
+            request.Reduced = true;
+            return true;
         }
 
         private static Bitmap rewind(Stream stream, long position)

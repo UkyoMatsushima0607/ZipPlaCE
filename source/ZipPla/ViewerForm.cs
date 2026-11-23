@@ -7946,27 +7946,40 @@ namespace ZipPla
 
                 pbViewRect = pbView.ClientRectangle;
 
-                e.Graphics.DrawImageUnscaled(pbView_Paint_Canvas, pbViewRect);
-
-                if (DrawMeasure)
+                // ZipPla CE: 重ねて描くもの（目盛り・ルーペの開閉の文字・端の線）がなければ、キャンバスの再描画の範囲を
+                // SetDIBitsToDevice でウィンドウに直接出す。以前は ViewControl のダブルバッファに DrawImageUnscaled で
+                // 24bpp から 32bpp に変換しながら全体を描き、それを BitBlt でウィンドウに出していた（ページ送り・アニメーションのコマごとに、
+                // 4K で約 33MB の書き込みが 2 回）。重ねて描くものがあるときは、従来と同じ順番で一時のバッファに描いてから出す
+                if (pbView_Paint_NeedsOverlay() || !presentCanvasDirect(e, pbViewRect))
                 {
-                    drawMeasure(e.Graphics, pbView_Paint_Canvas);
-                }
+                    using (var buffered = BufferedGraphicsManager.Current.Allocate(e.Graphics, pbViewRect))
+                    {
+                        var g = buffered.Graphics;
+                        g.DrawImageUnscaled(pbView_Paint_Canvas, pbViewRect);
 
-                drawMessageOnRectangle(e.Graphics); //, pbView_Paint_Canvas);
-            }
+                        if (DrawMeasure)
+                        {
+                            drawMeasure(g, pbView_Paint_Canvas);
+                        }
 
-            if (drowSideLine_Draw)
-            {
-                var rect = pbViewRect;
-                if (!drowSideLine_DrawLeft)
-                {
-                    rect.X = rect.Right - drowSideLine_DrawWidth;
-                }
-                rect.Width = drowSideLine_DrawWidth;
-                using (var b = new SolidBrush(drowSideLine_DrawColor))
-                {
-                    e.Graphics.FillRectangle(b, rect);
+                        drawMessageOnRectangle(g); //, pbView_Paint_Canvas);
+
+                        if (drowSideLine_Draw)
+                        {
+                            var rect = pbViewRect;
+                            if (!drowSideLine_DrawLeft)
+                            {
+                                rect.X = rect.Right - drowSideLine_DrawWidth;
+                            }
+                            rect.Width = drowSideLine_DrawWidth;
+                            using (var b = new SolidBrush(drowSideLine_DrawColor))
+                            {
+                                g.FillRectangle(b, rect);
+                            }
+                        }
+
+                        buffered.Render(e.Graphics);
+                    }
                 }
             }
 
@@ -7974,6 +7987,85 @@ namespace ZipPla
             /*
             pbView_PaintToGraphics(e.Graphics);
             */
+        }
+
+        /// <summary>
+        /// キャンバスの上に重ねて描くものがあるか。drawMeasure・drawMessageOnRectangle・端の線の条件と合わせること
+        /// </summary>
+        private bool pbView_Paint_NeedsOverlay()
+        {
+            if (DrawMeasure || drowSideLine_Draw) return true;
+            var vm = ViewerMode;
+            return (vm == ViewerModeEnum.MagnifierOpening || vm == ViewerModeEnum.MagnifierClosing) && pbView_Paint_RectangleMessage != null;
+        }
+
+        /// <summary>
+        /// キャンバス（24bpp）の再描画の範囲を、SetDIBitsToDevice でウィンドウの DC に直接出す。GDI がその場で画面の形式に変換する。
+        /// 出せなければ false（呼び出し側が従来の方法で描く）
+        /// </summary>
+        private bool presentCanvasDirect(PaintEventArgs e, Rectangle pbViewRect)
+        {
+            var canvas = pbView_Paint_Canvas;
+            var clip = Rectangle.Intersect(e.ClipRectangle, pbViewRect);
+            if (clip.Width <= 0 || clip.Height <= 0) return true;
+            if (clip.Right > canvas.Width || clip.Bottom > canvas.Height) return false;
+            var done = false;
+            try
+            {
+                // 行の途中から始めると Scan0 の位置が変わるだけで stride は同じなので、左端から右端までの行をロックし、横は xSrc で選ぶ
+                lockBits(canvas, new Rectangle(0, clip.Y, canvas.Width, clip.Height), ImageLockMode.ReadOnly, "Present canvas", data =>
+                {
+                    if (data.Stride != ((canvas.Width * 3 + 3) & ~3)) return; // DIB の行の長さと違えば従来の方法で
+                    var header = new CanvasBlit.BITMAPINFOHEADER
+                    {
+                        biSize = Marshal.SizeOf(typeof(CanvasBlit.BITMAPINFOHEADER)),
+                        biWidth = canvas.Width,
+                        biHeight = -clip.Height, // 上から下
+                        biPlanes = 1,
+                        biBitCount = 24,
+                        biCompression = 0, // BI_RGB
+                    };
+                    var hdc = e.Graphics.GetHdc();
+                    try
+                    {
+                        var lines = CanvasBlit.SetDIBitsToDevice(hdc, clip.X, clip.Y, (uint)clip.Width, (uint)clip.Height,
+                            clip.X, 0, 0, (uint)clip.Height, data.Scan0, ref header, 0 /* DIB_RGB_COLORS */);
+                        done = lines == clip.Height;
+                    }
+                    finally
+                    {
+                        e.Graphics.ReleaseHdc(hdc);
+                    }
+                });
+            }
+            catch
+            {
+                done = false;
+            }
+            return done;
+        }
+
+        private static class CanvasBlit
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            public struct BITMAPINFOHEADER
+            {
+                public int biSize;
+                public int biWidth;
+                public int biHeight;
+                public short biPlanes;
+                public short biBitCount;
+                public int biCompression;
+                public int biSizeImage;
+                public int biXPelsPerMeter;
+                public int biYPelsPerMeter;
+                public int biClrUsed;
+                public int biClrImportant;
+            }
+
+            [DllImport("gdi32.dll")]
+            public static extern int SetDIBitsToDevice(IntPtr hdc, int xDest, int yDest, uint w, uint h, int xSrc, int ySrc,
+                uint startScan, uint cLines, IntPtr lpvBits, ref BITMAPINFOHEADER lpbmi, uint colorUse);
         }
 
         private Font magnifierMessageFont, magnifierMessageFontBase;
@@ -8450,6 +8542,7 @@ namespace ZipPla
         {
             if (targets.Length <= 0)
             {
+                TimerResolution.SetHighResolution(false);
                 ReserveNextInvadiateForAnimation_LastVisible.Clear();
                 now = default(DateTime);
                 ReserveNextInvadiateForAnimation_ReservedTime = default(DateTime);
@@ -8466,10 +8559,13 @@ namespace ZipPla
             var reserveTime = (from t in targets select t.GetNextChangeTime(now_)).Min();
             if (reserveTime > now)
             {
+                // 次のコマを既定の約 15.6ms 単位に切り上げずに待てるよう、アニメーションの間だけタイマーの分解能を上げる
+                TimerResolution.SetHighResolution(true);
                 ReserveNextInvadiateForAnimation_AsyncPart(reserveTime, now, targets);
             }
             else
             {
+                TimerResolution.SetHighResolution(false);
                 ReserveNextInvadiateForAnimation_LastVisible.Clear();
                 now = default(DateTime);
                 ReserveNextInvadiateForAnimation_ReservedTime = default(DateTime);
@@ -8483,6 +8579,8 @@ namespace ZipPla
             await Task.Delay(reserveTime - now);
             if (ReserveNextInvadiateForAnimation_ReservedTime != reserveTime
                 || !ReserveNextInvadiateForAnimation_LastVisible.SetEquals(targets)) return;
+            // 隠れている・最小化しているときは描かれず次の予約も起きないので、分解能を戻しておく（また描かれたときに上げ直す）
+            if (!Visible || WindowState == FormWindowState.Minimized) TimerResolution.SetHighResolution(false);
             pbView.Invalidate();
         }
 
@@ -16961,7 +17059,9 @@ namespace ZipPla
         {
             // ダブルバッファリングによる描画の高速化
             
-            SetStyle(ControlStyles.DoubleBuffer, true);
+            // ZipPla CE: ダブルバッファは使わない。ViewerForm.pbView_Paint が、重ねて描くものがなければキャンバスをウィンドウに直接出し、
+            // あれば BufferedGraphics に描いてから出す（ちらつかない）
+            SetStyle(ControlStyles.DoubleBuffer, false);
             SetStyle(ControlStyles.UserPaint, true);
             SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             
