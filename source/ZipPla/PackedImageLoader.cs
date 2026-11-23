@@ -2985,7 +2985,7 @@ namespace ZipPla
                 }
                 if (eocd < 0) return false;
                 int u16(byte[] b, int o) => b[o] | b[o + 1] << 8;
-                long u32(byte[] b, int o) => b[o] | b[o + 1] << 8 | b[o + 2] << 16 | (long)b[o + 3] << 24;
+                long u32(byte[] b, int o) => (long)b[o] | (long)b[o + 1] << 8 | (long)b[o + 2] << 16 | (long)b[o + 3] << 24;
                 var entryCount = u16(tail, eocd + 10);
                 var cdSize = u32(tail, eocd + 12);
                 var cdOffset = u32(tail, eocd + 16);
