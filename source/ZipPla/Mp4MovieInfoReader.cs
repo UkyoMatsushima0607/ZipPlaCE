@@ -199,15 +199,20 @@ namespace ZipPla
             if (video == null || video.SampleEntry == null || video.SampleEntryCount != 1 || video.Stts == null || video.MediaTimeScale <= 0) return false;
 
             // 長さ: ffmpeg は各ストリームの終わり（µs、四捨五入）の最大を全体の長さにし、表示で 1/100 秒に丸める。
-            // 映像と音声以外のトラック（タイムコード・字幕・メタデータなど）があると計算に入る可能性があるので任せる
-            long us = 0;
+            // ZipPla CE（K32 の続き）: 字幕・データ（タイムコード・チャプター・メタデータ）のストリームは、映像・音声の終わりより
+            // 1 秒未満だけ後に終わるときだけ全体の終わりになる（ffmpeg の update_stream_timings の end_time_text）。
+            // それ以外の種類のトラック（ffmpeg が映像・音声と同じに数える可能性があるもの）は任せる
+            long us = 0, otherUs = long.MinValue;
             foreach (var t in tracks)
             {
-                if (t.Handler != "vide" && t.Handler != "soun") return false;
+                var av = t.Handler == "vide" || t.Handler == "soun";
+                if (!av && !isSubtitleOrDataHandler(t.Handler)) return false;
                 if (!tryGetTrackEndMicroseconds(t, movieTimeScale, out var endUs)) return false;
-                if (endUs > us) us = endUs;
+                if (av) { if (endUs > us) us = endUs; }
+                else if (endUs > otherUs) otherUs = endUs;
             }
             if (us <= 0) return false;
+            if (otherUs > us && otherUs - us < 1000000) us = otherUs;
             var d = us + 5000;
             var secs = d / 1000000;
             var centi = (int)((d % 1000000) * 100 / 1000000);
@@ -370,6 +375,16 @@ namespace ZipPla
                 }
             }
             return track;
+        }
+
+        /// <summary>
+        /// ZipPla CE: ffmpeg が字幕・データのストリームとして扱うトラックの種類（hdlr）。
+        /// tmcd（タイムコード）、text（チャプター・QuickTime の字幕）、sbtl・subt（mov_text などの字幕）。
+        /// meta（スマホのメタデータなど）・clcp（字幕）は、ffmpeg の出力と突き合わせられる例がまだないので任せる
+        /// </summary>
+        private static bool isSubtitleOrDataHandler(string handler)
+        {
+            return handler == "tmcd" || handler == "text" || handler == "sbtl" || handler == "subt";
         }
 
         // ffmpeg の mov_read_trak の stts_constant: 最後のサンプル以外の長さがすべて最初と同じ
