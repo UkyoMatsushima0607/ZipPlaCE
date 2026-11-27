@@ -155,7 +155,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <RunPostBuildEvent>Always</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
@@ -2985,17 +2984,9 @@
     <Content Include="iTextSharp\iTextSharp\xmp\package.html" />
     <Content Include="iTextSharp\iTextSharp\xmp\properties\package.html" />
     <Content Include="light.ico" />
-    <None Include="Properties\PreprocessorForPerformance.js" />
-    <None Include="Properties\PostprocessorForPerformance.js" />
     <Content Include="Properties\readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>cscript //nologo "$(ProjectDir)Properties\PostprocessorForPerformance.js" "$(ProjectDir)"</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>cscript //nologo "$(ProjectDir)Properties\PreprocessorForPerformance.js" "$(ProjectDir)"</PreBuildEvent>
-  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
