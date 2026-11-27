@@ -1110,6 +1110,106 @@ namespace ZipPla
         [ThreadStatic] private static long perfLockWaitTicks, perfExtractTicks;
 #endif
 
+        // 拡大縮小の計算時間の計測（拡大縮小アルゴリズムを M・S・R キーを押しながら選ぶ）。対象のページなら要求を取り消して true
+        private bool TryTakeScalingBenchRequest(int page)
+        {
+            var bench = standardScalingAlgorithm_BenchRequest == page && !bmwLoadEachPage.CancellationPending;
+            if (bench) standardScalingAlgorithm_BenchRequest = -1;
+            return bench;
+        }
+
+        private void ShowScalingBenchMessage(string message)
+        {
+            Invoke((MethodInvoker)(() =>
+            {
+                MessageBox.Show(this, message, "Measurement of computation time", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }));
+        }
+
+        // sw は計測を始めたストップウォッチ。止めて時間を出し、既定のアルゴリズムとの比を添えて表示する
+        private void ShowScalingBenchResult(BitmapEx bmp, Size resizedSize, ScalingAlgorithm scalingAlgorithm, GammaConversion gamma, System.Diagnostics.Stopwatch sw)
+        {
+            sw.Stop();
+            var time = sw.Elapsed;
+            TimeSpan time2;
+            if (scalingAlgorithm != ScalingAlgorithm.Default)
+            {
+                sw.Restart();
+                using (var temp = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize, keepGrayscale: true)))
+                {
+                    sw.Stop();
+                    time2 = sw.Elapsed;
+                }
+            }
+            else time2 = time;
+            string algorithm;
+            switch (scalingAlgorithm)
+            {
+                default: algorithm = scalingAlgorithm.ToString(); break;
+            }
+            var linearize = isIndividuallyImplemented(scalingAlgorithm) ? "" : gamma == GammaConversion.Value1_0 ? "no linearized / " : "linearize γ = 2.2 → 1.0 / ";
+            var message =
+               algorithm + (bmp.PixelFormat == PixelFormat.Format24bppRgb ? $" ({linearize}Color)\n" : $" ({linearize}Grayscale)\n") +
+                $"source:\n\t{bmp.Size}\n" +
+                $"destination:\n\t{resizedSize}\n" +
+                $"computation time:\n\t{time}\n" +
+                // $"the ratio to \"System.Windows.Media.ScaleTransform\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
+                $"the ratio to \"BitmapScalingMode.Unspecified (Linear)\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
+            //$"the ratio to \"{BitmapResizer.LastBitmapScalingMode}\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
+            Invoke(((MethodInvoker)(() =>
+            {
+                var res = MessageBox.Show(this, message + "\n\nAre you sure you want to copy above data to clipboard?",
+                    "Measurement of computation time", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                if (res == DialogResult.Yes)
+                {
+                    Clipboard.SetText(message);
+                }
+            })));
+        }
+
+        // 標準の表示（ルーペ以外）の縮小。アルゴリズムごとの実装を呼ぶ
+        private static BitmapEx ResizeByAlgorithm(BitmapEx bmp, Size resizedSize, ScalingAlgorithm scalingAlgorithm, GammaConversion gamma, bool parallel)
+        {
+            const int pixelsPerPixelToBeLeft = int.MaxValue;
+            switch (scalingAlgorithm)
+            {
+                case ScalingAlgorithm.HighSpeed: return bmp.CreateNew(bmpi => QuickGraphic.CreateNew(bmpi, resizedSize, parallel: parallel));
+                case ScalingAlgorithm.NearestNeighbor: return bmp.CreateNew(bmpi => LongVectorImageResizer.NearestNeighbor(bmpi, resizedSize, parallel));
+                case ScalingAlgorithm.AreaAverage: return bmp.CreateNew(bmpi => LongVectorImageResizer.AreaAverage(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Lanczos1: return bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(1, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Lanczos2: return bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(2, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Lanczos3: return bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(3, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Lanczos4: return bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(4, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Spline4: return bmp.CreateNew(bmpi => LongVectorImageResizer.Spline4(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Spline16: return bmp.CreateNew(bmpi => LongVectorImageResizer.Spline16(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Spline36: return bmp.CreateNew(bmpi => LongVectorImageResizer.Spline36(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                case ScalingAlgorithm.Spline64: return bmp.CreateNew(bmpi => LongVectorImageResizer.Spline64(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel));
+                default: return bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize, keepGrayscale: true)); // グレースケールは 8bpp のまま縮小する（C2）
+            }
+        }
+
+        // 表示用のフィルタ（PostFilter）をかける。色の差の最大値（グレースケールの判定）は imageInfo に覚えておく
+        private void ApplyPostFilter(BitmapEx entity, ViewerFormImageInfo imageInfo)
+        {
+            if (entity.FrameCount == 1)
+            {
+                if (imageInfo != null)
+                {
+                    imageFilter.PostFilter(entity, ref imageInfo.MaxColorDiff);
+                }
+                else
+                {
+                    int? dummy = null;
+                    imageFilter.PostFilter(entity, ref dummy);
+                }
+            }
+            else
+            {
+                int? dummy = imageInfo?.MaxColorDiff ?? 255;
+                entity.ApplyToAll(img => { imageFilter.PostFilter(img, ref dummy); return img; });
+            }
+        }
+
         private void bmwLoadEachPage_DoWorkCore(object sender, GenerarClasses.BackgroundMultiWorker.EachDoWorkEventArgs e)
         {
 #if PERFLOG
@@ -1300,19 +1400,7 @@ namespace ZipPla
                             // リサイズが変更も不要なら Graphics は使わない
                             if (resizedSize.Width == bmp.Width && resizedSize.Height == bmp.Height)
                             {
-                                var bench = standardScalingAlgorithm_BenchRequest == e.WorkNumber && !bmwLoadEachPage.CancellationPending;
-                                if (bench)
-                                {
-                                    standardScalingAlgorithm_BenchRequest = -1;
-
-                                    var message = "Scaling is no excuted.";
-                                    Invoke(((MethodInvoker)(() =>
-                                    {
-                                        MessageBox.Show(this, message,
-                                            "Measurement of computation time", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                                    })));
-                                }
+                                if (TryTakeScalingBenchRequest(e.WorkNumber)) ShowScalingBenchMessage("Scaling is no excuted.");
 
                                 var rect = new Rectangle(0, 0, resizedSize.Width, resizedSize.Height);
 
@@ -1343,96 +1431,23 @@ namespace ZipPla
 
                                 var gamma = ResizeGammaNormal;
 
-                                var bench = standardScalingAlgorithm_BenchRequest == e.WorkNumber && !bmwLoadEachPage.CancellationPending;
+                                var bench = TryTakeScalingBenchRequest(e.WorkNumber);
                                 if (bench)
                                 {
-                                    standardScalingAlgorithm_BenchRequest = -1;
                                     BitmapResizer.CreateNew(bmp, resizedSize, keepGrayscale: true).Dispose(); // キャッシュ関係での不公平が生じないように
                                     sw = new System.Diagnostics.Stopwatch();
                                     sw.Start();
                                 }
 
-                                const int pixelsPerPixelToBeLeft = int.MaxValue;
                                 // 縮小の内部並列は表示中のページだけ。先読みのページは読み込みのスレッド（最大 4 本）どうしで並列になっているので、
                                 // さらに全コアで並列にすると表示中のページの縮小と CPU を取り合う（V29）
                                 var parallel = IsDisplayedPage(e.WorkNumber);
-                                switch (scalingAlgorithm)
-                                {
-                                    case ScalingAlgorithm.HighSpeed: entity = bmp.CreateNew(bmpi => QuickGraphic.CreateNew(bmpi, resizedSize, parallel: parallel)); break;
-                                    case ScalingAlgorithm.NearestNeighbor: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.NearestNeighbor(bmpi, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.AreaAverage: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.AreaAverage(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Lanczos1: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(1, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Lanczos2: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(2, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Lanczos3: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(3, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Lanczos4: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Lanczos(4, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Spline4: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Spline4(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Spline16: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Spline16(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Spline36: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Spline36(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.Spline64: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Spline64(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    default: entity = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize, keepGrayscale: true)); break; // グレースケールは 8bpp のまま縮小する（C2）
-                                }
+                                entity = ResizeByAlgorithm(bmp, resizedSize, scalingAlgorithm, gamma, parallel);
 
-                                if (bench)
-                                {
-                                    sw.Stop();
-                                    var time = sw.Elapsed;
-                                    TimeSpan time2;
-                                    if (scalingAlgorithm != ScalingAlgorithm.Default)
-                                    {
-                                        sw.Restart();
-                                        using (var temp = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize, keepGrayscale: true)))
-                                        {
-                                            sw.Stop();
-                                            time2 = sw.Elapsed;
-                                        }
-                                    }
-                                    else time2 = time;
-                                    string algorithm;
-                                    switch (scalingAlgorithm)
-                                    {
-                                        default: algorithm = scalingAlgorithm.ToString(); break;
-                                    }
-                                    var linearize = isIndividuallyImplemented(scalingAlgorithm) ? "" : gamma == GammaConversion.Value1_0 ? "no linearized / " : "linearize γ = 2.2 → 1.0 / ";
-                                    var message =
-                                       algorithm + (bmp.PixelFormat == PixelFormat.Format24bppRgb ? $" ({linearize}Color)\n" : $" ({linearize}Grayscale)\n") +
-                                        $"source:\n\t{bmp.Size}\n" +
-                                        $"destination:\n\t{resizedSize}\n" +
-                                        $"computation time:\n\t{time}\n" +
-                                        // $"the ratio to \"System.Windows.Media.ScaleTransform\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
-                                        $"the ratio to \"BitmapScalingMode.Unspecified (Linear)\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
-                                    //$"the ratio to \"{BitmapResizer.LastBitmapScalingMode}\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
-                                    Invoke(((MethodInvoker)(() =>
-                                    {
-                                        var res = MessageBox.Show(this, message + "\n\nAre you sure you want to copy above data to clipboard?",
-                                            "Measurement of computation time", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-                                        if (res == DialogResult.Yes)
-                                        {
-                                            Clipboard.SetText(message);
-                                        }
-                                    })));
-                                }
+                                if (bench) ShowScalingBenchResult(bmp, resizedSize, scalingAlgorithm, gamma, sw);
                             }
 
-                            if (ViewerMode != ViewerModeEnum.CoverSetting)
-                            {
-                                if (entity.FrameCount == 1)
-                                {
-                                    if (imageInfo != null)
-                                    {
-                                        imageFilter.PostFilter(entity, ref imageInfo.MaxColorDiff);
-                                    }
-                                    else
-                                    {
-                                        int? dummy = null;
-                                        imageFilter.PostFilter(entity, ref dummy);
-                                    }
-                                }
-                                else
-                                {
-                                    int? dummy = imageInfo?.MaxColorDiff ?? 255;
-                                    entity.ApplyToAll(img => { imageFilter.PostFilter(img, ref dummy); return img; });
-                                }
-                            }
+                            if (ViewerMode != ViewerModeEnum.CoverSetting) ApplyPostFilter(entity, imageInfo);
 
                             bmwLoadEachPage_DoWork_DEBUG_Phase = 11;
 
@@ -1445,23 +1460,9 @@ namespace ZipPla
                         }
                         else
                         {
-                            var bench = standardScalingAlgorithm_BenchRequest == e.WorkNumber && !bmwLoadEachPage.CancellationPending;
-                            if (bench)
-                            {
-                                standardScalingAlgorithm_BenchRequest = -1;
-                            }
-
+                            var bench = TryTakeScalingBenchRequest(e.WorkNumber);
                             result = GetVirtualBitmapExForStandard(bmp, resizedSize);
-
-                            if (bench)
-                            {
-                                var message = "This function does not work for animation.";
-                                //$"the ratio to \"{BitmapResizer.LastBitmapScalingMode}\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
-                                Invoke(((MethodInvoker)(() =>
-                                {
-                                    MessageBox.Show(this, message, "Measurement of computation time", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                })));
-                            }
+                            if (bench) ShowScalingBenchMessage("This function does not work for animation.");
                         }
                         result.ReducedDecoded = reducedDecoded; // 完了イベントへは結果と一緒に渡す（Y21）
                         
