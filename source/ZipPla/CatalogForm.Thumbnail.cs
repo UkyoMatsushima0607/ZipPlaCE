@@ -1986,18 +1986,18 @@ namespace ZipPla
 
         private void SetItemArrays(CatalogItemArrays items)
         {
-            ZipPathArray = items.Path;
-            ZipNameArray = items.Name;
-            ZipPageArray = items.Page;
-            CreateTimeArray = items.CreateTime;
-            LastAccessTimeArray = items.LastAccessTime;
-            ModifiedTimeArray = items.ModifiedTime;
-            FileCountArray = items.FileCount;
-            ImageInfoArray = items.ImageInfo;
-            MovieInfoArray = items.MovieInfo;
-            LoadResultArray = items.LoadResult;
-            ZipSizeArray = items.Size;
-            ZipMaskArray = items.Mask;
+            ZipPathArray = items.Path;
+            ZipNameArray = items.Name;
+            ZipPageArray = items.Page;
+            CreateTimeArray = items.CreateTime;
+            LastAccessTimeArray = items.LastAccessTime;
+            ModifiedTimeArray = items.ModifiedTime;
+            FileCountArray = items.FileCount;
+            ImageInfoArray = items.ImageInfo;
+            MovieInfoArray = items.MovieInfo;
+            LoadResultArray = items.LoadResult;
+            ZipSizeArray = items.Size;
+            ZipMaskArray = items.Mask;
         }
 
         bool CreatingZipPathArray = false;
