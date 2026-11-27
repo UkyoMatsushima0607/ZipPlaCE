@@ -79,13 +79,11 @@ namespace ZipPla
             Form_LocationChanged_PreviousState = newWindowState;
         }
 
-        //public bool StopMemoryNormalStateBound = false;
 
         public Rectangle BetterRestoreBounds => GetMovedWindowBounds(form, form.RestoreBounds, Form_SizeChanged_BoundsLastNoMinimized); // GetNormalBounds(form)
 
         public static Rectangle GetMovedWindowBounds(Rectangle newWorkingArea, Rectangle oldWindowBounds, Rectangle oldWorkingArea)
         {
-            //int roundDiv(long x, long y) => y == 0 ? default(int) : (y ^ x) >= 0 ? (int)((x + (y >> 1)) / y) : (int)((x - (y >> 1)) / y);
             int roundRescale(int newSize, int oldPosition, int oldSize)
             {
                 if (oldSize == 0)

@@ -147,7 +147,6 @@ namespace ZipPla
                     if (currentPage <= e.WorkNumber && e.WorkNumber < currentPage + (onePageModeForNext ? 1 : MaxPageCountInWindow))
                     {
                         showCurrentPage(false);
-                        //optionToolStripMenuItem.Text = $"page loaded: {MagnifierPhase2_Q}";
                     }
                 }
                 else
@@ -181,10 +180,8 @@ namespace ZipPla
 
         ulong usedMemoryUBound = 0;
 
-        //private bool is32bit = IntPtr.Size < 8;
         Microsoft.VisualBasic.Devices.ComputerInfo computerInfo = new Microsoft.VisualBasic.Devices.ComputerInfo();
 
-        //private Process currentProcess = Process.GetCurrentProcess();
         [StructLayout(LayoutKind.Sequential)]
         private struct PROCESS_MEMORY_COUNTERS
         {
@@ -215,10 +212,8 @@ namespace ZipPla
         private void SetMemoryUBound()
         {
             var memory = Math.Max(1, GetCurrentWorkingSet());
-            //optionToolStripMenuItem.Text = $"{memory}";
             var available = computerInfo.AvailablePhysicalMemory;
             var systemAvailable = available;
-            //var userUbound = is32bit ? Math.Min(BuiltInViewerMemoryLimit, 3UL << 30) : BuiltInViewerMemoryLimit;
             var userUbound = GetUserMemoryUBound();
             if (available > userUbound) available = userUbound;
             var coef = ActiveForm == this ? 0.7 : 0.3;
@@ -673,7 +668,6 @@ namespace ZipPla
             {
                 menuStrip_Bottom = menuStrip.Bounds.Bottom;
                 menuStrip.Visible = false;
-                //mtbPage_Top = pnlSeekbar.Bounds.Top;
                 mtbPageTop_As_Reference_pbViewBottom = pnlSeekbar.Bounds.Top - pbView.Bottom;
                 pnlSeekbar.Visible = false;
                 statusStrip.Visible = false;
@@ -689,7 +683,6 @@ namespace ZipPla
             {
                 menuStrip_Bottom = 0;
                 menuStrip.Visible = true;
-                //mtbPage_Top = 0;
                 mtbPageTop_As_Reference_pbViewBottom = 0;
                 pnlSeekbar.Visible = true;
                 pnlSeekbar_PreStatusStripVisibleTrue();

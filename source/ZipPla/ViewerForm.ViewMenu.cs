@@ -316,7 +316,6 @@ namespace ZipPla
                 MagnifierScalingAlgorithm.ScaleDown = algorithm;
                 if (!useAreaAverageWhenUpsizingToolStripMenuItem.Checked) // ルーペの「拡大には面積平均」を見る（以前は通常表示の項目を見ていた）
                     MagnifierScalingAlgorithm.ScaleUp = algorithm;
-                //reloadForChangeFilter(forOnlyPostFilter: true);
                 resetMagnifyingPower(magnifyingPower);
             }
         }
@@ -375,8 +374,6 @@ namespace ZipPla
 
         Point? normalStateLocation = null;
 
-        //FormWindowState ViewerForm_LocationChanged_LastWindowState = FormWindowState.Normal;
-        //Point? ViewerForm_LocationChanged_LastScreenOrigin = null;
         private void ViewerForm_LocationChanged(object sender, EventArgs e)
         {
             var ws = WindowState;
@@ -453,7 +450,6 @@ namespace ZipPla
                             {
                                 if (targetLongPath != null)
                                 {
-                                    //var tsmi = new ToolStripMenuItemWithPath(Message.AddTo1.Replace("$1", Path.GetFileName(path)), path, targetLongPath);
                                     var tsmi = new ToolStripMenuItemWithPath(Message.AddTo1.Replace("$1", bookmark.ToString()), path, targetLongPath);
                                     tsmi.Click += virtualFolderSorToolStripMenuItem_Click;
                                     tsmi.BackColor = bookmarkColors[i];

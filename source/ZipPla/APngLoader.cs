@@ -27,7 +27,6 @@ namespace ZipPla
                 // check file signature.
                 if (!Helper.IsBytesEqual(ms.ReadBytes(Frame.Signature.Length), Frame.Signature))
                 {
-                    //throw new Exception("File signature incorrect.");
                     ms.Position = p;
                     (ms as SeekableStream)?.StopBuffering();
                     return new Bitmap(ms);
@@ -342,7 +341,6 @@ namespace ZipPla
             }
 
             bool IsIndependentFrame(fcTLChunk fctl) => fctl.BlendOp == BlendOps.APNGBlendOpSource && fctl.Width == width && fctl.Height == height && fctl.XOffset == 0 && fctl.YOffset == 0;
-            //bool NeedCanvas(fcTLChunk fctl) => !(fctl.Width == width && fctl.Height == height && fctl.XOffset == 0 && fctl.YOffset == 0);
             bool NeedInitialize(fcTLChunk fctl)
             {
                 if (fctl.BlendOp == BlendOps.APNGBlendOpOver) return true;

@@ -91,7 +91,6 @@ namespace ZipPla
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.ToggleMagnifier, Keys.Z),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.ToggleRotateLeft, Keys.ControlKey, Keys.L),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.ToggleRotateRight, Keys.ControlKey, Keys.R),
-            //new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.ToggleToneCurve, Keys.M),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.ToggleToneCurve, Keys.C),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.LeftToRight, Keys.L),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.RightToLeft, Keys.R),
@@ -108,9 +107,7 @@ namespace ZipPla
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.SelectBackgroundColor, Keys.ControlKey, Keys.ShiftKey, Keys.C),
 
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.NextPage, ExtendedKeys.WheelDown),
-            //new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.NextPage, Keys.Right),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.PreviousPage, ExtendedKeys.WheelUp),
-            //new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.PreviousPage, Keys.Left),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.RightPage, ExtendedKeys.LButtonOnRight),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.LeftPage, ExtendedKeys.LButtonOnLeft),
             new ViewerForm.KeyboardShortcutCommand(ViewerForm.Command.MoveForwardOnePage, Keys.Down),
@@ -160,7 +157,6 @@ namespace ZipPla
                 // useMouse(d) が呼び出される回数の期待値が 1 を下回る場合 var useMouseD = useMouse(d) を計算しておく方法はよくない
                 //return baseSetting.All(r => !(r.Command == d.Command && UseMouse(r) == UseMouse(d)) && !r.ShortcutCompetes(d)); // 位置指定同士は別ボタン扱いで補完される
 
-                //return  baseSetting.All(r => !(r.Command == d.Command && UseMouse(r) == UseMouse(d)) && !r.ShortcutIntersect(d));
 
                 return baseSetting.All(r => !(r.Command == d.Command && UseMouse(r) == UseMouse(d)) && !r.ShortcutWeaklyCompetes(d));
             });

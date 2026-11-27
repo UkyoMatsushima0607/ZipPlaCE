@@ -127,21 +127,16 @@ namespace ZipPla
     {
         public double RotationAngle = 0;
         public bool ToneCurveEnabled = false;
-        //public bool MoireRemoverEnabled = false;
-        //public PixelValueConversion PixelValueConversion = PixelValueConversion.None;
 
-        //private static string PseudoColoringToneCurvesFile = Path.Combine(Application.StartupPath, "PseudoColoring.cur");
         private static string PseudoColoringToneCurvesFile = Path.Combine(Application.StartupPath, "ToneCurve.cur");
 
         public bool PreFilterExists() // プロパティにすると Config に保存される可能性
         {
             return RotationAngle != 0;
-            //return !PseudoColoringEnabled && RotationAngle == 0;// && PixelValueConversion == PixelValueConversion.None;
         }
         public bool PostFilterExists() // プロパティにすると Config に保存される可能性
         {
             return ToneCurveEnabled;// || MoireRemoverEnabled;
-            //return !PseudoColoringEnabled && RotationAngle == 0;// && PixelValueConversion == PixelValueConversion.None;
         }
 
 
@@ -151,15 +146,11 @@ namespace ZipPla
             {
                 RotationAngle = 0;
                 ToneCurveEnabled = false;
-                //MoireRemoverEnabled = false;
-               // PixelValueConversion = PixelValueConversion.None;
             }
             else
             {
                 RotationAngle = other.RotationAngle;
                 ToneCurveEnabled = other.ToneCurveEnabled;
-                //MoireRemoverEnabled = other.MoireRemoverEnabled;
-               // PixelValueConversion = other.PixelValueConversion;
             }
         }
 
@@ -269,8 +260,6 @@ namespace ZipPla
             var rotate = GetOrientation(RotationAngle);
             return Rotate(src, rotate);
                 
-            //}
-            //return src;
         }
 
         /// <summary>
@@ -700,7 +689,6 @@ namespace ZipPla
                 var stride = data.Stride;
                 var w3 = data.Width * 3;
                 Parallel.For(0, data.Height, y =>
-                //for (var y = 0; y < data.Height; y++)
                 {
                     var left = scan0 + y * stride;
                     for (var x3 = 0; x3 < w3; x3 += 3)
@@ -720,7 +708,6 @@ namespace ZipPla
                 var stride = data.Stride;
                 var w3 = data.Width * 3;
                 Parallel.For(0, data.Height, (y, state) =>
-                //for (var y = 0; y < data.Height; y++)
                 {
                     var left = scan0 + y * stride;
                     for (var x3 = 0; x3 < w3; x3 += 3)
@@ -932,7 +919,6 @@ namespace ZipPla
         bool disposed = true;
         IntPtr pointer;
         unsafe byte* lookup = null;
-        //GCHandle gch;
 
         public PseudoColoringPainter(ToneCurves toneCurve)
         {
@@ -962,7 +948,6 @@ namespace ZipPla
         private void alloc(bool initialize)
         {
             Dispose();
-            //gch = GCHandle.Alloc(256 * 3, GCHandleType.Pinned);
             pointer = Marshal.AllocHGlobal(256 * 3);
             disposed = false;
             try
@@ -1107,7 +1092,6 @@ namespace ZipPla
         {
             if (!disposed)
             {
-                //gch.Free();
                 Marshal.FreeHGlobal(pointer);
                 disposed = true;
             }

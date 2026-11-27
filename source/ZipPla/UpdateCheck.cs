@@ -188,7 +188,6 @@ namespace ZipPla
             }
 
             if (lastCheckTime > now) lastCheckTime = DateTime.MinValue;
-            //lastCheckTime = DateTime.MinValue;
 
             var lastUpdateTime = now.Date;
             while (true)

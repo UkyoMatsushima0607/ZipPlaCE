@@ -14,7 +14,6 @@ namespace ZipPla
 {
     public class MovieInfo
     {
-        //private static readonly Regex sizePattern = new Regex(@"\bVideo\s*:[^:]*?([1-9]\d{0,9})x([1-9]\d{0,9})\b(?:\s*\[\s*(?:(?:SAR\s*(\d+):(\d+)|DAR\s*(\d+):(\d+)|[^\]]*)\s*)*\])?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex sizePattern = new Regex(@"\bVideo\s*:(?:[^:]|\d:)*?([1-9]\d{0,8})x([1-9]\d{0,8})", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex sarPattern = new Regex(@"\bVideo\s*:(?:[^:]|\d:)*?\b(?:SAR\s*(\d+):(\d+)|DAR\s*(\d+):(\d+))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex fpsPattern = new Regex(@"\bVideo\s*:(?:(?:[^:]|\d:)*?(?:(\d+|\d+\.\d*|\d*\.\d+)\s*tbr|(\d+|\d+\.\d*|\d*\.\d+)\s*fps)\b)+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -179,12 +178,10 @@ namespace ZipPla
                     }
                     else if(Duration < TimeSpan.FromHours(1))
                     {
-                        //return Duration.ToString(@"mm\:ss") + $" / {ssn}";
                         return $"{ssn} / " + Duration.ToString(@"mm\:ss");
                     }
                     else
                     {
-                        //return Duration.ToString(@"h\:mm" + $" / {ssn}");
                         return $"{ssn} / " + Duration.ToString(@"h\:mm");
                     }
                 }

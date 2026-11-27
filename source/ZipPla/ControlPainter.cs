@@ -19,9 +19,7 @@ namespace ZipPla
         private static void FullScaledFillPolygon(ToolStripItem toolStripItem, PaintEventArgs e, IEnumerable<PointF> scaledPoints)
         {
             if (toolStripItem == null) return;
-            //var fixedRectangle = toolStripItem.ContentRectangle;
             var fixedRectangle = new Rectangle(0, 0, toolStripItem.Width, toolStripItem.Height);
-            //FullScaledFillPolygon(GetBrush(toolStripItem.Enabled), toolStripItem.ContentRectangle, e, scaledPoints, -0.5f, -0.5f);
             FullScaledFillPolygon(GetBrush(toolStripItem.Enabled), fixedRectangle, e, scaledPoints, -0.5f, -0.5f);
         }
 
@@ -97,7 +95,6 @@ namespace ZipPla
             const float crossVerticalMargin = 0.30f;
             const float crossHorizontalMargin = 0.25f;
 
-            //const float crossVerticalWidth = crossHorizontalWidth / (1 - crossHorizontalWidth / (1 - 2 * crossHorizontalMargin));
             const float crossVerticalWidth = (0.5f - crossVerticalMargin) / ((0.5f - crossHorizontalMargin) / crossHorizontalWidth - 0.5f);
             Cross = new PointF[]
             {

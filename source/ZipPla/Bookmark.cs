@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -133,7 +132,6 @@ namespace ZipPla
             }
         }
 
-        //private static readonly Regex MightHaveSpecialDisplayName = null;
         private static readonly string HistorySorPathInLowerCase = null;
         static SimpleBookmark()
         {
@@ -145,13 +143,10 @@ namespace ZipPla
                 {
                     user = user.Substring(0, user.Length - 1);
                 }
-                //UserProfileNameInLowerCase = userProfile.ToLower();
-                //UserProfileNameWithSeparatorInLowerCase = UserProfileNameInLowerCase + Path.DirectorySeparatorChar;
                 var SepBody = Regex.Escape(Path.DirectorySeparatorChar.ToString()) + Regex.Escape(Path.AltDirectorySeparatorChar.ToString());
                 var Sep = "[" + SepBody + "]";
                 var NotSep = "[^" + SepBody + "]";
                 var Dir = "(?:" + Sep + NotSep + "+)";
-                //MightHaveSpecialDisplayName = new Regex($"^(?:{Regex.Escape(user)}{Dir}?{Dir}?|[A-Z]:){Sep}?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             }
             catch { }
         }
@@ -186,8 +181,6 @@ namespace ZipPla
 
                 // ルート及びユーザーフォルダ以下のフォルダのみ FileTypeManager を使う
 
-                // Path.GetFileName("C:"); が期待通りに動作しない
-                //return Path.GetFileName(path);
 
                 var sepPos = path.LastIndexOf(Path.DirectorySeparatorChar.ToString());
                 if (sepPos >= 0 && sepPos < path.Length - 1) return path.Substring(sepPos + 1);

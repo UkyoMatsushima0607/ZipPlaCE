@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -367,7 +366,6 @@ namespace ZipPla
                 if (profile.ShowIcon != null) showIcon = showIconToolStripMenuItem.Checked = (bool)profile.ShowIcon;
                 if (profile.ShowRating != null) showRating = showRatingToolStripMenuItem.Checked = (bool)profile.ShowRating;
                 if (profile.ShowTags != null) showTags = showTagsToolStripMenuItem.Checked = (bool)profile.ShowTags;
-                //if (profile.ShowFilename != null) tvCatalog.ShowText = showFilenameToolStripMenuItem.Checked = (bool)profile.ShowFilename;
                 if (profile.ShowFilename != null) setShowFileName((bool)profile.ShowFilename);
                 
                 var noReload = !locationValid() || user == ApplicationProviderUser.Error;
@@ -401,7 +399,6 @@ namespace ZipPla
                 {
                     SetNumberOfLinesOfName(numberOfLinesOfName, refresh: !makePreviewOrUpdate); // 読み込みの Starting でリフレッシュされるので Update の場合もここではリフレッシュしない
 
-                    //NumberOfLinesOfName = (NumberOfLinesOfName)profile.NumberOfLinesOfName;
                 }
 
                 var needToResortForFolderSortMode = false;
@@ -434,8 +431,6 @@ namespace ZipPla
 
                 if (makePreviewOrUpdate)
                 {
-                    //BackgroundMultiWorker.RunWorkerStartingEventHandler eh = null;
-                    //eh = (sender2, e2) =>
                     bmwMakePreviewRunWorkerStartingFinalAction = () =>
                     {
                         prepareMoveLocationWithChangingProfile_SetProfileAfterReloaded(profile);
@@ -445,10 +440,8 @@ namespace ZipPla
                             firstShownItemSelect();
                         }
 
-                        //bmwMakePreview.RunWorkerStarting -= eh;
                         bmwMakePreviewRunWorkerStartingFinalAction = null;
                     };
-                    //bmwMakePreview.RunWorkerStarting += eh;
                 }
                 else
                 {
@@ -471,7 +464,6 @@ namespace ZipPla
                     {
                         firstShownItemSelect();
 
-                        //bmwMakePreview.RunWorkerStarting -= eh;
                         bmwMakePreviewRunWorkerStartingFinalAction = null;
                     };
                 }
@@ -557,7 +549,6 @@ namespace ZipPla
         {
             try
             {
-                //BookmarkConfigModifiedDateTime = File.GetLastWriteTime(Configuration.XmlPath);
                 BookmarkConfigModifiedDateTime = Configuration.GetLastWriteTimeWithoutFileCheckWithException();
                 return true;
             }
@@ -692,7 +683,6 @@ namespace ZipPla
 
         private void addSeparatorToBookmarkList(bool insertToSelected)
         {
-            //if (!locationValid()) return;
 
             var selectedRows = (from DataGridViewRow row in dgvDirectoryList.SelectedRows select row).ToArray();
             if (selectedRows.Length == 0) insertToSelected = false;
@@ -803,7 +793,6 @@ namespace ZipPla
         {
             simplifiedKeyBoard.UpHeldKey();
             LatestControledControl = sender as Control;
-            //if (!dgvSorter.InRowsHolded) cmsDirectoryListPrepareAndShow(e);
 
             DataGridView.HitTestInfo hit = null;
 
@@ -857,7 +846,6 @@ namespace ZipPla
                     dgvDirectoryList.EndEdit();
                 }
 
-                //if (hit.RowIndex >= 0)
                 if (hit.Type != DataGridViewHitTestType.ColumnHeader)
                 {
                     if (hit.RowIndex >= 0)
@@ -956,10 +944,8 @@ namespace ZipPla
 
 
                     dgvDirectoryList.Update();
-                    //cmsDirectoryList.Show(Cursor.Position);
                     var p = e.X < 0 || e.Y < 0 ? Point.Empty : e.Location;
 
-                    //cmsDirectoryList.Show(dgvDirectoryList.PointToScreen(p));
                     if (this != ActiveForm) Activate();
                     cmsDirectoryList.Show(dgvDirectoryList, p);
                 }

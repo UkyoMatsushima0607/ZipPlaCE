@@ -20,7 +20,6 @@ namespace ZipPla
             new Regex(@"^(?:\D|(?:\([^)]*?\))|(?:（[^)]*?）)|(?:【[^)]*?】))*?[\[［](?:\s|　)*(.+?)(?:\s|　)*(?:[,，、､×／].+?)?[\]］]", RegexOptions.Compiled),
             new Regex(@"(?:^|\s|[)\]）］　])(?:\s|　)*([^()\[\]（）【】［］.0-9]*[^\s　])(?:\s|　)*(?:\s|$|[(\[（［　])", RegexOptions.Compiled),
             new Regex(@"[(（【](?:\s|　)*(.+?)(?:\s|　)*(?:[,，、､×／].+?)?[)）】]", RegexOptions.Compiled),
-            //new Regex(@"()", RegexOptions.Compiled), // 選択無しで終わる番人
             new Regex(@"(.*)", RegexOptions.Compiled), // 全選択で終わる番人
         };
 

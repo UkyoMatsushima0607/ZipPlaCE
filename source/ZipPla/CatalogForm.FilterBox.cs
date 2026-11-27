@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -49,7 +48,6 @@ namespace ZipPla
 
             var textWidth = TextRenderer.MeasureText(cbFilter_Graphic, text, cbFilter.Font, new Size(int.MaxValue, int.MinValue),
                 TextFormatFlags.NoPrefix).Width + cbFilter.Height * 3 / 2;
-            //cbFilter_Graphic.MeasureString(cbFilter.Text, cbFilter.Font).Width + cbFilter.Height
 
             var widthFromText = Math.Min(cbFilter.Width + cbLocation.Width - cbLocationMinimumWidth, Math.Max(cbFilter.MinimumSize.Width, textWidth));
             var delta = widthFromText - cbFilter.Width;
@@ -65,7 +63,6 @@ namespace ZipPla
                 cbLocation.Width -= delta;
                 btnLocationCommands.Left -= delta;
                 cbSortBy.Left -= delta;
-                //pbSearch.Left -= delta;
                 cbFilter.Left -= delta;
                 cbFilter.Width = widthFromText;
 
@@ -78,7 +75,6 @@ namespace ZipPla
                 btnLocationCommands.Update();
                 cbSortBy.Update(); ;
                 cbFilter.Update();
-                //Refresh();
 
                 if (cbFilter.SelectionStart != start) cbFilter.SelectionStart = start;
                 if (cbFilter.SelectionLength != length) cbFilter.SelectionLength = length;
@@ -105,7 +101,6 @@ namespace ZipPla
             if (cbFilter_TextChanged_PrevText == text) return;
             cbFilter_TextChanged_PrevText = text;
 
-            //cbFilter_PasteMode = false;
 
             setCbFilterWidth();
 
@@ -143,7 +138,6 @@ namespace ZipPla
             {
                 if (ZipPathArray != null && ZipPathArray.Length > 0)
                 {
-                    //using (var tm = new TimeMeasure())
                     {
                         tvCatalog.ShowIndexToDataIndex = GetSortArray(preSortArray: tvCatalog.ShowIndexToDataIndex);
                     }
@@ -154,7 +148,6 @@ namespace ZipPla
                     {
                         // スクロール量の変化を伴う（誤：伴ない）ので MinimalMove は使わない
                         tvCatalog.ScrollBarToIndex(si);
-                        //tvCatalog.ScrollBarToIndexWithMinimalMove(tvCatalog.DataIndexToShowIndex[si]);
                     }
                 }
             }
@@ -286,7 +279,6 @@ namespace ZipPla
             }
         }
 
-        // private string cbFilter_DropDown_Text = null;
         private void cbFilter_DropDown(object sender, EventArgs e)
         {
             setCurrentFilterToHistory(bringToTop: false);

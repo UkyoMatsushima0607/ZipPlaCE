@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -545,12 +544,10 @@ namespace ZipPla
                     {
                         case ArchivesInArchiveMode.Ignore:
                             packedImageLoaderLeftHierarchies = 0;
-                            //packedImageLoaderAlwaysLoadLowerHierarchies = false;
                             packedImageLoaderSearchMode = PackedImageLoaderSearchMode.Full;
                             break;
                         case ArchivesInArchiveMode.IfNoOther1Level:
                             packedImageLoaderLeftHierarchies = 1;
-                            //packedImageLoaderAlwaysLoadLowerHierarchies = false;
                             packedImageLoaderSearchMode = PackedImageLoaderSearchMode.UntilFoundLayer;
                             break;
                         case ArchivesInArchiveMode.UntilFound2Level:
@@ -559,7 +556,6 @@ namespace ZipPla
                             break;
                         case ArchivesInArchiveMode.Always1Level:
                             packedImageLoaderLeftHierarchies = 1;
-                            //packedImageLoaderAlwaysLoadLowerHierarchies = true;
                             packedImageLoaderSearchMode = PackedImageLoaderSearchMode.Full;
                             break;
                     }
@@ -769,10 +765,8 @@ namespace ZipPla
                 currentProfileColor_BackBrush = new SolidBrush(currentProfileColor_BackColor);
                 currentProfileColor_ForeBrush = new SolidBrush(currentProfileColor_ForeColor);
 
-                //setMenuItemColor();
                 menuStrip.BackColor = currentProfileColor_BackColor;
                 menuStripForTagFilter.BackColor = currentProfileColor_BackColor;
-                //menuStripLeft.BackColor = currentProfileColor_BackColor;
             }
         }
 
@@ -1108,7 +1102,6 @@ namespace ZipPla
                         }
                     }
                 }
-                //MessageBox.Show("exit");
                 OpenedByExternalApplication_Dictionary.Remove(p);
                 p.Dispose();
 
@@ -1181,16 +1174,13 @@ namespace ZipPla
                     LoadSettings(path, sortModeOption: sortMode);
                     return;
                 }
-                //MessageBox.Show("1");
                 var altPos = path.IndexOf(Path.AltDirectorySeparatorChar);
 
                 if (altPos < 0 || altPos >= path.Length - 1)
                 {
-                    //LoadSettings(path, sortModeOption: sortMode);
                     LoadSettings(Path.GetDirectoryName(path), getFileName(path), sortModeOption: sortMode);
                     return;
                 }
-                //MessageBox.Show("2");
 
                 var parent = path.Substring(0, altPos);
                 if (IsSupportedByCatalogFormAndExists(parent))
@@ -1198,7 +1188,6 @@ namespace ZipPla
                     LoadSettings(parent, path.Substring(altPos + 1), sortMode);
                     return;
                 }
-                //MessageBox.Show("3");
 
                 LoadSettings(path, sortModeOption: sortMode);
             }
@@ -1261,7 +1250,6 @@ namespace ZipPla
             CheckMarkProvider.SetCheckMark(arrangeFoldersToolStripMenuItem.DropDown, displayFirstToolStripMenuItem, DisplayCheckMark.Select);
             CheckMarkProvider.SetCheckMark(arrangeFoldersToolStripMenuItem.DropDown, displayLastToolStripMenuItem, DisplayCheckMark.Select);
             CheckMarkProvider.SetCheckMark(arrangeFoldersToolStripMenuItem.DropDown, fitToDirectionOfSortToolStripMenuItem, DisplayCheckMark.Select);
-            //CheckMarkProvider.SetCheckMark(arrangeFoldersToolStripMenuItem.DropDown, getFolderSizeToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(itemSelectionFeedbackToolStripMenuItem.DropDown, DisplayCheckMark.Select);
 
             CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, archivesFilesPDFFielsToolStripMenuItem, DisplayCheckMark.CheckThreeState);
@@ -1282,14 +1270,12 @@ namespace ZipPla
             CheckMarkProvider.SetCheckMark(backgroundColorOfBuiltinViewerToolStripMenuItem.DropDown, loadWholeArchiveIntoMemoryToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(backgroundColorOfBuiltinViewerToolStripMenuItem.DropDown, exceptReadAheadProcessToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(contextMenuSelectToolStripMenuItem.DropDown, DisplayCheckMark.Select);
-            //CheckMarkProvider.SetCheckMark(backgroundColorOfBuiltinViewerToolStripMenuItem.DropDown, alwaysStartInWindowModeToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(maxCaptchaCountInAVideoToolStripMenuItem.DropDown, DisplayCheckMark.Select);
             CheckMarkProvider.SetCheckMark(thumbnailSizeToolStripMenuItem.DropDown, DisplayCheckMark.Select);
             CheckMarkProvider.SetCheckMark(thumbnailSizeToolStripMenuItem.DropDown, showRatingToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(thumbnailSizeToolStripMenuItem.DropDown, showIconToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(thumbnailSizeToolStripMenuItem.DropDown, showFilenameToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(thumbnailSizeToolStripMenuItem.DropDown, showTagsToolStripMenuItem, DisplayCheckMark.Check);
-            //CheckMarkProvider.SetCheckMark(thumbnailSizeToolStripMenuItem.DropDown, createCacheInADSInNTFSToolStripMenuItem, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(cmsFileListHeader, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(ratingToolStripMenuItem.DropDown, DisplayCheckMark.SelectThreeState);
             CheckMarkProvider.SetCheckMark(pageSequenceToolStripMenuItem.DropDown, DisplayCheckMark.SelectThreeState);
@@ -1413,7 +1399,6 @@ namespace ZipPla
             catch { }
 
 
-            //ratingToolStripMenuItem.DropDown.KeyDown += ratingToolStripMenuItem_DropDown_KeyDown;
             new KeyMouseBinder(cmsRightClick, requiredKeyMouseBindingCmsRightRootOrTag);
             new KeyMouseBinder(tagToolStripMenuItem.DropDown, requiredKeyMouseBindingCmsRightRootOrTag);
             new KeyMouseBinder(ratingToolStripMenuItem.DropDown, requiredKeyMouseBindingCmsTrue);
@@ -1463,7 +1448,6 @@ namespace ZipPla
             dgvFileList.VirtualMode = true;
             dgvFileList.CellValueNeeded += dgvFileList_CellValueNeeded;
             dgvFileList.CellToolTipTextNeeded += dgvFileList_CellToolTipTextNeeded;
-            //dgvFileList.GetCurrentIndex = GetCurrentShowIndex;
 
             cmsRightClick.Opening += OpenInFileInClipboardProvider.Owner_Opening;
             cmsRightClick.Closed += OpenInFileInClipboardProvider.Owner_Closed;
@@ -1492,7 +1476,6 @@ namespace ZipPla
 
             setMenuItemEventHandler();
 
-            //ApplicationArray = new ApplicationProvider[] { new BuiltInViewerProvider(this), new AssociationProvider(), new MoveLocationProvider(this) };
 
             tbcIcon.HeaderCell.Style.WrapMode = DataGridViewTriState.False;
             tbcIconWidth = (int)Math.Round(Program.DisplayMagnificationX * 22); // 21 が限界値
@@ -1517,7 +1500,6 @@ namespace ZipPla
 
             ratingFilterToolStripMenuItemDropDown = ratingFilterToolStripMenuItem.DropDown;
             ratingFilterToolStripMenuItem.DropDown = null;
-            //menuStripForTagFilter.MouseWheel += MenuStripForTagFilter_MouseWheel;
 
             addToolStripMenuItemDropDown = addToolStripMenuItem.DropDown;
             addToolStripMenuItem.DropDown = null;
@@ -1557,7 +1539,6 @@ namespace ZipPla
             var boxWidth = cbLocation.Height + 2 * lineWidth;
             var boxWidth2 = (boxWidth * (2 * 12) + 11) / (2 * 11);
             MinimumSize = Size;
-            //WindowMinWidth = Width;
             btnGoToBack.Location = new Point(btnGoToBack.Location.X + (btnGoToBack.Width - boxWidth2) / 2,
                 cbLocation.Location.Y - lineWidth);
             btnGoToBack.Size = new Size(boxWidth2, boxWidth);
@@ -1565,7 +1546,6 @@ namespace ZipPla
                 cbLocation.Location.Y - lineWidth);
             btnGoToForward.Size = new Size(boxWidth2, boxWidth);
             btnLocationCommands.Location = new Point(cbLocation.Right, cbLocation.Location.Y - lineWidth);
-            //btnLocationCommands.Height = cbLocation.Height + 2;
             btnLocationCommands.Size = new Size(boxWidth, boxWidth);
 
             boxWidth = cbFilter.Height + 2 * lineWidth;
@@ -1573,7 +1553,6 @@ namespace ZipPla
             btnFilterCommands.Size = new Size(boxWidth, boxWidth);
 
 
-            //Text = Program.Name;
             SetMessagesWithoutTagFilter();
 
             // 静的な Shown に移動
@@ -1591,14 +1570,12 @@ namespace ZipPla
             {
                 if (waitingProcess == null && !IsDisposed) PrepareLookAheadProcess(/*Configuration.GetLastWriteTime()*/);
             }));
-            //menuStripForTagFilter.Location = new Point(menuStrip.Right - menuStripForTagFilter.Width, menuStrip.Top);
             menuStripForTagFilter.Top = menuStrip.Top;
             menuStripForTagFilter.Height = menuStrip.Size.Height;
 
 
             CenterPanellMinWidth = splRight.MinExtra = Program.DpiScalingX(105) + 2 * Program.DpiScaling(2);
             Shown += (sender, e) => pnlRight_SizeChanged(null, null);
-            //tbcFileName.MinimumWidth = Program.DpiScalingX(70);
             var seventy = Program.DpiScalingX(70);
             splLeft.MinSize = seventy;
             splRight.MinSize = seventy;
@@ -1614,7 +1591,6 @@ namespace ZipPla
             zabLocation.Text = "";
 
             zabLocation.DirectoryExistsOverrider = s => Directory.Exists(s) || IsSupportedByCatalogFormExceptFolder(s); // VirtualFolder.DirectoryOrBookmarkExists;
-            //zabLocation.GetDirectoriesOverrider = VirtualFolder.GetDirectoriesAndBookmarks;
 
             zabLocation.DragDropStarting += zabLocation_DragDropStarting;
             zabLocation.DragDropFinished += zabLocation_DragDropFinished;
@@ -1634,7 +1610,6 @@ namespace ZipPla
             cbLocationMinimumWidth = cbLocation.Width;
 
 
-            //var screenSize = Screen.FromControl(this).Bounds;
             var screenSize = Screen.PrimaryScreen.Bounds;
 
             int w = screenSize.Width;
@@ -1688,7 +1663,6 @@ namespace ZipPla
 
 
             SetKeepOpen(viewToolStripMenuItem);
-            //SetKeepOpen(thumbnailSizeToolStripMenuItem, thumbnailCacheToolStripMenuItem, createViewerShortcutFromCurrentSettingsToolStripMenuItem);
             SetKeepOpen(thumbnailSizeToolStripMenuItem);
 
             Shown += (sender, e) =>

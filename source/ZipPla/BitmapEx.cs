@@ -187,7 +187,6 @@ namespace ZipPla
                     try
                     {
                         bitmapsPrivider.MoveNext();
-                        //var x = (new string[1] { "a" } as IEnumerable<string>).GetEnumerator().Current;
                         result = bitmapsPrivider.Current;
                     }
                     catch
@@ -198,7 +197,6 @@ namespace ZipPla
                             bitmapsPrivider = null;
                         }
 
-                        //new Size(-210, -297);
                         int width, height;
                         if (i > 0)
                         {
@@ -272,9 +270,7 @@ namespace ZipPla
                 var que = ApplyList[i] ?? new Queue<Func<Bitmap, Bitmap>>();
                 que.Enqueue(replacer);
                 ApplyList[i] = que;
-                //bitmaps[i] = replacer(GetBitmap(i));
             }
-            //BaseBitmap = (System.Drawing.Bitmap)(Image)GetBitmap(0);
         }
 
         /// <summary>
@@ -315,8 +311,6 @@ namespace ZipPla
         public BitmapEx CreateNew(Func<Bitmap, Bitmap> remaker)
         {
             var bitmaps = new Bitmap[FrameCount];
-            //var delays = new TimeSpan[FrameCount];
-            //var frames = new Tuple<Bitmap, TimeSpan>[FrameCount];
             try
             {
                 CancelApply = false;
@@ -340,7 +334,6 @@ namespace ZipPla
                 for (var i = 0; i < FrameCount; i++)
                 {
                     bitmaps[i]?.Dispose();
-                    //if (frame != null) frame.Item1.Dispose();
                 }
                 throw;
             }

@@ -155,7 +155,6 @@ namespace ZipPla
                                 compareOperatorArray[i] = compareOperator.RatingGreaterThanOrEqual;
                                 break;
                         }
-                        //regexArray[i] = null;
                     }
                     else
                     {
@@ -278,7 +277,6 @@ namespace ZipPla
             return result;
         }
 
-        //private static readonly Regex IsRegex = new Regex(Path.DirectorySeparatorChar != '/' ? @"^\/(.+)\/[imgy]*$" : @"^\\(.+)\\[imgy]*$", RegexOptions.Compiled); // フルパス検索を実装する場合
         public static readonly Regex IsRegex = new Regex(@"^\/(.+)\/[imgy]*$", RegexOptions.Compiled);
         private static readonly Regex IsIgnoreCaseRegex = new Regex(@"i[imgy]*$", RegexOptions.Compiled);
 
@@ -294,7 +292,6 @@ namespace ZipPla
                 if (c == '"')
                 {
                     outOfDoubleQuotation = !outOfDoubleQuotation;
-                    //strArray[i] = '\t';
                 }
                 else if (outOfDoubleQuotation && c == ' ')
                 {

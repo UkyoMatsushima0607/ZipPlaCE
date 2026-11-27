@@ -150,8 +150,6 @@ namespace ZipPla
                     throw new FileNotFoundException(null, path);
                 }
 
-                //if (ImageLoader.SupportsAtLeastThumbnailReading(path) || inArchive)
-                //bool? supportsFullReading = null;
                 var ffmpegExists = null as bool?;
                 if (inArchive || ImageLoader.SupportsGetImageInfo(path, ref ffmpegExists)) //(bool)(supportsFullReading = ImageLoader.SupportsFullReading(path)) || ImageInfo.Supports(path))
                 {
@@ -287,7 +285,6 @@ namespace ZipPla
             else if (Directory.Exists(path))
             {
                 return FileTypeManager.GetTypeName(path, useFileAttrinutes: false);
-                //return Message.Folder;
             }
             else if (!string.IsNullOrEmpty(virtualParent))
             {

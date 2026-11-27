@@ -451,7 +451,6 @@ namespace ZipPla
                     {
                         if (pngBitDepth == 1)
                         {
-                            // if the decode array is 1,0, then we need to invert the image
                             if (decode.GetAsNumber(0).IntValue == 1 && decode.GetAsNumber(1).IntValue == 0)
                             {
                                 int len = imageBytes.Length;
@@ -462,7 +461,6 @@ namespace ZipPla
                             }
                             else
                             {
-                                // if the decode array is 0,1, do nothing.  It's possible that the array could be 0,0 or 1,1 - but that would be silly, so we'll just ignore that case
                             }
                         }
                         else

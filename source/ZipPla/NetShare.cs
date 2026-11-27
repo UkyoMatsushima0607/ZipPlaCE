@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
-//using TouchLibrary;
 
 namespace ZipPla
 {
@@ -131,7 +130,6 @@ namespace ZipPla
             {
                 SHARE_INFO_1 shi1 = (SHARE_INFO_1)Marshal.PtrToStructure(currentPtr, typeof(SHARE_INFO_1));
                 shareInfos.Add(shi1);
-                //currentPtr = new IntPtr(currentPtr.ToInt32() + nStructSize)
                 currentPtr = currentPtr + nStructSize;
             }
             return shareInfos;

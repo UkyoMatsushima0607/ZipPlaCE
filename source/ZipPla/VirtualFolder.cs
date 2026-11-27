@@ -415,7 +415,6 @@ namespace ZipPla
                 {
                     isDir = true;
                 }
-                //var page = pages == null ? -1 : pages[i];
                 int page;
                 if ((isDir || PackedImageLoader.Supports(replacedPath ?? path)) && pages != null)
                 {

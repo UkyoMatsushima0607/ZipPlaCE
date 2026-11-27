@@ -123,7 +123,6 @@ namespace ZipPla
             Text = Message.EditSmartFolder;
             lblHint.Text = targetSmartFolderPath == null ? Message.HintRightClickNameOfKdkFileOnAddressBarToEditItAgain :
                 Message.Editing1.Replace("$1", Path.GetFileName(targetSmartFolderPath));
-            //MinimumSize = new Size(Math.Max(Width -(btnAdd.Left - dataGridView.Left), lblHint.Right + lblHint.Left + Width - ClientSize.Width), MinimumSize.Height);
             MinimumSize = new Size( Math.Max
             (
                 Width - btnAdd.Left + btnNotEssential.Right + btnNotEssential.Left - btnEssential.Right,

@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -40,7 +39,6 @@ namespace ZipPla
                 // ヒントを表示しない条件
                 if (MovieThumbnailLoader.ffmpegExists())
                 {
-                    //saveReadHintVersion(owner);
                     return;
                 }
 
@@ -48,7 +46,6 @@ namespace ZipPla
                 var vComp = UpdateCheck.VersionStringComp(HintVersion, config.ReadHintVersion);
                 if (config.ShowHintOnlyOnce && vComp <= 0) return;
                 preAction?.Invoke();
-                //using (var hintForm = new HintForm()) (hintForm as Form).ShowDialog(owner);
 
                 bool hiddenExtension;
                 try
@@ -102,7 +99,6 @@ namespace ZipPla
                 var checkBoxChecked0 = !config.ShowHintOnlyOnce;
                 var checkBoxChecked = checkBoxChecked0;
                 var res = MessageForm.Show(owner, str, Message.Information, Message.CheckExistenceOfFfmpegAtStartup, ref checkBoxChecked, Message.OK, MessageBoxIcon.Information);
-                //if (res == 0 && (checkBoxChecked != checkBoxChecked0 || vComp > 0))
                 if (res == 0 && checkBoxChecked != checkBoxChecked0 || vComp > 0) // 表示したバージョンの更新は常に行う。さもなければバツで閉じた後で共通設定の内容を無視したような挙動になる。
                 {
                     Configuration.ClosePrepareMode();

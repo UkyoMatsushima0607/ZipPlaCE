@@ -18,7 +18,6 @@ namespace ZipPla
     public class DataGridViewFileList : DataGridView, IGraphicalList
     {
 
-        //public Func<int?> GetCurrentIndex;
 
         public SimplifiedKeyBoard SimplifiedKeyBoard;
 
@@ -128,7 +127,6 @@ namespace ZipPla
                 {
                     if (!e2.Handled)
                     {
-                        //OnMouseDown_DragOutStartRectangle = GetRectangleWithCenter(e.Location, SystemInformation.DragSize);
                         OnMouseDown_DragOutStartRectangle = GetRowDisplayRectangle(hit.RowIndex, cutOverflow: true);
                     }
                     return;
@@ -217,7 +215,6 @@ namespace ZipPla
                 case Keys.Shift:
                     if (index >= 0)
                     {
-                        //var f = GetCurrentIndex == null ? CurrentCell?.RowIndex : GetCurrentIndex();
                         var f = dataGridView.CurrentCell?.RowIndex;
                         if (f != null)
                         {
@@ -245,7 +242,6 @@ namespace ZipPla
                     {
                         var newSelect = !dataGridView[hit.ColumnIndex, hit.RowIndex].Selected;
 
-                        //var f = GetCurrentIndex == null ? CurrentCell?.RowIndex : GetCurrentIndex();
                         var f = dataGridView.CurrentCell?.RowIndex;
                         if (f != null)
                         {
@@ -272,7 +268,6 @@ namespace ZipPla
 
         }
 
-        //private readonly List<MouseEventHandler> mouseDown = new List<MouseEventHandler>();
         private event MouseEventHandler MouseDown_Private;
 
         public event GraphicalListDragEventHandler GraphicalListDragEnter;
@@ -327,13 +322,11 @@ namespace ZipPla
         {
             add
             {
-                //mouseDown.Add(value);
                 MouseDown_Private += value;
                 base.MouseDown += value;
             }
             remove
             {
-                //mouseDown.Remove(value);
                 MouseDown_Private -= value;
                 base.MouseDown -= value;
             }
@@ -376,7 +369,6 @@ namespace ZipPla
                         case Keys.Shift:
                             if (index >= 0)
                             {
-                                //var f = GetCurrentIndex == null ? CurrentCell?.RowIndex : GetCurrentIndex();
                                 var f = CurrentCell?.RowIndex;
                                 if (f != null)
                                 {
@@ -401,7 +393,6 @@ namespace ZipPla
                         case Keys.Shift | Keys.Control:
                             if (index >= 0)
                             {
-                                //var f = GetCurrentIndex == null ? CurrentCell?.RowIndex : GetCurrentIndex();
                                 var f = CurrentCell?.RowIndex;
                                 if (f != null)
                                 {
@@ -458,7 +449,6 @@ namespace ZipPla
             }
             else if (DragOutSingle && OnMouseDown_DragOutStartIndex >= 0)
             {
-                //if (!ClientRectangle.Contains(e.Location))
                 if (!ActivateManager.InVisibleRegion(this, e.Location))
                     {
                     var count = Rows.Count;

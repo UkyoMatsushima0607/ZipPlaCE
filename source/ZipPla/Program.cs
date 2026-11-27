@@ -153,7 +153,6 @@ namespace ZipPla
         {
             try
             {
-                //if (File.Exists(Configuration.XmlBack))
                 if (Configuration.ConfigDataProtection())
                 {
                     MessageForm.Show(startForm, Message.ConfigSaveErrorMessage.Replace("\\n", "\n"), Message.Error, Message.OK, MessageBoxIcon.Error);
@@ -225,8 +224,6 @@ namespace ZipPla
         {
 
 
-            //string[] cmds = Environment.GetCommandLineArgs();
-            //string[] cmds = (from rawPath in Environment.GetCommandLineArgs() select GetTargetIfItIsLink(rawPath)).ToArray();
 
 
             var rawCommands = Environment.GetCommandLineArgs();
@@ -549,7 +546,6 @@ namespace ZipPla
             load += (sender, e) =>
             {
                 var originalBound = form.Bounds;
-                //var newBound = BetterFormRestoreBounds.Pack(originalBound, rect);
                 var newBound = BetterFormRestoreBounds.GetMovedWindowBounds(rect, originalBound);
                 if (newBound != originalBound) form.Bounds = newBound;
                 form.Shown -= load;
@@ -565,7 +561,6 @@ namespace ZipPla
                 var bounds = form.Bounds;
                 var newBounds = bounds;
                 newBounds.Height = desiredHeight;
-                //newBounds = BetterFormRestoreBounds.Pack(newBounds, rect);
                 newBounds = BetterFormRestoreBounds.GetMovedWindowBounds(rect, newBounds);
                 if (newBounds != bounds) form.Bounds = newBounds;
                 form.Shown -= load;
@@ -1142,7 +1137,6 @@ namespace ZipPla
                 settingForm.Icon = form.Icon;
                 settingForm.ShowDialog(form);
                 BuiltInViewerMemoryLimit = settingForm.preBuiltInViewerMemoryLimit;
-                //return settingForm.NeedToReloadCatalog;
 
                 ImageLoader.SusieResetIfSettingChanged(settingForm.preAllowUntestedPlugins, settingForm.preSearchAlsoSusieInstallationFolder);
             }
@@ -1157,13 +1151,11 @@ namespace ZipPla
                 settingForm.Icon = form.Icon;
                 settingForm.ShowDialog(form);
                 ap = (from info in settingForm.preApplications select info.GetApplicationProvider(form)).ToArray();
-                //startWithAccessKey = settingForm.preStartWithAccessKey;
                 DynamicStringSelectionEnabled = settingForm.preDynamicStringSelectionsEnabled;
                 DynamicStringSelectionsAllowUserToRenameItem = settingForm.preDynamicStringSelectionsAllowUserToRenameItem;
                 dss = settingForm.preDynamicStringSelections;
                 dragAndDropAction = settingForm.preDragAndDrop;
                 historyTrimmed = settingForm.HistoryTrimmed;
-                //return settingForm.NeedToReloadCatalog;
 
                 ImageLoader.SusieResetIfSettingChanged(settingForm.preAllowUntestedPlugins, settingForm.preSearchAlsoSusieInstallationFolder);
             }
@@ -1190,7 +1182,6 @@ namespace ZipPla
             string[] units = { byteInString, " KB", " MB", " GB", " TB", " PB", " EB" }; // これ以上は long では表現できない, " ZB", " YB" };
             var result = new string[units.Length];
             result[0] = "000" + units[0];
-            //const string sizeInString = "999.9";
             const string sizeInString = "0.00";
             for (var unitIndex = 1; unitIndex < units.Length; unitIndex++)
             {
@@ -1354,7 +1345,6 @@ namespace ZipPla
                 }
 
 
-                //MessageBox.Show($"{zipPlaInfos[0].TagArray.Length} {zipPlaInfos[0].TagArray[0]}");
                 initialCheckStates[i] = initState;
                 if (parent == null)
                 {
@@ -1601,7 +1591,6 @@ namespace ZipPla
                 keyboardShortcutSettingForm.UseMButtonWarningMessage = useMButtonWarningMessage;
                 keyboardShortcutSettingForm.UseRButtonWarningMessage = useRButtonWarningMessage;
 
-                //keyboardShortcutSettingForm.Text = Message.KeysMouseButtons;
                 keyboardShortcutSettingForm.Text = Message.BasicOperationSettings;
                 keyboardShortcutSettingForm.DoYouRestoreDefaultSettingOfKeyboardShortcutText = Message.DoYouRestoreDefaultSettingOfKeysMouseButtons;
                 keyboardShortcutSettingForm.ShortcutText = Message.Inputs;
@@ -1634,7 +1623,6 @@ namespace ZipPla
 
             return !culture.Equals(new CultureInfo("ja-JP")) && // 日本語は本は縦書きが主流だが ja, ja-JP とも TextInfo.IsRightToLeft は false になる。
                 !culture.Equals(new CultureInfo("zh-TW")) && // 台湾も日本と同じ。
-                                                          //!lang.ToString().StartsWith("zh") && // 中国は現代は横書きが主流なのでコメントアウト。ちなみに韓国語も横書き。
                 !culture.TextInfo.IsRightToLeft ? BindingMode.LeftToRight : BindingMode.RightToLeft;
         }
 

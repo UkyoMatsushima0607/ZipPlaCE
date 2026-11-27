@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -294,7 +293,6 @@ namespace ZipPla
 
             gridSizeH = thumbWidth + 2 * sidePadding;
 
-            //SetTextHeightFromSquareCharCount(16);
             SetTextHeight(refresh: false);
 
             // 選択されているサムネイルなし
@@ -517,7 +515,6 @@ namespace ZipPla
             OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, pos.X, pos.Y, 0));
         }
 
-        //public event PaintEventHandler PaintOne;
         public class ThumbnailPaintEventArgs : EventArgs { public Graphics Graphics; public int DataIndex; public Rectangle ThumbnailRectangle; }
         public delegate void ThumbnailPaintEventHandler(ThumbViewer sender, ThumbnailPaintEventArgs e);
         public event ThumbnailPaintEventHandler ThumbnailPaint;
@@ -724,8 +721,6 @@ namespace ZipPla
         }
         void drawFilledFrame(Graphics g, int index, int col, int row, int x0, int y0, int x, int y, int w, int h, bool draw, string text)
         {
-            // x0 = col * gridSizeH;
-            //y0 = row * gridSizeV + this.AutoScrollPosition.Y;
             var x1 = x0 + gridSizeH;
             var y1 = y0 + gridSizeV;
 
@@ -746,8 +741,6 @@ namespace ZipPla
                 if (showText && text != null)
                 {
                     var textRect = new Rectangle(x0 + bottomPadding, y + h + bottomPadding, gridSizeH - bottomPadding, y1 - (y + h) - bottomPadding); // 左も bottom でパディング、右はパディングしない
-                    //TextRenderer.DrawText(g, text, Font, textRect, Color.Black, TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
-                    //g.DrawString(text, Font, Brushes.Black, textRect, new StringFormat { Trimming = StringTrimming.EllipsisCharacter });
                     wrapAndEndAllipsis(g, text, DefaultFont, textRect, selectedForeColor, FrameColor);
                 }
             }
@@ -760,8 +753,6 @@ namespace ZipPla
                 if (showText && text != null)
                 {
                     var textRect = new Rectangle(x0 + bottomPadding, y + h + bottomPadding, gridSizeH - bottomPadding, y1 - (y + h) - bottomPadding); // 左も bottom でパディング、右はパディングしない
-                    //TextRenderer.DrawText(g, text, Font, textRect, Color.Black, TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
-                    //g.DrawString(text, Font, Brushes.Black, textRect, new StringFormat { Trimming = StringTrimming.EllipsisCharacter });
                     wrapAndEndAllipsis(g, text, DefaultFont, textRect, ForeColor, BackColor);
                 }
 
@@ -1022,7 +1013,6 @@ namespace ZipPla
 
             thumbWidthCurrent = thumbWidth;
 
-            //SetTextHeightFromSquareCharCount(16);
             SetTextHeight(refresh: false);
 
             if (layoutMode == ThumbViewerAligningMode.TotallyUniformedGrid)
@@ -1092,11 +1082,9 @@ namespace ZipPla
 
             thumbWidthCurrent = thumbSize.Width;
 
-            //SetTextHeightFromSquareCharCount(16);
 
 
             var w = gridSizeH - padding * 2;
-            //const int charCount = 16;
             int textHeight;
             if (charCount > 0)
             {
@@ -1145,14 +1133,12 @@ namespace ZipPla
             {
                 var newSelected = value;
 
-                //var drawCount = selectedIndices.Count;
 
                 // サムネイルの存在しない場所がクリックされた場合
                 if (newSelected < 0 || newSelected > items.Count - 1)
                 {
                     if (selectedIndices.Any())
                     {
-                        //if (drawCount == 1)
                         {
                             using (Graphics g = this.CreateGraphics())
                             {
@@ -1170,7 +1156,6 @@ namespace ZipPla
                         var se = new SelectedIndexChangedEventArgs(SelectedIndex, -1);
                         ClearAllSelection();
 
-                        //if (drawCount > 1) Invalidate();
 
                         SelectedIndexChanged?.Invoke(this, se);
                     }
@@ -1181,8 +1166,6 @@ namespace ZipPla
                 // 選択されているサムネイルを変更
                 if (newSelected != SelectedIndex)
                 {
-                    //drawCount++;
-                    //if (drawCount == 1)
                     {
                         using (Graphics g = CreateGraphics())
                         {
@@ -1253,8 +1236,6 @@ namespace ZipPla
             {
                 if (value == null) value = new int[0];
                 var oldSelectedIndex = SelectedIndex;
-                //var selectedToNoselected = (from s in selectedIndices where !value.Contains(s) select s).ToArray();
-                //var noselectedToSelected = (from s in value where !selectedIndices.Contains(s) select s).ToArray();
                 GetChangeSelect(out var selectedToNoselected, out var noselectedToSelected, selectedIndices, value);
                 var changed = selectedToNoselected.Any() || noselectedToSelected.Any();
                 if (changed)
@@ -1272,7 +1253,6 @@ namespace ZipPla
                         }
                     }
                 }
-                //if (length > 1) Invalidate();
                 if (changed)
                 {
                     var se = new SelectedIndexChangedEventArgs(oldSelectedIndex, SelectedIndex);
@@ -1684,7 +1664,6 @@ namespace ZipPla
                 }
             }
 
-            //sw.Stop(); ss += $"disEnd\t{sw.Elapsed}\n"; sw.Restart();
 
             // 表示していた項目の画像もキャッシュに入った後で、見た目の設定が変わっていれば全部捨て、
             // 同じなら更新日時で確かめられるものだけ残す（K26。以前は丸ごと捨てていた。A3）
@@ -1697,7 +1676,6 @@ namespace ZipPla
             if (selectedIndices.Count > 0)
             {
                 se = new SelectedIndexChangedEventArgs(SelectedIndex, -1);
-                //ClearAllSelection();
                 selectedIndices.Clear(); // items はクリア済みで item.Index を変える必要がなく、また変えようとすると IndexOutOfRangeExeption
                 selectedSet.Clear();
             }
@@ -1709,12 +1687,10 @@ namespace ZipPla
                 items.Add(null);
                 dataIndexToShowIndex[i] = -1;
             }
-            //sw.Stop(); ss += $"pred2sEnd\t{sw.Elapsed}\n"; sw.Restart();
             for (var i = 0; i < showIndexToDataIndex.Length; i++)
             {
                 dataIndexToShowIndex[showIndexToDataIndex[i]] = i;
             }
-            //sw.Stop(); ss += $"d2sEnd\t{sw.Elapsed}\n"; sw.Restart();
 
             thumbWidth = tWidth;
             thumbHeight = tHeight;
@@ -1723,7 +1699,6 @@ namespace ZipPla
             {
                 if (se == null) se = new SelectedIndexChangedEventArgs(SelectedIndex, -1);
                 else se = new SelectedIndexChangedEventArgs(se.OldIndex, initialSelectedIndex);
-                //ClearAllSelection();
                 addSelection(initialSelectedIndex);
             }
 
@@ -1737,11 +1712,8 @@ namespace ZipPla
 
             Clearing = false;
 
-            //sw.Stop(); ss += $"evStart\t{sw.Elapsed}\n"; sw.Restart();
             ShowIndexToDataIndexChanged?.Invoke(this, null);
 
-            //sw.Stop(); ss += $"fin\t{sw.Elapsed}\n";
-            //MessageBox.Show(ss);
         }
 
         Form ownerForm = null;
@@ -2041,7 +2013,6 @@ namespace ZipPla
             var temp = g.InterpolationMode;
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
             g.DrawImage(preRenderScroll_Canvas, dstRect, srcRect, GraphicsUnit.Pixel);
-            //g.FillRectangle(Brushes.Black, dstRect);
             g.InterpolationMode = temp;
             preRenderScroll_AutoScrollPositionY = int.MinValue;
             if (!sub.IsEmpty) sub.Y += autoScrollPositionY;
@@ -2086,8 +2057,6 @@ namespace ZipPla
 
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            //GuiUtil.BeginUpdate(this);
-            //base.OnMouseWheel(e);
 
             switch (MouseWheelScrollUnit)
             {
@@ -2103,8 +2072,6 @@ namespace ZipPla
             // → 結果、DPI にかかわらず e.Delta の単位は 120 で、
             // OnMouseWheel はその数をそのままスクロール量漁に使うと判明
 
-            //scrollByGrid(-e.Delta / 120);
-            //GuiUtil.EndUpdate(this);
             if (0 <= mouseDownShowIndex && showIndexToDataIndex != null && mouseDownShowIndex < showIndexToDataIndex.Length)
             {
                 var clientPosition = PointToClient(Cursor.Position);
@@ -2176,7 +2143,6 @@ namespace ZipPla
 
                 if (e.Button == MouseButtons.Left || ((e.Button & SubMouseButtons) != 0 &&  //(e.Button != MouseButtons.XButton1 && e.Button != MouseButtons.XButton2 &&
                     indexOnIndices < 0))
-                //if (e.Button == MouseButtons.Left || (e.Button == MouseButtons.Right && !selectedIndices.Contains(newSelected)))
                 {
                     var modifierKeys = ModifierKeys;
                     var focusShouldBeChanged = true;
@@ -2215,12 +2181,8 @@ namespace ZipPla
                             var maxShow = Math.Max(showFocused, showNew);
                             var clear = (modifierKeys & Keys.Control) != Keys.Control;
 
-                            //var drawCount = (clear ? selectedIndices.Count : 0) + maxShow - minShow + 1;
-                            //var drawSingle = drawCount == 1;
                             var newSelecedIndices = new int[maxShow - minShow + 1];
                             for (var i = minShow; i <= maxShow; i++) newSelecedIndices[i - minShow] = showIndexToDataIndex[i];
-                            //var selectedToNoselected = clear ? (from s in selectedIndices where !newSelecedIndices.Contains(s) select s).ToArray() : null;
-                            //var noselectedToSelected = (from s in newSelecedIndices where !selectedIndices.Contains(s) select s).ToArray();
                             GetChangeSelect(out var selectedToNoselected, out var noselectedToSelected, selectedIndices, newSelecedIndices, firstOutputRequired: clear);
                             if (clear && selectedToNoselected.Any() || noselectedToSelected.Any())
                             {
@@ -2236,13 +2198,11 @@ namespace ZipPla
 
                                     foreach (var dataIndex in noselectedToSelected)
                                     {
-                                        //var dataIndex = showIndexToDataIndex[i];
                                         setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g);
                                     }
                                 }
                             }
 
-                            //if (drawCount > 1) Invalidate();
 
                             var se = new SelectedIndexChangedEventArgs(oldSelectedIndex, SelectedIndex);
                             SelectedIndexChanged?.Invoke(this, se);
@@ -2287,7 +2247,6 @@ namespace ZipPla
                 base.OnMouseDown(e2);
                 if (!e2.Handled)
                 {
-                    //OnMouseDown_DragOutStartRectangle = GetRectangleWithCenter(e.Location, SystemInformation.DragSize);
                     OnMouseDown_DragOutStartRectangle = PointToContainerGridRectangle(e.Location, cutOverflow: true);
                 }
             }
@@ -2338,7 +2297,6 @@ namespace ZipPla
                         {
                             for (var i = minShow; i <= maxShow; i++)
                             {
-                                //selectArray[i - minShow] = showIndexToDataIndex[i];
                                 var dataIndex = showIndexToDataIndex[i];
 
                                 if (setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g))
@@ -2348,15 +2306,12 @@ namespace ZipPla
                                 }
 
                             }
-                            // var noselectList = new List<int>();
                             foreach (var i in selectedIndexByDrag.ToArray())
                             {
                                 var iShow = dataIndexToShowIndex[i];
                                 if (iShow < minShow || maxShow < iShow)
                                 {
                                     selectedIndexByDrag.Remove(i);
-                                    //noselectList.Add(i);
-                                    //drawNeeded = true;
                                     if (setSelectedWithoutEvent(i, false, IndexOnSelection(i), g))
                                     {
                                         selectionChanged = true;
@@ -2366,7 +2321,6 @@ namespace ZipPla
                         }
                     }
 
-                    //if (drawNeeded && !drawSingle) Invalidate();
 
                     if (selectionChanged)
                     {
@@ -2389,7 +2343,6 @@ namespace ZipPla
             else if (!OnMouseDown_DragOutStartRectangle.IsEmpty) // !OnMouseDown_DragOutStartRectangle.Contains(e.Location))
             {
                 if (!OnMouseDown_DragOutStartRectangle.Contains(e.Location))
-                //if (!ActivateManager.InVisibleRegion(this, e.Location))
                 {
                     OnMouseDown_DragOutStartRectangle = Rectangle.Empty;
                     DragReady?.Invoke(this, e);
@@ -2427,7 +2380,6 @@ namespace ZipPla
             {
                 OnMouseDown_DragOutStartRectangle = Rectangle.Empty;
 
-                //var modifierKeys = ModifierKeys;
                 if (e.Button == MouseButtons.Left)
                 {
                     switch (modifierKeys)
@@ -2468,13 +2420,9 @@ namespace ZipPla
                                     {
                                         var minShow = Math.Min(showFocused, showNew);
                                         var maxShow = Math.Max(showFocused, showNew);
-                                        //var drawCount = selectedIndices.Count + maxShow - minShow + 1;
-                                        //var drawSingle = drawCount == 1;
 
                                         var newSelecedIndices = new int[maxShow - minShow + 1];
                                         for (var i = minShow; i <= maxShow; i++) newSelecedIndices[i - minShow] = showIndexToDataIndex[i];
-                                        //var selectedToNoselected = (from s in selectedIndices where !newSelecedIndices.Contains(s) select s).ToArray();
-                                        //var noselectedToSelected = (from s in newSelecedIndices where !selectedIndices.Contains(s) select s).ToArray();
                                         GetChangeSelect(out var selectedToNoselected, out var noselectedToSelected, selectedIndices, newSelecedIndices);
 
                                         if (selectedToNoselected.Any() || noselectedToSelected.Any())
@@ -2488,20 +2436,16 @@ namespace ZipPla
 
                                                 foreach (var dataIndex in noselectedToSelected)
                                                 {
-                                                    //var dataIndex = showIndexToDataIndex[i];
                                                     setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g);
                                                 }
                                             }
                                         }
 
-                                        //if (drawCount > 1) Invalidate();
                                     }
                                     else
                                     {
                                         var minShow = Math.Min(showFocused, showNew);
                                         var maxShow = Math.Max(showFocused, showNew);
-                                        //var drawCount = maxShow - minShow + 1;
-                                        //var drawSingle = drawCount == 1;
                                         if (maxShow >= minShow)
                                         {
                                             using (var g = CreateGraphics())
@@ -2517,7 +2461,6 @@ namespace ZipPla
                                             }
                                         }
 
-                                        //if (drawCount > 1) Invalidate();
                                     }
                                     var se = new SelectedIndexChangedEventArgs(oldSelectedIndex, SelectedIndex);
                                     SelectedIndexChanged?.Invoke(this, se);
@@ -2607,7 +2550,6 @@ namespace ZipPla
                 {
                     var oldSelectedIndex = SelectedIndex;
                     e.IsInputKey = true; // フォーカスの移動を禁止
-                    //var drawSingle = showCount == 1;
                     if (showCount > 0)
                     {
                         using (var g = CreateGraphics())
@@ -2619,7 +2561,6 @@ namespace ZipPla
                             }
                         }
                     }
-                    //if (showCount > 1) Invalidate();
                     var se = new SelectedIndexChangedEventArgs(oldSelectedIndex, SelectedIndex);
                     SelectedIndexChanged?.Invoke(this, se);
                 }

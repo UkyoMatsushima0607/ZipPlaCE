@@ -129,10 +129,8 @@ namespace ZipPla
                 var resizedSize = resizedSizeArray[i];
                 var zoomedHeightI = (int)Math.Round(magPower * resizedSize.Height);
                 if (zoomedHeightI > zoomedHeight) zoomedHeight = zoomedHeightI;
-                //orgSize = new Size(Math.Abs(orgSize.Width), Math.Abs(orgSize.Height));
                 if (img == null)
                 {
-                    //if (orgSize.Width >= 0 || orgSize.Height >= 0)
                     if (resizedSize.IsEmpty) // エラーで img == null の可能性を除外
                     {
                         pbView_Paint_Rectangle = Rectangle.Empty;
@@ -143,15 +141,11 @@ namespace ZipPla
 
                 // 拡大画像生成待ちで待たされるので不適切
 
-                //var resizedSize = GetResizedSize(orgSize);
-                //totalWidth += zoomedWidthArray[i - currentPage] = (int)Math.Round(zoomedHeight * size.Width / (double)size.Height);
                 var zoomedWidth = (int)Math.Round(resizedSize.Width * magPower);
                 totalWidth += zoomedWidth;
                 zoomedSizeArray[i - cPage] = new Size(zoomedWidth, zoomedHeightI);
             }
-            //Magnifier_VisiblePage = Tuple.Create(currentPage, nextPage);
             SetMagnifierCanvasInfo(cPage, nextPage);
-            //bmwLoadEachPage.ThreadCount = 0;
             if (Magnifier_ZoomedPage != null) Magnifier_ZoomedPage.Dispose();
             Magnifier_ZoomedPage = null;
 
@@ -229,7 +223,6 @@ namespace ZipPla
 
         string pbView_Paint_RectangleMessage = null;
 
-        //readonly static Brush pbView_Paint_Brush_WithoutAlpha = new SolidBrush(Color.FromArgb(255, 128, 128, 128));
         private static Color HalfGrayBrusher(Color c) { return Color.FromArgb(
             ((160 * 128 + (255 - 160) * c.R + 127) / 255), ((160 * 128 + (255 - 160) * c.G + 127) / 255), ((160 * 128 + (255 - 160) * c.B + 127) / 255)); }
 
@@ -258,7 +251,6 @@ namespace ZipPla
 
         bool pbView_Paint_OnlyDrawMeasure = false;
 
-        //readonly object pbView_Paint_Canvas_Locker = new object();
 #if PERFLOG
         // 計測用（PERFLOG 定数を付けたビルドのみ）: ビューアの描画1回あたりの時間を exe のフォルダの viewer-paint.log に書く
         private static long perfPaints, perfPaintTicks, perfPaintMax;
@@ -283,7 +275,6 @@ namespace ZipPla
 
             Rectangle pbViewRect;
 
-            //lock (pbView_Paint_Canvas_Locker)
             {
                 var pbViewSize = pbView.Size;
                 if (pbViewSize.Width <= 0 || pbViewSize.Height <= 0) return;
@@ -296,8 +287,6 @@ namespace ZipPla
                 }
                 else if (/*pbView_Paint_Canvas == null ||*/ pbView_Paint_Canvas.Width < pbViewSize.Width || pbView_Paint_Canvas.Height < pbViewSize.Height)
                 {
-                    //var width = pbView_Paint_Canvas == null ? pbViewSize.Width : Math.Max(pbView_Paint_Canvas.Width, pbViewSize.Width);
-                    //var height = pbView_Paint_Canvas == null ? pbViewSize.Height : Math.Max(pbView_Paint_Canvas.Height, pbViewSize.Height);
                     var width = Math.Max(pbView_Paint_Canvas.Width, pbViewSize.Width);
                     var height = Math.Max(pbView_Paint_Canvas.Height, pbViewSize.Height);
                     pbView_Paint_Canvas.Dispose();
@@ -321,7 +310,6 @@ namespace ZipPla
                     var rect = new Rectangle(0, 0, pbViewSize.Width, pbViewSize.Height);
                     lockBits(pbView_Paint_Canvas, rect, ImageLockMode.WriteOnly, "Fill background of new canvas", data =>
                     {
-                    //MessageBox.Show("X");
                     int drawX = pbViewSize.Width;
                         if (pbViewSize.Width > pbView_Paint_PrevWidth)
                         {
@@ -337,11 +325,9 @@ namespace ZipPla
                 pbView_Paint_PrevWidth = pbViewSize.Width;
                 pbView_Paint_PrevHeight = pbViewSize.Height;
 
-                //var sw = new System.Diagnostics.Stopwatch(); var s = ""; sw.Start();
 
                 if (!pbView_Paint_OnlyDrawMeasure)
                 {
-                    //MessageBox.Show("A");
                     if (!pbView_PaintToCanvas(pbView_Paint_Canvas, ParallelMode.ParallelForUIThread))
                     {
                         if (!drawLoading_ShowingMessage)
@@ -352,7 +338,6 @@ namespace ZipPla
                                 FillRectangle(data, HalfGrayBrusher, rect, ParallelMode.ParallelForUIThread);
                             });
                             drawLoading_ShowingMessage = true;
-                            //sw.Stop(); s += sw.Elapsed + "\n"; sw.Restart();
                         }
                     }
                     else
@@ -360,9 +345,7 @@ namespace ZipPla
                         drawLoading_ShowingMessage = false;
                     }
                 }
-                //MessageBox.Show("B");
 
-                //sw.Stop(); s += sw.Elapsed + "\n"; sw.Restart();
 
                 pbViewRect = pbView.ClientRectangle;
 
@@ -403,7 +386,6 @@ namespace ZipPla
                 }
             }
 
-            //sw.Stop(); s += sw.Elapsed + "\n"; MessageBox.Show(s);
         }
 
         /// <summary>
@@ -577,7 +559,6 @@ namespace ZipPla
                 return sizeChanged;
             }
             showCurrentPage_PrevDrawSize = pbViewSize;
-            //if (sizeChanged) return false;
             
             ShowCurrentPageToStatusBar();
             var stopPage = NextPage;
@@ -657,7 +638,6 @@ namespace ZipPla
             {
                 var totalWidth = 0;
                 var startPage = currentPage;
-                //var imageHeight =　-1;
                 for (var i = startPage; i < stopPage; i++)
                 {
                     totalWidth += ResizedImageArray[i].Width;
@@ -674,7 +654,6 @@ namespace ZipPla
                         var img = ResizedImageArray[startPage];
                         if (img == null) return sizeChanged;
                         var imageWidth = img.Width;
-                        //imageHeight = img.Height;
                         divisions = (imageWidth - 1) / pbViewSize.Width + 1;
                         if (divisions > MaxDivision) return sizeChanged;
                         if (CurrentDividedPosition < 0 || CurrentDividedPosition >= divisions) return sizeChanged;
@@ -734,7 +713,6 @@ namespace ZipPla
                 var bColor = pbView.BackColor;
                 var color = pbView_Paint_Rectangle.IsEmpty || !pbView_Paint_Rectangle_FillAround ? bColor : HalfGrayBrusher(pbView.BackColor);
 
-               // var totalWidthMemory = totalWidth;
                 totalWidth = 0;
                 var start = pageDirection > 0 ? currentPage : stopPage - 1;
                 var stop = pageDirection > 0 ? stopPage : currentPage - 1;
@@ -754,7 +732,6 @@ namespace ZipPla
                         var x = offsetX + (pageLeftToRight ? -totalWidth - imgEx.Width : totalWidth);
                         if (divisions == 1)
                         {
-                            //DrawBitmapDataUnscaled(dst, x, offsetY, src);
                             imgEx.DrawFrame(dst, x, offsetY, now);
 
                             var imageWidth = resizedSize.Width;
@@ -766,7 +743,6 @@ namespace ZipPla
                         else
                         {
                             var imageWidth = right - left;
-                            //DrawBitmapDataUnscaled(dst, x, offsetY, src, left, 0, imageWidth, imgEx.Height);
                             imgEx.DrawFrame(dst, x, offsetY, new Rectangle(left, 0, imageWidth, imgEx.Height), now, canUseParallel: true);
 
                             if (offsetY > minOffetY) FillRectangle(dst, x, minOffetY, bColor, imageWidth, offsetY - minOffetY, ParallelMode.Single);
@@ -798,7 +774,6 @@ namespace ZipPla
                         else
                         {
                             FillRectangle(dst, HalfGrayBrusher, pbView_Paint_Rectangle, parallelMode);
-                            //g.FillRectangle(pbView_Paint_Brush, pbView_Paint_Rectangle);
                         }
 
                         if (ViewerMode == ViewerModeEnum.MagnifierOpening || ViewerMode == ViewerModeEnum.MagnifierClosing)
@@ -806,7 +781,6 @@ namespace ZipPla
                             int borderWidth = Program.DpiScaling(5);
                             var bHalf = borderWidth / 2;
                             var bHalf2 = borderWidth - bHalf; // 奇数を想定
-                            //var borderColor = Color.Chartreuse
                             var borderColor = Color.Yellow;
 
                             if (magnifyingPower == MagnifyingInfo.FitHorizontal)
@@ -982,11 +956,8 @@ namespace ZipPla
             var dstLeft = dst.Scan0 + yDst * dstStride + xDst * bytePerPixel;
             var srcLeft = src.Scan0 + ySrc * srcStride + xSrc * bytePerPixel;
             var buffSize = width * bytePerPixel;
-            //var buff = new byte[buffSize];
             for (var j = 0; j < height; j++)
             {
-                //System.Runtime.InteropServices.Marshal.Copy(srcLeft, buff, 0, buffSize);
-                //System.Runtime.InteropServices.Marshal.Copy(buff, 0, dstLeft, buffSize);
                 NativeMethods.CopyMemory(dstLeft, srcLeft, buffSize);
                 dstLeft += dstStride;
                 srcLeft += srcStride;
@@ -1069,7 +1040,6 @@ namespace ZipPla
                 ParallelFor(parallelMode, 0, height, j =>
                 {
                     var currentDstLeft = dstLeft + (j * dstStride);
-                    //System.Runtime.InteropServices.Marshal.Copy(buff, 0, currentDstLeft, buffSize);
                     NativeMethods.CopyMemory(currentDstLeft, buffAdr, buffSize);
                 });
             }
@@ -1152,7 +1122,6 @@ namespace ZipPla
             var oiia = OriginalImageInfoArray;
             int i;
             if (oiia != null && (i = mtbPage.Value) >= 0 && i < oiia.Length)
-            //if (!string.IsNullOrEmpty(currentArchiveFilePath))
             {
                 var imgInfo = oiia[i];
                 Size s;
@@ -1235,7 +1204,6 @@ namespace ZipPla
             {
                 MagnifierPhase1_Q = false;
                 MagnifierPhase1(MagnifierPhase1_QValue, ifNoopThenQ: true);
-                //optionToolStripMenuItem.Text = $"phase1 by Q {MagnifierPhase1_Q}";
             }
             else if (ViewerMode == ViewerModeEnum.Magnifier && magNotMaked)
             {
@@ -1245,7 +1213,6 @@ namespace ZipPla
                 MagnifierPhase2_Q = true;
             }
 
-            //if (ViewerMode == ViewerModeEnum.CoverSetting && pbView_Paint_Rectangle == Rectangle.Empty)
             if (ViewerMode == ViewerModeEnum.CoverSetting)
             {
                 pbView_Paint_Rectangle = GetCoverRectangleForDisplay();
@@ -1259,7 +1226,6 @@ namespace ZipPla
                 pbPaintInvalidate();
             }
 
-            //shownImegesPath = currentArchiveFilePath;
             shownImegesPath = currentStartingFilePath;
 
             // ルーペを使わずにページを送り続けたら、ルーペを使っていない状態に戻す（V25）

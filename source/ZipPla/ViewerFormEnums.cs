@@ -65,7 +65,6 @@ namespace ZipPla
 
     public enum ReadOnMemoryMode { None, ExceptLookAhead, Always }
 
-    //public enum MagnifierScrollMode { Location, Variation }
 
     public enum ScalingAlgorithm { Default, HighSpeed, NearestNeighbor, AreaAverage, Lanczos1, Lanczos2, Lanczos3, Lanczos4,
         Spline4, Spline16, Spline36, Spline64

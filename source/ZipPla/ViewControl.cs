@@ -129,20 +129,16 @@ namespace ZipPla
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
-           //base.OnPaintBackground(pevent);
         }
 
 
 #region ISupportInitialize
-        //private bool initializing = false;
         public void BeginInit()
         {
-            //initializing = true;
         }
 
         public void EndInit()
         {
-            //initializing = false;
         }
 #endregion
     }

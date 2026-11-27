@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -160,7 +159,6 @@ namespace ZipPla
                 BackgroundMultiWorker.RunWorkerStartingEventHandler eh = null;
                 eh = (s2, e2) =>
                 {
-                    //addOrReloadItem(fullPath, thumbnailChanged: null);
                     if (!fileSystemWatcherStopper(ref e)) addOrReloadItem(fullPath, thumbnailChanged: true, startingGuid: startingGuid);
                     bmwMakePreview.RunWorkerStarting -= eh;
                 };
@@ -168,7 +166,6 @@ namespace ZipPla
             }
             else
             {
-                //addOrReloadItem(fullPath, thumbnailChanged: null);
                 addOrReloadItem(fullPath, thumbnailChanged: true, startingGuid: startingGuid);
             }
         }
@@ -424,8 +421,6 @@ namespace ZipPla
                     zpa[idx] = newPath;
                     var name = getRelativePath(newPath, zna[idx]);
                     zna[idx] = name;
-                    //enterQuickReload();
-                    //await Task.Run(() => ReloadOneThumbnailForSubThread(idx, newPath, newPath, silent: true));
 
                     swapPathAndNameInSorBookmarkUndoBuff(oldPath, newPath, needToSaveBookmark: true);
 
@@ -452,7 +447,6 @@ namespace ZipPla
                         }
                         ShowStatusBar();
                     }
-                    //exitQuickReload();
                 }
                 else if (Array.IndexOf(zpa, newPath) < 0) // ZipPla 自身がリネームを行った場合既に更新されている
                 {
@@ -535,14 +529,11 @@ namespace ZipPla
                 var silentMode = tc ? SilentMode.Never : lra[idx] == LoadResult.Success ? SilentMode.Always : SilentMode.OnlyIfNotSuccess;
                 zma[idx] = true;
                 zpa[idx] = path;
-                //enterQuickReload();
                 await Task.Run(() => ReloadOneThumbnailForSubThread(idx, path, startingGuid, path, silentMode));
-                //exitQuickReload();
                 return;
             }
             else // add
             {
-                //MessageBox.Show($"{InvokeRequired}, {count}");
                 const SilentMode silentModeForAdd = SilentMode.Never;
 
                 for (var i = 0; i < count; i++)
@@ -572,7 +563,6 @@ namespace ZipPla
                 SetItemArrays(current.Grow(count, count21)); // 増えた部分のページは -1
                 ZipMaskArray[count] = true;
                 ZipPathArray[count] = path;
-                //MessageBox.Show($"{ZipPathArray.Length}");
                 tvCatalog.ItemBuffSizeChange(count21);
                 }
                 finally
@@ -587,7 +577,6 @@ namespace ZipPla
         private async void addOrReloadItem_Add(int index, string path, SilentMode silentModeForAdd)
         {
             enterQuickReload();
-            //var selectedCount = addOrReloadItem_UserAddFileInLower != null ? tvCatalog.SelectedIndicesCount : 0;
             var startingGuid = loadingGuid;
 
             // Add が呼ばれるということはそれ以前はそのパスのファイルが存在しなかったとういこと

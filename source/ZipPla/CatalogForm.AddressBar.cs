@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -154,7 +153,6 @@ namespace ZipPla
             zabLocation_DirectoryButtonContextMenuStripOpening_Separator.Visible =
             zabLocation_DirectoryButtonContextMenuStripOpening_EditSmartFolder.Visible = e.IsFile && SmartFolder.IsSmartFolderPath(e.Path);
 
-            //zabLocation_DirectoryButtonContextMenuStripOpening_SelectTreeNode.Visible = e.IsDir || isNetworkRoot(e.Path);
 
             // ApplicationProvider の内容を追加する場合
             // ただしこのままでは ExplorerProvider が重複し、
@@ -263,7 +261,6 @@ namespace ZipPla
                                 clickedRow.Selected = true;
                                 dgvFileList.CurrentCell = clickedRow.Cells[tbcFileName.Index];
                             }
-                            //cmsRightClickPrepareAndShow(Cursor.Position);
                             rightClickContextMenuPrepareAndShow(Cursor.Position, mk);
                         }
                         if (hit.RowIndex < 0 && hit.Type != DataGridViewHitTestType.ColumnHeader)
@@ -282,7 +279,6 @@ namespace ZipPla
                         return h.ColumnIndex < 0 && h.Type == DataGridViewHitTestType.None;
                     }))
                     {
-                        //cmsRightClickPrepareAndShow(Cursor.Position);
                         tvCatalog.SelectedIndex = -1;
                         rightClickContextMenuPrepareAndShow(Cursor.Position, mk);
                     }
@@ -304,17 +300,14 @@ namespace ZipPla
                     if (index >= 0)
                     {
                         if (!tvCatalog.IsSelected(index)) tvCatalog.SelectedIndex = index;
-                        //cmsRightClickPrepareAndShow(Cursor.Position);
                         rightClickContextMenuPrepareAndShow(Cursor.Position, mk);
                     }
                 }
                 else
                 {
-                    //var showCount = tvCatalog.DataIndexToShowIndex.Length;
                     var cl = tvCatalog.ClientRectangle;
                     if (e.MouseOrbit.All(p => cl.Contains(p) && tvCatalog.PointToIndex(p) < 0))
                     {
-                        //cmsRightClickPrepareAndShow(Cursor.Position);
                         tvCatalog.SelectedIndex = -1;
                         rightClickContextMenuPrepareAndShow(Cursor.Position, mk);
                     }
@@ -615,11 +608,9 @@ namespace ZipPla
 
             rightClickFileNameToolStripTextBox.ReadOnly = true;
             cmsRightClick.Items.Insert(0, rightClickFileNameToolStripTextBox);
-            //rightClickFileNameToolStripTextBox.SelectedTextChanged += rightClickFileNameToolStripTextBox_SelectedTextChanged;
             rightClickFileNameToolStripTextBox.MouseMove += RightClickFileNameToolStripTextBox_MouseMove;
             rightClickFileNameToolStripTextBox.MouseEnter += RightClickFileNameToolStripTextBox_MouseEnter;
             rightClickFileNameToolStripTextBox.MouseLeave += RightClickFileNameToolStripTextBox_MouseLeave;
-            //rightClickFileNameToolStripTextBox.MouseDown += RightClickFileNameToolStripTextBox_MouseDown;
             new CharSelectRefiner(rightClickFileNameToolStripTextBox.TextBox);
             rightClickFileNameToolStripTextBox.KeyDown += RightClickFileNameToolStripTextBox_KeyDown;
             rightClickFileNameToolStripTextBox.KeyUp += RightClickFileNameToolStripTextBox_KeyUp;
@@ -634,7 +625,6 @@ namespace ZipPla
 
             activateManager = new ActivateManager(this, tvCatalog, dgvFileList);
 
-            //setControlEvent(this);
             IsLoaded = true;
         }
 
@@ -941,7 +931,6 @@ namespace ZipPla
         {
             if (e.Button == MouseButtons.Right)
             {
-                //showUndoBufferList(0, undoBufferIndex + 1);
                 showUndoBufferList(0, undoBuffer.Count);
             }
         }
@@ -950,7 +939,6 @@ namespace ZipPla
         {
             if (e.Button == MouseButtons.Right)
             {
-                //showUndoBufferList(undoBufferIndex, undoBuffer.Count);
                 showUndoBufferList(0, undoBuffer.Count);
             }
         }

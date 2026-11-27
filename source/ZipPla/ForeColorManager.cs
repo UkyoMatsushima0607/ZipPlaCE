@@ -74,7 +74,6 @@ namespace ZipPla
         {
             if (!managerForeColorChanging)
             {
-                //var foreColor = dropDowned || toolStripItem.Selected ? Color.Black : ZipTag.GetForeColor(toolStripItem.BackColor);
                 var foreColor = dropDowned || toolStripItem.Selected ? SystemColors.WindowText : ZipTag.GetForeColor(toolStripItem.BackColor);
                 if (foreColor != toolStripItem.ForeColor)
                 {

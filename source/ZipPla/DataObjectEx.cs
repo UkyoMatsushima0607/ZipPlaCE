@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -100,8 +99,6 @@ namespace ZipPla
         public struct SelectedItem
         {
             public String FileName;
-            //public DateTime? CreationTime;
-            //public DateTime? AccessTime;
             public DateTime? WriteTime;
             public Int64 FileSize;
         }
@@ -211,7 +208,6 @@ namespace ZipPla
             {
                 FileDescriptor.cFileName = si.FileName;
                 Int64? FileTime;
-                //FileTime = si.WriteTime?.ToFileTimeUtc();
                 FileTime = si.WriteTime?.ToFileTime();
                 if (FileTime != null)
                 {

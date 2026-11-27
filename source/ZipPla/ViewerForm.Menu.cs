@@ -368,7 +368,6 @@ namespace ZipPla
 
                 var isBook = currentTarget == currentArchiveFilePath;
                 var pageSequensCanBeSaved = isBook && NoScaling(BindingMode);
-                //var isBookAndNormal = isBook && ViewerMode == ViewerModeEnum.Normal;
 
                 var itemsForEventHandler = contextMenuStrip == null ? editToolStripMenuItem.DropDownItems : contextMenuStrip.Items;
 
@@ -380,13 +379,10 @@ namespace ZipPla
 
                 foreach (var item in partialItems)
                 {
-                    //item.MouseUp += eh1;
-                    //item.MouseUp += eh2;
                     item.CheckStateChanged += eh1;
                     item.CheckStateChanged += eh2;
                 }
 
-                //tagEditorToolStripMenuItem.Enabled = true;
 
 
                 addTagsFromTheFileNameToolStripMenuItem.Enabled = editToolStripMenuItem_newTagExists;
@@ -394,7 +390,6 @@ namespace ZipPla
                 clearPageSequenceSettingToolStripMenuItem.Enabled = editToolStripMenuItem_pathHasPageDirectionInfo;
                 saveCurrentPageSequenceToolStripMenuItem.Enabled = pageSequensCanBeSaved;
                 clearThumbnailSettingToolStripMenuItem.Enabled = editToolStripMenuItem_pathHasThumbnailInfo;
-                //setThumbnailManuallyToolStripMenuItem.Enabled = isBookAndNormal;
                 setThumbnailManuallyToolStripMenuItem.Enabled = isBook;
             }
 
@@ -405,7 +400,6 @@ namespace ZipPla
         private bool getTagChanged(ToolStripItemCollection items)
         {
             if (editToolStripMenuItem_TagInitialCheckState == null) return false;
-            //var items = editToolStripMenuItem.DropDownItems;
             var tagStartIndex = items.IndexOf(uncheckAllToolStripMenuItem) + 1;
             var i = tagStartIndex;
             var partialItems = GetTagToolStripMenuItems(items);
@@ -484,7 +478,6 @@ namespace ZipPla
 
         private void SetTagToFileName()
         {
-            //if (string.IsNullOrEmpty(currentArchiveFilePath)) return;
 
             var prevArchiveFilePath = getCurrentRenameTarget();
             if (string.IsNullOrEmpty(prevArchiveFilePath)) return;
@@ -572,7 +565,6 @@ namespace ZipPla
             {
                 var loaderExists = loader != null;
 
-                //if (Directory.Exists(currentArchiveFilePath))
                 if (loaderExists ? loader.Type == PackedImageLoader.PackType.Directory : Directory.Exists(currentArchiveFilePath))
                 {
                     var path = EntryLongPathArray[mtbPage.Value].Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
@@ -594,7 +586,6 @@ namespace ZipPla
 
         private void SetRatingToFileName(int rating)
         {
-            //if (string.IsNullOrEmpty(currentArchiveFilePath)) return;
 
             var prevArchiveFilePath = getCurrentRenameTarget();
             if (preferenceToolStripMenuItem1 == null) return;
@@ -620,7 +611,6 @@ namespace ZipPla
         private void unckeckAllTags()
         {
             var dropDownItems = uncheckAllToolStripMenuItem.Owner.Items;
-            //var dropDownItems = editToolStripMenuItem.DropDownItems;
             var i = dropDownItems.IndexOf(uncheckAllToolStripMenuItem);
             var count = dropDownItems.Count;
             unckeckAllTags_Changing = true;
@@ -659,7 +649,6 @@ namespace ZipPla
         {
             if (e.Button == MouseButtons.Right)
             {
-                //editToolStripMenuItem.DropDown.AutoClose = false;
                 (uncheckAllToolStripMenuItem.Owner as ToolStripDropDown).AutoClose = false;
             }
             if (e.Button == MouseButtons.Right || e.Button == MouseButtons.Left)
@@ -672,11 +661,8 @@ namespace ZipPla
         {
             if (e.Button == MouseButtons.Right)
             {
-                //unckeckAllTags();
-                //editToolStripMenuItem.DropDown.AutoClose = true;
                 (uncheckAllToolStripMenuItem.Owner as ToolStripDropDown).AutoClose = true;
             }
-            //uncheckAllToolStripMenuItem.Enabled = false;
             DisableUncheckAllToolStripMenuItemIfNeeded();
         }
 
@@ -757,7 +743,6 @@ namespace ZipPla
             var vm = ViewerMode;
             if (vm != ViewerModeEnum.CoverSetting)
             {
-                //if (vm == ViewerModeEnum.Normal)
                 {
                     if (imageFilter.PreFilterExists() ||
                         (BindingMode != BindingMode.SinglePage && BindingMode != BindingMode.SinglePageWithoutScalingUp && MaxDivision > 1))

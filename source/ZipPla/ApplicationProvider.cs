@@ -17,7 +17,6 @@ namespace ZipPla
     public abstract class ApplicationProvider
     {
         protected Regex supportedFiles, openByClicking;
-        //protected string menuTextSuffix = "...";
         protected bool escapeAmpersand = true;
         public virtual MultiFileMode GetMultiFileMode() { return MultiFileMode.Single; }
         public bool Supports(string path, bool isDir)
@@ -157,7 +156,6 @@ namespace ZipPla
 
         public override string GetApplicationName()
         {
-            //return Message.BuiltInViewer;
             return alias ?? Message.OpenInBuiltInViewer;
         }
 
@@ -277,7 +275,6 @@ namespace ZipPla
             else
             {
                 catalogForm.StopLookAheadProcess();
-                // var process = Process.Start(target, arguments);
                 var process = ExternalApplicationProvider.ProcessStartAtParentDirectory(target, arguments);
                 catalogForm.SetOpenedByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
                 catalogForm.PrepareLookAheadProcess();
@@ -333,7 +330,6 @@ namespace ZipPla
                     case "%I": result.Append(":0"); break;
                     case "%L": result.Append(path); break;
                     case "%S": result.Append('1'); break;
-                    // case "%U":
                     case "%V": result.Append(path); break;
                     case "%W": result.Append(Application.StartupPath); break;
                     default:
@@ -370,7 +366,6 @@ namespace ZipPla
 
         public override string GetApplicationName()
         {
-            //return Message.AssociatedApplication;
             return alias ?? Message.Open;
         }
 
@@ -432,7 +427,6 @@ namespace ZipPla
         private string alias;
         public MoveLocationProvider(CatalogForm catalogForm,string alias,  Regex supportedFiles, Regex openByClicking)
         {
-            //menuTextSuffix = "";
             this.catalogForm = catalogForm;
             this.supportedFiles = supportedFiles;
             this.openByClicking = openByClicking;
@@ -461,15 +455,12 @@ namespace ZipPla
 
         public override string GetApplicationName()
         {
-            //return Message.MoveLocation;
-            //return Message.CurrentZipPla;
             return alias ?? Message.OpenInCurrentWindow;
         }
 
         private static readonly Regex GetMenuText_MoveHereSuitable = new Regex($"\\.(?:sor|{SmartFolder.ExtensionWithoutPeriodInLower})$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         protected override string GetMenuText(string[] path)
         {
-            //return alias ?? Message.OpenInCurrentWindow;
             
             if (Subdivide(path) && catalogForm.InMovie) return AppendAccessKey(Message.SubdivideAroundHere, accessKey);
             return alias ?? Message.OpenInCurrentWindow;
@@ -530,7 +521,6 @@ namespace ZipPla
         }
 
         private CatalogForm catalogForm;
-        //private bool supportedFilesIsRegex, openByClickingIsRegex;
         public OpenInFileInClipboardProvider(CatalogForm catalogForm, bool multiItems, Regex supportedFiles, Regex openByClicking)
         {
             this.catalogForm = catalogForm;
@@ -543,8 +533,6 @@ namespace ZipPla
             this.openByClicking = openByClicking;
             //menuText = GetName(path, Message.OpenIn1, alias); これでは言語切替に追従できない
 
-            //supportedFilesIsRegex = !multiItems && supportedFiles != null && sRegex;
-            //openByClickingIsRegex = !multiItems && openByClicking != null && oRegex;
         }
 
         // ExternalApplicationProvider を参考にしている
@@ -564,11 +552,9 @@ namespace ZipPla
             }
             else
             {
-                //cmd = cmdParams + " \"" + string.Join("\" \"", from p in path select GetEntityPath(p)) + "\"";
                 cmd = "\"" + path[0] + "\""; // 驚き最小の原則に則り GetEntityPath は極力使わない方針で
             }
             catalogForm.StopLookAheadProcess();
-            // var process = Process.Start(clipboardExecutablePath, cmd);
             var process = ExternalApplicationProvider.ProcessStartAtParentDirectory(clipboardExecutablePath, cmd);
             catalogForm.SetOpenedByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
             catalogForm.PrepareLookAheadProcess();
@@ -830,7 +816,6 @@ namespace ZipPla
                 }
                 else
                 {
-                    //cmd = cmdParams + " \"" + string.Join("\" \"", from p in path select GetEntityPath(p)) + "\"";
                     cmd = cmdParams + " \"" + path[0] + "\""; // 驚き最小の原則に則り GetEntityPath は極力使わない方針で
                 }
             }
@@ -896,7 +881,6 @@ namespace ZipPla
                     if (Directory.Exists(path)) // path が存在しない場合の GetDisplayName のパフォーマンス低下リスク回避
                     {
                         name = FileTypeManager.GetDisplayName(path).Replace("&", "&&"); // path が存在しない場合例外ではなく空文字を返す
-                        //name = addAmpersandForName(FileTypeManager.GetDisplayName(path).Replace("&", "&&"), path); // フォルダにもデフォルトでショートカットキーを割り当てる場合
                     }
                 }
                 catch
@@ -908,7 +892,6 @@ namespace ZipPla
                     {
                         try
                         {
-                            //name = addAmpersandForName(Path.GetFileName(path).Replace("&", "&&"));
                             name = Path.GetFileName(path).Replace("&", "&&");
                         }
                         catch
@@ -927,7 +910,6 @@ namespace ZipPla
                 {
                     try
                     {
-                        //name = addAmpersandForName(Path.GetFileNameWithoutExtension(path).Replace("&", "&&"));
                         name = Path.GetFileNameWithoutExtension(path).Replace("&", "&&");
                     }
                     catch
@@ -1073,7 +1055,6 @@ namespace ZipPla
         {
             escapeAmpersand = false;
 
-            //menuTextSuffix = "";
             this.catalogForm = catalogForm;
             this.targetPath = targetPath;
             targetPathInLowerWithSeparator = targetPath.ToLower();
@@ -1095,7 +1076,6 @@ namespace ZipPla
         public async override void Exec(ApplicationProviderUser user, params string[] path)
         {
             if (path == null || path.Length == 0) return;
-            //MessageBox.Show($"move");
 
             var archive = GetArchivePath(path);
             if (archive == null) return;
@@ -1285,7 +1265,6 @@ namespace ZipPla
                                 }
                             }
                             string extension;
-                            //ms = CatalogForm.GetImageType(CatalogForm.ConvertToMemoryStream(ms), out extension);
                             extension = extensionWithPeriodForPDF;
                             name = e.Path;
                             name = digits.Substring(name.Length) + name + extension;
@@ -1351,8 +1330,6 @@ namespace ZipPla
         {
             try
             {
-                //Icon = FileTypeManager.GetSmallIconBitmap(Environment.GetFolderPath(Environment.SpecialFolder.Windows), useFileAttrinutes: false);
-                //Icon = FileTypeManager.GetSmallIconBitmap( "explorer.exe", useFileAttrinutes: false);
                 Icon = FileTypeManager.GetSmallIconBitmap(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), useFileAttrinutes: false);
             }
             catch { }
@@ -1387,7 +1364,6 @@ namespace ZipPla
 
         public override string GetApplicationName()
         {
-            //return Message.Explorer;
             return alias ?? Message.OpenInExplorer;
         }
 
@@ -1406,7 +1382,6 @@ namespace ZipPla
         public const string AssociatedApplication = "<Associated application>";
         public const string MoveLocation = "<Move location>";
         public const string OpenInFileInClipboard = "<Open in item in clipboard>";
-        //private const string Explorer = "<Explorer>"; // 互換性保持のため
         public const string Explorer = "<Explorer>";
 
         public string Path;
@@ -1448,7 +1423,6 @@ namespace ZipPla
         public override bool Equals(object obj)
         {
             var b = obj as ApplicationInfo;
-            //return b != null && Path == b.Path && CommandLineParameter == b.CommandLineParameter && ShowInContextMenu == b.ShowInContextMenu && OpenByClicking == b.OpenByClicking;
             return b != null && b.Equals(this);
         }
 
@@ -1482,7 +1456,6 @@ namespace ZipPla
                 else if (SearchManager.IsRegex.IsMatch(pattern))
                 {
                     isRegex = true;
-                    //return SearchManager.GetRegex(pattern, compile: !testMode);
                     return SearchManager.GetRegex(pattern);
                 }
                 else if (ExtensionArray.IsMatch(pattern))
@@ -1577,7 +1550,6 @@ namespace ZipPla
             if (Path == Explorer)
             {
                 return new ExplorerProvider(Alias, contextMenu, openByClicking);
-                //return new ExternalApplicationProvider(catalogForm, SettingForm.ExplorerPath, null, "/select,", false, contextMenu, cmRegex, openByClicking, ocRegex);
             }
             if (Path != null && Path.Length > 0 && Path.Last() == System.IO.Path.DirectorySeparatorChar)
             {

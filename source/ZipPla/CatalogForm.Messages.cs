@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -89,7 +88,6 @@ namespace ZipPla
             foreach (var control in SetMessages_LayoutControls) control.SuspendLayout();
 
             openHistoryToolStripMenuItem.Text = Message.OpenHistory;
-            //openListFileToolStripMenuItem.Text = Message.OpenVirtualFolder + "...";
             openDirectoryToolStripMenuItem.Text = Message.OpenFolder + "...";
             openFileToolStripMenuItem.Text = Message.OpenFile + "...";
             openbuiltinBookReaderToolStripMenuItem.Text = Message.OpenBuiltInViewer;
@@ -139,7 +137,6 @@ namespace ZipPla
             displayFirstToolStripMenuItem.Text = Message.DisplayFirst;
             displayLastToolStripMenuItem.Text = Message.DisplayLast;
             fitToDirectionOfSortToolStripMenuItem.Text = Message.DisplayRespectingToSortOfDirection;
-            //getFolderSizeToolStripMenuItem.Text = Message.ShowFolderSizeOnStatusBar;
 
 
             itemSelectionFeedbackToolStripMenuItem.Text = Message.AutomaticSelectionSwitching;// Message.ItemSelectionFeedback;
@@ -173,7 +170,6 @@ namespace ZipPla
             thumbnailSizeToolStripMenuItem.Text = Message._Thumbnail;
             archivesInArchiveToolStripMenuItem.Text = Message.LoadArchivesInArchive;
             ignoreArchivesInArchiveToolStripMenuItem.Text = Message.NoneRecommended;
-            //onlyIfThereIsNoOtherImageToolStripMenuItem.Text = Message.OnlyIfThereIsNoOtherImage;
             untilFoundToolStripMenuItem.Text = Message.TwoLevelUntilFound;
             alwaysLoadArchivesInArchiveToolStripMenuItem.Text = Message.OneLevelCompletelyNotRecommended;// Message.Always;
             defaultPageSequenceToolStripMenuItem.Text = Message.DefaultPageSequence;
@@ -189,9 +185,7 @@ namespace ZipPla
             videoFilesToolStripMenuItem.Text = Message.VideoFiles;
             otherFilesToolStripMenuItem.Text = Message.OtherFiles;
             foldersToolStripMenuItem.Text = Message.Folders;
-            //ignoreFoldersToolStripMenuItem.Text = Message.IgnoreFolders;
             searchSubfoldersAsWellToolStripMenuItem.Text = Message.SearchSubfoldersAsWell;
-            //reloadAllThumbnailsToolStripMenuItem.Text = Message.ReloadAllThumbnails;
             tinyToolStripMenuItem.Text = Message.Tiny;
             smallToolStripMenuItem.Text = Message.Small;
             normalToolStripMenuItem.Text = Message.Normal;
@@ -230,17 +224,12 @@ namespace ZipPla
             _2lineScrollToolStripMenuItem.Text = Message._1Lines.Replace("$1", "2");
             _3lineScrollToolStripMenuItem.Text = Message._1Lines.Replace("$1", "3");
             thumbnailCacheToolStripMenuItem.Text = Message.ThumbnailCache + "...";
-            //createCacheInADSInNTFSToolStripMenuItem.Text = Message.CreateThumbnailCache;
-            //aboutThumbnailCacheToolStripMenuItem.Text = Message.AboutThumbnailCache + "...";
             letterboxToolStripMenuItem.Text = Message.Letterbox;
             panAndScanToolStripMenuItem.Text = Message.PanAndScan;
             plaClipToolStripMenuItem.Text = Message.SmartClip;
             cutToolStripMenuItem.Text = Message.Cut;
-            //copyToolStripMenuItem.Text = Message.Copy;
             pasteToolStripMenuItem.Text = Message.Paste;
             renameToolStripMenuItem.Text = Message.Rename;
-            //deleteonlyForListFileToolStripMenuItem.Text = Message.DeleteOnlyForVirtualFolder;
-            //deleteonlyForListFileToolStripMenuItem.Text = Message.Delete;
             optionToolStripMenuItem.Text = Message._Others;
             tagEditorToolStripMenuItem.Text = Message.Edit_Tags + "...";
             mouseGestureSettingToolStripMenuItem.Text = Message._MouseTouchGestures + "...";
@@ -299,23 +288,16 @@ namespace ZipPla
             addToBookmarkWithNewProfileColorRightClickDropToolStripMenuItem.Text = Message.AddWithNewProfileColor;
 
             deleteToolStripMenuItem.Text = Message.Delete;
-            //aliasToolStripMenuItem.Text = Message.EditAlias;
             realNameToolStripMenuItem.Text = Message.RealName;
             addSeparatorToolStripMenuItem.Text = Message.AddSeparator;
-            //setCurrentLocationToolStripMenuItem.Text = Message.SetToCurrentLocation;
-            //setCurrentLocationAndStateToolStripMenuItem.Text = Message.SetToCurrentLocationAndState;
             openInExplorerInDirectoryListToolStripMenuItem.Text = Message.OpenInExplorer;
             editSmartFolderToolStripMenuItem.Text = Message.EditSmartFolder;
-            //loadOnlyProfileColorToolStripMenuItem.Text = Message.LoadOnlyProfileColor;
 
             tbcFileName.HeaderText = Message.Name;
             tbcFileName.MinimumWidth = 2;
             tbcFileName.Width = 0;
-            //var temp = tbcFileName.HeaderCell.SortGlyphDirection;
-            //if (temp == SortOrder.None) tbcFileName.HeaderCell.SortGlyphDirection = SortOrder.Ascending;
             tbcFileName.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
             tbcFileName.MinimumWidth = tbcFileName.Width;
-            //if (temp == SortOrder.None) tbcFileName.HeaderCell.SortGlyphDirection = temp;
             tbcFileName.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
 
@@ -338,11 +320,9 @@ namespace ZipPla
             removeFromHistoryToolStripMenuItem.Text = Message.RemoveFromHistory;
             ratingToolStripMenuItem.Text = Message.Rating;
             noneToolStripMenuItem.Text = Message.None;
-            //noneToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnStars;
             thumbnailToolStripMenuItem.Text = Message.Cover;
             setThumbnailManuallyToolStripMenuItem.Text = Message.SetCoverManually + "...";
             setCoverToThisToolStripMenuItem.Text = Message.SetCoverToThis;
-            //setCoverOfParentFolderToThisToolStripMenuItem.Text = Message.SetCoverOfParentFolderToThis;
             clearThumbnailSettingToolStripMenuItem.Text = Message.ClearCoverSetting;
             pageSequenceToolStripMenuItem.Text = Message.PageSequence;
             defaultToolStripMenuItem.Text = Message.Default;
@@ -353,15 +333,11 @@ namespace ZipPla
 
             addToNewListSaveFileDialog.Title = Message.AddToNewVirtualFolder;
             addToNewListSaveFileDialog.Filter = $"{Message.VirtualFolder}|*.sor";
-            //openListFileDialog.Title = Message.OpenVirtualFolder;
-            //openListFileDialog.Filter = $"{Message.VirtualFolder}|*.sor";
 
 
             ratingFilterToolStripMenuItem.ToolTipText = Message.RightClickDownFlickToOpenContextMenu;
             increaseReferenceValueToolStripMenuItem.Text = Message.IncreaseReferenceValue;
             decreaseReferenceValueToolStripMenuItem.Text = Message.DecreaseReferenceValue;
-            //increaseReferenceValueToolStripMenuItem.ShortcutKeyDisplayString = Message.WheelUp;
-            //decreaseReferenceValueToolStripMenuItem.ShortcutKeyDisplayString = Message.WheelDown;
 
 
             if (simplifiedKeyBoard != null)
@@ -524,13 +500,11 @@ namespace ZipPla
         private void setColumnWidth(DataGridViewColumn column, int cellMaximumWidth, Func<string, int> measure)
         {
 
-            //column.Width = Math.Max(cellMaximumWidth, headerWidth);
 
             var dgv = column.DataGridView;
             dgv.AutoResizeColumn(column.Index, DataGridViewAutoSizeColumnMode.ColumnHeader);
             var plus = tbcIconWidth - 22;
             cellMaximumWidth = Math.Max(column.Width + plus, cellMaximumWidth);
-            //cellMaximumWidth = 200;
             if (column.Width < cellMaximumWidth) column.Width = cellMaximumWidth;
         }
 

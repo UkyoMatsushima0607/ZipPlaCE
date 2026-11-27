@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -38,7 +37,6 @@ namespace ZipPla
 
         private void dgvFileList_Scroll(object sender, ScrollEventArgs e)
         {
-            //if (!tvCatalog.Visible)
             {
                 SetBackgroundMode(true, 0);
             }
@@ -145,7 +143,6 @@ namespace ZipPla
             }
             else
             {
-                //OpenWaitingProcess(path, index, coverSettingMode: false);
                 OpenWaitingProcess(extendedPath, -1, coverSettingMode: false);
             }
         }
@@ -339,7 +336,6 @@ namespace ZipPla
             return 0 <= delta && delta <= SystemInformation.DoubleClickTime;
         }
 
-        //private static readonly TimeSpan DoubleClickTime = TimeSpan.FromMilliseconds(SystemInformation.DoubleClickTime);
 
         private int tvCatalog_MouseDown_ClickCount = 0;
 
@@ -479,7 +475,6 @@ namespace ZipPla
                         }
                         else
                         {
-                            //cmsRightClickPrepareAndShow(Cursor.Position, onlyTag: true);
                             middleClickContextMenuPrepareAndShow(Cursor.Position);
                         }
                     }
@@ -506,8 +501,6 @@ namespace ZipPla
             LatestControledControl.Focus();
         }
 
-        //private int dgvFileList_MouseDown_LastExcuseIndex = -1;
-        //private DateTime dgvFileList_MouseDown_LastExcuseTime = DateTime.MinValue;
 
         private int dgvFileList_MouseDown_ClickCount = 0;
 
@@ -572,7 +565,6 @@ namespace ZipPla
                     }
                     else if (hit.RowIndex >= 0 && hit.ColumnIndex != tbcRating.Index)
                     {
-                        //cmsRightClickPrepareAndShow(Cursor.Position, onlyTag: true);
                         middleClickContextMenuPrepareAndShow(Cursor.Position);
                     }
                 }
@@ -688,8 +680,6 @@ namespace ZipPla
                 }
             }
 
-            //Thread.Sleep(1);
-            //Application.DoEvents();
             try
             {
                 Task.Run(() => Invoke((MethodInvoker)(() => dgvFileList.Update())));
@@ -804,7 +794,6 @@ namespace ZipPla
 
         private ToolStripItem[] cmsRightClickPrepareAndShow_tagToolStripMenuItemDropDownItems = null;
 
-        //private string[] cmsRightClickPrepareAndShow_TagNames = null;
         bool cmsRightClickPrepareAndShow_ZipPlaInfoReady = false;
 
         private void CatalogForm_KeyDown(object sender, KeyEventArgs e)
@@ -876,7 +865,6 @@ namespace ZipPla
         private bool filterValid()
         {
             return cbFilter_Valid;
-            //return cbFilter.BackColor == WindowColor;
         }
 
         private void currentLocationToolStripMenuItem_Click(object sender, EventArgs e)
@@ -933,7 +921,6 @@ namespace ZipPla
         private bool CursorIsOnControl()
         {
             return CursorIsOnControlField;
-            //return UnderCursorSet.Count > 0;
         }
 
         // 復元する場合 RunWorkerStarting 内のコメントアウトを外すこと
@@ -1035,10 +1022,8 @@ namespace ZipPla
             CursorIsOnControlField = false;
         }
 
-        //private static readonly Color unselectedItemMaskColor = Color.FromArgb(224, 255, 255, 255);
         private void unselectedItemMaskOn()
         {
-            //if(tvCatalog.SelectedIndex >= 0)
             {
                 tvCatalog.UnselectedItemAlphaChannel = 255 - MaskAlpha;
             }
@@ -1198,7 +1183,6 @@ namespace ZipPla
                             }
                         }
                     }
-                    //throw new Exception(Message.ApplicationIsNotSpecified);
                 }
             }
             catch (Exception ex)
@@ -1214,7 +1198,6 @@ namespace ZipPla
         private void cmsRightClickPrepareAndShowForKeyOnTvCatalog(bool onlyTag, Keys modifierKeys)
         {
             var mk = modifierKeys;
-            //var mk = ModifierKeys;
             if (tvCatalog.SelectedIndicesCount > 0)
             {
                 int showIndex = tvCatalog.FirstDisplayedSelectedShowIndex;
@@ -1234,10 +1217,8 @@ namespace ZipPla
             {
                 var p = tvCatalog.PointToScreen(tvCatalog.Location);
 
-                //cmsRightClickPrepareAndShow(p);
 
                 rightClickContextMenuPrepareAndShow(p, mk);
-                //cmsRightClickPrepareAndShow_(p, false);
             }
         }
 

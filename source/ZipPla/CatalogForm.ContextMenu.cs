@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -159,22 +158,16 @@ namespace ZipPla
                 {
                     selectedNameArray = null;
                     selectedPathArray = null;
-                    //allSelectionLoaded = false;
-                    //allSelectionArchive = false;
                     allSelectionArchiveOrDirectoryOrEmptyDirectory = false;
                     atLeast1SelectionArchive = false;
                     allSelectionEntity = false;
-                    //allSelectionCanBeCopied = false;
                     allSelectionFile = false;
                 }
                 else
                 {
-                    //allSelectionLoaded = true;
-                    //allSelectionArchive = true;
                     allSelectionArchiveOrDirectoryOrEmptyDirectory = true;
                     atLeast1SelectionArchive = false;
                     allSelectionEntity = InDirectoryVirtualDirectoryOrSmartDirectory;
-                    //allSelectionCanBeCopied = InDirectoryVirtualDirectoryOrSmartDirectory || InArchive;
                     allSelectionFile = !InArchive && !InMovie;
                     for (var i = 0; i < selectedIndices.Length; i++)
                     {
@@ -183,12 +176,9 @@ namespace ZipPla
                         {
                             selectedNameArray = null;
                             selectedPathArray = null;
-                            //allSelectionLoaded = false;
-                            //allSelectionArchive = false;
                             allSelectionArchiveOrDirectoryOrEmptyDirectory = false;
                             atLeast1SelectionArchive = false;
                             allSelectionEntity = false;
-                            //allSelectionCanBeCopied = false;
                             allSelectionFile = false;
                             break;
                         }
@@ -196,9 +186,7 @@ namespace ZipPla
                         var path = ZipPathArray[index];
                         selectedPathArray[i] = path;
                         var loadResult = LoadResultArray[index];
-                        //if (allSelectionLoaded && (loadResult == LoadResult.NotYet))// || loadResult == LoadResult.FileNotFound))
                         {
-                            //    allSelectionLoaded = false;
                         }
                         var thisIsFolder = selectedName.Length > 0 && selectedName[selectedName.Length - 1] == Path.DirectorySeparatorChar;
                         if (allSelectionFile && thisIsFolder)
@@ -231,8 +219,6 @@ namespace ZipPla
 
             cmsRightClickPrepareAndShow_SelectedPathList = selectedPathArray;
 
-            //var isSingleDirectory = singleSelected && selectedNameArray != null && selectedNameArray.Length == 1 &&
-            //    selectedNameArray[0].EndsWith(Path.DirectorySeparatorChar.ToString());
 
 
             var ffmpegExists = MovieThumbnailLoader.ffmpegExists();
@@ -255,7 +241,6 @@ namespace ZipPla
             var singleDir = !string.IsNullOrEmpty(singleName) && singleName[singleName.Length - 1] == Path.DirectorySeparatorChar;
             if (InMovie || (!(InSmartDirectory || InVirtualDirectory) && (allSelectionFile &&
                 (singleImage ||
-                //PackedImageLoader.Supports(singlePath) ||
                 (singleSelected && atLeast1SelectionArchive) ||
                 (ffmpegExists && MovieThumbnailLoader.Supports(singlePath))) || singleDir)))
             {
@@ -302,7 +287,6 @@ namespace ZipPla
             }
 
 
-            //copyToolStripMenuItem.Enabled = InDirectoryVirtualDirectoryOrSmartDirectory && allSelectionEntity;
             copyToolStripMenuItem.Enabled = (InDirectoryVirtualDirectoryOrSmartDirectory && allSelectionEntity) || InArchive || (InMovie && singleSelected);
             if (InMovie && singleSelected)
             {
@@ -327,7 +311,6 @@ namespace ZipPla
                 var singleArchive = singleSelected && atLeast1SelectionArchive;// (singleName.EndsWith(Path.DirectorySeparatorChar.ToString()) || PackedImageLoader.SupportedArchivesPath.IsMatch(singlePath));
                 var singleMovieOrSingleInMovie = singleMovie || singleSelected && InMovie; // ffmpeg が無くても削除のために表示する
                 var singleInArchive = singleSelected && InArchive;
-                //if (allSelectionLoaded)
                 {
                     renamable = InDirectoryVirtualDirectoryOrSmartDirectory && allSelectionEntity;// !singlePath.Contains(Path.AltDirectorySeparatorChar);
                     ratingToolStripMenuItem.Enabled = renamable;
@@ -409,19 +392,14 @@ namespace ZipPla
                 tagToolStripMenuItem.Enabled = false;
                 cmsRightClickPrepareAndShow_TagInitialCheckState = null;
                 cmsRightClickPrepareAndShow_SelectedPathList = null;
-                //cmsRightClickPrepareAndShow_TagNames = null;
 
-                //tagToolStripMenuItem.Enabled = false;
 
-                //clearThumbnailSettingToolStripMenuIteaaam.Enabled = false;
             }
 
             RightClickFileNameToolStripTextBox_TextChanged_SetDefaultValues = false;
 
             rightClickFileNameToolStripTextBox_SelectedText = "";
             var renamableByCmsTextBox = cmsRightClick_RenamableByTextBox = allowRenameByCmsRightClick && singleSelected && renamable;
-            //selectionToFilterToolStripMenuItem.Enabled = false;
-            //selectionToFilterToolStripMenuItem.Text = Message.FilterWithSelectedText;
             setRightClickFileNameTextBox(renamableByCmsTextBox ? getBaseName(singleName) : TextAnalyzer.TextToWildcard(selectedNameArray));
             rightClickFileNameToolStripTextBox.ReadOnly = !renamableByCmsTextBox;
 
@@ -460,9 +438,7 @@ namespace ZipPla
             pageSequenceChangeQue = PageSequence.NotClicked;
             clearThumbnailSettingQue = false;
 
-            //MessageBox.Show($"{cmsRightClick.ImageScalingSize}");
 
-            //if (openedInFileList) dgvFileList.Update();
             if (this != ActiveForm) Activate();
             AllowFullpower = false;
             cmsRightClick.Show(point);
@@ -583,7 +559,6 @@ namespace ZipPla
         /// <summary>右クリックメニューの「タグ」のドロップダウンを、選択中の項目のタグから作り直す（開くたびに作り直す。X19）</summary>
         private void buildTagMenuItems(ZipPlaInfo[] zipPlaInfos)
         {
-            //tagToolStripMenuItem.Enabled = true;
             Program.ClearAndDisposeItems(tagToolStripMenuItem.DropDownItems); // 開くたびに作り直す（X19）
 
 
@@ -594,7 +569,6 @@ namespace ZipPla
             Program.SetTagsToToolStripMenuItems(tagToolStripMenuItem, out items, out initialCheckStates, 0, tags, zipPlaInfos);
 
             cmsRightClickPrepareAndShow_TagInitialCheckState = initialCheckStates;
-            //cmsRightClickPrepareAndShow_TagNames = (from tag in tags select tag.Name).ToArray();
 
             if (items.Length > 0)
             {
@@ -613,7 +587,6 @@ namespace ZipPla
 
             var uncheckAll = new ToolStripMenuItem(Message.UncheckAll);
             uncheckAll.Enabled = initialCheckStates.Any(item => item != CheckState.Unchecked);
-            //uncheckAll.ShortcutKeyDisplayString = Message.RightClickNotToClose;
             var checkedChangedByUncheckAll = false;
             foreach (var item in items)
             {
@@ -621,7 +594,6 @@ namespace ZipPla
                 {
                     if (checkedChangedByUncheckAll) return;
                     uncheckAll.Enabled = items.Any(i => i.CheckState != CheckState.Unchecked);
-                    //if (cmsRightClick_RenamableByTextBox)
                     {
                         for (var i = 0; i < initialCheckStates.Length; i++)
                         {
@@ -654,7 +626,6 @@ namespace ZipPla
                         item.Checked = false;
                     }
                     checkedChangedByUncheckAll = false;
-                    //if (cmsRightClick_RenamableByTextBox)
                     {
                         for (var i = 0; i < initialCheckStates.Length; i++)
                         {
@@ -1030,8 +1001,6 @@ namespace ZipPla
                     return true;
                 }
 
-                //var iobj = obj as System.Runtime.InteropServices.ComTypes.IDataObject;
-                //if (iobj != null) return true;
                 return false;
             }
             catch
@@ -1188,7 +1157,6 @@ namespace ZipPla
         {
             var tagNameToolStripMenuItems = new List<PrefixEscapedToolStripMenuItem>();
             bool inTags = false;
-            //foreach (var item in tagToolStripMenuItem.DropDownItems)
             foreach (var item in cmsRightClickPrepareAndShow_tagToolStripMenuItemDropDownItems)
             {
                 if (!inTags)
@@ -1244,7 +1212,6 @@ namespace ZipPla
                                     var oldEffective = oldBind == null ? currentBindingMode : (BindingMode)oldBind;
                                     var newEffective = newBind == null ? currentBindingMode : (BindingMode)newBind;
                                     changedEffectivePageSequence = oldEffective != newEffective;
-                                    //MessageBox.Show($"{oldPath}\n{newPath}\n{changedThumbnail}\n{changedEffectivePageSequence}");
                                 }
                                 RenameShownArchive(selectedIndex, oldPath, newPath, atFirstArrayChange: true, needToReload: changedThumbnail || changedEffectivePageSequence);
                             }

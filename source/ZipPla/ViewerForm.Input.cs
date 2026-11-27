@@ -83,7 +83,6 @@ namespace ZipPla
                         TouchListener_Pan_Delta += new VectorD(e.PanOffset);
                     }
                     pbPaintInvalidate();
-                    //optionToolStripMenuItem.Text = $"{e.PanOffset.X} {e.PanOffset.Y}";
                     break;
                 case ViewerModeEnum.MagnifierClosing:
                     TouchListener_Pan_Delta = null;
@@ -157,7 +156,6 @@ namespace ZipPla
             if (ksViewForm != null && ksViewForm.InInput)
             {
                 e.Cancel = true;
-                //MessageBox.Show($"{ksViewForm.KeySequence.Count} {string.Join(", ", ksViewForm.KeySequence[0])}");
             }
         }
 
@@ -186,7 +184,6 @@ namespace ZipPla
 
         bool ViewerForm_Load_Called = false;
 
-        //bool ViewerForm_Load_CallTick = false;
         private void ViewerForm_Load(object sender, EventArgs e)
         {
 
@@ -194,7 +191,6 @@ namespace ZipPla
             Func<string, int> measure = text => TextRenderer.MeasureText(text, font).Width; // font が null でも動作するが戻り値が決まった値に成らないので注意
             var digitWithMaximumSize = CatalogForm.GetDigitWithMaximumSize(measure);
 
-            //pageToolStripStatusLabel.Width = Program.DpiScalingX(70);// (70 * Program.DisplayMagnificationX4 + 2) / 4;
             pageToolStripStatusLabel.Width = CatalogForm.GetMaxWidthWithTemplates(measure, digitWithMaximumSize, " 00000 / 00000");
             imageSizeToolStripStatusLabel.Width = CatalogForm.GetMaxWidthWithTemplates(measure, digitWithMaximumSize, "00000x00000");
 
@@ -205,7 +201,6 @@ namespace ZipPla
             }
             currentImageLongPathToolStripTextBox.MouseLeave += currentImageLongPathToolStripTextBox_MouseLeave;
             statusStrip.Items.Insert(0, currentImageLongPathToolStripTextBox);
-            //MessageBox.Show(statusStrip.Items.Count.ToString());
 
             msView = new MessageForwarder(pbView, ForwardedMessage.MouseWheel);
             msStatusStrip = new MessageForwarder(statusStrip, ForwardedMessage.MouseWheel);
@@ -261,12 +256,10 @@ namespace ZipPla
 
             startToolStripMenuItem.Text = Message._Start;
             viewToolStripMenuItem.Text = Message._View;
-            //imageFilterToolStripMenuItem.Text = Message._Image;
             moveToolStripMenuItem.Text = Message._Move;
             editToolStripMenuItem.Text = Message._Edit;
 
             openFileToolStripMenuItem.Text = Message.OpenFile + " ...";
-            //openNewThumbnailWindowToolStripMenuItem.Text = Message.OpenNewThumbnailWindow;
             switchToThumbnailWindowToolStripMenuItem.Text = Message.SwitchToThumbnailWindow;
             cloneTheWindowToolStripMenuItem.Text = Message.CloneWindow;
             loadWholeArchiveIntoMemoryToolStripMenuItem.Text = Message.LoadWholeArchiveIntoMemory;
@@ -286,7 +279,6 @@ namespace ZipPla
             alwaysAutoHideUIToolStripMenuItem.Text = Message.AlwaysAutomaticallyHideUI;
 
             magnifierToolStripMenuItem.Text = Message.ToggleMagnifier;
-            //magnifierToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClick + ", Z";
             enableMagnifierToolStripMenuItem.Text = Message.EnableMagnifier;
             disableMagnifierToolStripMenuItem.Text = Message.DisableMagnifier;
 
@@ -312,7 +304,6 @@ namespace ZipPla
             singlePageToolStripMenuItem.Text = Message.SinglePage;
             singlePageWithoutScalingUpToolStripMenuItem.Text = Message.SinglePageWithoutScalingUp;
             togglePageSequenceToolStripMenuItem.Text = Message.TogglePageSequence;
-            //forceTwoPageSpreadToolStripMenuItem.Text = Message.ForcePageSpread;
             forceFirstPageToBeSingleToolStripMenuItem.Text = Message.ForceFirstPageToBeSingle;
             forceTwoPageSpreadToolStripMenuItem.Text = Message.PrioritizePageSpread;
             allowPageDivisionToolStripMenuItem.Text = Message.AllowPageDivision;
@@ -341,19 +332,14 @@ namespace ZipPla
             rotateLeftToolStripMenuItem.Text = Message.RotateLeft;
             rotateRightToolStripMenuItem.Text = Message.RotateRight;
             cancelRotationSettingToolStripMenuItem.Text = Message.CancelRotationSetting;
-            //binarizationToolStripMenuItem.Text = Message.Binarization;
-            //autoContrastControlToolStripMenuItem.Text = Message.AutoContrastControl;
 
-            //removeMoireToolStripMenuItem.Text = Message.RemoveMoire;
 
             nextPageToolStripMenuItem.Text = Message.NextPage;
             previousPageToolStripMenuItem.Text = Message.PreviousPage;
             rightPageToolStripMenuItem.Text = Message.RightPage;
             leftPageToolStripMenuItem.Text = Message.LeftPage;
             moveForward1PageToolStripMenuItem.Text = Message.MoveForwardOnePage;
-            //moveForward1PageToolStripMenuItem.ShortcutKeyDisplayString = Message.WheelDownOnBar + ", " + Message.CursorDown;
             moveBack1PageToolStripMenuItem.Text = Message.MoveBackOnePage;
-            //moveBack1PageToolStripMenuItem.ShortcutKeyDisplayString = Message.WheelUpOnBar + ", " + Message.CursorUp;
             moveRight1PageToolStripMenuItem.Text = Message.MoveRightOnePage;
             moveLeft1PageToolStripMenuItem.Text = Message.MoveLeftOnePage;
 
@@ -364,26 +350,20 @@ namespace ZipPla
             openRightToolStripMenuItem.Text = Message.OpenRight;
             openLeftToolStripMenuItem.Text = Message.OpenLeft;
 
-            //openNextToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnPosteriorHalfOfBar + ", Alt+" + Message.CursorRight; 
-            //openPreviousToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnAnteriorHalfOfBar + ", Alt+" + Message.CursorLeft;
 
 
             noneToolStripMenuItem.Text = Message.None;
             tagEditorToolStripMenuItem.Text = Message.EditTags + "...";
             addTagsFromTheFileNameToolStripMenuItem.Text = Message.AddTagsFromName + "...";
             uncheckAllToolStripMenuItem.Text = Message.UncheckAll;
-            //uncheckAllToolStripMenuItem.ShortcutKeyDisplayString = Message.RightClickNotToClose;
             clearPageSequenceSettingToolStripMenuItem.Text = Message.ClearPageSequenceSetting;
             saveCurrentPageSequenceToolStripMenuItem.Text = Message.SaveCurrentPageSequence;
             clearThumbnailSettingToolStripMenuItem.Text = Message.ClearCoverSetting;
-            //setThumbnailManuallyToolStripMenuItem.Text = Message.SetThumbnailManually;
 
             optionToolStripMenuItem.Text = Message._Others;
             tagEditorToolStripMenuItem1.Text = Message.Edit_Tags + "...";
             preferenceToolStripMenuItem1.Text = Message.Common_Settings + "...";
-            //mouseGestureToolStripMenuItem.Text = Message._MouseGestures + "...";
             mouseGestureToolStripMenuItem.Text = Message._MouseTouchGestures + "...";
-            //keyboardShortcutToolStripMenuItem.Text = Message._KeysMouseButtons + "...";
             keyboardShortcutToolStripMenuItem.Text = Message._BasicOperationSettings + "...";
 
             fullScreenToolStripMenuItem.Text = FullScreen ? Message.Window : Message.Fullscreen;
@@ -404,7 +384,6 @@ namespace ZipPla
         {
             CloseAllMenu();
             if (ViewerMode == ViewerModeEnum.Normal || ViewerMode == ViewerModeEnum.Magnifier)
-            //if (ViewerMode == ViewerModeEnum.Normal || ViewerMode == ViewerModeEnum.Magnifier || ViewerMode == ViewerModeEnum.MagnifierOpening)
             {
                 double deg;
                 if (e.Begin)
@@ -502,7 +481,6 @@ namespace ZipPla
                     }
                     else
                     {
-                        //resetMagnifyingPower(1, checkChange: true, redraw: false);
                     }
 
                     // 係数の設定
@@ -678,7 +656,6 @@ namespace ZipPla
         {
             MouseInPbView = true;
             hideUnderUI(null, null);
-            //pbView.Focus();
 
             if (ViewerMode == ViewerModeEnum.MagnifierOpening || ViewerMode == ViewerModeEnum.Magnifier || ViewerMode == ViewerModeEnum.MagnifierClosing)
             {
@@ -707,9 +684,7 @@ namespace ZipPla
             {
                 Program.ShowCursor();
             }
-            //setMouseButtonShape(GetPositionOnView(e.Location));
 
-            //var y = pbView.PointToScreen(e.Location).Y;
             if (!CursorBounded())
             {
                 var y = e.Location.Y;
@@ -746,14 +721,12 @@ namespace ZipPla
 
         private bool showUnderUI(Point pbViewClientPoint)
         {
-            //if (mtbPage_Top > 0 && pbViewClientPoint.Y >= mtbPage_Top)
             if (mtbPageTop_As_Reference_pbViewBottom != 0 && pbViewClientPoint.Y >= pbView.Bottom + mtbPageTop_As_Reference_pbViewBottom)
             {
                 pnlSeekbar.Visible = true;
                 pnlSeekbar_PreStatusStripVisibleTrue();
                 statusStrip.Visible = true;
                 if (SetCurrentImageLongPathRequired) SetCurrentImageLongPath();
-                //mtbPage_Top = 0;
                 mtbPageTop_As_Reference_pbViewBottom = 0;
                 return true;
             }
@@ -836,7 +809,6 @@ namespace ZipPla
                     }
                 }
             }
-            //setMouseButtonShape(position);
         }
 
         private void closeWindowtoolStripMenuItem_MouseEnter(object sender, EventArgs e)

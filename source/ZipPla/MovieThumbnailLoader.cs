@@ -27,7 +27,6 @@ namespace ZipPla
             var size = movieInfo.SizeByPixel;
             if (size.IsEmpty) throw new Exception();
             bool originalSize;
-            //if(!size.IsEmpty)
             {
                 Fraction fraction;
                 if (movieInfo.SAR == 1 || movieInfo.SAR == 0) fraction = (Fraction)size;
@@ -201,11 +200,9 @@ namespace ZipPla
             }
         }
 
-        //private static readonly object GetThumbnail_ffmpegLocker = new object();
         private static Bitmap GetThumbnail(string filePath, Size size, bool originalSize, TimeSpan position, BackgroundWorker backgroundWorker)
         {
             int outputSize;
-            //var buf = readStdOutBinary(ffmpegPath, $"-ss {position.TotalSeconds} -i \"{filePath}\"" + (size.IsEmpty ? "" : $" -sws_flags fast_bilinear -s {size.Width}x{size.Height}") + " -vframes 1 -vcodec bmp -f image2 pipe:1",
 
             string cmd;
             if (position < TimeSpan.MaxValue)
@@ -222,7 +219,6 @@ namespace ZipPla
 #if PERFLOG
             var perfFfmpeg = PerfTrace.Now();
 #endif
-            //lock (GetThumbnail_ffmpegLocker)
             {
                 buf = readStdOutBinary(ffmpegPath, cmd,
                 backgroundWorker, size.Width * size.Height * 4 + 124, out outputSize); // http://www.ruche-home.net/program/bmp/struct 実際には * 3 + 54 が多いが、 * 4 + 54 のケースもある
@@ -404,11 +400,9 @@ namespace ZipPla
         public static readonly string ffmpegPath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "ffmpeg.exe");
         private static readonly string[] supportedExtensions = new string[] {".mp4", ".wmv", ".mov", ".avi", ".mpg", ".mpeg", ".qt", ".asf", ".3gp", ".3gpp", ".3g2", ".rmvb", ".f4v", ".ts", ".mts", ".m2ts", ".m2v", ".m4v", ".vob", ".mkv", ".ogv", ".ogm", ".flv", ".webm", ".divx" };
         public static readonly string[] SupportedImageExtensionsWithPeriodInLowerCase = new string[] { ".webp", ".jp2", ".j2k", ".jpf", ".jpx", ".jpm", ".mj2" };
-        //private static readonly Regex reSupports; // = new Regex(@"\.(mp4|wmv|mov|avi|mpe?g|3gp|f4v|m2ts|m2v|m4v|mkv|ogv|ogm|flv|webm)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         public static readonly string SupportedVideoFileFilter; // = "*.mp4;*.wmv;*.mov;*.avi;*.mpg;*.mpeg;*.3gp;*.f4v;*.m2ts;*.m2v;*.m4v;*.mkv;*.ogv;*.ogm;*.flv;*.webm";
         static MovieThumbnailLoader()
         {
-            //reSupports = new Regex(@"\.(?:" + string.Join("|", supportedExtensions) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             SupportedVideoFileFilter = "*" + string.Join(";*", supportedExtensions);
         }
 
@@ -429,7 +423,6 @@ namespace ZipPla
 
         public static bool Supports(string path)
         {
-            //return path != null && reSupports.IsMatch(path);
             try
             {
                 return path != null && supportedExtensions.Contains(Path.GetExtension(path).ToLower());

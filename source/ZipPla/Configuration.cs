@@ -13,7 +13,6 @@ namespace Common
 {
     public abstract class Configuration
     {
-        //public static readonly string XmlPath = Directory.GetCurrentDirectory() + @"\config.xml";
         private static readonly string XmlPath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "config.xml");
         private static readonly string XmlBack = Path.ChangeExtension(XmlPath, "bak");
         private static readonly string RootName =
@@ -276,7 +275,6 @@ namespace Common
                         }
                     }
 
-                    //xmlFile.Save(XmlPath);
         }
 
         public static DateTime GetLastWriteTime()
@@ -472,7 +470,6 @@ namespace Common
 
         private void SetXElementToThis(Type thisType, object configration)
         {
-                                                          //ZipPla.Program.RunTimeMeasure?.Block("after sirialize");
             foreach (var element in thisType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 element.SetValue(this, element.GetValue(configration));

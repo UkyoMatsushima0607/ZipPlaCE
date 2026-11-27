@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,10 +47,8 @@ namespace ZipPla
                 if (altPos < 0) parent = Path.GetDirectoryName(path);
                 else parent = Path.GetDirectoryName(path.Substring(0, altPos));
 
-                //var filePath = Path.Combine(parent, ZipPlaCoverImageFileWithoutExtension + ".jpg");
                 var filePath = Path.Combine(parent, ZipPlaCoverImageFileWithExtension);
 
-                //if (File.Exists(filePath)) File.Delete(filePath);
 
 
                 if (isDir && altPos < 0)
@@ -586,15 +583,11 @@ namespace ZipPla
                 if (dataObj != null)
                 {
                     dragOuting = true;
-                    //string[] files = null;
                     bool isNormalDrag = false;
                     if (!(dataObj is DataObjectEx) && dataObj.GetDataPresent(DataFormats.FileDrop))
                     {
-                        //files = dataObj.GetData(DataFormats.FileDrop, false) as string[];
                         isNormalDrag = dataObj.GetData(DataFormats.FileDrop, false) is string[];
                     }
-                    //var dragGuid = Guid.Empty;
-                    //if (files != null)
                     if (isNormalDrag)
                     {
                         StopLookAheadProcess();
@@ -606,7 +599,6 @@ namespace ZipPla
 
                     (sender as Control).DoDragDrop(dataObj, effects);
 
-                    //if (files != null)
                     if (isNormalDrag)
                     {
                         PrepareLookAheadProcess();
@@ -697,9 +689,7 @@ namespace ZipPla
 
         private void cmsRightClick_Closed(object sender, ToolStripDropDownClosedEventArgs e)
         {
-            //renameForTextBoxRatingTagPageSequence(noop: KeyboardShortcut.GetKeyState(Keys.Escape));
             renameForTextBoxRatingTagPageSequence(noop: cmsRightClick_Closing_CloseReason == ToolStripDropDownCloseReason.Keyboard);
-            //MessageBox.Show(cmsRightClick_Closing_CloseReason.ToString());
 
             //msSortBy.Stop = msFilter.Stop = msCatalog.Stop = msFileList.Stop = false; // 直後の Opening と逆転することがあるので Closing で
             //AllowFullpower = true; // 直後の Opening と逆転することがあるので Closing で
@@ -786,7 +776,6 @@ namespace ZipPla
             {
                 zabLocation.Text = openFileDialog.FileName;
                 MakePreview();
-                //OpenInDefaultViewer(ApplicationProviderUser.OpenFileDialog, openFileDialog.FileName);
             }
 
             AllowFullpower = true;
@@ -857,7 +846,6 @@ namespace ZipPla
             pnlCenter.Visible = ckd;
             splRight.Visible = ckd && ckd2;
 
-            //pnlRight.Dock = ckd ? DockStyle.Right : DockStyle.Fill;
 
             if (ckd)
             {

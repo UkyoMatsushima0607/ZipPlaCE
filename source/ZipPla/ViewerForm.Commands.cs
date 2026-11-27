@@ -358,8 +358,6 @@ namespace ZipPla
         {
             var result = new Tuple<MouseGestureSettingTemplate, CommandSender>[]
             {
-                //Tuple.Create(new MouseGestureSettingTemplate( (int)Command.DefaultClickBehavior, Message.DefaultClickBehavior,
-                //   withHideCursor(defaultClickBehavior, commandSender)), CommandSender.SingleLeftClick),
                 
                 Tuple.Create(new MouseGestureSettingTemplate( (int)Command.NextPage, Message.NextPage,
                    withHideCursor(moveToNextPage, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
@@ -781,7 +779,6 @@ namespace ZipPla
             percentage100ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo100Percent);
 
             moveForward1PageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.WheelDownOnBar, kss, Command.MoveForwardOnePage);
-            //if (ksViewForm.ActionsContainsLButton)
             {
                 moveBack1PageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.WheelUpOnBar, kss, Command.MoveBackOnePage);
             }
@@ -801,7 +798,6 @@ namespace ZipPla
             disableMagnifierToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.DisableMagnifier, Command.DisableMagnifierWithoutOperatingGuide, Command.DisableMagnifierWithoutScreenEffects);
             disableMagnifierToolStripMenuItem.Visible = !string.IsNullOrEmpty(disableMagnifierToolStripMenuItem.ShortcutKeyDisplayString);
             magnifierToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.ToggleMagnifier, Command.ToggleMagnifierWithoutOperatingGuide, Command.ToggleMagnifierWithMinimalScreenEffects);
-            //magnifierToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.MiddleClick, kss, Command.ToggleMagnifier);
 
             rightToLeftToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.RightToLeft);
             leftToRightToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.LeftToRight);
@@ -824,7 +820,6 @@ namespace ZipPla
             cancelRotationSettingToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.CancelRotationSetting);
             cancelRotationSettingToolStripMenuItem.Visible = !string.IsNullOrEmpty(cancelRotationSettingToolStripMenuItem.ShortcutKeyDisplayString);
 
-            //removeMoireToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.ToggleMoireRemover);
 
             pseudoColoringToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.ToggleToneCurve);
 
@@ -857,7 +852,6 @@ namespace ZipPla
         private static string getShortcutKeyDisplayStrings(string last, KeyboardShortcutAction[] actions, Command command)
         {
             var intCommand = (int)command;
-            //return stringJoin(", ", first, from ks in actions where ks.Key == intCommand select ks.Name);
             return stringJoin(", ", from ks in actions where ks.Key == intCommand select ks.Name, last);
         }
 
@@ -925,13 +919,10 @@ namespace ZipPla
                     case SortMode.NameInDesc: return -LogicalStringComparer.Compare(x.Name, y.Name);
                     case SortMode.Random: return x.GetRandomIndex(randomSeed).CompareTo(y.GetRandomIndex(randomSeed));
                     default:
-                        //MessageBox.Show($"{x.Type}, {y.Type}");
                         var result = Compare(x, y, sortMode);
                         if (result != 0) return result;
                         result = Compare(x, y, preSortMode);
                         if (result != 0) return result;
-                        //MessageBox.Show($"{sortMode} {preSortMode}");
-                        //return result;
                         return LogicalStringComparer.Compare(x.Name, y.Name);
                 }
                
@@ -959,7 +950,6 @@ namespace ZipPla
 
                 }
                 return 0;
-                //throw new NotImplementedException();
             }
             private static int CompareRatingAsc(int ratingX, int ratingY)
             {
@@ -1146,7 +1136,6 @@ namespace ZipPla
                     foreach (var info in allFolders) nameArray[i++] = info.Name + Path.DirectorySeparatorChar;
                     nameArray = CatalogForm.GetTypeNameArray(nameArray);
                     currentInfo.Type = nameArray[0];
-                    //MessageBox.Show($"{currentInfo.Type} {currentInfo.Name}");
                     i = 1;
                     foreach (var info in allFiles) info.Type = nameArray[i++];
                     foreach (var info in allFolders) info.Type = nameArray[i++];
@@ -1230,7 +1219,6 @@ namespace ZipPla
             rotateLeftToolStripMenuItem.Checked = imageFilter.RotationAngle == 270;
             rotateRightToolStripMenuItem.Checked = imageFilter.RotationAngle == 90;
 
-            //removeMoireToolStripMenuItem.Checked = imageFilter.MoireRemoverEnabled;
             pseudoColoringToolStripMenuItem.Checked = imageFilter.ToneCurveEnabled;
             if (ViewerFormImageFilter.TestGetToneCorveFile())
             {

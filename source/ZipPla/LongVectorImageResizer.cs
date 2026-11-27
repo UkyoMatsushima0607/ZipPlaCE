@@ -442,7 +442,6 @@ namespace ZipPla
             int rx2 = 0, ry2 = 0;
 
             bool gammaIs1 = gamma == GammaConversion.Value1_0;
-            //sw.Start();
             IntPtr toLinearPointer = IntPtr.Zero;
             if (srcPixelFormat == PixelFormat.Format24bppRgb)
             {
@@ -517,7 +516,6 @@ namespace ZipPla
             }
             else throw new ArgumentException(null, "src");
 
-            //sw.Stop(); s += sw.Elapsed + "\n"; sw.Restart();
             long txx, tx0, txd, tyy, ty0, tyd;
             getTransform(out txx, out tx0, out txd, dstRect.Width, srcRect.Width, srcStep.Width);
             getTransform(out tyy, out ty0, out tyd, dstRect.Height, srcRect.Height, srcStep.Height);
@@ -562,7 +560,6 @@ namespace ZipPla
                 }
             }
 
-            //sw.Stop(); s += sw.Elapsed + "\n"; sw.Restart();
             var srcData = src.LockBits(srcRect, ImageLockMode.ReadOnly, srcPixelFormat);
             try
             {
@@ -643,7 +640,6 @@ namespace ZipPla
                             }
                         }
                     }
-                    //sw.Stop(); s += sw.Elapsed + "\n"; System.Windows.Forms.MessageBox.Show(s);
                 }
                 finally
                 {
@@ -736,7 +732,6 @@ namespace ZipPla
             var linearize = toLinear != null;
             int interShift = linearize ? 7 : getSuitabgleDigits(ry2); // 24bit の場合のみ使用
             int interBits = 20 - interShift;
-            //ulong interDesignRoundOffset = unt2 << 19 | unt << (interBits - 1);
             ulong interDesignRoundOffset = unt2 << 19 | unt << (interShift - 1);
             ulong interBitsMask = ~(~0LU << (interBits + 1));
             ulong interMask = unt * interBitsMask | unt2 * interBitsMask;
@@ -753,7 +748,6 @@ namespace ZipPla
                 var srcYStrideStep = srcY * srcStrideStep;
                 var srcScanL = srcScan0_ + srcYStrideStep;
                 var srcAdr = srcScanL + srcXStartBytes;
-                //var buff2dHori = buff2d_x0 + ((srcY - srcY0ry2) % ry2) * dstWidth;
                 var buff2dHori = buff2d_x0Ry2 + ((srcY - srcY0ry2) % ry2); // こちらのほうが呼び出し回数が多いところで空間的局所性が高い
                 if (src24bpp)
                 {
@@ -818,7 +812,6 @@ namespace ZipPla
                             for (long i = 0; i < rx2; i++) v += cx[i] * buff1dLocal[i];
                             //for (long i = 0; i < rx2long; i++) v += *cx++ * *buff1dLocal++; // こちらのほうが低速
 
-                            //buff2dHori[dstX] = ((v >> interShift) & interMask) - interSignOffset;
                             buff2dHori[dstX * ry2] = ((v >> interShift) & interMask) - interSignOffset;
                         }
                     }
@@ -892,7 +885,6 @@ namespace ZipPla
                             var srcX = (dstX * txx + tx0) / txd;
                             var cx = cx0 + dstX * rx2;
                             var buff1dLocal = buff1d_srcX0 + srcX;
-                            //var v = 0x4080408040804080UL;
                             var v = 0x4040404040404040UL;
 
                             for (long i = 0; i < rx2; i++) v += cx[i] * buff1dLocal[i];
@@ -983,7 +975,6 @@ namespace ZipPla
                             for (long dstX = x0; dstX < x1; dstX++)
                             {
                                 var buff2dVert = buff2dLeft + dstX * ry2;
-                                //var v = 0x4080408040804080UL;
                                 var v = 0x4040404040404040UL;
 
                                 for (long j = 0; j < jLoop; j++) v += cy[j] * buff2dVert[j];
@@ -1028,7 +1019,6 @@ namespace ZipPla
                             for (long dstX = x0; dstX < x1; dstX++)
                             {
                                 var buff2dVert = buff2dLeft + dstX * ry2;
-                                //var v = 0x4080408040804080UL;
                                 var v = 0x4040404040404040UL;
 
                                 for (long j = 0; j < jLoop; j++) v += cy[j] * buff2dVert[j];

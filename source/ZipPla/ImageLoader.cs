@@ -17,7 +17,6 @@ namespace ZipPla
 {
     public static class ImageLoader
     {
-        //private static readonly object psdLocker = new object();
 
         private static readonly string[] defaultSupportExtensions = new string[]
             { "bmp", "gif", "jpg", "jpeg", "png", "apng", "exf", "tif", "tiff", "ico", "emf", "wmf" };
@@ -31,12 +30,10 @@ namespace ZipPla
         private static string[] supportsFullReadingWithoutFfmpeg;
         private static string supportsFullReadingStringWithoutFfmpeg;
         private static readonly string[] ffmpegSupportsWithoutPeriod;
-        //private static string[] supportsGetImageInfoWithFfmpegWithPeriedInLower;
         private static string supportsFullReadingStringWithFfmpeg;
         private static readonly Regex defaultSupportPathRegex;//, supportsGetImageInfo;//, //supportsFullReadingPathRegex,
                                                                /*supportsImageAtLeastThumbnailReadingPathRegex, supportsAtLeastThumbnailReadingPathRegex, *///supportsGetImageInfo;
         private static string[] supportsImageAtLeastThumbnailReadingExtensionWithPeriodInLowerCase, supportsAtLeastThumbnailReadingExtensionWithPeriodInLowerCase;
-        //public static readonly string SupportedFileFilter;
         private static ConcurrentDictionary<string, string> susieSupportsExtensionWithoutPeriodInLowerCaseToSpiName;
 
         /// <summary>
@@ -73,13 +70,10 @@ namespace ZipPla
 
             ffmpegSupportsWithoutPeriod = (from withP in MovieThumbnailLoader.SupportedImageExtensionsWithPeriodInLowerCase select withP.Substring(1)).ToArray();
 
-            //SusieReset();
         }
 
         private static bool allowUntested;
-        //public static bool AllowUntestedPlugins { get { return allowUntestedPlugins; } }
         private static bool searchInstallationFolder;
-        //public static bool SearchAlsoSusieInstallationFolder { get { return searchInstallationFolder; } }
 
         public static void SusieReset()
         {
@@ -156,14 +150,11 @@ namespace ZipPla
             supportsFullReadingWithoutFfmpeg = list.ToArray();
             supportsFullReadingStringWithoutFfmpeg = "*." + string.Join(";*.", supportsFullReadingWithoutFfmpeg);
             var onlyFfmpegSupports = ffmpegSupportsWithoutPeriod.Where(e => !list.Contains(e));
-            //supportsFullReadingWithFfmpeg = supportsFullReadingWithoutFfmpeg.Concat(onlyFfmpegSupports).ToArray();
             supportsFullReadingStringWithFfmpeg = supportsFullReadingStringWithoutFfmpeg + ";*." + string.Join(";*.", onlyFfmpegSupports);
-            //SupportedFileFilter = "*." + string.Join(";*.", list);
 
             var atLeastThumbnailList = new List<string>(list);
             atLeastThumbnailList.AddRange(thumbnailSupportImageExtensions);
 
-            //supportsImageAtLeastThumbnailReadingPathRegex = new Regex(@"\.(?:" + string.Join("|", atLeastThumbnailList) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             supportsImageAtLeastThumbnailReadingExtensionWithPeriodInLowerCase = (from ext in atLeastThumbnailList select "." + ext).ToArray();
             //supportsGetImageInfoWithFfmpegWithPeriedInLower = ImageInfo.SupportExtensionsInLowerWithoutPeriod
 
@@ -174,12 +165,9 @@ namespace ZipPla
                            select ext.StartsWith(".") ? ext.Substring(1).ToLower() : ext.ToLower();
             atLeastThumbnailList.AddRange(tagFiles);
 
-            //supportsAtLeastThumbnailReadingPathRegex = new Regex(@"\.(?:" + string.Join("|", atLeastThumbnailList) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             supportsAtLeastThumbnailReadingExtensionWithPeriodInLowerCase = (from ext in atLeastThumbnailList select "." + ext).ToArray();
             susieSignature = signature;
 
-            //list.AddRange(ImageInfo.SupportExtensionsInLowerWithoutPeriod);
-            //supportsGetImageInfo = new Regex(@"\.(?:" + string.Join("|", list) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
             
         }
@@ -310,7 +298,6 @@ namespace ZipPla
             {
                 return false;
             }
-            //return path != null && supportsFullReadingPathRegex.IsMatch(path);
         }
 
         public static string GetExtensionWithPeriodInLowerSafety(string path)
@@ -336,7 +323,6 @@ namespace ZipPla
 
         public static bool SupportsGetImageInfoByExtensionWithPeriodInLower(string extensionWithPeriodInLower, ref bool? ffmpegExists)
         {
-            //return path != null && supportsGetImageInfo.IsMatch(path);
 
             if (extensionWithPeriodInLower == null) return false;
 
@@ -356,7 +342,6 @@ namespace ZipPla
 
         public static bool SupportsAtLeastThumbnailReading(string path, ref bool? ffmpegExists)
         {
-            //return path != null && supportsAtLeastThumbnailReadingPathRegex.IsMatch(path);
             if (path == null) return false;
             try
             {
@@ -381,7 +366,6 @@ namespace ZipPla
         public static bool SupportsImageAtLeastThumbnailReading(string path, ref bool? ffmpegExists)
         {
             if (path == null) return false;
-            //return path != null && supportsImageAtLeastThumbnailReadingPathRegex.IsMatch(path);
             try
             {
                 var ext = Path.GetExtension(path).ToLower();
@@ -431,7 +415,6 @@ namespace ZipPla
             var p = stream.Position;
             var tags = Exif.GetAll(stream);
             stream.Position = p;
-            //stream.Seek(0, SeekOrigin.Begin);
             var value = tags?.FirstOrDefault(tag => tag.Tag == 0x0112)?.Value;
             return value == null ? new DihedralFraction() : ViewerFormImageFilter.GetOrientation((int)value);
         }
@@ -809,8 +792,6 @@ namespace ZipPla
             if (defaultSupportPathRegex.IsMatch(filePath))
             {
                 needToRefresh = false;
-                // var sw = new System.Diagnostics.Stopwatch();
-                //sw.Start();
 
                 // 0.7 秒程度
                 var ext = Path.GetExtension(filePath).ToLower();
@@ -1111,7 +1092,6 @@ namespace ZipPla
             return GetFullBitmap(filePath, false, out var dummy, animation);
         }
 
-        //private static Bitmap getThumbnailBitmap(string filePath, bool setImageInfo, Size desiredSize, Func<Delegate, object> invoke, out ImageInfo imageInfo)
         private static Bitmap GetThumbnailBitmap(string filePath, bool setImageInfo, Size desiredSize, out ImageInfo imageInfo)
         {
             var ext = Path.GetExtension(filePath).ToLower();
@@ -1176,7 +1156,6 @@ namespace ZipPla
                             var font = SystemFonts.DefaultFont;
                             var rioSize = g.MeasureString("Rio", font);
                             DrawStringQuick(g, desiredSize, text, SystemFonts.DefaultFont, Color.Black, new PointF(rioSize.Width, rioSize.Height * 2));
-                            //g.DrawString(text, SystemFonts.DefaultFont, Brushes.Black, new PointF(rioSize.Width, rioSize.Height * 2));
                         }
                         return result;
                     }
@@ -1237,7 +1216,6 @@ namespace ZipPla
             }
         }
 
-        //private static Bitmap getAtLeastThumbnailBitmap(string filePath, bool setImageInfo, Size desiredSize, Func<Delegate, object> invoke, out ImageInfo imageInfo)
         private static Bitmap GetAtLeastThumbnailBitmap(string filePath, bool setImageInfo, Size desiredSize, ref bool? ffmpegExists, out ImageInfo imageInfo, out bool needToRefresh)
         {
             if (SupportsFullReading(filePath, ref ffmpegExists, out var requiredFfmpeg))
@@ -1246,7 +1224,6 @@ namespace ZipPla
             }
             else if (!requiredFfmpeg)
             {
-                //return getThumbnailBitmap(filePath, setImageInfo, desiredSize, invoke, out imageInfo);
                 needToRefresh = false;
                 return GetThumbnailBitmap(filePath, setImageInfo, desiredSize, out imageInfo);
             }
@@ -1254,7 +1231,6 @@ namespace ZipPla
         }
 
 
-        //public static Bitmap GetAtLeastThumbnailBitmap(string filePath, Size desiredSize, Func<Delegate, object> invoke, out ImageInfo imageInfo)
         public static Bitmap GetAtLeastThumbnailBitmap(string filePath, Size desiredSize, bool ffmpegExists, out ImageInfo imageInfo)
         {
             var nullable = ffmpegExists as bool?;
@@ -1262,13 +1238,11 @@ namespace ZipPla
         }
         public static Bitmap GetAtLeastThumbnailBitmap(string filePath, Size desiredSize, ref bool? ffmpegExists, out ImageInfo imageInfo)
         {
-            //return getAtLeastThumbnailBitmap(filePath, true, desiredSize, invoke, out imageInfo);
             return GetAtLeastThumbnailBitmap(filePath, true, desiredSize, ref ffmpegExists, out imageInfo, out var dummy);
         }
 
         public static Bitmap GetAtLeastThumbnailBitmap(string filePath, Size desiredSize, ref bool? ffmpegExists, out ImageInfo imageInfo, out bool needToRefresh)
         {
-            //return getAtLeastThumbnailBitmap(filePath, true, desiredSize, invoke, out imageInfo);
             return GetAtLeastThumbnailBitmap(filePath, true, desiredSize, ref ffmpegExists, out imageInfo, out needToRefresh);
         }
 
@@ -1507,8 +1481,6 @@ namespace ZipPla
             try
             {
                 PointF point = new PointF(0, 0);
-                //SizeF maxSize = size;
-                //SizeF maxSize = new SizeF(float.MaxValue, size.Height);
                 SizeF maxSize = SizeF.Empty;
                 var fileUri = stylesheetLoad || imageLoad ? new Uri(fileName) : null;
                 using (var g = Graphics.FromImage(m_Bitmap))
@@ -1541,7 +1513,6 @@ namespace ZipPla
                                 srcPath = new Uri(fileUri, srcPath).LocalPath;
                                 if (File.Exists(srcPath))
                                 {
-                                    //e.SetStyleSheetData = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.ParseStyleSheet(getText(srcPath));
                                     e.Handled = true;
                                     e.Callback(srcPath);
                                 }
@@ -1569,8 +1540,6 @@ namespace ZipPla
 
         private static Bitmap GetGif(Stream stream)
         {
-            //var tm = new TimeMeasure();
-            //tm.Block("ana");
             MemoryStream ms;
             int frameCount;
             List<GifImageData> imageDatas;
@@ -1594,7 +1563,6 @@ namespace ZipPla
                 imageDatas = fileData.ImageDatas;
                 frameCount = imageDatas.Count;
                 if (frameCount <= 1) return new Bitmap(seekable);
-                //tm.Block("get");
 
                 // 取り出し済みのメモリなら、同じ配列を指すストリームを作り、全体を写さない（D10）
                 if (stream is MemoryStream source && source.TryGetBuffer(out var segment) && p >= 0 && p <= source.Length)

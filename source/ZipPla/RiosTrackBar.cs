@@ -131,7 +131,6 @@ namespace ZipPla
             new PointF(-0.15f, 0.4f)
         };
         private RectangleF KnobBound = new RectangleF(-0.15f, 0.25f, 0.3f, 0.55f);
-        //private Region KnobRegion = new Region(new RectangleF(-0.15f, 0.25f, 0.3f, 0.55f));
         private Pen centerLinePen = SystemPens.ActiveBorder;
         private Pen scaleMarkPen = SystemPens.ControlDarkDark;
         private Brush scaleMarkBrush = SystemBrushes.ControlDark;
@@ -385,10 +384,7 @@ namespace ZipPla
                     throw new NotImplementedException();
             }
 
-            //var temp = g.SmoothingMode;
-            //g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.FillPolygon(currentKnobBrush, locatedKnobShape);
-            //g.SmoothingMode = temp;
         }
         
         private void redrawKnob(Graphics g, int newValue)
@@ -572,15 +568,12 @@ namespace ZipPla
 #endregion
 
 #region ISupportInitialize
-        //private bool initializing = false;
         public void BeginInit()
         {
-            //initializing = true;
         }
 
         public void EndInit()
         {
-            //initializing = false;
         }
 #endregion
     }

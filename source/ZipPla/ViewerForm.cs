@@ -32,7 +32,6 @@ namespace ZipPla
             }
         }
 
-        //private int[] EntryNumberArray = null;
         private PackedImageLoader.PackedImageEntry[] EntryArray = null;
         private string[] EntryLongPathArray = null;
         private BitmapEx[] PreFilteredImageArray = null;
@@ -120,14 +119,12 @@ namespace ZipPla
                 {
                     archivesInArchiveMode = value;
                     nonerecommendedToolStripMenuItem.Checked = value == ArchivesInArchiveMode.Ignore;
-                    //onlyIfThereIsNoOtherImageToolStripMenuItem.Checked = value == ArchivesInArchiveMode.IfNoOther1Level;
                     untilFoundToolStripMenuItem.Checked = value == ArchivesInArchiveMode.UntilFound2Level;
                     alwaysLoadArchivesInArchiveToolStripMenuItem.Checked = value == ArchivesInArchiveMode.Always1Level;
                 }
             }
         }
 
-        //private MagnifierScrollMode MagnifierScrollMode = MagnifierScrollMode.Location;
 
         private int minPageCountInWindow = 1;
         private int MinPageCountInWindow
@@ -355,7 +352,6 @@ namespace ZipPla
             if (changed)
             {
                 bindingModeField = bindingMode;
-                //MaxDivision = bindingMode == BindingMode.LeftToRight || bindingMode == BindingMode.RightToLeft ? 2 : 1;
                 if (bindingModeField == BindingMode.SinglePage || bindingModeField == BindingMode.SinglePageWithoutScalingUp)
                 {
                     MaxPageCountInWindow = 1;
@@ -364,7 +360,6 @@ namespace ZipPla
                 {
                     MaxPageCountInWindow = 2;
                 }
-                //SetForwerdBackMessage(value);
                 SetCurrentImageLongPath();
                 Magnifier_ZoomedPage?.Dispose();
                 Magnifier_ZoomedPage = null;
@@ -385,7 +380,6 @@ namespace ZipPla
         IpcReportFromViewerToCatalog ipcReportFromViewerToCatalog = null;
         public ViewerForm(IpcLookAheadInfo ipcLookAheadInfo, IpcReportFromViewerToCatalog ipcReportFromViewerToCatalog, InitialFullscreenMode initialFullscreenMode, bool? alwaysHideUI)
         {
-            //Program.SetPriority(ProcessPriorityClass.BelowNormal);
             this.ipcLookAheadInfo = ipcLookAheadInfo;
             this.ipcReportFromViewerToCatalog = ipcReportFromViewerToCatalog;
 
@@ -442,7 +436,6 @@ namespace ZipPla
             timer.Start();
         }
 
-        //private ContextMenuStripForMenu startContextMenuStripForMenu;
 
         MouseGesture mgView;
         KeyboardShortcut ksViewForm;
@@ -455,9 +448,7 @@ namespace ZipPla
         {
             Configuration.PrepareXmlSerializer(
                 typeof(ViewerFormConfig),
-                //typeof(ColoredBookmarkConfig),
                 typeof(GeneralConfig)
-                //typeof(ZipTagConfig)
                 );
 
             if (ipcLookAheadInfo == null && Program.CheckConfigException()) CloseWithoutSave();
@@ -496,7 +487,6 @@ namespace ZipPla
                 gestureListener.Pan += TouchListener_Pan;
                 gestureListener.Rotate += gestureListener_Rotate;
                 gestureListener.TwoFingerTap += gestureListener_TwoFingerTap;
-                //gestureListener.PressAndTap += gestureListener_PressAndTap;
 
                 gestureListenerEditMenu = MiniControlTouchGesture.GetGestureListener(editToolStripMenuItem.DropDown);
                 var menu = new MiniControlTouchGesture(editToolStripMenuItem.DropDown, gestureListenerEditMenu, onlyHorizontalStart: true);
@@ -525,7 +515,6 @@ namespace ZipPla
 
             ZipPlaAddressBar.AddDrawToolStripMenuItemTriangleEventHandler(menuStrip);
 
-            //Program.SetDoubleBuffered(pbView);
 
             btnOpenLeft.FlatStyle = FlatStyle.Flat;
             btnOpenLeft.FlatAppearance.BorderColor = BackColor;
@@ -554,7 +543,6 @@ namespace ZipPla
             ksViewForm.KeyboardShortcutStarting += ksViewForm_KeyboardShortcutStarting;
 
             mgView = new MouseGesture(pbView);
-            //mgView.EnabledChanged += mgView_EnabledChanged;
             mgView.MouseGestureCompleted += mgView_MouseGestureCompleted;
             mgView.MouseGestureStarting += mgView_MouseGestureStarting;
 
@@ -579,7 +567,6 @@ namespace ZipPla
                 CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, orientSeekBarDirectionToPageSequenceToolStripMenuItem, DisplayCheckMark.Check);
                 CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, rotateLeftToolStripMenuItem, DisplayCheckMark.Check);
                 CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, rotateRightToolStripMenuItem, DisplayCheckMark.Check);
-                //CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, removeMoireToolStripMenuItem, DisplayCheckMark.Check);
                 CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, pseudoColoringToolStripMenuItem, DisplayCheckMark.Check);
                 CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, alwaysAutoHideUIToolStripMenuItem, DisplayCheckMark.Check);
                 CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, showAHintWhenChangingSettingsToolStripMenuItem, DisplayCheckMark.Check);
@@ -598,7 +585,6 @@ namespace ZipPla
                 CheckMarkProvider.SetCheckMark(editToolStripMenuItem.DropDown, DisplayCheckMark.Select);
             };
 
-            //ExtendedToolStripMenuItem.Replace(ref startToolStripMenuItem);
 
             ToolStripDropDownScroller.Enscrollable(virtualFoldersToolStripMenuItem.DropDown, ToolStripDropDownScroller.GetGestureListener(virtualFoldersToolStripMenuItem.DropDown));
             ToolStripDropDownScroller.Enscrollable(editToolStripMenuItem.DropDown, gestureListenerEditMenu);
@@ -608,7 +594,6 @@ namespace ZipPla
             pnlSeekbar.Location = new Point(0, statusStrip.Location.Y - pnlSeekbar.Height);
 
             Text = Program.Name;
-            //currentImageLongPathToolStripStatusLabel.Text = "";
             pageToolStripStatusLabel.Text = "";
             imageSizeToolStripStatusLabel.Text = "";
             showCurrentPageToStatusBar_Shown = false;
@@ -621,7 +606,6 @@ namespace ZipPla
             mtbPage.MouseUp += (sender, e) => EndSeekBarDrag(); // V24
             mtbPage.MouseCaptureChanged += (sender, e) => EndSeekBarDrag(); // ボタンを離さずにフォーカスが移った場合など（V24）
 
-            //PrepareMemoryCheck();
 
         }
 
@@ -690,7 +674,6 @@ namespace ZipPla
         private bool DoNotSaveSetting = false;
         private OpenResult OpenFile(string path) { return OpenFile(path, -1); }
         private bool OpenFile_UserOpen = false;
-        //private bool OpenFileFinishedButStartingIsNotCalled = false;
         private static readonly SortMode[] OpenFile_SuportedSortModes = new SortMode[] {
             SortMode.TypeInAsc, SortMode.TypeInDesc, SortMode.NameInAsc, SortMode.NameInDesc,
             SortMode.RatingInAsc, SortMode.RatingInDesc,
@@ -721,10 +704,8 @@ namespace ZipPla
         }
         private void MyActivate(bool finallyTopMost)
         {
-            //Thread.Sleep(100);
 
             /////
-            //showWithoutActivation = true;
             /////
 
             Visible = true;
@@ -752,14 +733,12 @@ namespace ZipPla
                 
                 ksViewForm.IgnoreAnyMouseEventOnce = MouseButtons.Left;
             }
-            //ContextMenuForMenuStripPostProcessing_worked = false;
         }
         
         private void hideUnderUI(object sender, EventArgs e)
         {
             if (HideUI && /*mtbPage_Top*/mtbPageTop_As_Reference_pbViewBottom == 0)
             {
-                // mtbPage_Top = pnlSeekbar.Bounds.Top;
                 mtbPageTop_As_Reference_pbViewBottom = pnlSeekbar.Bounds.Top - pbView.Bottom;
                 pnlSeekbar.Visible = false;
                 statusStrip.Visible = false;
@@ -772,16 +751,11 @@ namespace ZipPla
         {
             base.WndProc(ref m);
             const int WM_NCMOUSELEAVE = 0x02A2;
-            //const int WM_MOUSELEAVE = 0x02A3;
 
-            //if ((m.Msg & WM_MOUSELEAVE) == WM_MOUSELEAVE) hideUnderUI(null, null);
-            // return;
 
             switch (m.Msg)
             {
                 case WM_NCMOUSELEAVE:
-                    //case WM_MOUSELEAVE:
-                    // hideUnderUI(null, null);
                     hideUnderUIForMouseLeave(null, null); // 右下のウィンドウサイズ変更の箇所をクリックしても WM_NCMOUSELEAVE が発生するため。
                     break;
             }
@@ -792,7 +766,6 @@ namespace ZipPla
         private static readonly int Control_PreviewKeyDown_Speed = Program.DpiScaling(20);
         private void ViewerForm_Activated(object sender, EventArgs e)
         {
-            //tmMemoryReducer.Enabled = false;
             SetMemoryUBound();
             ReduceUsingMemory(usedMemoryUBound);
             bmwLoadEachPage.ThreadCount = LoadThreadCount;

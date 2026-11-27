@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,7 +30,6 @@ namespace ZipPla
 {
     public class CatalogProfile
     {
-        //public string Location;
         public SortMode? LastSortMode;
         public SortMode? SortMode;
         public string RandomSeed;
@@ -79,7 +77,6 @@ namespace ZipPla
         public bool? SynchroFromBarToTree;
         public bool? CollapseOthersWhenSynchronizing;
         public FolderSortMode? FolderSortMode;
-        // public bool? CheckDirectorySize;
         public ArchivesInArchiveMode? ArchivesInArchiveMode;
         public ReadOnMemoryMode? ReadOnMemoryMode;
         public bool? OpenInPreviousImageFilterSetting;
@@ -201,7 +198,6 @@ namespace ZipPla
             ThumbnailMouseWheelScrollUnit = thumbnailMouseWheelScrollUnit;
             ThumbnailListVisible = thumbnailListVisible;
             FileListVisible = fileListVisible;
-            //if (fileListVisible != false)
             {
                 FileListDock = fileListDock;
                 FileListWidth = fileListWidth;
@@ -233,7 +229,6 @@ namespace ZipPla
             SynchroFromBarToTree = synchroFromBarToTree;
             CollapseOthersWhenSynchronizing = collapseOthersWhenSynchronizing;
             FolderSortMode = folderSortMode;
-            //CheckDirectorySize = checkDirectorySize;
             ArchivesInArchiveMode = archivesInArchiveMode;
             ReadOnMemoryMode = readOnMemoryMode;
             OpenInPreviousImageFilterSetting = openInPreviousImageFilterSetting;

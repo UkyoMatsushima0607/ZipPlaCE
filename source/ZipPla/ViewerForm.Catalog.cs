@@ -43,7 +43,6 @@ namespace ZipPla
 
         private void SetCoverForThumbnail(bool delete = false, Point? clientPoint = null)
         {
-            //if (string.IsNullOrEmpty(currentArchiveFilePath)) return;
 
             Program.ShowCursor();
 
@@ -121,7 +120,6 @@ namespace ZipPla
             else
             {
                 pbPaintInvalidate();
-                //reloadForChangePreFilter();
             }
         }
 
@@ -361,7 +359,6 @@ namespace ZipPla
 
         private void SetPageDirectionToFileName(bool delete = false)
         {
-            //if (string.IsNullOrEmpty(currentArchiveFilePath)) return;
 
             var prevArchiveFilePath = getCurrentRenameTarget();
             if (string.IsNullOrEmpty(prevArchiveFilePath)) return;
@@ -431,7 +428,6 @@ namespace ZipPla
             }
 
             var pbViewSize = pbView.Size;
-            //var totalHeight = ResizedImageArray[currentPage].Height;
 
             int offsetX;//, offsetY;
             if (pageCount > 1 || !(currentPage == 0 || nextPage == ResizedImageArray.Length) ||
@@ -457,10 +453,7 @@ namespace ZipPla
                     offsetX = pbViewSize.Width / 2;
                 }
             }
-            //offsetY = (pbViewSize.Height - totalHeight) / 2;
 
-            //int offsetX = (pbViewSize.Width - totalWidth) / 2;
-            //int offsetY = (pbViewSize.Height - totalHeight) / 2;
 
             for (var i = 0; i <= pageCount; i++)
             {
@@ -484,7 +477,6 @@ namespace ZipPla
             }
 
             int offsetX2 = Boundaries[relativePhysicalIndex];
-            //int offsetY2 = offsetY;
             var totalHeight = ResizedImageArray[selectedPage].Height;
             int offsetY2 = (pbViewSize.Height - totalHeight) / 2;
 

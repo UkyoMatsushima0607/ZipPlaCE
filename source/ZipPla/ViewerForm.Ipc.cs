@@ -137,7 +137,6 @@ namespace ZipPla
                     var color = ipcLookAheadInfo.BackColor;
                     var alwaysHideUI = ipcLookAheadInfo.AlwaysHideUI;
                     var iniFull = ipcLookAheadInfo.InitialFullscreenMode;
-                    //var noFullscreen = true;
 
                     ipcLookAheadInfo.Accept = true; // これをすると通信が切られるので先にやってはいけない
                     if (show)
@@ -160,7 +159,6 @@ namespace ZipPla
                         {
                             LoadSettings_LoadedFileTimeStampForLookAhead_Setter = time;
 
-                            //using (var m = new TimeMeasure())
                             {
                                 var pSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size :
                                     PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
@@ -190,7 +188,6 @@ namespace ZipPla
 
                     if (show)
                     {
-                        //Program.SetPriority(ProcessPriorityClass.Normal);
                         ipcLookAheadInfo = null;
                         LoadSettings_LastLoadedConfig = null;
                         LoadSettings_LastLoadedGeneralConfig = null;
@@ -306,7 +303,6 @@ namespace ZipPla
                                     if (fromCatalogFormEvent)
                                     {
                                         requestedBindingMode = bind;
-                                        //requestedArchivesInArchiveMode = asia;
                                         ArchivesInArchiveMode = asia;
                                         ReadOnMemoryMode = rm;
                                         requestedFilterString = fString;
@@ -378,8 +374,6 @@ namespace ZipPla
                                         pbView_Paint_RectangleMessage = null;
                                         ViewerMode = ViewerModeEnum.CoverSetting;
                                         ExitAfterCoverSetting = true;
-                                        //openFileContextMenuForMenuStripMenuItem.Enabled = false;
-                                        //openNewThumbnailWindowContextMenuForMenuStripMenuItem.Enabled = false;
                                         openFileToolStripMenuItem.Enabled = false;
                                         openNewThumbnailWindowToolStripMenuItem.Enabled = false;
                                         switchToThumbnailWindowToolStripMenuItem.Enabled = false;
@@ -387,8 +381,6 @@ namespace ZipPla
                                         slideshowToolStripMenuItem.Enabled = false;
                                         btnOpenLeft.Enabled = false;
                                         btnOpenRight.Enabled = false;
-                                        //magnifierContextMenuForMenuStripMenuItem.Enabled = false;
-                                        //magnifierToolStripMenuItem.Enabled = false;
                                         editToolStripMenuItem.Enabled = false;
                                     }
                                     
@@ -421,7 +413,6 @@ namespace ZipPla
                                         FullScreen_pseudoFullScreen = false;
 
                                         menuStrip_Bottom = menuStrip.Bounds.Bottom;
-                                        //mtbPage_Top = pnlSeekbar.Bounds.Top;
                                         mtbPageTop_As_Reference_pbViewBottom = pnlSeekbar.Bounds.Top - pbView.Bottom;
 
                                         MyActivate(finallyTopMost: true);
@@ -429,7 +420,6 @@ namespace ZipPla
 
                                         prevSize = tempPrevSize;
 
-                                        //ShowIconRequired = true;
 
                                         SetCurrentImageLongPathRequired = true;
                                     }
@@ -443,7 +433,6 @@ namespace ZipPla
                                             prevSize = tempPrevSize;
                                         }
 
-                                        //if (LoadSettings_LoadedLocation != null) Location = (Point)LoadSettings_LoadedLocation;
                                         MyActivate(finallyTopMost: false);
                                         
 
@@ -486,7 +475,6 @@ namespace ZipPla
                             var leftTime = 10 * 1000;
                             do
                             {
-                                //await Task.Run(() => Thread.Sleep(10));
                                 await Task.Delay(10);
                                 leftTime -= 10;
                                 if (leftTime <= 0)

@@ -13,7 +13,6 @@ namespace ZipPla
         {
             return (Keys)KeyState;
         }
-        //int x, y;
 
         private int index;
         public int Index { get { return index; } }
@@ -21,7 +20,6 @@ namespace ZipPla
         public GraphicalListDragEventArgs(DragEventArgs e, int index = -1/*, Action finallyAction = null*/) : base(e.Data, e.KeyState, e.X, e.Y, e.AllowedEffect, e.Effect)
         {
             this.index = index;
-            //this.finallyAction = finallyAction;
         }
 
 

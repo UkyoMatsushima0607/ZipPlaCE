@@ -46,7 +46,6 @@ namespace ZipPla
                 var currentImageSize = (Size)currentImageSize_;
 
                 var p0 = magnifyingPower.GetPower(currentPbViewSize, currentImageSize);
-                //var mpInt = (int)Math.Round(Math.Log(p0, SquareRootOf2));
                 var mp = Math.Log(p0, SquareRootOf2);
                 var p1 = Math.Pow(SquareRootOf2, zoomUp ? mp + 1 : mp - 1);
 
@@ -54,7 +53,6 @@ namespace ZipPla
 
                 var currentHFit = MagnifyingInfo.FitHorizontal.GetPower(currentPbViewSize, currentImageSize);
                 var currentVFit = MagnifyingInfo.FitVertical.GetPower(currentPbViewSize, currentImageSize);
-                //double p2;
                 const double aff = 1 + 1e-14; //double の計算機イプシロンは 1.220e-16 程度
                 if (zoomUp) // 拡大
                 {
@@ -171,7 +169,6 @@ namespace ZipPla
             }
             if (currentPage != oldCurrent && currentPage >= 0 && ResizedImageArray != null && currentPage < ResizedImageArray.Length)
             {
-                //currentPage = nextPage;
                 if (elderPageIsOverwrap) onePageModeForNext = true;
                 showCurrentPage();
                 mtbPage.Value = currentPage;
@@ -183,7 +180,6 @@ namespace ZipPla
                 onePageModeForNext = oldMode; // currentPage の変更で false になったものを元に戻す
 
                 return false;
-                //return moveDividedPage(n);
             }
         }
 
@@ -248,7 +244,6 @@ namespace ZipPla
                 currentPage = oldCurrent;
                 onePageModeForNext = oldMode; // currentPage の変更で false になったものを元に戻す
 
-                //return result || isMovableDividedPage(n, checkLoaded);
                 return result;
             }
             else
@@ -266,11 +261,9 @@ namespace ZipPla
                         }
                     }
                 }
-                //MessageBox.Show($"{currentPage}, {checkStop}, {result}");
                 currentPage = oldCurrent;
                 onePageModeForNext = oldMode; // currentPage の変更で false になったものを元に戻す
 
-                //return result || isMovableDividedPage(n, checkLoaded);
                 return result;
             }
         }
@@ -291,7 +284,6 @@ namespace ZipPla
             {
                 if (isMovablePage(-1, checkLoaded: true))
                 {
-                    //movePage(-1);
                     moveDividedPage(-1);
                     return;
                 }
@@ -326,8 +318,6 @@ namespace ZipPla
 
         private bool isMovablePageToMinimalBack(bool checkLoaded = false)
         {
-            //return isMovablePage(-1, checkLoaded;
-            //return isMovableDividedPage(-1, checkLoaded);
 
             if (isMovableDividedPage(-1, checkLoaded)) return true;
             if (currentPage != 0) return false;
@@ -602,7 +592,6 @@ namespace ZipPla
             }
         }
 
-        //private bool ShowIconRequired = false;
         private bool SetCurrentImageLongPathRequired = false;
 
         private string shownImegesPath = null;
@@ -611,11 +600,8 @@ namespace ZipPla
 
         private int requestedImagePage;
 
-        //private Color requestedImageColor;
-        //private ArchivesInArchiveMode? requestedArchivesInArchiveMode = null;
         private BindingMode? requestedBindingMode = null;
 
-        //private CoverBindingMode? requestedCoverBindingMode = null;
         private bool? requestedIgnoreSavedFilerSetting = null;
 
         private SortModeDetails requestedSortModeDetails;
@@ -744,7 +730,6 @@ namespace ZipPla
                 else SendRequestToChangeSelectionForCurrentPage();
             }
             
-            //ShowCurrentPageToStatusBar();
             if (ipcLookAheadInfo == null) SetCurrentImageLongPath(); // ページ番号の描画よりも後で呼び出す
         }
 
@@ -805,13 +790,11 @@ namespace ZipPla
             if(BindingMode != binding)
             {
                 var sizeChanged = getNeedToResizeImage(binding, bindingModeField);
-                //BindingMode = binding;
                 ChangeBindingModeCore(binding, redraw: !sizeChanged);
                 if (sizeChanged) Reload(force: true);
                 ShowViewSettingHint();
             }
             
-            //PageLeftToRight = pageLeftToRight;
         }
 
         private bool getNeedToResizeImage(BindingMode a, BindingMode b)
@@ -960,13 +943,11 @@ namespace ZipPla
         private void moveForward1PageToolStripMenuItem_Click(object sender, EventArgs e)
         {
             movePageToMinimalForward();
-            //movePage(1);
         }
 
         private void moveBack1PageToolStripMenuItem_Click(object sender, EventArgs e)
         {
             movePageToMinimalBack();
-            //movePage(-1);
         }
 
         private void moveRight1PageToolStripMenuItem_Click(object sender, EventArgs e)

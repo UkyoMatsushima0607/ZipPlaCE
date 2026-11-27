@@ -58,10 +58,7 @@ namespace ZipPla
                             Visible = false;
                             unvisibled = true;
                         }
-                        //var temp2 = betterFormRestoreBound.StopMemoryNormalStateBound;
-                        //betterFormRestoreBound.StopMemoryNormalStateBound = true;
                         WindowState = FormWindowState.Normal; // タスクバーが残る問題の回避
-                        //betterFormRestoreBound.StopMemoryNormalStateBound = temp2;
                         needToCareMoving = true;
                     }
 
@@ -97,13 +94,9 @@ namespace ZipPla
                 // フルスクリーンでない場合、全画面かどうかが無意味に変更されないように条件をつける
                 else if (FormBorderStyle == FormBorderStyle.None)
                 {
-                    //if (!prevClientSize.IsEmpty) ClientSize = prevClientSize;
                     if (prevFormWindowState == FormWindowState.Maximized && !prevSize.IsEmpty)
                     {
-                        //var temp2 = betterFormRestoreBound.StopMemoryNormalStateBound;
-                        //betterFormRestoreBound.StopMemoryNormalStateBound = true;
                         Size = prevSize;
-                        //betterFormRestoreBound.StopMemoryNormalStateBound = temp2;
                     }
                     if (prevFormWindowState == FormWindowState.Normal && ipcLookAheadInfo == null) prevSize = Size.Empty;
 
@@ -112,10 +105,7 @@ namespace ZipPla
 
                     if (FormBorderStyle == FormBorderStyle.None)
                     {
-                        //var temp2 = betterFormRestoreBound.StopMemoryNormalStateBound;
-                        //betterFormRestoreBound.StopMemoryNormalStateBound = true;
                         FormBorderStyle = prevFormBorderStyle;
-                        //betterFormRestoreBound.StopMemoryNormalStateBound = temp2;
                     }
 
                     pbView_SizeChanged_SizeChanging = temp;
@@ -132,9 +122,7 @@ namespace ZipPla
 
         private Size prevSize = Size.Empty;
 
-        //Size? normalStateSize = null;
 
-        //Point? ViewerForm_SizeChanged_Point = null;
 
         private Size ViewerForm_SizeChanged_CurrentSize = Size.Empty;
 
@@ -150,7 +138,6 @@ namespace ZipPla
             var pre = ViewerForm_SizeChanged_CurrentWindowState;
 
 
-            //if (ws != FormWindowState.Minimized) ViewerForm_SizeChanged_pbSizeMemoryForMinimize = pbView.Size;
             
             if (pre == FormWindowState.Maximized && ws == FormWindowState.Normal && normalStateLocation != null)
             {
@@ -180,7 +167,6 @@ namespace ZipPla
             }
             if (ws == FormWindowState.Normal && ipcLookAheadInfo == null)
             {
-                //ViewerForm_SizeChanged_CurrentSize = ClientSize;
                 if (!pbView_SizeChanged_SizeChanging)
                 {
                     ViewerForm_SizeChanged_CurrentSize = Size;
@@ -239,7 +225,6 @@ namespace ZipPla
                 // if (ShowIconRequired)// ウインドウの状況によっては毎回必要なので条件はコメントアウト
                 if (ipcLookAheadInfo == null) // 代わりの条件
                 {
-                    //ShowIconRequired = false;
                     ShowIcon = false;
                     ShowIcon = true;
                 }

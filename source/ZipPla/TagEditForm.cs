@@ -44,7 +44,6 @@ namespace ZipPla
             pictureBox.Top = btnOK.Bottom - pictureBox.Height - 1;
             
             pictureBox.BackColor = EditingProfileColor;
-            //SetProfileColorPixtureBox(this, pictureBox);
 
             var loadedCount = dgvTagList.Rows.Count;
 
@@ -196,7 +195,6 @@ namespace ZipPla
             {
                 dgvTagList_CellValidating_canceled = true;
                 dgv.CancelEdit();
-                //e.Cancel = true;
             }
 
         }
@@ -212,7 +210,6 @@ namespace ZipPla
             }
             else if ((from DataGridViewRow row in dgvTagList.Rows where row.Index != rowIndex
                       select (row.Cells[TagNameColumn.Index].Value as string)?.ToLower()).Contains(tag?.ToLower()))
-            //else if ((dgvTagList.Rows as IEnumerable<DataGridViewRow>).Any(row => row.Cells[TagNameColumn.Index].Value as string == tag))
             {
                 dgvSorter.DoMouseUp();
                 MessageBox.Show(this, Message.TagsCanNotShareSameName, null, MessageBoxButtons.OK, MessageBoxIcon.Error);

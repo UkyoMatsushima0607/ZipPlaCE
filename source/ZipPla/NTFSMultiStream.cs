@@ -123,7 +123,6 @@ namespace ZipPla
                 else
                 {
                     (new SafeFileHandle(fileHandle, ownsHandle: true)).Dispose();
-                    //CloseHandle(fileHandle);
                     return true;
                 }
             }

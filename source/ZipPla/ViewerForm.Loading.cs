@@ -80,7 +80,6 @@ namespace ZipPla
             if (ipcLookAheadInfo == null && !DoNotSaveSetting && !string.IsNullOrEmpty(currentStartingFilePath) &&
                 !string.IsNullOrEmpty(currentArchiveFilePath) && currentPage >= 0)
             {
-                //var page = currentStartingFilePath == currentArchiveFilePath ? Math.Max(0, currentPage) : -1;
                 if (saveToHistory)
                 {
                     trySaveCurrentConditionToHistory(SelfLastAccessTimeUpdateMode.Reserve); // ここでアクセス日時が更新される
@@ -96,7 +95,6 @@ namespace ZipPla
             
             try
             {
-                //if (ImageLoader.SupportsFullReading(path))
                 if (!PackedImageLoader.Supports(path) && !Directory.Exists(path))
                 {
                     var altPos = path.IndexOf(Path.AltDirectorySeparatorChar);
@@ -202,8 +200,6 @@ namespace ZipPla
                 }
                 else if (sort.SortMode == SortMode.NameInDesc)
                 {
-                    //nextEntriesBase = applyFilterAndReturnItsSelf(nextLoader.GetPackedImageFullEntries(needToExecOnTask: true), noOp: nextLoader.Type != PackedImageLoader.PackType.Directory)
-                    //    .OrderByDescending(entry => entry.Path, new LogicalStringComparer()).ToArray();
 
 
                     nextEntriesBase = getNameSortedEntries(applyFilterAndReturnItsSelf(nextLoader, nextLoader.GetPackedImageFullEntries(needToExecOnTask: true)/*, noOp: nextLoader.Type != PackedImageLoader.PackType.Directory*/)
@@ -231,10 +227,7 @@ namespace ZipPla
                     if (sort.SortMode == SortMode.SizeInAsc || sort.SortMode == SortMode.SizeInDesc ||
                        sort.PreSortMode == SortMode.SizeInAsc || sort.PreSortMode == SortMode.SizeInDesc)
                         needed |= PackedImageLoaderFileInfo.Size;
-                    //var sw = new System.Diagnostics.Stopwatch();
-                    //sw.Start();
                     nextEntriesBase = applyFilterAndReturnItsSelf(nextLoader, nextLoader.GetPackedImageFullEntries(needed, needToExecOnTask: true)/*, noOp: nextLoader.Type != PackedImageLoader.PackType.Directory*/).ToArray();
-                    //sw.Stop();MessageBox.Show(sw.Elapsed.ToString());
                     foreach (var sMode in modes)
                     {
                         nextEntriesBase = sortEntries(nextEntriesBase, sMode, nextLoader.Type);
@@ -247,7 +240,6 @@ namespace ZipPla
                     currentSortModeDetails.SortMode = SortMode.NameInAsc;
                 }
 
-                //nextEntries = nextEntriesBase.Select(entry => entry.PhysicalIndex).ToArray();
                 var nextEntries = nextEntriesBase;
                 var currentArchiveFilePathWithSeparator = currentArchiveFilePath + Path.AltDirectorySeparatorChar;
                 nextEntriesPathBase = nextEntriesBase.Select(entry => currentArchiveFilePathWithSeparator + entry.Path).ToArray();
@@ -366,7 +358,6 @@ namespace ZipPla
                 mtbPage.Value = startPage;
             }
             mtbPage_ValueChanged_SendRequestToChangeSelection_Stop = false;
-            //ShowCurrentPageToStatusBar();
 
             // seemToBeBook は廃止
             {
@@ -386,7 +377,6 @@ namespace ZipPla
             // currentArchiveFilePath が変更されてもいいようにデータを埋め込んでおく
             var arguments = new object[nextEntriesBase.Length];
             arguments[0] = Tuple.Create(currentArchiveFilePath, currentStartingFilePath, false, false); // loader が変化するので updateLoader はどちらでも同じ
-            //OpenFileFinishedButStartingIsNotCalled = true;
             nextData = new NextData(nextEntriesPathBase, nextEntriesBase, nextLoaderBase);
             bmwLoadEachPage.RunWorkerAsyncWithInterrupt(arguments, true); // キャンセルを待たない場合 OriginalImageArray を毎回破棄するようにする必要あり
 
@@ -427,7 +417,6 @@ namespace ZipPla
         {
             if (searchManagerFromCatalogForm == null) return list;
             var noOp = nextLoader.Type != PackedImageLoader.PackType.Directory || currentArchiveFilePath == currentStartingFilePath;
-            //if (noOp || searchManagerFromCatalogForm == null) return list;
             if (noOp) return list;
             else return list.Where(e => searchManagerFromCatalogForm.Match(e.Path)).ToList();
         }
@@ -469,7 +458,6 @@ namespace ZipPla
                 arguments[0] = Tuple.Create(currentArchiveFilePath, currentStartingFilePath, true, updateOriginal);
                 bmwLoadEachPage.RunWorkerAsyncWithInterrupt(arguments, true); // キャンセルを待たない場合 OriginalImageArray を毎回破棄するようにする必要あり
 
-                //pbPaintInvalidate();
             }
         }
 
@@ -626,14 +614,12 @@ namespace ZipPla
 
         private void bmwLoadEachPage_RunWorkerStarting(object sender, GenerarClasses.BackgroundMultiWorker.RunWorkerStartingEventArgs e)
         {
-            //OpenFileFinishedButStartingIsNotCalled = false;
 
             var x = e.Arguments as object[];
             var xx = x[0] as Tuple<string, string, bool, bool>;
             currentArchiveFilePath = xx.Item1;
             currentStartingFilePath = xx.Item2;
             var reload = xx.Item3;
-            //var binding = xx.Item4;
             var updateOriginal = xx.Item4;
             x[0] = null;
             clearResizedImageArray();
@@ -684,8 +670,6 @@ namespace ZipPla
                     }
                     PreFilteredImageArray = null;
                 }
-                //PreFilteredImageArray = new Bitmap[EntryNumberArray.Length];
-                //OriginalImageInfoArray = new ImageInfo[EntryNumberArray.Length];
                 PreFilteredImageArray = new BitmapEx[EntryArray.Length];
                 OriginalImageInfoArray = new ViewerFormImageInfo[EntryArray.Length];
             }
@@ -693,8 +677,6 @@ namespace ZipPla
             {
                 if (PreFilteredImageArray == null)
                 {
-                    //PreFilteredImageArray = new Bitmap[EntryNumberArray.Length];
-                    //OriginalImageInfoArray = new ImageInfo[EntryNumberArray.Length];
                     PreFilteredImageArray = new BitmapEx[EntryArray.Length];
                     OriginalImageInfoArray = new ViewerFormImageInfo[EntryArray.Length];
                 }
@@ -757,7 +739,6 @@ namespace ZipPla
                 else
                 {
                     var slideshow = getSlideshowEnabled() ? $" <{Message.Slideshow}>" : "";
-                    //var filter = requestedFilterString == null ? "" : $" [{requestedFilterString}]";
                     var archiveFileName = Path.GetFileName(currentArchiveFilePath);
                     if (Directory.Exists(currentArchiveFilePath))
                     {
@@ -797,8 +778,6 @@ namespace ZipPla
             try
             {
 #region １つめを表示
-                //currentImageLongPathToolStripTextBox.Text = EntryLongPathArray[mtbPage.Value];
-                //Program.TextBoxShowRight(currentImageLongPathToolStripTextBox);
 #endregion
 
 #region 全て表示
@@ -1081,9 +1060,7 @@ namespace ZipPla
                 $"source:\n\t{bmp.Size}\n" +
                 $"destination:\n\t{resizedSize}\n" +
                 $"computation time:\n\t{time}\n" +
-                // $"the ratio to \"System.Windows.Media.ScaleTransform\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
                 $"the ratio to \"BitmapScalingMode.Unspecified (Linear)\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
-            //$"the ratio to \"{BitmapResizer.LastBitmapScalingMode}\":\n\t{(double)100 * time.Ticks / time2.Ticks:F2} %";
             Invoke(((MethodInvoker)(() =>
             {
                 var res = MessageBox.Show(this, message + "\n\nAre you sure you want to copy above data to clipboard?",
@@ -1181,8 +1158,6 @@ namespace ZipPla
                     if (item == null)
                     {
                         bmwLoadEachPage_DoWork_DEBUG_Phase = 2;
-                        //var sw = new System.Diagnostics.Stopwatch(); sw.Start();
-                        //var img = loader.OpenImageStream(EntryNumberArray[e.WorkNumber]);
                         var reduceRequest = CanDecodeReduced(e.WorkNumber) ? new ReducedJpegDecodeRequest(originalSize =>
                         {
                             // 縮小後が表示サイズより大きければよい（等しいと縮小せずに原寸と共有する経路に入るので 1 画素多く求める）
@@ -1221,15 +1196,10 @@ namespace ZipPla
                         int? maxColorDiff = 0;
                         try
                         {
-                            //var originalRotate = ViewerFormImageFilter.GetOrientation(img);
                             bmwLoadEachPage_DoWork_DEBUG_Phase = 3;
-                            //sw.Stop(); MessageBox.Show($"{sw.Elapsed}");
-
-                            //Thread.Sleep(500);
 
 
-                            //var isColorImage = imageFilter.NeedToCheckWhetherColorOrNot() && ViewerMode != ViewerModeEnum.CoverSetting ?
-                            //    ViewerFormImageFilter.TryGetWhetherColorOrNot(img) : null;
+
 
 
                             // アニメーションの遅延読み込み実装前
@@ -1302,7 +1272,6 @@ namespace ZipPla
                         }
                         else imageInfo = null;
                     }
-                    //var zoom = Math.Min(ViewSize.Width / (double)img.Width, ViewSize.Height / (double)img.Height);
                     Action body = () =>
                     {
                         // img が Dispose された場合エラーになるが想定内
@@ -1310,7 +1279,6 @@ namespace ZipPla
                         bmwLoadEachPage_DoWork_DEBUG_Phase = 5;
                         var layoutSource = reducedDecoded ? layoutSize : bmp.Size;
                         var resizedSize = GetResizedSize(layoutSource);
-                        //var result = new Bitmap((int)Math.Round(zoom * img.Width), (int)Math.Round(zoom * img.Height));
 
                         rsa[e.WorkNumber] = resizedSize;
                         if (layoutSources != null && e.WorkNumber < layoutSources.Length) layoutSources[e.WorkNumber] = layoutSource;
@@ -1345,7 +1313,6 @@ namespace ZipPla
                                 bmwLoadEachPage_DoWork_DEBUG_Phase = 10;
 
 
-                                //var sw = new System.Diagnostics.Stopwatch();  sw.Start();
 
                                 ScalingAlgorithm scalingAlgorithm;
                                 if ((long)resizedSize.Width * resizedSize.Height > (long)bmp.Width * bmp.Height)
@@ -1460,7 +1427,6 @@ namespace ZipPla
                 var errorSize = new Size(-210, -297);
                 var resizedSize = GetResizedSize(errorSize);
                 rsa[e.WorkNumber] = resizedSize;
-                //e.Result = BitmapEx.ConvertToBitmapEx(Program.GetErrorImage(resizedSize.Width, resizedSize.Height));
                 e.Result = VirtualBitmapEx.GetErrorImage(resizedSize);
             }
             finally

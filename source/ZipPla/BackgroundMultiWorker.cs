@@ -106,8 +106,6 @@ namespace GenerarClasses
                     DoWork(sender, e2);
                 }
                 catch (ObjectDisposedException) { }
-                //catch (ObjectDisposedException) { }
-                //catch (System.Reflection.TargetInvocationException) { }
                 e.Result = e2.Result;
                 if(e2.Cancel)
                 {
@@ -270,7 +268,6 @@ namespace GenerarClasses
 #if DEBUG
             var check = new List<int>(worksOrder);
             check.Sort();
-            //if (check.Count > 0 && (check[0] < 0 || Works != null && check[check.Count - 1] >= Works.Length)) throw new Exception($"WorksOrder is not permutation. (0->{check[0]}, {check.Count - 1}->{Works?.Length})");
             if (check.Count > 0 && check[0] < 0 ) throw new Exception($"WorksOrder is not permutation. (0->{check[0]})");
             for (var i = 1; i < check.Count; i++)
             {
@@ -301,7 +298,6 @@ namespace GenerarClasses
             var workSetGuid = WorkSetGuid;
 
             var WorkNumber = WorkersWorks[WorkerNumber];
-            //var e2 = new EachRunWorkerCompletedEventArgs(e, WorkNumber, ++CompletedWorksCount);
             var e2 = new EachRunWorkerCompletedEventArgs(e.Result, e.Error, e.Cancelled || CancellationPending, WorkNumber, ++CompletedWorksCount, workSetGuid); // Cancelled は強制的に設定する
             var startedEarly = StartNextWorkBeforeCompletedEvent && TryStartNextWorkEarly(localWorker, WorkerNumber, workSetGuid, e.Error);
             if (EachRunWorkerCompleted != null) EachRunWorkerCompleted(sender, e2);
@@ -533,7 +529,6 @@ namespace GenerarClasses
                 try { ExitingByReservation?.Invoke(this, EventArgs.Empty); } catch { }
                 Environment.Exit(Exit_Code);
             }
-            //if (Exit_Que) Environment.Exit(Exit_Code);
         }
 
         /// <summary>
@@ -642,7 +637,6 @@ namespace GenerarClasses
             if (AllWorkerCount == 0)
             {
                 realTime = true;
-                //Environment.Exit(exitCode);
             }
             else
             {

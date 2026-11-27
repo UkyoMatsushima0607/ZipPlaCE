@@ -373,14 +373,12 @@ namespace ZipPla
             _Start = "スタート(&S)";
             OpenHistory = "履歴を開く";
             OpenFolder = "フォルダーを開く";
-            //OpenVirtualFolder = "仮想フォルダーを開く";
             OpenFile = "ファイルを開く";
             AllSupportedFiles = "全ての対応ファイル";
             VideoFilesRequireFfmpeg = "動画ファイル（ffmpeg.exe が必要）";
             NewVirtualFolder = "新しい仮想フォルダー";
             NewSmartFolder = "新しいスマートフォルダー";
             OpenBuiltInViewer = "内蔵ビューアーを開く";
-            //ReloadAllItems = "全ての項目を再読み込み";
             Reload = "再読み込み";
             NewFolder = "新しいフォルダー";
             EditAddressBar = "アドレスバーを編集";
@@ -417,19 +415,15 @@ namespace ZipPla
             ImageFiles = "画像ファイル";
             VideoFiles = "動画ファイル";
             OtherFiles = "その他のファイル";
-            //AtLeastOneKindOfItemsMustBeSelected = "全ての種類の項目を非表示にすることはできません。";
             Folders = "フォルダー";
-            //IgnoreFolders = "フォルダーを非表示";
             SearchSubfoldersAsWell = "サブフォルダー内も表示";
             _Thumbnail = "サムネイル(&T)";
-            //ReloadAllThumbnails = "全てのサムネイルを再読み込み";
             Tiny = "極小";
             Small = "小";
             Normal = "標準";
             Large = "大";
             Huge = "極大";
             AllRatios = "全ての比";
-            //ShowFilename = "ファイル名を表示";
             ShowName = "名前を表示";
             Letterbox = "レターボックス（全て表示）";
             PanAndScan = "パンスキャン（中央部分）";
@@ -437,14 +431,10 @@ namespace ZipPla
             ShowRating = "レートを表示";
             ShowTags = "タグを表示";
             NumberOfLinesOfName = "名前の行数";
-            //FromTheLongestName = "最長の名前基準";
             Full = "全て";
-            //FromThumbnailWidthLess = "サムネイル幅基準（少なめ）";
-            //FromThumbnailWidthGreater = "サムネイル幅基準（多め）";
             AutomaticLess = "自動（少なめ）";
             AutomaticGreater = "自動（多め）";
             MinimumFrameThickness = "最小フレーム幅";
-            //ZeroThickness = "なし";
             VeryThin = "極細";
             Thin = "細い";
             NormalThickness = "標準";
@@ -484,7 +474,6 @@ namespace ZipPla
             NotUseThumbnailCache = "サムネイルキャッシュを使用しない";
             AdsNotSupportedWarningMessage =
                 @"この場所のファイルシステムは代替データストリームをサポートしません。" +
-                //@"この警告を消すにはサムネイルキャッシュの設定を代替データストリームを使用しないものに変更してください。"++ // 誤った日本語ではないが、同じ助詞が続くことでワードが警告を出す＋長くて読みにくい
                 @"この警告を消すにはサムネイルキャッシュの設定を変更してください。" + // 代替データストリームを使うサムネイル設定が一つきりであればこちらで十分
                 @"プロファイルカラーを利用すると、場所に応じて設定を自動的に切り替えることもできます。";
             /*CreateThumbnailCache = "サムネイルキャッシュを使用";
@@ -504,9 +493,7 @@ namespace ZipPla
             _Others = "その他(&O)";
             _ChangeCurrentProfileColor = "現在のプロファイルカラーを変更(&C)";
             Edit_Tags = "タグを編集(&T)";
-            //_KeysMouseButtons = "キーボード／マウスボタン(&K)";
             _BasicOperationSettings = "基本操作設定(&B)";
-            //_MouseGestures = "マウスジェスチャ(&M)";
             _MouseTouchGestures = "マウス／タッチジェスチャ(&M)";
             Common_Settings = "共通設定(&S)";
 
@@ -525,8 +512,6 @@ namespace ZipPla
 
             NoOperation = "何もしない";
 
-            //GoBackAltLeft = "戻る (Alt+←)";
-            //GoForwardAltRight = "進む (Alt+→)";
             RightClickDownFlickToShowHistory = "右クリック／下フリックで履歴を表示";
 
             ClearMenuForAddressBarHistory = "パス履歴削除メニュー";
@@ -560,8 +545,6 @@ namespace ZipPla
             EditDropdownOfFilters = "ドロップダウンリストを編集";
 
             _Add = "追加(&A)";
-            //AddWithCurrentProfileColor = "現在のプロファイルカラーで追加";
-            //AddWithNewProfileColor = "新しいプロファイルカラーで追加";
             BookmarkWithCurrentProfileColor = "現在のプロファイルカラーのブックマーク";
             AddWithCurrentProfileColor = "現在のプロファイルカラーで追加";
             BookmarkWithNewProfileColor = "新しいプロファイルカラーのブックマーク";
@@ -572,7 +555,6 @@ namespace ZipPla
             AddSeparator = "区切りを追加";
 
             SelectedColorIsUsedByFollowingBookmarks = "選択された色は以下のブックマークで既に使用されています。";
-            //DoYouUseColorWhichIsCloseToOtherColors = "既に非常に近い色が使われています。このまま続けてもよろしいですか？";
             HowToAddUsedColorDescription =
                 "使用されている色のブックマークを新たに追加するには、"+
                 "その色のブックマークを開いてから目的の場所へ移動し、「追加(A) > 現在のプロファイルカラーで追加」機能を使用してください。";
@@ -591,8 +573,6 @@ namespace ZipPla
             RealName = "元の名前に戻す";
             LoadOnlyProfileColor = "プロファイルカラーのみ読み込む";
             LoadProfileColor = "プロファイルカラーを読み込む";
-            //SetToCurrentLocation = "現在の場所で上書き";
-            //SetToCurrentLocationAndState = "現在の場所及び表示で上書き";
 
             FilterWithSelectedText = "選択テキストでフィルタリング";
             FilterWith1 = "\"$1\" でフィルタリング";
@@ -604,17 +584,11 @@ namespace ZipPla
             OpenInBuiltInViewer = "内蔵ビューアーで開く";
             OpenIn1 = "$1 で開く";
             Open = "開く";
-            //MoveFilesFolders = "ファイル／フォルダーの移動";
-            //MoveSelectedItemsTo1 = "選択項目を $1 へ移動";
             MoveExtractSelectedItems = "選択項目の移動／抽出";
             MoveExtractSelectedItemsTo1 = "選択項目を $1 へ{移動|抽出}";
             AssociatedApplication = "関連付けプログラム";
-            //MoveToThisFolder = "このフォルダーに移動";
-            //MoveHere = "ここへ移動";
             OpenInCurrentWindow = "現在のウィンドウで開く";
-            //MoveToLocationOfThis = "この項目のある場所へ移動";
             SubdivideAroundHere = "この前後を細分化して表示";
-            //MoveLocation = "場所の移動";
             CurrentZipPla = "現在の ZipPla";
             ExecutableInClipboard = "クリップボードの実行ファイル";
             OpenInExplorer = "エクスプローラーで開く";
@@ -622,21 +596,17 @@ namespace ZipPla
             ApplicationIsNotSpecified = "起動プログラムが設定されていません。";
             Rating = "レート";
             None = "なし";
-            //MiddleClickOnStars = "レート領域で中クリック";
             Tag = "タグ";
             RightClickNotToClose = "右クリックで連続設定";
             RightFlickIsAlsoOk = "右フリックでも OK";
             SameAsAbove = "以下同様";
             UncheckAll = "全て解除";
-            //AddTagsFromFileName = "ファイル名からタグを追加";
             AddTagsFromName = "名前からタグを追加";
             VirtualFolder = "仮想フォルダー";
             AddToNewVirtualFolder = "新規作成して追加";
             RemoveFromHistory = "履歴から除去";
-            //AddToExistingVirtualFolder = "既存の仮想フォルダーに追加";
             AddTo1 = "\"$1\" に追加";
             NoVirtualFoldersInBookmark = "ブックマークに仮想フォルダーが登録されていません。"; // 英語は体言的なのでピリオドなしだが句点をつける
-            //ReloadSelectedThumbnail = "このサムネイルを再読み込み";
             Cover = "表紙";
             SetCoverManually = "表紙の手動設定";
             SetCoverToThis = "これを表紙に設定";
@@ -650,7 +620,6 @@ namespace ZipPla
             RightToLeft = "右綴じ";
             SinglePage = "単ページ";
             SinglePageWithoutScalingUp = "単ページ（拡大しない）";
-            //ForcePageSpread = "強制見開き表示（左／右綴じ）";
             PrioritizePageSpread = "見開き表示優先（左／右綴じ）";
             AllowPageDivision = "分割表示を許可（左／右綴じ）";
             ClearPageSequenceSetting = "綴じ方設定の削除";
@@ -660,7 +629,6 @@ namespace ZipPla
             Paste = "貼り付け";
             Rename = "名前の変更";
             RemoveFromVirtualFolder = "仮想フォルダーから除去";
-            //DeleteOnlyForVirtualFolder = "削除（仮想フォルダー内限定）";
             Properties = "プロパティ";
 
             TogglePageSequence = "綴じ方の切り替え";
@@ -675,8 +643,6 @@ namespace ZipPla
                 @"内蔵ビューアーの「スタート(S) > 現在の設定でショートカットを作成...」を利用してください。";
             ShowThisHintAgainNextTime = "次回もこのヒントを表示"; // わかりやすさのため「ヒントを表示」という言葉は省くべきではない。
 
-            //_View = "表示(&V)";
-            //_Image = "画像(&I)";
             _Move = "移動(&M)";
             S_lideshow = "スライドショー(&L)";
             Virtual_Folder = "仮想フォルダー(&F)";
@@ -690,7 +656,6 @@ namespace ZipPla
             Window = "ウィンドウ";
             ToggleFullscreenMode = "フルスクリーンモードの切り替え";
 
-            //AlwaysAutomaticallyHideUI = "常に自動的に UI を隠す";
             AlwaysAutomaticallyHideUI = "ウィンドウモードでも UI を隠す";
 
             ToggleMagnifier = "拡大鏡の切り替え";
@@ -706,11 +671,9 @@ namespace ZipPla
                 @"拡大：ホイール ↑, ↑+↓, Shift\n" +
                 @"縮小：ホイール ↓, ←+→, Ctrl";
 
-            //DefaultClickBehavior = "標準のクリック動作";
             NextPage = "次のページ";
             PreviousPage = "前のページ";
             WheelDown = "ホイール ↓";
-            //CursorRight = "カーソル →";
             WheelUp = "ホイール ↑";
 
             Specials = "特殊入力";
@@ -734,8 +697,6 @@ namespace ZipPla
             MoveBackOnePage = "１ページ戻る";
             WheelDownOnBar = "シークバー上でホイール ↓";
             WheelUpOnBar = "シークバー上でホイール ↑";
-            //CursorDown = "カーソル ↓";
-            //CursorUp = "カーソル ↑";
 
             RightPage = "右のページ";
             LeftPage = "左のページ";
@@ -767,8 +728,6 @@ namespace ZipPla
             AutoRightScrollWithoutOverwrap = "右方向スクロール（オーバーラップなし）";
             AutoLeftScrollWithoutOverwrap = "左方向スクロール（オーバーラップなし）";
             
-            //MiddleClickOnPosteriorHalfOfBar = "シークバー後半を中クリック";
-            //MiddleClickOnAnteriorHalfOfBar = "シークバー前半を中クリック";
 
             BookFolderIsNotFound = "書庫／フォルダーが見つかりません。";
 
@@ -785,10 +744,7 @@ namespace ZipPla
             RotateLeft = "左に回転";
             RotateRight = "右に回転";
             CancelRotationSetting = "回転の設定を解除";
-            //Binarization = "二値化";
-            //AutoContrastControl = "自動コントラスト調整";
 
-            //RemoveMoire = "モアレ除去";
             ToneCurve = "トーンカーブ";
             ToneCurveSepiaTone = "トーンカーブ（セピア調）";
             ToneCurveUserDefined = "トーンカーブ（ユーザー定義）";
@@ -817,7 +773,6 @@ namespace ZipPla
             PropertiesOf1 = "$1 のプロパティ";
             Location = "場所";
             Icon = "アイコン";
-            //FileName = "ファイル名";
             Name = "名前";
             FileType = "ファイルの種類";
             Length = "長さ";
@@ -838,8 +793,6 @@ namespace ZipPla
 
             Page = "ページ";
 
-            //File = "ファイル";
-            //Folder = "フォルダー";
             Bytes = "バイト";
 
             EditTags = "タグを編集";
@@ -888,7 +841,6 @@ namespace ZipPla
             DisplayNameCanNotShareSameName = "同じ表示名（別名またはそれが未入力ならフィルター文字列）が既に存在しています。";
             FilteringStringMustNotBeEmpty = "フィルター文字列は空にはできません。";
 
-            //MouseGestures = "マウスジェスチャ";
             MouseTouchGestures = "マウス／タッチジェスチャ";
             Enabled = "有効";
             GestureToAddCommand = "ジェスチャでコマンド追加";
@@ -898,14 +850,12 @@ namespace ZipPla
             Command = "コマンド";
             InThumbnailWindowTouchGestureMustStartWithHorizontalDirection = "サムネイルウィンドウではタッチジェスチャは水平方向から始めてください。";
 
-            //KeysMouseButtons = "キーボード／マウスボタン";
             BasicOperationSettings = "基本操作設定";
             Inputs = "入力";
             Abort = "中止";
             InputKeysMouseButtons = "キー／マウスボタンを入力...";
             UnassignedCommandsAreComplemented = "未設定のコマンドは補完されます。";
             ThisOperationCanBeAvoidedByAsigningNoOperationToTargetKeys = "この動作は対象のキーに「何もしない」を割り当てることで回避できます。";
-            //IfYouWantToRestoreDefaultLeftClickBehaviorDeleteAllInputsIncludingLeftClick = "左クリックの動作をデフォルトに戻す場合は「クリック」を含む入力を全て削除してください。（「右クリック」等を削除する必要はありません）";
             WhenClickOnAndClickConflictTheFormerTakesPrecedence = "位置指定されたクリックと通常のクリックが競合した場合は前者が優先されます。競合を回避するには不要な入力を削除して下さい。「何もしない」コマンドでは競合を回避できません。";
             DoYouRestoreDefaultSettingOfKeysMouseButtons = "キーボード／マウスボタンを初期設定に戻します。";
 
@@ -926,7 +876,6 @@ namespace ZipPla
             Save = "保存";
             Overwrite = "上書き";
             Editing1 = "編集中：$1";
-            //NonEssentialFolderIsIgnoredIfItDoesNotExist = "「必須」でないフォルダーは存在しない場合無視されます。";
             IfEssentialFolderDoesNotExistErrorWillBeDisplayed = "「必須」のフォルダーが存在しない場合エラーが表示されます。";
             HintRightClickNameOfKdkFileOnAddressBarToEditItAgain = "ヒント：アドレスバー上の .kdk ファイルの名前を右クリックすると再度編集できます。";
 
@@ -955,9 +904,7 @@ namespace ZipPla
             DisplayFirst = "先頭に表示";
             DisplayLast = "末尾に表示";
             DisplayRespectingToSortOfDirection = "ソート方向に合わせて表示";
-            //ShowFolderSizeOnStatusBar = "フォルダーサイズをステータスバーに表示";
 
-            //ItemSelectionFeedback = "選択項目のフィードバック";
             AutomaticSelectionSwitching = "選択項目の自動切り替え";
             InAppropriateCases = "適切な場合に";
 
@@ -971,7 +918,6 @@ namespace ZipPla
             ExceptReadAheadProcess = "先読み用プロセスを除く";
             LoadArchivesInArchive = "書庫内書庫の読み込み";
             NoneRecommended = "なし（推奨）";
-            //OnlyIfThereIsNoOtherImage = "他に画像がない場合";
             TwoLevelUntilFound = "2 階層見つかるまで";
             OneLevelCompletelyNotRecommended = "1 階層全て（非推奨）";
             Always = "いつでも";
@@ -988,32 +934,25 @@ namespace ZipPla
             SusiePlugins = "Susie プラグイン";
             AllowUntestedPlugins = "未検証のプラグインを許可";
             SearchNotOnlyZipPlaFolderButAlsoSusieInstallationFolder = @"ZipPla のフォルダーだけでなく\nSusie インストールフォルダーも検索";
-            //HintMessage = "起動時のヒント";
 
             ZipPlaUpdateCheck = "ZipPla の更新チェック";
             CheckNow = "今すぐ確認";
             Checking = "確認中";
             ShowDialogBeforeConnection = "通信時に通知";
-            //AskPermissionBeforeInternetConnection = "通信前にユーザーの許可を求める";
             OtherChecksOnStartup = "その他の起動時チェック";
             DragAndDrop = "ドラッグ＆ドロップ";
-            //ShowThumbnails = "サムネイルを表示";
-            //OpenInZipPla = "ZipPla で開く";
             BrowseInZipPla = "ZipPla で閲覧";
             MoveOrCopyFilesAddItemToVirtualFolder = @"ファイルの移動／コピー\n／仮想フォルダーに追加";
             DynamicStringSelection = "右クリックメニューの文字列選択";
             DisplayName = "表示名";
             DisplayNameForNonSelection = "表示名（非選択時）";
             Applications = "起動プログラム";
-            //Name = "名前";
             Params = "起動オプション";
             Multi = "複数";
             OpenOnClick = "クリックで起動";
             ShowInContextMenu = "右クリックメニュー";
             RenameItemByEditingTextBox = "テキストボックスの編集で名前を変更";
             AllFiles = "全てのファイル";
-            //StartWithAccessKeyContainedInName = "名前に含まれるアクセスキーで起動";
-            //EnableAccessKeysInAlsoBookmark = "アクセスキーの有効化（ブックマークにも影響）";
             AboutAccessKey = "アクセスキーについて";
             /*
             AccessKeyUsageDescription =
@@ -1044,7 +983,6 @@ namespace ZipPla
             ExternalApplication = "外部プログラム";
             Explorer = "エクスプローラー";
             BuiltInViewer = "内蔵ビューアー";
-            //TargetItemsAreSpecifiedByRegularExpression = @"対象の名前は /\.(zip|rar|pdf)$/i のような正規表現で指定してください。";
             ApplicationFilterDescription = @"ファイル／フォルダーの指定には以下の形式が使用できます。\n\n\n全てのファイル／フォルダー\n*;\\n\nZIP ファイル／フォルダー／RAR ファイル\nzip;\;rar\n\n正規表現\n/\.jpe?g$/i";
 
             
@@ -1055,7 +993,6 @@ namespace ZipPla
             NoReadableFile = "読み込み可能なファイルがありません。";
             BuiltInViewerProcessStopsResponding = "内蔵ビューアーが応答しません。書籍データの読み込みに時間がかかっている、または書籍データが正常でない可能性があります。";
 
-            //ToCopyAndPasteItemInCompressedFileKeepItOpenUntilPastingIsCompleted = "圧縮ファイル内の項目をコピー＆ペーストする場合、貼り付けが完了するまで元の圧縮ファイルを開いたままにしておく必要があります。";
 
             DoYouDiscardChangedSettings = "設定の変更を破棄してもよろしいですか？";
             DoYouDiscardChangedName = "名前の変更を破棄してもよろしいですか？";
@@ -1086,19 +1023,15 @@ namespace ZipPla
             FollowingDllCouldNotBeLoaded = "以下の dll を読み込むことができませんでした。";
             ConfirmItIsNotFor1But2 = "現在の環境に適合する $2 用でなく $1 用を使用している可能性があります。";
 
-            //_1IsNotFound = "\"$1\" が見つかりません。";
             _1CanNotBeOpend = "\"$1\" を開くことができません。";
 
             BeforeRename = "リネーム前";
             AfterRename = "リネーム後";
 
-            //DoneCoverSetting = "表紙の設定が完了しました。";
-            //DonePageSequenceSetting = "綴じ方の設定が完了しました。";
             
             _1AlreadyExists = "$1 は既に存在します。";
             ItIsInvalidFileName = "無効なファイル名です。";
 
-            //NewVersionIsAvailableDoYouOpenDownloadPage = "ZipPla の新しいバージョンが公開されています。ダウンロードページを開きますか？";
             ZipPlaWillCheckForUpdate = "ZipPla の更新チェックを行います。";
             ShowThisDialogAgainNextTime = "次回もこのダイアログを表示";
             NewVersionIsAvailable = "ZipPla の新しいバージョンが公開されています。";
@@ -1148,9 +1081,7 @@ namespace ZipPla
 
             MoveHere = "ここに移動";
             CopyHere = "ここにコピー";
-            //IntegrityErrorBetweenTagsAndProfileColor = "タグとプロファイルカラーとの間の整合性に問題があります。ブックマークからThere is an integrity error between tags and profile color. It will be solved by clicking any bookmark item.";
 
-            //NowLoading = "読み込み中";
 
             NewFolderCanBeCreatedButSomeOfThemWillNotBeDisplayedBecauseOfViewSetting = "新しいフォルダーは作成可能ですが、一部または全部の項目は現在の「動作」設定により非表示になります。";
             ItemsCanBeMovedCopiedButSomeOfThemWillNotBeDisplayedBecauseOfViewSetting = "移動／コピーは可能ですが、一部または全部の項目は現在の「動作」設定により非表示になります。";
@@ -1160,8 +1091,6 @@ namespace ZipPla
             FolderOpenDescription = "表示したいファイルやフォルダーをここにドラッグ＆ドロップするか、\\n「スタート(S) > フォルダーを開く...」でフォルダーを選択してください。";
             AddBookmarkDescription = @"←「追加」ボタンを右クリックか下フリック\n　すると専用のメニューが表示されます。";
 
-            //Hint = "ヒント";
-            //InTheFutureDoNotShowThisMessage = "今後このメッセージを表示しない";
             CheckExistenceOfFfmpegAtStartup = "起動時に ffmpeg.exe の存在をチェックする";
 
             RecommendFfmpeg =
@@ -1209,14 +1138,12 @@ namespace ZipPla
             _Start = "&Start";
             OpenHistory = "Open history";
             OpenFolder = "Open folder";
-            //OpenVirtualFolder = "Open virtual folder";
             OpenFile = "Open file";
             AllSupportedFiles = "All supported files";
             VideoFilesRequireFfmpeg = "Video files (require ffmpeg.exe)";
             NewVirtualFolder = "New virtual folder";
             NewSmartFolder = "New smart folder";
             OpenBuiltInViewer = "Open built-in viewer";
-            //ReloadAllItems = "Reload all items";
             Reload = "Reload";
             NewFolder = "New folder";
             EditAddressBar = "Edit address bar";
@@ -1253,19 +1180,15 @@ namespace ZipPla
             ImageFiles = "Image files";
             VideoFiles = "Video files";
             OtherFiles = "Other files";
-            //AtLeastOneKindOfItemsMustBeSelected = "At least one kind of items must be selected.";
             Folders = "Folders";
-            //IgnoreFolders = "Ignore filders";
             SearchSubfoldersAsWell = "Search subfolders as well";
             _Thumbnail = "&Thumbnail";
-            //ReloadAllThumbnails = "Reload all thumbnails";
             Tiny = "Tiny";
             Small = "Small";
             Normal = "Normal";
             Large = "Large";
             Huge = "Huge";
             AllRatios = "All ratios";
-            //ShowFilename = "Show filename";
             ShowName = "Show name";
             Letterbox = "Letterbox";
             PanAndScan = "Pan and Scan";
@@ -1274,14 +1197,10 @@ namespace ZipPla
             ShowRating = "Show the rating";
             ShowTags = "Show tags";
             NumberOfLinesOfName = "The number of lines of name";
-            //FromTheLongestName = "From the longest name";
             Full = "Full";
-            //FromThumbnailWidthLess = "From thumbnail width (less)";
-            //FromThumbnailWidthGreater = "From thumbnail width (greater)";
             AutomaticLess = "Automatic (less)";
             AutomaticGreater = "Automatic (greater)";
             MinimumFrameThickness = "Minimum frame thickness";
-            //ZeroThickness = "Zero";
             VeryThin = "Very thin";
             Thin = "Thin";
             NormalThickness = "Normal";
@@ -1325,8 +1244,6 @@ namespace ZipPla
                 @"The file system of this location does not support ADS(Alternate Data Stream). " +
                 @"In order not to display this message, change the thumbnail cache setting to some mode other than ADS. " +
                 @"If you want to use ADS mode for other locations, consider using ""Profile color.""";
-            //CreateThumbnailCache = "Create thumbnail cache";
-            //AboutThumbnailCache = "About thumbnail cache";
             /*
             ThumbnailCacheDescription =
                 @"By using the thumbnail cache, thumbnails you view are stored\n" +
@@ -1341,9 +1258,7 @@ namespace ZipPla
             _Others = "&Others";
             _ChangeCurrentProfileColor = "&Change current profile color";
             Edit_Tags = "Edit &tags";
-            //_KeysMouseButtons = "&Keys / mouse buttons";
             _BasicOperationSettings = "&Basic operation settings";
-            //_MouseGestures = "&Mouse gestures";
             _MouseTouchGestures = "&Mouse/touch gestures";
             Common_Settings = "Common &settings";
 
@@ -1362,8 +1277,6 @@ namespace ZipPla
 
             NoOperation = "No operation";
 
-            //GoBackAltLeft = "Go back (Alt+←)";
-            //GoForwardAltRight = "Go forward (Alt+→)";
             RightClickDownFlickToShowHistory = "Right-click/down-flick to show history";
 
             ClearMenuForAddressBarHistory = "Clear menu for address bar history";
@@ -1397,8 +1310,6 @@ namespace ZipPla
             EditDropdownOfFilters = "Edit dropdown of filters";
 
             _Add = "&Add";
-            //AddWithCurrentProfileColor = "Add with the current profile color";
-            //AddWithNewProfileColor = "Add with a new profile color";
             AddWithCurrentProfileColor = "Add with current profile color";
             BookmarkWithCurrentProfileColor = "Bookmark with current profile color";
             AddWithNewProfileColor = "Add with new profile color";
@@ -1409,7 +1320,6 @@ namespace ZipPla
             AddSeparator = "Add separator";
 
             SelectedColorIsUsedByFollowingBookmarks = "Selected color has already been used by the following bookmark(s).";
-            //DoYouUseColorWhichIsCloseToOtherColors = "Selected color is very close to some existing color(s). Is it OK?";
             HowToAddUsedColorDescription =
                 "To add a new bookmark colored by a used color, " +
                 "open a existing bookmark colored by the color, move location, and use \"Add > With the current profile color\" function.";
@@ -1427,8 +1337,6 @@ namespace ZipPla
             RealName = "Real name";
             LoadOnlyProfileColor = "Load only profile color";
             LoadProfileColor = "Load profile color";
-            //SetToCurrentLocation = "Set to current location";
-            //SetToCurrentLocationAndState = "Set to current location and state";
 
             FilterWithSelectedText = "Filter with selected text";
             FilterWith1 = "Filter with \"$1\"";
@@ -1440,19 +1348,11 @@ namespace ZipPla
             OpenInBuiltInViewer = "Open in built-in viewer";
             OpenIn1 = "Open in $1";
             Open = "Open";
-            //MoveFilesFolders = "Move files/folders";
-            //MoveSelectedItemsTo1 = "Move selected item(s) to $1";
             MoveExtractSelectedItems = "Move/Extract selected item(s)";
             MoveExtractSelectedItemsTo1 = "{Move|Extract} selected item(s) to $1";
-            //MoveThisTo1 = "Move this to $1";
-            //MoveTheseTo1 = "Move these to $1";
             AssociatedApplication = "Associated application";
-            //MoveToThisFolder = "Move to this folder";
-            //MoveHere = "Move here";
             OpenInCurrentWindow = "Open in current window";
-            //MoveToLocationOfThis = "Move to the location of this";
             SubdivideAroundHere = "Subdivide around here";
-            //MoveLocation = "Move location";
             CurrentZipPla = "Current ZipPla";
             ExecutableInClipboard = "Executable in clipboard";
             OpenInExplorer = "Open in Explorer";
@@ -1460,21 +1360,17 @@ namespace ZipPla
             ApplicationIsNotSpecified = "Application is not specified.";
             Rating = "Rating";
             None = "None";
-            //MiddleClickOnStars = "Middle-click on stars";
             Tag = "Tag";
             RightClickNotToClose = "Right-click NOT to close";
             RightFlickIsAlsoOk = "Right-flick is also OK";
             SameAsAbove = "Same as above...";
             UncheckAll = "Uncheck all";
-            //AddTagsFromFileName = "Add tags from the file name";
             AddTagsFromName = "Add tags from the name";
             VirtualFolder = "Virtual folder";
             AddToNewVirtualFolder = "Add to new virtual folder";
             RemoveFromHistory = "Remove from history";
-            //AddToExistingVirtualFolder = "Add to existing virtual folder";
             AddTo1 = "Add to \"$1\"";
             NoVirtualFoldersInBookmark = "No virtual folders in bookmark";
-            //ReloadSelectedThumbnail = "Reload this thumbnail";
             Cover = "Cover";
             SetCoverManually = "Set cover manually";
             SetCoverToThis = "Set cover to this";
@@ -1488,7 +1384,6 @@ namespace ZipPla
             RightToLeft = "Right to left";
             SinglePage = "Single page";
             SinglePageWithoutScalingUp = "Single page without scaling up";
-            //ForcePageSpread = "Force page spread";
             PrioritizePageSpread = "Prioritize page spread";
             AllowPageDivision = "Allow page division";
             ClearPageSequenceSetting = "Clear page sequence setting";
@@ -1498,7 +1393,6 @@ namespace ZipPla
             Paste = "Paste";
             Rename = "Rename";
             RemoveFromVirtualFolder = "Remove from virtual folder";
-            //DeleteOnlyForVirtualFolder = "Delete (only for virtual folder)";
             Properties = "Properties";
 
             TogglePageSequence = "Toggle page sequence";
@@ -1513,8 +1407,6 @@ namespace ZipPla
                 @"or ""Start > Create shortcut from current settings..."" in built-in viewer.";
             ShowThisHintAgainNextTime = "Show this hint again next time"; ;
 
-            //_View = "&View";
-            //_Image = "&Image";
             _Move = "&Move";
             S_lideshow = "S&lideshow";
             Virtual_Folder = "Virtual &folder";
@@ -1543,11 +1435,9 @@ namespace ZipPla
                 "Zoom in: Wheel ↑, ↑+↓, Shift\\n" +
                 "Zoom out: Wheel ↓, ←+→, Ctrl";
 
-            //DefaultClickBehavior = "Default click behavior";
             NextPage = "Next page";
             PreviousPage = "Previous page";
             WheelDown = "Wheel ↓";
-            //CursorRight = "Cursor →";
             WheelUp = "Wheel ↑";
 
             Specials = "Specials";
@@ -1571,8 +1461,6 @@ namespace ZipPla
             MoveBackOnePage = "Move back 1 page";
             WheelDownOnBar = "Wheel ↓ on seek bar";
             WheelUpOnBar = "Wheel ↑ on seek bar";
-            //CursorDown = "Cursor ↓";
-            //CursorUp = "Cursor ↑";
 
             RightPage = "Right page";
             LeftPage = "Left page";
@@ -1604,8 +1492,6 @@ namespace ZipPla
             AutoRightScrollWithoutOverwrap = "Right scroll (w/o overwrap)";
             AutoLeftScrollWithoutOverwrap = "Left scroll (w/o overwrap)";
 
-            //MiddleClickOnPosteriorHalfOfBar = "Middle-click on posterior half of seek bar";
-            //MiddleClickOnAnteriorHalfOfBar = "Middle-click on anterior half of seek bar";
 
             BookFolderIsNotFound = "Book/folder is not found.";
 
@@ -1652,7 +1538,6 @@ namespace ZipPla
             PropertiesOf1 = "Properties of $1";
             Location = "Location";
             Icon = "Icon";
-            //FileName = "File name";
             Name = "Name";
             FileType = "File type";
             Length = "Length";
@@ -1673,8 +1558,6 @@ namespace ZipPla
 
             Page = "Page";
 
-            //File = "File";
-            //Folder = "Folder";
             Bytes = "Bytes";
 
             EditTags = "Edit tags";
@@ -1723,7 +1606,6 @@ namespace ZipPla
             DisplayNameCanNotShareSameName = "Display name cannot share the same name.";
             FilteringStringMustNotBeEmpty = "Filtering string must not be empty.";
 
-            //MouseGestures = "Mouse gestures";
             MouseTouchGestures = "Mouse/touch gestures";
             Enabled = "Enabled";
             GestureToAddCommand = "Gesture to add a command";
@@ -1733,15 +1615,12 @@ namespace ZipPla
             Command = "Command";
             InThumbnailWindowTouchGestureMustStartWithHorizontalDirection = "In thumbnail window, touch gesture must start with a horizontal direction.";
 
-            //KeysMouseButtons = "Keys / Mouse buttons";
             BasicOperationSettings = "Basic operation settings";
             Inputs = "Inputs";
             Abort = "Abort";
             InputKeysMouseButtons = "Input keys / mouse buttons...";
             UnassignedCommandsAreComplemented = "Unassigned command(s) are complemented.";
-            //ThisOperationCanBeAvoidedByAsigningNoOperationToTargetKey = "This operation can be avoided by assigning \"No operation\" to the target key.";
             ThisOperationCanBeAvoidedByAsigningNoOperationToTargetKeys = "To stop this, assign \"No operation\" to the target key(s)."; // 字数削減
-            //IfYouWantToRestoreDefaultLeftClickBehaviorDeleteAllInputsIncludingLeftClick = "If you want to restore default left-click behavior, delete all inputs including \"Click.\" (Not necessary to delete any other mouse inputs such as \"Right-click.\")";
             WhenClickOnAndClickConflictTheFormerTakesPrecedence = "When \"Click on ...\" and \"Click\" conflict, the former takes precedence. If you want to avoid this conflict, delete unnecessary one instead of using \"No operation\" command.";
             DoYouRestoreDefaultSettingOfKeysMouseButtons = "Are you sure that you want to restore default setting of keys / mouse buttons?";
 
@@ -1762,7 +1641,6 @@ namespace ZipPla
             Save = "Save";
             Overwrite = "Overwrite";
             Editing1 = "Editing: $1";
-            // NonEssentialFolderIsIgnoredIfItDoesNotExist = "Non-\"essential\" folder is ignored if it does not exist.";
             IfEssentialFolderDoesNotExistErrorWillBeDisplayed = "If \"essential\" folder does not exist, an error message will be displayed.";
             HintRightClickNameOfKdkFileOnAddressBarToEditItAgain = "Hint: Right-click the name of a .kdk file on address bar to edit it again.";
 
@@ -1791,10 +1669,8 @@ namespace ZipPla
             DisplayFirst = "Display first";
             DisplayLast = "Display last";
             DisplayRespectingToSortOfDirection = "Display respecting to sort of direction";
-            //ShowFolderSizeOnStatusBar = "Show folder size on status bar";
 
 
-            //ItemSelectionFeedback = "Item selection feedback";
             AutomaticSelectionSwitching = "Automatic selection switching";
             InAppropriateCases = "In appropriate cases";
 
@@ -1808,7 +1684,6 @@ namespace ZipPla
             ExceptReadAheadProcess = "Except read ahead process";
             LoadArchivesInArchive = "Load archives in archive";
             NoneRecommended = "None (recommended)";
-            //OnlyIfThereIsNoOtherImage = "Only if there is no other image";
             TwoLevelUntilFound = "2 level until found";
             OneLevelCompletelyNotRecommended = "1 level completely (NOT recommended)";
             Always = "Always";
@@ -1825,33 +1700,24 @@ namespace ZipPla
             SusiePlugins = "Susie plug-ins";
             AllowUntestedPlugins = "Allow untested plug-ins";
             SearchNotOnlyZipPlaFolderButAlsoSusieInstallationFolder = @"Search not only ZipPla folder\nbut also Susie install folder";
-            //HintMessage = "Hint message";
             ZipPlaUpdateCheck = "ZipPla update check";
             CheckNow = "Check now";
             Checking = "Checking";
             ShowDialogBeforeConnection = "Notify checking";
-            //AskPermissionBeforeInternetConnection = "Ask permission before Internet connection";
             OtherChecksOnStartup = "Other checks on startup";
-            //CheckOnStartup = "Check on startup";
-            //DoNotShowAgain = "Do not show again";
             DragAndDrop = "Drag and drop";
-            //ShowThumbnails = "Show thumbnails";
-            //OpenInZipPla = "Open in ZipPla";
             BrowseInZipPla = "Browse in ZipPla";
             MoveOrCopyFilesAddItemToVirtualFolder = @"Move/copy files\nAdd items to *.sor";
             DynamicStringSelection = "Dynamic string selection";
             DisplayName = "Display name";
             DisplayNameForNonSelection = "for non-selection";
             Applications = "Applications";
-            //Name = "Name";
             Params = "Params";
             Multi = "Multi";
             OpenOnClick = "Open on click";
             ShowInContextMenu = "Context menu";
             RenameItemByEditingTextBox = "Rename item by editing the text box";
             AllFiles = "All files";
-            //StartWithAccessKeyContainedInName = "Start with access key contained in name";
-            //EnableAccessKeysInAlsoBookmark = "Enable access keys (in also bookmark)";
             AboutAccessKey = "About access key";
             /*
             AccessKeyUsageDescription =
@@ -1879,7 +1745,6 @@ namespace ZipPla
             ExternalApplication = "External Application";
             Explorer = "Explorer";
             BuiltInViewer = "Built-in viewer";
-            //TargetItemsAreSpecifiedByRegularExpression = @"Target items are specified by regular expression like /\.(zip|rar|pdf)$/i";
             ApplicationFilterDescription = @"The following patterns can be used to specify files/folders.\n\n\nAll files/folders\n*;\\n\nZIP files / all folders / RAR files\nzip;\;rar\n\nRegular expression\n/\.jpe?g$/i";
 
 
@@ -1890,16 +1755,12 @@ namespace ZipPla
             NoReadableFile = "No supported image data.";
             BuiltInViewerProcessStopsResponding = "Built-in viewer stops responding.";
 
-            //ToCopyAndPasteItemInCompressedFileKeepItOpenUntilPastingIsCompleted = "When copying and pasting some item(s) in a compressed file, it is necessary to keep the the compressed file open until pasting is completed.";
 
             DoYouDiscardChangedSettings = "Are you sure that you want to discard changed settings?";
             DoYouDiscardChangedName = "Are you sure you that want to discard changed name?";
             DoYouRenameThis = "Are you sure that you want to rename this file/folder?";
             DoYouRenameFollowing1Items = "Are your sure that you want to rename the following $1 items?"; // 10 個以上でないと問い合わせない仕様なので複数形決め打ちで良い
-            //DoYouOverwriteFollowing1Items = "Are you sure that you want to overwrite the following $1 item(s)?";
 
-            //DoYouSendSelectedItemsToRecycleBin = "Are you sure that you want to send selected item(s) to the Recycle Bin?";
-            //DoYouDeleteSelectedItemsPermanently = "Are you sure that you want to delete selected item(s) permanently?";
             DoYouSendFollowing1ItemsToRecycleBin = "Are you sure that you want to send the following $1 item(s) to the Recycle Bin?";
             DoYouDeleteFollowing1ItemsPermanently = "Are you sure that you want to delete the following $1 item(s) permanently?";
             DoYouRemoveFollowing1ItemsFromVirtualFolder = "Are you sure that you want to remove the following $1 items from virtual folder?"; // 10 個以上でないと問い合わせない仕様なので複数形決め打ちで良い
@@ -1927,19 +1788,15 @@ namespace ZipPla
             FollowingDllCouldNotBeLoaded = "The following dll could not be loaded.";
             ConfirmItIsNotFor1But2 = "Confirm it is not for $1 but $2.";
 
-            //_1IsNotFound = "\"$1\" is not found.";
             _1CanNotBeOpend = "\"$1\" cannot be opened.";
 
             BeforeRename = "Before rename";
             AfterRename = "After rename";
 
-            //DoneCoverSetting = "Cover settings was completed.";
-            //DonePageSequenceSetting = "Page sequence settings was completed.";
 
             _1AlreadyExists = "$1 already exists";
             ItIsInvalidFileName = "It is invalid file name.";
 
-            //NewVersionIsAvailableDoYouOpenDownloadPage = "New version of ZipPla is available! Do you want to open the download page?";
             ZipPlaWillCheckForUpdate = "ZipPla will check for update.";
             ShowThisDialogAgainNextTime = "Show this dialog again next time";
             NewVersionIsAvailable = "New version of ZipPla is available!";
@@ -1990,18 +1847,14 @@ namespace ZipPla
             MoveHere = "MoveHere";
             CopyHere = "CopyHere";
 
-            //IntegrityErrorBetweenTagsAndProfileColor = "There is an integrity error between tags and profile color. It will be solved by clicking any bookmark item.";
 
             FolderOpenDescription = "Drag and drop a file or folder here to display it,\\nor select a folder from \"Start > Open folder...\"";
             AddBookmarkDescription = @"← Right-click or down-flick on ""Add"" button\n　 to show extra menu.";
 
-            //NowLoading = "Loading";
 
             NewFolderCanBeCreatedButSomeOfThemWillNotBeDisplayedBecauseOfViewSetting = "New folder can be created but some of them will not be displayed because of current \"Behavior\" setting.";
             ItemsCanBeMovedCopiedButSomeOfThemWillNotBeDisplayedBecauseOfViewSetting = "Item(s) can be copied/moved but some of them will not be displayed because of current \"Behavior\" setting.";
             ItemsCanBeMovedCopiedButSomeOfThemWillNotBeDisplayedBecauseOfItsAttribute = "Item(s) can be copied/moved but some of them will not be displayed because of its attribute.";
-            //Hint = "Hint";
-            //InTheFutureDoNotShowThisMessage = "In the future, do not show this message.";
             CheckExistenceOfFfmpegAtStartup = "Check the existence of ffmpeg.exe at startup";
 
             RecommendFfmpeg =
@@ -2051,14 +1904,12 @@ namespace ZipPla
         public static string _Start { get; private set; }
         public static string OpenHistory { get; private set; }
         public static string OpenFolder { get; private set; }
-        //public static string OpenVirtualFolder { get; private set; }
         public static string OpenFile { get; private set; }
         public static string AllSupportedFiles { get; private set; }
         public static string VideoFilesRequireFfmpeg { get; private set; }
         public static string NewVirtualFolder { get; private set; }
         public static string NewSmartFolder { get; private set; }
         public static string OpenBuiltInViewer { get; private set; }
-        //public static string ReloadAllItems { get; private set; }
         public static string Reload { get; private set; }
         public static string NewFolder { get; private set; }
         public static string EditAddressBar { get; private set; }
@@ -2095,12 +1946,9 @@ namespace ZipPla
         public static string ImageFiles { get; private set; }
         public static string VideoFiles { get; private set; }
         public static string OtherFiles { get; private set; }
-        //public static string AtLeastOneKindOfItemsMustBeSelected { get; private set; }
         public static string Folders { get; private set; }
-        //public static string IgnoreFolders { get; private set; }
         public static string SearchSubfoldersAsWell { get; private set; }
         public static string _Thumbnail { get; private set; }
-        //public static string ReloadAllThumbnails { get; private set; }
         public static string Tiny { get; private set; }
         public static string Small { get; private set; }
         public static string Normal { get; private set; }
@@ -2115,14 +1963,10 @@ namespace ZipPla
         public static string ShowTags { get; private set; }
 
         public static string NumberOfLinesOfName { get; private set; }
-        //public static string FromTheLongestName { get; private set; }
         public static string Full { get; private set; }
-        //public static string FromThumbnailWidthLess { get; private set; }
-        //public static string FromThumbnailWidthGreater { get; private set; }
         public static string AutomaticLess { get; private set; }
         public static string AutomaticGreater { get; private set; }
         public static string MinimumFrameThickness { get; private set; }
-        //public static string ZeroThickness { get; private set; }
         public static string VeryThin { get; private set; }
         public static string Thin { get; private set; }
         public static string NormalThickness { get; private set; }
@@ -2152,9 +1996,7 @@ namespace ZipPla
         public static string _Others { get; private set; }
         public static string _ChangeCurrentProfileColor { get; private set; }
         public static string Edit_Tags { get; private set; }
-        //public static string _KeysMouseButtons { get; private set; }
         public static string _BasicOperationSettings { get; private set; }
-        //public static string _MouseGestures { get; private set; }
         public static string _MouseTouchGestures { get; private set; }
         public static string Common_Settings { get; private set; }
 
@@ -2174,8 +2016,6 @@ namespace ZipPla
 
         public static string NoOperation { get; private set; }
 
-        //public static string GoBackAltLeft { get; private set; }
-        //public static string GoForwardAltRight { get; private set; }
         public static string RightClickDownFlickToShowHistory { get; private set; }
 
         public static string ClearMenuForAddressBarHistory { get; private set; }
@@ -2209,10 +2049,8 @@ namespace ZipPla
         public static string EditDropdownOfFilters { get; private set; }
         
         public static string _Add { get; private set; }
-        //public static string AddWithCurrentProfileColor { get; private set; }
         public static string AddWithCurrentProfileColor { get; private set; }
         public static string BookmarkWithCurrentProfileColor { get; private set; }
-        //public static string AddWithNewProfileColor { get; private set; }
         public static string AddWithNewProfileColor { get; private set; }
         public static string BookmarkWithNewProfileColor { get; private set; }
         public static string OnlyCurrentProfileColor { get; private set; }
@@ -2222,7 +2060,6 @@ namespace ZipPla
 
         public static string SelectedColorIsUsedByFollowingBookmarks { get; private set; }
         public static string HowToAddUsedColorDescription { get; private set; }
-        //public static string DoYouUseColorWhichIsCloseToOtherColors { get; private set; }
 
         public static string ChangeCurrentProfileColor { get; private set; }
         public static string WillChangeCurrentProfileColor { get; private set; }
@@ -2237,8 +2074,6 @@ namespace ZipPla
         public static string RealName { get; private set; }
         public static string LoadOnlyProfileColor { get; private set; }
         public static string LoadProfileColor { get; private set; }
-        //public static string SetToCurrentLocation { get; private set; }
-        //public static string SetToCurrentLocationAndState { get; private set; }
 
         public static string FilterWithSelectedText { get; private set; }
         public static string FilterWith1 { get; private set; }
@@ -2250,16 +2085,11 @@ namespace ZipPla
         public static string OpenInBuiltInViewer { get; private set; }
         public static string OpenIn1 { get; private set; }
         public static string Open { get; private set; }
-        //public static string MoveFilesFolders { get; private set; }
         public static string MoveExtractSelectedItems { get; private set; }
         public static string MoveExtractSelectedItemsTo1 { get; private set; }
         public static string AssociatedApplication { get; private set; }
-        //public static string MoveToThisFolder { get; private set; }
         public static string OpenInCurrentWindow { get; private set; }
-        //public static string OpenHere { get; private set; }
-        //public static string MoveToLocationOfThis { get; private set; }
         public static string SubdivideAroundHere { get; private set; }
-        //public static string MoveLocation { get; private set; }
         public static string CurrentZipPla { get; private set; }
         public static string ExecutableInClipboard { get; private set; }
         public static string OpenInExplorer { get; private set; }
@@ -2267,21 +2097,17 @@ namespace ZipPla
         public static string ApplicationIsNotSpecified { get; private set; }
         public static string Rating { get; private set; }
         public static string None { get; private set; }
-        //public static string MiddleClickOnStars { get; private set; }
         public static string Tag { get; private set; }
         public static string RightClickNotToClose { get; private set; }
         public static string RightFlickIsAlsoOk { get; private set; }
         public static string SameAsAbove { get; private set; }
         public static string UncheckAll { get; private set; }
-        //public static string AddTagsFromFileName { get; private set; }
         public static string AddTagsFromName { get; private set; }
         public static string VirtualFolder { get; private set; }
         public static string AddToNewVirtualFolder { get; private set; }
         public static string RemoveFromHistory { get; private set; }
-        //public static string AddToExistingVirtualFolder { get; private set; }
         public static string AddTo1 { get; private set; }
         public static string NoVirtualFoldersInBookmark { get; private set; }
-        //public static string ReloadSelectedThumbnail { get; private set; }
         public static string Cover { get; private set; }
         public static string SetCoverManually { get; private set; }
         public static string SetCoverToThis { get; private set; }
@@ -2295,7 +2121,6 @@ namespace ZipPla
         public static string RightToLeft { get; private set; }
         public static string SinglePage { get; private set; }
         public static string SinglePageWithoutScalingUp { get; private set; }
-        //public static string ForcePageSpread { get; private set; }
         public static string PrioritizePageSpread { get; private set; }
         public static string AllowPageDivision { get; private set; }
         public static string ClearPageSequenceSetting { get; private set; }
@@ -2316,8 +2141,6 @@ namespace ZipPla
         public static string BuiltInViewerSavingSettingsBehaviorDescription { get; private set; }
         public static string ShowThisHintAgainNextTime { get; private set; }
 
-        //public static string _View { get; private set; }
-        //public static string _Image { get; private set; }
         public static string _Move { get; private set; }
         public static string S_lideshow { get; private set; }
         public static string Virtual_Folder { get; private set; }
@@ -2344,20 +2167,15 @@ namespace ZipPla
         public static string MagnifierOperatingGuide { get; private set; }
 
 
-        //public static string ForwardLeftButtonWheelDownCursorRight { get; private set; }
-        //public static string BackWheelUpCursorLeft { get; private set; }
 
 
-        //public static string DefaultClickBehavior { get; private set; }
         public static string NextPage { get; private set; }
         public static string PreviousPage { get; private set; }
         public static string WheelDown { get; private set; }
-        //public static string CursorRight { get; private set; }
         public static string WheelUp { get; private set; }
 
         public static string Specials { get; private set; }
 
-        //public static string CursorLeft { get; private set; }
         public static string LeftClickOnLeftSide { get; private set; }
         public static string LeftClickOnRightSide { get; private set; }
         public static string LeftClickOnTopSide { get; private set; }
@@ -2377,8 +2195,6 @@ namespace ZipPla
         public static string MoveBackOnePage { get; private set; }
         public static string WheelDownOnBar { get; private set; }
         public static string WheelUpOnBar { get; private set; }
-        //public static string CursorDown { get; private set; }
-        //public static string CursorUp { get; private set; }
 
         public static string RightPage { get; private set; }
         public static string LeftPage { get; private set; }
@@ -2392,8 +2208,6 @@ namespace ZipPla
         public static string OpenRight { get; private set; }
         public static string OpenLeft { get; private set; }
 
-        //public static string MiddleClickOnPosteriorHalfOfBar { get; private set; }
-        //public static string MiddleClickOnAnteriorHalfOfBar { get; private set; }
         public static string AutoForwardScroll { get; private set; }
         public static string AutoBackScroll { get; private set; }
         public static string AutoForwardScrollWithoutOverwrap { get; private set; }
@@ -2429,10 +2243,7 @@ namespace ZipPla
         public static string RotateLeft { get; private set; }
         public static string RotateRight { get; private set; }
         public static string CancelRotationSetting { get; private set; }
-        //public static string Binarization { get; private set; }
-        //public static string AutoContrastControl { get; private set; }
 
-        //public static string RemoveMoire { get; private set; }
 
         public static string ToneCurve { get; private set; }
         public static string ToneCurveSepiaTone { get; private set; }
@@ -2446,7 +2257,6 @@ namespace ZipPla
         public static string NearestNeighbor { get; private set; }
         public static string AreaAverage { get; private set; }
 #if !AUTOBUILD
-        //public static string AntiMoire { get; private set; }
 #endif
         public static string LinearizeColorSpace { get; private set; }
         public static string LinearizeColorSpaceDescription { get; private set; }
@@ -2462,7 +2272,6 @@ namespace ZipPla
         public static string PropertiesOf1 { get; private set; }
         public static string Location { get; private set; }
         public static string Icon { get; private set; }
-        //public static string FileName { get; private set; }
         public static string Name { get; private set; }
         public static string FileType { get; private set; }
         public static string Length { get; private set; }
@@ -2483,8 +2292,6 @@ namespace ZipPla
 
         public static string Page { get; private set; }
 
-        //public static string File { get; private set; }
-        //public static string Folder { get; private set; }
         public static string Bytes { get; private set; }
 
         public static string EditTags { get; private set; }
@@ -2492,7 +2299,6 @@ namespace ZipPla
         public static string NewTag1 { get; private set; }
         public static string ProfileColorUnderEditing { get; private set; }
         public static string Add { get; private set; }
-        //public static string Delete { get; private set; }
         public static string Color { get; private set; }
         public static string TagMustBeNoEmptyStringWhichDoesNotIncludeFollowingCharacters { get; private set; }
         public static string TagsCanNotShareSameName { get; private set; }
@@ -2535,7 +2341,6 @@ namespace ZipPla
         public static string DisplayNameCanNotShareSameName { get; private set; }
         public static string FilteringStringMustNotBeEmpty { get; private set; }
 
-        //public static string MouseGestures { get; private set; }
         public static string MouseTouchGestures { get; private set; }
         public static string Enabled { get; private set; }
         public static string GestureToAddCommand { get; private set; }
@@ -2546,14 +2351,12 @@ namespace ZipPla
         public static string InThumbnailWindowTouchGestureMustStartWithHorizontalDirection { get; private set; }
 
 
-        //public static string KeysMouseButtons { get; private set; }
         public static string BasicOperationSettings { get; private set; }
         public static string Inputs { get; private set; }
         public static string Abort { get; private set; }
         public static string InputKeysMouseButtons { get; private set; }
         public static string UnassignedCommandsAreComplemented { get; private set; }
         public static string ThisOperationCanBeAvoidedByAsigningNoOperationToTargetKeys { get; private set; }
-        //public static string IfYouWantToRestoreDefaultLeftClickBehaviorDeleteAllInputsIncludingLeftClick { get; private set; }
         public static string WhenClickOnAndClickConflictTheFormerTakesPrecedence { get; private set; }
         public static string DoYouRestoreDefaultSettingOfKeysMouseButtons { get; private set; }
 
@@ -2571,11 +2374,9 @@ namespace ZipPla
         public static string FolderPath { get; private set; }
         public static string Filter { get; private set; }
         public static string CheckAll { get; private set; }
-        //public static string UncheckAll { get; private set; }
         public static string Save { get; private set; }
         public static string Overwrite { get; private set; }
         public static string Editing1 { get; private set; }
-        //public static string NonEssentialFolderIsIgnoredIfItDoesNotExist { get; private set; }
         public static string IfEssentialFolderDoesNotExistErrorWillBeDisplayed { get; private set; }
         public static string HintRightClickNameOfKdkFileOnAddressBarToEditItAgain { get; private set; }
 
@@ -2597,14 +2398,12 @@ namespace ZipPla
         public static string ContextMenu { get; private set; }
         public static string Standard { get; private set; }
         public static string OnlyTags { get; private set; }
-        //public static string Explorer { get; private set; }
 
         public static string FolderViewSettings { get; private set; }
         public static string DisplayMixingWithFiles { get; private set; }
         public static string DisplayFirst { get; private set; }
         public static string DisplayLast { get; private set; }
         public static string DisplayRespectingToSortOfDirection { get; private set; }
-        //public static string ShowFolderSizeOnStatusBar { get; private set; }
 
 
         public static string AutomaticSelectionSwitching { get; private set; }
@@ -2621,7 +2420,6 @@ namespace ZipPla
         public static string ExceptReadAheadProcess { get; private set; }
         public static string Always { get; private set; }
         public static string LoadArchivesInArchive { get; private set; }
-        //public static string OnlyIfThereIsNoOtherImage { get; private set; }
         public static string TwoLevelUntilFound { get; private set; }
         public static string OneLevelCompletelyNotRecommended { get; private set; }
         public static string DefaultPageSequence { get; private set; }
@@ -2634,25 +2432,18 @@ namespace ZipPla
         public static string SusiePlugins { get; private set; }
         public static string AllowUntestedPlugins { get; private set; }
         public static string SearchNotOnlyZipPlaFolderButAlsoSusieInstallationFolder { get; private set; }
-        //public static string HintMessage { get; private set; }
         public static string ZipPlaUpdateCheck { get; private set; }
         public static string CheckNow { get; private set; }
         public static string Checking { get; private set; }
-        //public static string AskPermissionBeforeInternetConnection { get; private set; }
         public static string ShowDialogBeforeConnection { get; private set; }
         public static string OtherChecksOnStartup { get; private set; }
-        //public static string DoNotShowAgain { get; private set; }
         public static string DragAndDrop { get; private set; }
-        //public static string ShowThumbnails { get; private set; }
-        //public static string OpenInZipPla { get; private set; }
         public static string BrowseInZipPla { get; private set; }
         public static string MoveOrCopyFilesAddItemToVirtualFolder { get; private set; }
         public static string DynamicStringSelection { get; private set; }
         public static string DisplayName { get; private set; }
         public static string DisplayNameForNonSelection { get; private set; }
-        //public static string Command { get; private set; }
         public static string Applications { get; private set; }
-        //public static string Name { get; private set; }
         public static string Params { get; private set; }
         public static string Multi { get; private set; }
         public static string OpenOnClick { get; private set; }
@@ -2665,12 +2456,9 @@ namespace ZipPla
         public static string DoYouRestoreDefaultSettingOfDynamicStringSelection { get; private set; }
         public static string IfUrlIsRegisteredZipPlaAccessesInternet { get; private set; }
         public static string DoYouRestoreDefaultSettingsOfApplications { get; private set; }
-        //public static string AssociatedApplication { get; private set; }
         public static string ExternalApplication { get; private set; }
         public static string Explorer { get; private set; }
-        //public static string MoveLocation { get; private set; }
         public static string BuiltInViewer { get; private set; }
-        //public static string TargetItemsAreSpecifiedByRegularExpression { get; private set; }
         public static string ApplicationFilterDescription { get; private set; }
 
 
@@ -2681,7 +2469,6 @@ namespace ZipPla
         public static string NoReadableFile { get; private set; }
         public static string BuiltInViewerProcessStopsResponding { get; private set; }
 
-        //public static string ToCopyAndPasteItemInCompressedFileKeepItOpenUntilPastingIsCompleted { get; private set; }
 
         public static string DoYouDiscardChangedSettings { get; private set; }
         
@@ -2690,10 +2477,7 @@ namespace ZipPla
         public static string DoYouRenameThis { get; private set; }
 
         public static string DoYouRenameFollowing1Items { get; private set; }
-        //public static string DoYouOverwriteFollowing1Items { get; private set; }
 
-        //public static string DoYouSendSelectedItemsToRecycleBin { get; private set; }
-        //public static string DoYouDeleteSelectedItemsPermanently { get; private set; }
         public static string DoYouSendFollowing1ItemsToRecycleBin { get; private set; }
         public static string DoYouDeleteFollowing1ItemsPermanently { get; private set; }
         public static string DoYouRemoveFollowing1ItemsFromVirtualFolder { get; private set; }
@@ -2722,19 +2506,15 @@ namespace ZipPla
         public static string FollowingDllCouldNotBeLoaded { get; private set; }
         public static string ConfirmItIsNotFor1But2 { get; private set; }
 
-        //public static string _1IsNotFound { get; private set; }
         public static string _1CanNotBeOpend { get; private set; }
 
         public static string BeforeRename { get; private set; }
         public static string AfterRename { get; private set; }
 
-        //public static string DoneCoverSetting { get; private set; }
-        //public static string DonePageSequenceSetting { get; private set; }
 
         public static string _1AlreadyExists { get; private set; }
         public static string ItIsInvalidFileName { get; private set; }
 
-        //public static string NewVersionIsAvailableDoYouOpenDownloadPage { get; private set; }
         public static string ZipPlaWillCheckForUpdate { get; private set; }
         public static string ShowThisDialogAgainNextTime { get; private set; }
         public static string NewVersionIsAvailable { get; private set; }
@@ -2786,7 +2566,6 @@ namespace ZipPla
         public static string MoveHere { get; private set; }
         public static string CopyHere { get; private set; }
 
-        //public static string NowLoading { get; private set; }
 
         public static string NewFolderCanBeCreatedButSomeOfThemWillNotBeDisplayedBecauseOfViewSetting { get; private set; }
 
@@ -2794,13 +2573,10 @@ namespace ZipPla
 
         public static string ItemsCanBeMovedCopiedButSomeOfThemWillNotBeDisplayedBecauseOfItsAttribute { get; private set; }
 
-        //public static string IntegrityErrorBetweenTagsAndProfileColor { get; private set; }
 
         public static string FolderOpenDescription { get; private set; }
         public static string AddBookmarkDescription { get; private set; }
 
-        //public static string Hint { get; private set; }
-        //public static string InTheFutureDoNotShowThisMessage { get; private set; }
         public static string CheckExistenceOfFfmpegAtStartup { get; private set; }
 
         public static string RecommendFfmpeg { get; private set; }

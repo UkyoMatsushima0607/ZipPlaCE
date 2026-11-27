@@ -122,8 +122,6 @@ namespace ZipPla
                     }
                     else
                     {
-                        //m.HWnd = _Control.Handle;
-                        //WndProc(ref m);
                         return true;
                     }
                 }

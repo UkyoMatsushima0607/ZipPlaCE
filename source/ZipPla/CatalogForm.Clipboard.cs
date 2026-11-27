@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -112,7 +111,6 @@ namespace ZipPla
 
             try
             {
-                //selectedPaths = selectedPaths.Where(path => !path.Contains(Path.AltDirectorySeparatorChar)).ToArray();
 
                 if (selectedPaths.Length <= 0)
                 {
@@ -120,7 +118,6 @@ namespace ZipPla
                     return;
                 }
 
-                //var data = new DataObject(DataFormats.FileDrop, selectedPaths);
 
                 var data = GetSelectedDataObject(forClipboard: true);
                 if (data == null) return;
@@ -192,7 +189,6 @@ namespace ZipPla
         private void cutSelection(Keys modifierKeys)
         {
             if (!InRealDirectory) return;
-            //string[] selectedPaths;
             ClipboardViewer_ClipboardHandler_StopRedrawCutFile = true;
             selectionToClipboard(DragDropEffects.Move, modifierKeys);//, out selectedPaths);
             setCutFiles(); // 明示的に
@@ -259,7 +255,6 @@ namespace ZipPla
 
         private void setCutFiles()
         {
-            //IDataObject data = null;
             try
             {
                 var data = Clipboard.GetDataObject();
@@ -277,7 +272,6 @@ namespace ZipPla
             {
                 setCutFiles(null);
             }
-            //return data;
         }
 
         private void setCutFiles(string[] cutFiles)
@@ -295,7 +289,6 @@ namespace ZipPla
 
         private void copySelection(Keys modifierKeys)
         {
-            //string[] dummy;
             selectionToClipboard(DragDropEffects.Copy | DragDropEffects.Link, modifierKeys);//, out dummy);
         }
 
@@ -398,7 +391,6 @@ namespace ZipPla
             {
                 if (cl.Last() == ':') cl += Path.DirectorySeparatorChar;
 
-                //using (var fo = new MsdnMag.FileOperation(callbackSink: null, owner: this))
                 {
                     int dummy;
                     var archiveSkip = ArchiveLoadLevel == ItemLoadLevel.Ignore;
@@ -408,7 +400,6 @@ namespace ZipPla
 
                     var invisibleExists = false;
 
-                    //var moveOrCopy = move ? (Action<string, string, string>)fo.MoveItem : fo.CopyItem;
                     var creates = new List<string>();
                     var isDirs = new List<bool>();
                     foreach (var name in names)
@@ -532,7 +523,6 @@ namespace ZipPla
 
                             addToList(files, append: true, sorPath: cl, addToBookmark: false);
 
-                            //UpdatePreview();
                             if (callAddOrReloadItem)
                             {
                                 foreach (var file in files) addOrReloadItem(file, thumbnailChanged: true, startingGuid: startingGuid);
@@ -547,8 +537,6 @@ namespace ZipPla
                 else
                 {
                     if (!InRealDirectory || !data.GetDataPresent(NativeMethods.CFSTR_FILEDESCRIPTORW) || !data.GetDataPresent(NativeMethods.ZIPPLA_FILECONTENTS)) return;
-                    //var dataEx = data as DataObjectEx;
-                    //if (dataEx == null) return;
 
                     var ZipPlaPERFORMEDDROPEFFECTExists = data.GetDataPresent(NativeMethods.ZIPPLA_PERFORMEDDROPEFFECT);
 
@@ -570,14 +558,9 @@ namespace ZipPla
                         if (fileDescriptors.Length == 0) return;
 
 
-                        //var ienumFormat = idata.EnumFormatEtc(DATADIR.DATADIR_GET);
 
 
-                        //var rgelt = new System.Runtime.InteropServices.ComTypes.FORMATETC[1];
-                        //if (ienumFormat.Next(fileDescriptors.Length, rgelt, null) != 0) return; // S_OK = 0
 
-                        //const int S_OK = 0;
-                        //while (ienumFormat.Next(1, rgelt, null) == S_OK)
 
                         var dstPaths = new string[fileDescriptors.Length];
 
@@ -673,7 +656,6 @@ namespace ZipPla
             }
         }
 
-        // bool alertInvisibleItemsOnPaste(IEnumerable<string> dsts, bool checkPath, bool checkAttribute)
 
         /// <summary>
         /// 貼り付け先 directory に name がすでにあれば、「名前 - コピー.拡張子」「名前 - コピー (2).拡張子」… と空いている名前に変える。
@@ -1041,8 +1023,6 @@ namespace ZipPla
                                     {
                                         r = ConvertToMemoryStream(result0);
                                         result0 = null;
-                                        //string extension;
-                                        //r = GetImageType(r, out extension);
                                         item.FileName = digits.Substring(item.FileName.Length) + item.FileName + extension;
                                         item.FileSize = r.Length;
                                         selectedItems[i] = item;

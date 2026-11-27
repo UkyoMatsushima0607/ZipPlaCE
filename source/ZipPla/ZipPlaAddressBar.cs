@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
-//using TouchLibrary;
 
 namespace ZipPla
 {
@@ -84,14 +83,12 @@ namespace ZipPla
 
     public class ZipPlaAddressBar : System.ComponentModel.Component
     {
-        //const int gap = 2;
 
         private readonly Form ownerForm;
         private readonly Action focusRobber;
         private readonly Control baseControl;
         private string text;
         private readonly List<Button> buttonList = new List<Button>();
-        //private int nextDeleteIndex;
         
         private readonly HashSet<System.Windows.Forms.ContextMenuStrip> visibleContextMenuStripSet = new HashSet<System.Windows.Forms.ContextMenuStrip>();
         public System.Windows.Forms.ContextMenuStrip[] VisibleContextMenuStripSet { get { return visibleContextMenuStripSet.ToArray(); } }
@@ -147,7 +144,6 @@ namespace ZipPla
             makeButtonList(ZipPlaAddressBarCommandSender.Program);
         }
 
-       // LowLevelMouseHook.LowLevelMouseHook lowLevelMouseHook;
 
         public ZipPlaAddressBar(Form owner, Control textBox, Action focusRobber)
         {
@@ -163,8 +159,6 @@ namespace ZipPla
             DragDropStarting += Self_DragDropStarting;
             DragDropFinished += Self_DragDropFinished;
 
-            //lowLevelMouseHook = new LowLevelMouseHook.LowLevelMouseHook();
-            //lowLevelMouseHook.MouseWheel += LowLevelMouseHook_MouseWheel;
             
         }
 
@@ -500,8 +494,6 @@ namespace ZipPla
 
         public event ZipPlaAddressBarMakeButtonStartingEventHandler ZipPlaAddressBarMakeButtonStarting;
 
-        //private Bitmap RightTriangle = null;
-        //private Bitmap DownTriangle = null;
         private int prevButtonHeight = 0;
         private void makeButtonList(ZipPlaAddressBarCommandSender commandSender)
         {
@@ -529,7 +521,6 @@ namespace ZipPla
                     text = e.Text;
                     if (text == null) text = "";
                 }
-                //else
                 if (text == "" || localDirectoryExists(text))
                 {
                     SetBaseControlText("");
@@ -549,7 +540,6 @@ namespace ZipPla
             var location = location0;
             var y = location.Y;
             var height = baseControl.Height;
-            //location.X += 1;
             var splited = text == null ? new string[0] : text.Split(new char[] { Path.DirectorySeparatorChar }, StringSplitOptions.None);
             if(text.StartsWith(@"\\"))
             {
@@ -561,7 +551,6 @@ namespace ZipPla
             var splitedLastIndex = splited.Length - 1;
             var enabled = Enabled;
 
-            //ownerForm.SuspendLayout();
 
             buttonList.Add(null); // 先頭のボタン用
             var buttonHeight = prevButtonHeight;
@@ -630,7 +619,6 @@ namespace ZipPla
                 var separatorButton = new PushButton();
                 separatorButton.FlatStyle = FlatStyle.Popup;
                 separatorButton.BackColor = Color.FromKnownColor(KnownColor.Control);
-                //separatorButton.Size = new Size((10 * buttonHeight + 1) / 14, buttonHeight);
                 separatorButton.Size = new Size(buttonHeight * 3 / 4, buttonHeight);
                 separatorButton.Paint += separatorButton_Paint;
                 separatorButton.Location = location;
@@ -708,7 +696,6 @@ namespace ZipPla
                 buttonList.Add(separatorButton);
                 
             }
-            //ownerForm.ResumeLayout();
 
             // 先頭
             {
@@ -748,7 +735,6 @@ namespace ZipPla
             }
             
 
-            //nextDeleteIndex = 0;
             fitVisibleButtonCount();
         }
 
@@ -921,7 +907,6 @@ namespace ZipPla
 
             protected override void OnMouseLeave(EventArgs e)
             {
-                // MouseDownPoint = null;
 
 
                 if (MouseDownPoint != null && Path != null)
@@ -941,7 +926,6 @@ namespace ZipPla
                         }
 
                         var dataObject = new DataObject(DataFormats.FileDrop, new string[1] { path });
-                        //DragDropStarting?.Invoke(this, mevent);
                         DragDropStarting?.Invoke(this, null);
                         try
                         {
@@ -949,7 +933,6 @@ namespace ZipPla
                         }
                         finally
                         {
-                            //DragDropFinished?.Invoke(this, mevent);
                             DragDropFinished?.Invoke(this, null);
                         }
                     }
@@ -1061,7 +1044,6 @@ namespace ZipPla
                         pushedOnPushed = pushed && ClientRectangle.Contains(PointToClient(Cursor.Position)) && MouseButtons == MouseButtons.Left;
                         pushed = value;
                         Invalidate();
-                        //Refresh();
                     }
                 }
             }
@@ -1143,7 +1125,6 @@ namespace ZipPla
                         if (cms != null) cms.AutoClose = false;
                     }
                 }
-                //focusRobber();
             }
         }
 
@@ -1259,9 +1240,7 @@ namespace ZipPla
                         // その後 AutoClose = true が無効になり Leave イベントも発生しないため
                         // この時点で cms2 の役割は終わり、表示を残すだけの目的で以下のように処理する
                         cms2.AutoClose = false;
-                        //BeginControlUpdate(cms2);
 
-                        //var owner = dropDownItem.Owner as ContextMenuStripEx;
                         var owner = cms2 as ContextMenuStripEx;
                         if (owner != null)
                         {
@@ -1300,7 +1279,6 @@ namespace ZipPla
             {
                 foreach (var cms2 in VisibleContextMenuStripSet)
                 {
-                    //EndControlUpdate(cms2);
                     cms2.AutoClose = true;
                     cms2.Close();
                 }
@@ -1350,7 +1328,6 @@ namespace ZipPla
 
         private string getSeparatorButtonPath(PushButton button)
         {
-            //var separator = false;
             var path = null as string;
             foreach (var b in buttonList)
             {
@@ -1361,7 +1338,6 @@ namespace ZipPla
             return path;
         }
 
-        //private static readonly MethodInfo OnGiveFeedbackMethodInfo = typeof(Control).GetMethod("OnGiveFeedback", BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[1] { typeof(GiveFeedbackEventArgs) }, null);
 
         private void separatorButton_Click(object sender, EventArgs e)
         {
@@ -1376,16 +1352,12 @@ namespace ZipPla
                 curPath = (buttonList[index + 1] as DirectoryButton).Path;
             }
             cms.Items.AddRange(getDirectorySeekingMenuItemArray2(path, curPath, sender, e, cms));
-            //if (RightTriangle == null) RightTriangle = getTriangle(button0.Size, Direction.Right);
-            //if (DownTriangle == null) DownTriangle = getTriangle(button0.Size, Direction.Down);
             cms.Opened += (sender2, e2) =>
             {
-                //button0.Image = DownTriangle;
                 button0.Pushed = true;
             };
             cms.Closing += (sender2, e2) =>
             {
-                //button0.Image = RightTriangle; ;
                 button0.Pushed = false;
             };
             if (AllowDrop && SubControlDragEnter != null && SubControlDragDrop != null)
@@ -1403,7 +1375,6 @@ namespace ZipPla
                     if (e3.Effect == DragDropEffects.Link) e3.Effect = DragDropEffects.None;
                     e3.SetTo(e2);
 
-                    //LowLevelMouseHook_MouseWheel_DraggingInDropDown = cms;
                 };
 
 
@@ -1445,7 +1416,6 @@ namespace ZipPla
                     foreach (var cms in VisibleContextMenuStripSet) cms.Close();
                 }
             }
-            //LowLevelMouseHook_MouseWheel_DraggingInDropDown = null;
         }
         
         [DllImport("user32.dll")]
@@ -1609,7 +1579,6 @@ namespace ZipPla
         }
 
 
-        //private DragDropEffects lastItemEffect;
 
         private static bool NetworkDirectoryShouldBeHidden(string pureDirectoryName) => pureDirectoryName == "print$";
         private static bool DirectoryShouldBeHidden(string path) => DirectoryShouldBeHidden(new DirectoryInfo(path));
@@ -1655,7 +1624,6 @@ namespace ZipPla
                 {
                     continue;
                 }
-                //var name = Path.GetFileName(subdir);
                 var childPath = addDirectorySeparatorChar(subdir);
                 var item = new ZipPlaAddresBarToolStripMenuItem(getDisplayName(childPath), subdir, ownerForm, this);
                 item.MouseDown += Button_MouseDown;
@@ -1671,8 +1639,6 @@ namespace ZipPla
                 }
                 item.MouseUp += (sender2, e2) =>
                 {
-                    //var mb = Control.MouseButtons;
-                    //if (mb == MouseButtons.Left || mb == MouseButtons.None)
                     if (e2.Button == MouseButtons.Left)
                     {
                         var goToNext = item.DropDownItems.Count > 0;
@@ -1732,7 +1698,6 @@ namespace ZipPla
                         }
                         visibleContextMenuStripSet.Add(dropDownCms);
                     };
-                    //dropDownCms.Closing += (sender2, e2) => visibleContextMenuStripSet.Remove(dropDownCms);
                     dropDownCms.Closed += (sender2, e2) => visibleContextMenuStripSet.Remove(dropDownCms);
                     item.NewDropDown = dropDownCms;
                     item.DropDownItems.Add("");
@@ -1753,7 +1718,6 @@ namespace ZipPla
                         if (e4.Effect == DragDropEffects.Link) e4.Effect = DragDropEffects.None;
                         e4.SetTo(e3);
 
-                        //LowLevelMouseHook_MouseWheel_DraggingInDropDown = dd;
                     };
                     dd.DragOver += DropDown_DragOver;
                     dd.DragDrop += DropDown_DragDrop;
@@ -1942,7 +1906,6 @@ namespace ZipPla
         }
 
 
-        //private const int allowance = 32;
         private void fitVisibleButtonCount()
         {
             if (buttonsHiddenForEdit_Visibility != null) return; // 編集のために隠している間は触らない（K27）
@@ -2177,15 +2140,11 @@ namespace ZipPla
             private static readonly FieldInfo downScrollButtonInfo = typeof(ToolStripDropDownMenu).GetField(
                     "downScrollButton", BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance);
 
-            //private ControlTouchListener touchListener;
-            //private TouchAnalyzer touchAnalyzer;
             private GestureListener gestureListener;
 
             public ContextMenuStripEx(): base()
             {
                 Renderer = new escapeAmpersand();
-                //touchAnalyzer = new TouchAnalyzer(touchListener = new ControlTouchListener(this));
-                //touchAnalyzer.Pan += TouchAnalyzer_Pan;
                 gestureListener = new GestureListener(this, new GestureConfig[] {
                     //new GestureConfig(3, 1, 0), // ズーム
                     new GestureConfig(4, 2 | 4 , 8 | 16 ), // パン、向き拘束と慣性なし

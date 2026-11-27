@@ -12,8 +12,6 @@ namespace ZipPla
 {
     public static class BitmapResizer
     {
-        //private static BitmapScalingMode lastBitmapScalingMode;
-        //public static BitmapScalingMode LastBitmapScalingMode { get { return lastBitmapScalingMode; } }
 
         public static Bitmap Load(string fileName)
         {
@@ -76,7 +74,6 @@ namespace ZipPla
             }
 
             var transformedBitmap = new TransformedBitmap(GetBitmapSource(bmp), new ScaleTransform(scaleX, scaleY));
-            //lastBitmapScalingMode = RenderOptions.GetBitmapScalingMode(transformedBitmap);
             return GetBitmap(transformedBitmap);
         }
 

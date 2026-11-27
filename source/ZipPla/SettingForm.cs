@@ -20,7 +20,6 @@ namespace ZipPla
     {
         private CultureInfo[] availableLanguages;
         private CultureInfo preCultureInfo;
-        //private bool prePageLeftToRight;
         private int preMaximumNumberOfHistories;
         private UpdateCheckMode preUpdateCheckMode;
         private bool preDoNotShowAgain;
@@ -31,7 +30,6 @@ namespace ZipPla
         public bool preSearchAlsoSusieInstallationFolder;
         public bool preDynamicStringSelectionsEnabled;
         public bool preDynamicStringSelectionsAllowUserToRenameItem;
-        //public bool preStartWithAccessKey;
         public DynamicStringSelectionInfo[] preDynamicStringSelections;
         public ApplicationInfo[] preApplications;
 
@@ -39,7 +37,6 @@ namespace ZipPla
 
         DataGridViewSorter dgvAppSorter, dgvDssSorter;
 
-        //public bool NeedToReloadCatalog { get; private set; } = false;
 
         private bool SettingChanged
         {
@@ -61,7 +58,6 @@ namespace ZipPla
                 else
                 {
                     preCultureInfo = CurrentCultureInfo;
-                    //prePageLeftToRight = CurrentPageLeftToRight;
                     preMaximumNumberOfHistories = CurrentMaximumNumberOfHistories;
                     preUpdateCheckMode = CurrentUpdateCheckMode;
                     preDoNotShowAgain = CurrentDoNotShowAgain;
@@ -73,7 +69,6 @@ namespace ZipPla
                     preAllowUntestedPlugins = CurrentAllowUntestedPlugins;
                     preSearchAlsoSusieInstallationFolder = CurrentSearchAlsoSusieInstallationFolder;
                     preDynamicStringSelectionsAllowUserToRenameItem = CurrentDynamicStringSelectionsAllowUserToRenameItem;
-                    //preStartWithAccessKey = CurrentStartWithAccessKey;
                     preDynamicStringSelections = CurrentDynamicStringSelections;
                 }
             }
@@ -294,7 +289,6 @@ namespace ZipPla
             set
             {
                 var count = value == null ? 0 : value.Length;
-                //var valueArray = new DataGridViewRow[count];
                 var valueList = new List<DataGridViewRow>();
                 string errString = null;
                 for (var i = 0; i < count; i++)
@@ -302,7 +296,6 @@ namespace ZipPla
                     try
                     {
                         valueList.Add(ApplicationInfoToRow(value[i]));
-                        //valueArray[i] = ApplicationInfoToRow(value[i]);
                     }
                     catch(Exception e)
                     {
@@ -347,8 +340,6 @@ namespace ZipPla
                     break;
                 case ApplicationInfo.OpenInFileInClipboard:
                     result = getApplicationRow(info.Path, null, false, null, Message.ExecutableInClipboard, "", info.MultiItems, info.ShowInContextMenu, info.OpenByClicking);
-                    //result.Cells[cbcMulti.Index].Style.BackColor = Color.LightGray;
-                    //result.Cells[cbcMulti.Index].ReadOnly = true;
                     result.Cells[tbcCommandLineParameter.Index].Style.BackColor = Color.LightGray;
                     result.Cells[tbcCommandLineParameter.Index].ReadOnly = true;
                     break;
@@ -364,7 +355,6 @@ namespace ZipPla
                     {
                         var path = info.Path;
                         var alias = info.Alias;
-                        //var name = ExternalApplicationProvider.GetName(path, alias);
                         if (path != null && path.Length > 0 && path.Last() == Path.DirectorySeparatorChar)
                         {
                             result = getApplicationRow(path, alias, true, path.Substring(0, path.Length - 1), GetName(path, alias), info.CommandLineParameter, true, info.ShowInContextMenu, info.OpenByClicking);
@@ -384,7 +374,6 @@ namespace ZipPla
         }
 
 
-        //readonly int noneDataGridViewHeight;
         readonly int dataGridViewMinimumHeightWithoutColumnHeader;
 
         public SettingForm()
@@ -430,7 +419,6 @@ namespace ZipPla
             if (LoadSettings() == LoadSettings_Result.INIFileNotFound)
             {
                 CurrentCultureInfo = Message.CurrentLanguage;
-                //CurrentPageLeftToRight = LeftToRight;
             }
 
 
@@ -443,7 +431,6 @@ namespace ZipPla
             var newHeight = Math.Min(workingArea.Height, Math.Max(idealInitialHeight, noneDataGridViewHeight + RowsHeight(dgvDynamicStringSelection) + RowsHeight(dgvApplications)));
             Program.PackToRectangleOnScreen(this, newHeight, workingArea);
 
-            //Program.SetInitialHeight(this, dgvApplications);
 
             dgvAppSorter = new DataGridViewSorter(dgvApplications);
             dgvAppSorter.RowsReleased += dgvApplications_SelectionChanged;
@@ -485,12 +472,9 @@ namespace ZipPla
         void setDataGridViewHeight()
         {
             if (!setDataGridViewHeight_Start || WindowState == FormWindowState.Minimized || dgvAppSorter.InRowsHolded || dgvDssSorter.InRowsHolded) return;
-            //if (!setDataGridViewHeight_Start) return;
             var targets = new DataGridView[2] { dgvDynamicStringSelection, dgvApplications };
             var layoutTargets = new Control[2] { gbDynamicStringSelection, gbApplications };
             var count = targets.Length;
-            //var totalUsable = currentHeights.Sum();
-            //int totalUsable;
             var needs = (from t in targets select Math.Max(RowsHeight(t), dataGridViewMinimumHeightWithoutColumnHeader)).ToArray();
             
             var totalNeed = needs.Sum();
@@ -547,7 +531,6 @@ namespace ZipPla
                 totalUsable -= share;
             }
 
-            //var buttom = targets[count - 1].Location.Y + targets[count - 1].Height;
 
             SuspendLayout();
 
@@ -616,7 +599,6 @@ namespace ZipPla
             btnCheckNow.Text = updateChecking ? Message.Checking + "..." : Message.CheckNow;
             cbAskPermissionBeforeConnection.Text = Message.ShowDialogBeforeConnection;
             gbHint.Text = Message.OtherChecksOnStartup;
-            //cbHint.Text = Message.DoNotShowAgain;
             gbDragAndDrop.Text = Message.DragAndDrop;
             rbShowThumbnails.Text = Message.BrowseInZipPla;//Message.OpenInZipPla; // Message.ShowThumbnails;
             rbMoveOrCopy.Text = Message.MoveOrCopyFilesAddItemToVirtualFolder.Replace(@"\n", "\n");
@@ -679,15 +661,11 @@ namespace ZipPla
             newCustomCommandToolStripMenuItem.Text = Message.NewCustomCommand;
 
             tbcName.HeaderText = Message.DisplayName;
-            //using (var g = dgvApplications.CreateGraphics()) { tbcName.MinimumWidth = (int)Math.Ceiling(g.MeasureString(Message.Name, tbcName.HeaderCell.Style.Font).Width); }
             tbcCommandLineParameter.HeaderText = Message.Params;
             cbcMulti.HeaderText = Message.Multi;
             tbcShowInContextMenu.HeaderText = Message.ShowInContextMenu;
             tbcOpenByClicking.HeaderText = Message.OpenOnClick;
-            //cbAlwaysEnableAccessKey.Text = Message.EnableAccessKeysInAlsoBookmark.Replace("&", "&&");
 
-            //var w = btnDelete.Left - btnAdd.Right;
-            //btnAccessKeyHint.Left = cbAlwaysEnableAccessKey.Right + w;
             btnAccessKeyHint.Text = null;
             btnAccessKeyHint.Width = btnAccessKeyHint.MinimumSize.Width;
             btnAccessKeyHint.Text = Message.AboutAccessKey;
@@ -731,12 +709,9 @@ namespace ZipPla
             dgvApplications.EndEdit();
             foreach (DataGridViewRowWithData row in dgvApplications.Rows)
             {
-                //row.Cells[tbcShowInContextMenu.Index].ToolTipText = Message.TargetItemsAreSpecifiedByRegularExpression;
-                //row.Cells[tbcOpenByClicking.Index].ToolTipText = Message.TargetItemsAreSpecifiedByRegularExpression;
                 switch (row.Path)
                 {
                     case ApplicationInfo.AssociatedApplication:
-                        //row.Cells[tbcName.Index].Value = Message.AssociatedApplication;
                         {
                             var alias = row.Alias;
                             var defaultName = getDefaultName(row);
@@ -751,7 +726,6 @@ namespace ZipPla
                         }
                         break;
                     case ApplicationInfo.BuiltInReader:
-                        //row.Cells[tbcName.Index].Value = Message.BuiltInViewer;
                         {
                             var alias = row.Alias;
                             var defaultName = getDefaultName(row);
@@ -766,7 +740,6 @@ namespace ZipPla
                         }
                         break;
                     case ApplicationInfo.MoveLocation:
-                        //row.Cells[tbcName.Index].Value = Message.CurrentZipPla;
                         {
                             var alias = row.Alias;
                             var defaultName = getDefaultName(row);
@@ -784,7 +757,6 @@ namespace ZipPla
                         row.Cells[tbcName.Index].Value = Message.ExecutableInClipboard;
                         break;
                     case ApplicationInfo.Explorer:
-                        //row.Cells[tbcName.Index].Value = Message.Explorer;
                         {
                             var alias = row.Alias;
                             var defaultName = getDefaultName(row);
@@ -800,7 +772,6 @@ namespace ZipPla
                         break;
                     default:
                         {
-                            //var path = row.Path;
                             var alias = row.Alias;
                             var name = GetName(row.Path, alias);
                             if (alias != null)
@@ -833,7 +804,6 @@ namespace ZipPla
         {
             var config = new GeneralConfig();
             config.Language = CurrentCultureInfo.ToString();
-            //config.DefaultPageLeftToRight = CurrentPageLeftToRight;
             var currentMaximumNumberOfHistories = CurrentMaximumNumberOfHistories;
             var reducedMaximumNumberOfHistories = currentMaximumNumberOfHistories < config.MaximumNumberOfHistories;
             config.MaximumNumberOfHistories = currentMaximumNumberOfHistories;
@@ -845,7 +815,6 @@ namespace ZipPla
             config.AllowUntestedPlugins = CurrentAllowUntestedPlugins;
             config.SearchAlsoSusieInstallationFolder = CurrentSearchAlsoSusieInstallationFolder;
             config.DynamicStringSelectionsAllowUserToRenameItem = CurrentDynamicStringSelectionsAllowUserToRenameItem;
-            //config.StartWithAccessKey = CurrentStartWithAccessKey;
             config.DynamicStringSelections = CurrentDynamicStringSelections;
             config.Applications = CurrentApplications;
             var error = config.Save();
@@ -881,13 +850,11 @@ namespace ZipPla
         {
 
             string language;
-            //bool defaultPageLeftToRight;
             int maximumNumberOfHistories;
             bool doNotShowAgain, checkNgen;
             DragAndDropAction dragAndDrop;
             var config = new GeneralConfig();
             language = config.Language; if (string.IsNullOrEmpty(language)) language = Message.CurrentLanguage.ToString();
-            //if (config.DefaultPageLeftToRight != null) defaultPageLeftToRight = (bool)config.DefaultPageLeftToRight; else defaultPageLeftToRight = LeftToRight;
             maximumNumberOfHistories = config.MaximumNumberOfHistories;
             doNotShowAgain = config.ShowHintOnlyOnce;
             checkNgen = config.CheckNgen;
@@ -904,7 +871,6 @@ namespace ZipPla
             {
                 altLanguage = Message.CurrentLanguage;
             }
-            //CurrentPageLeftToRight = defaultPageLeftToRight;
             CurrentMaximumNumberOfHistories = maximumNumberOfHistories;
             CurrentDoNotShowAgain = doNotShowAgain;
             CurrentCheckNgen = checkNgen;
@@ -917,12 +883,10 @@ namespace ZipPla
             CurrentAllowUntestedPlugins = config.AllowUntestedPlugins;
             CurrentSearchAlsoSusieInstallationFolder = config.SearchAlsoSusieInstallationFolder;
             CurrentDynamicStringSelectionsAllowUserToRenameItem = config.DynamicStringSelectionsAllowUserToRenameItem;
-            //CurrentStartWithAccessKey = config.StartWithAccessKey;
             CurrentApplications = config.Applications;
 
             CurrentUpdateCheckMode = updateConfig.Mode ?? (updateConfig.LastCheckTime == DateTime.MinValue ? UpdateCheckMode.Default : UpdateCheckMode.Silent);
 
-            //dgvDynamicStringSelection.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.AllCells);
 
             SettingChanged = false;
 
@@ -962,9 +926,7 @@ namespace ZipPla
         
         private void btnOK_Click(object sender, EventArgs e)
         {
-            //var preL2R = prePageLeftToRight;
             SaveSettings();
-            //NeedToReloadCatalog = preL2R != prePageLeftToRight;
             Close();
             try
             {
@@ -995,7 +957,6 @@ namespace ZipPla
             try
             {
                 var index = cbLanguage.SelectedIndex;
-                //var temp = Message.CurrentLanguage;
                 if (cbLanguage.SelectedItem?.ToString() != availableLanguages[index].NativeName)
                 {
                     return;
@@ -1003,7 +964,6 @@ namespace ZipPla
                 Message.CurrentLanguage = availableLanguages[index];
                 SetMessages();
                 Program.multiLangForm.SetMessages();
-                //setCurrentLanguage(temp);
             }
             catch (Exception error)
             {
@@ -1040,13 +1000,11 @@ namespace ZipPla
 
         private void updateAndEditLanguageFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //var temp = Message.CurrentLanguage;
             var save = CurrentCultureInfo;
             try
             {
                 setCurrentLanguage(save);
                 var path = Message.UpdateCurrentLanguage(true);
-                //setCurrentLanguage(temp);
                 System.Diagnostics.Process.Start("notepad", $"\"{path}\"");
             }
             catch(Exception error)
@@ -1077,7 +1035,6 @@ namespace ZipPla
             var paths = (from info in CurrentApplications let path = info.Path where !string.IsNullOrEmpty(path) && (path.First() == '<') select path).ToArray();
 
             associatedApplicationToolStripMenuItem.Enabled = !paths.Contains(ApplicationInfo.AssociatedApplication);
-            //externalApplicationToolStripMenuItem.Enabled = !paths.Contains(ApplicationInfo.);
             explorerToolStripMenuItem.Enabled = !paths.Contains(ApplicationInfo.Explorer);
             moveLocationToolStripMenuItem.Enabled = !paths.Contains(ApplicationInfo.MoveLocation);
             sendTheItemInTheClipboardToolStripMenuItem.Enabled = !paths.Contains(ApplicationInfo.OpenInFileInClipboard);
@@ -1096,12 +1053,10 @@ namespace ZipPla
         {
             addApplicationRow(ApplicationInfoToRow(GeneralConfig.GetDefaultApplications().First(i => i.Path == ApplicationInfo.AssociatedApplication)));
 
-            //addApplicationRow(ApplicationInfo.AssociatedApplication, null, Message.AssociatedApplication, "", AnyPattern, AnyPattern, null, tbcCommandLineParameter);
         }
 
         private void externalApplicationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //Program.SetInitialCondition(openFileDialogExecutableFile, CurrentExternalViewer);
             if (openFileDialogExecutableFile.ShowDialog() == DialogResult.OK)
             {
                 var path = openFileDialogExecutableFile.FileName;
@@ -1194,9 +1149,7 @@ namespace ZipPla
             result.Cells[tbcCommandLineParameter.Index].Value = param;
             result.Cells[cbcMulti.Index].Value = multi;
             result.Cells[tbcShowInContextMenu.Index].Value = support;
-            //result.Cells[tbcShowInContextMenu.Index].ToolTipText = Message.TargetItemsAreSpecifiedByRegularExpression;
             result.Cells[tbcOpenByClicking.Index].Value = click;
-            //result.Cells[tbcOpenByClicking.Index].ToolTipText = Message.TargetItemsAreSpecifiedByRegularExpression;
             return result;
         }
 
@@ -1426,12 +1379,8 @@ namespace ZipPla
             }
         }
 
-        //public const string BookImagePattern = @"zip;rar;pdf;7z;tar;bmp;gif;jpg;jpeg;png;exf;tiff;tif;ico;emf;wmf";
-        //public const string BookPattern = @"zip;rar;pdf;7z;tar;\";
         
-        //public static readonly string BookAndBookPagePattern = @"/(\.(" + PackedImageLoader.SupportedArchiveFileFilter.Substring(2).Replace(";*.", "|") + @")|\\)$|\//i";
         public const string FilePattern = @"*";
-        //public const string FolderPattern = @"sor;\";
         public const string FolderPattern = @"\";
 
         private void btnDelete_Click(object sender, EventArgs e)
@@ -1515,7 +1464,6 @@ namespace ZipPla
             cbDynamicStringSelectionAllowUserToRename.Enabled = enabled;
             dgvDynamicStringSelection.Enabled = enabled;
             btnDynamicStringSelectionAdd.Enabled = enabled;
-            //btnDynamicStringSelectionDefault.Enabled = enabled;
             btnDynamicStringSelectionDelete.Enabled = enabled && dgvDynamicStringSelection.SelectedRows.Count > 0;
         }
 
@@ -1633,7 +1581,6 @@ namespace ZipPla
 
         private void btnViewerMemoryUsageHelp_Click(object sender, EventArgs e)
         {
-            //MessageBox.Show(this, Message.BuiltInViewerMemoryUsageDescription.Replace("\\n", "\n"), Message.BuiltInViewerMemoryUsage, MessageBoxButtons.OK, MessageBoxIcon.Information);
             
             ShowPopup(sender, Message.BuiltInViewerMemoryUsageDescription.Replace("\\n", "\n"));
         }
@@ -1724,13 +1671,11 @@ namespace ZipPla
             btnDelete.PerformClick();
         }
 
-        //public static readonly string ExplorerPath = Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
     }
 
     public class GeneralConfig : Configuration
     {
         public string Language;
-        //public bool? DefaultPageLeftToRight = null;
         public int MaximumNumberOfHistories = 100;
         public bool ShowHintOnlyOnce = false;
         public bool CheckNgen = false;
@@ -1741,7 +1686,6 @@ namespace ZipPla
         public string ReadHintVersion = null;
         public bool DynamicStringSelectionsEnabled = true;
         public bool DynamicStringSelectionsAllowUserToRenameItem = false;
-        //public bool StartWithAccessKey = false;
         public DynamicStringSelectionInfo[] DynamicStringSelections = DefaultDynamicStringSelections;
         public ApplicationInfo[] Applications = GetDefaultApplications();
 
@@ -1753,7 +1697,6 @@ namespace ZipPla
         
         public static ApplicationInfo[] GetDefaultApplications()
         {
-            //DefaultApplications[3].Alias = Message.OpenInExplorer;
             return DefaultApplications;
         }
 
@@ -1765,7 +1708,6 @@ namespace ZipPla
             new ApplicationInfo(ApplicationInfo.AssociatedApplication, null, null, SettingForm.FilePattern, SettingForm.AnyPattern, false),
             new ApplicationInfo(ApplicationInfo.MoveLocation, null, null, SettingForm.AnyPattern, SettingForm.AnyPattern, false),
             new ApplicationInfo(ApplicationInfo.Explorer, null, "/select,", "", SettingForm.AnyPattern, false),
-            //new ApplicationInfo(SettingForm.ExplorerPath, null, "/select,", "", SettingForm.AnyPattern, false),
         };
     }
 }

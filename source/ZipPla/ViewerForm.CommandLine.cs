@@ -255,8 +255,6 @@ namespace ZipPla
 
         private static void addText(ref string text, string text2)
         {
-            //if (string.IsNullOrEmpty(text)) text = text2;
-            //else
             text += " " + text2;
         }
 
@@ -361,9 +359,7 @@ namespace ZipPla
 
         public ViewerForm(string path, int page, CommandLineOptionInfo info)
         {
-            //Program.SetPriority(ProcessPriorityClass.BelowNormal);
             this.ipcLookAheadInfo = new IpcLookAheadInfo(); // null でないことが重要
-                                                            //this.ipcReportFromViewerToCatalog = ipcReportFromViewerToCatalog;
 
             if (info != null)
             {
@@ -374,7 +370,6 @@ namespace ZipPla
                 ipcLookAheadInfo.DefaultBinding = info.DefaultBindingMode ?? ipcLookAheadInfo.DefaultBinding;
                 ipcLookAheadInfo.InitialFullscreenMode = info.InitialFullscreenMode;
                 ipcLookAheadInfo.ReadOnMemoryMode = info.ReadOnMemoryMode ?? ipcLookAheadInfo.ReadOnMemoryMode;
-                //CommandLineOptionInfoForLookAhead = info;
             }
             ipcLookAheadInfo.Path = path;
             ipcLookAheadInfo.Page = page;
@@ -383,26 +378,17 @@ namespace ZipPla
             
 
             Constructor(info);
-            //Constructor(initialFullscreenMode, alwaysHideUI, backColor: Color.Black, aia: ArchivesInArchiveMode.Ignore);
 
             if (LoadSettingToShown_fullscreen || LoadSettingToShown_maximized)
             {
-                //Visible = false;
                 ViewerForm_Shown_VisibleToFalse = true;
                 WindowState = FormWindowState.Minimized;
             }
 
-            //tmWatchIpc_Tick(null, null);
 
-            //Load += (sender, e) => tmWatchIpc_Tick(sender, null);
-            //ViewerForm_Load_CallTick = true;
 
-            //tmWatchIpc.Start();
-            //var visibleTrue = !LoadSettingToShown_fullscreen;
             Shown += (sender, e) =>
             {
-                //WindowState = FormWindowState.Minimized;
-                //Visible = false;
                 tmWatchIpc_Tick(sender, null); // Load で呼び出すと読み込みが早かった場合にエラー。しかも表示を２回行うので時間も無駄になる
                 Program.StartCheckUpdateAndNgen(this, checkNgen);
                 PackedImageLoader.CheckSevenZipExistence(this);

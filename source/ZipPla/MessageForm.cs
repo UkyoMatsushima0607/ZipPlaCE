@@ -291,7 +291,6 @@ namespace ZipPla
                 }
                 else
                 {
-                    //workingArea = Screen.FromRectangle(owner.DisplayRectangle).WorkingArea;
                     workingArea = Screen.FromControl(owner).WorkingArea;
                     if (owner is Form ownerForm && ownerForm.TopMost)
                     {

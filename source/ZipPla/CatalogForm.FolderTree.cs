@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -112,7 +111,6 @@ namespace ZipPla
                             explorerTreeView_TreeWndDragEnter_FileType = e.KeyState == (int)Keys.LButton ? DragDropFileType.RealDefault : DragDropFileType.RealAlt;
                         }
                     }
-                    //else if (explorerTreeView_AllowDropVirtualFile && data.GetDataPresent(NativeMethods.ZIPPLA_FILECONTENTS))
                     else if (explorerTreeView_AllowDropVirtualFile && e.KeyState == DragEventKeyState_LeftButton && data.GetDataPresent(NativeMethods.ZIPPLA_FILECONTENTS))
                     {
                         explorerTreeView_TreeWndDragEnter_FileType = e.KeyState == (int)Keys.LButton ? DragDropFileType.Virtual : DragDropFileType.None;
@@ -154,7 +152,6 @@ namespace ZipPla
                     {
                         var pathInLower = path.ToLower();
                         if (pathInLower.Last() == ':') pathInLower += Path.DirectorySeparatorChar;
-                        //var pathInLower2 = pathInLower[pathInLower.Length - 1] == Path.DirectorySeparatorChar ? pathInLower : (pathInLower + Path.DirectorySeparatorChar);
                         if (explorerTreeView_TreeWndDragEnter_Files != null)
                         {
                             var sameCheck = sameDirMode == SameDirEffectMode.Ignore;
@@ -212,7 +209,6 @@ namespace ZipPla
                         var bounds = node.Bounds;
                         //var imageBound = treeViewWnd.ImageList.ImageSize; // 通常の ImageList ではない
                         if (pos.X < bounds.Left - bounds.Height)
-                        //if (pos.X < bounds.Left - imageBound.Width)
                         {
                             node.Expand();
                         }
@@ -261,12 +257,10 @@ namespace ZipPla
                                 if ((e.AllowedEffect & DragDropEffects.Move) == DragDropEffects.Move && explorerTreeView_TreeWndDragEnter_Files.All(file => Path.GetPathRoot(file).ToLower() == dstRoot))
                                 {
                                     defaultEffect = DragDropEffects.Move;
-                                    //pasteToTarget(this, path, e.Data, DragDropEffects.Move);
                                 }
                                 else if ((e.AllowedEffect & DragDropEffects.Copy) == DragDropEffects.Copy)
                                 {
                                     defaultEffect = DragDropEffects.Copy;
-                                    //pasteToTarget(this, path, e.Data, DragDropEffects.Copy);
                                 }
                                 else
                                 {
@@ -468,7 +462,6 @@ namespace ZipPla
         private void cbLocation_DragEnter(object sender, DragEventArgs e)
         {
 
-            //if (dragOuting)
             if (zabLocation.DragOuting)
             {
                 e.Effect = DragDropEffects.None;

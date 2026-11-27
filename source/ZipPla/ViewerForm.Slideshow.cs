@@ -65,7 +65,6 @@ namespace ZipPla
 
             if (PreFilteredImageArray == null || PreFilteredImageArray.Length <= 0)
             {
-                //setSlideshow(0);
                 slideshowStop();
                 return;
             }
@@ -97,7 +96,6 @@ namespace ZipPla
                     }
                     else
                     {
-                        //setSlideshow(0);
                         slideshowStop();
                     }
                 }

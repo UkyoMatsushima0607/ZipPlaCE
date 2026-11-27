@@ -114,7 +114,6 @@ namespace ZipPla
                                 Size = new Size((buf16[2] << 8) | buf16[3], (buf16[0] << 8) | buf16[1]);
                                 return;
 
-                                //return new ImageInfo((buf[2] << 8) | buf[3], (buf[0] << 8) | buf[1], 0);
                             }
                             var seek = ((buf16[2] << 8) | buf16[3]) - 2;
                             if (fs.Seek(seek, SeekOrigin.Current) < seek) throw new NotSupportedException();
@@ -141,7 +140,6 @@ namespace ZipPla
                             Size = new Size(width, height);
                             BitPerPixel = bpp;
                             return;
-                            //return new ImageInfo(width, height, bpp);
                         }
                     case 0x424d: // BMP
                         if (fs.Seek(12, SeekOrigin.Current) < 12 || fs.Read(buf16, 0, 16) < 16) throw new NotSupportedException();
@@ -185,7 +183,6 @@ namespace ZipPla
                             Size = new Size(width, height);
                             BitPerPixel = bpp;
                             return;
-                            //return new ImageInfo(width, height, bpp);
 
                         }
                     case 0xd7cd: // WMF（ベクター画像なのでサイズにあまり意味はない）
@@ -269,8 +266,6 @@ namespace ZipPla
                                 BitPerPixel = 0;
                             }
 
-                            //var alpha = (pixelFormatFlag & 0x01) == 0x01;
-                            //var color = (pixelFormatFlag & 0x04) == 0x04;
 
                             return;
                         }

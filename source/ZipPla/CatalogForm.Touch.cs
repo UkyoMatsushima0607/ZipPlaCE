@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -157,7 +156,6 @@ namespace ZipPla
                 control.Focus();
                 Application.DoEvents();
                 PerformMouseDown(control, new MouseEventArgs(button, 1, clientLocation.X, clientLocation.Y, 0));
-                //PerformMouseMove(control, new MouseEventArgs(button, 1, clientLocation.X, clientLocation.Y, 0));
                 Application.DoEvents();
                 PerformMouseUp(control, new MouseEventArgs(button, 1, clientLocation.X, clientLocation.Y, 0));
                 return true;
@@ -275,7 +273,6 @@ namespace ZipPla
             }
         }
 
-        //private bool TouchListener_Pan_Gesturing = false;
         private void gestureListener_Pan(object sender, PanEventArgs e)
         {
             // DataGridViewScrollBarTouchFixer が先行することが前提
@@ -328,7 +325,6 @@ namespace ZipPla
             }
 
             TouchListener_Pan_HoldedControl = e.End ? null : control;
-            //MessageBox.Show($"{control}\n{OnMouseDownMethodInfo}\n{OnMouseMoveMethodInfo}\n{OnMouseUpMethodInfo}");
         }
 
         private bool TouchListener_Pan_Test(Control control, PanEventArgs e, out Point clientPoint)

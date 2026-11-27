@@ -13,7 +13,6 @@ namespace ZipPla
         // Length >= 1 であること
         private static readonly ZipPlaInfoParam[] zipPlaInfoParamsPrototype = new ZipPlaInfoParam[]
         {
-            //new ZipPlaInfoParam("c", @"(\d{1,9})(\.\d+)?", // \d は全角の数字なども含む
             new ZipPlaInfoParam("c", @"([0-9]{1,9})(\.[0-9]+)?",
                 (s)=>Tuple.Create(int.Parse(s[0]), string.IsNullOrEmpty(s[1])?0.0:double.Parse("0" + s[1])),
                 (o)=>
@@ -33,8 +32,6 @@ namespace ZipPla
                 (s)=>int.Parse(s[0]),
                 (o)=>o.ToString()),
             new ZipPlaInfoParam("t", @"((?:[^,]+,)*[^,]+,?)",
-                //(s)=>(from ss in s[0].Split(new char[1] {','}, StringSplitOptions.RemoveEmptyEntries) select ss.Trim()).OrderBy(entry => entry, new LogicalStringComparer()).ToArray(),
-                //(o)=>string.Join(",", (o as string[]).OrderBy(entry => entry, new LogicalStringComparer()).ToArray()))
                 (s)=>(from ss in s[0].Split(new char[1] {','}, StringSplitOptions.RemoveEmptyEntries) select ss.Trim()).ToArray(),
                 (o)=>string.Join(",", o as string[])),
             new ZipPlaInfoParam("d", @"(l|r)?",
@@ -141,7 +138,6 @@ namespace ZipPla
             return tags.All(tag => canBeTagRegex.IsMatch(tag));
         }
         
-        //private static Regex getOnlyRatingRegex = new Regex(@"\{zpi\$(?:r|[^}]*;r)=([1-5]).*\}[^\\\/]*[\\\/]?$", RegexOptions.Compiled);
         private static readonly Regex getOnlyRatingRegex = new Regex(@"\{zpi\$\s*(?:r|[^}\\\/]*;\s*r)\s*=\s*([1-5])\s*(?:;[^}\\\/]*)?\}[^\\\/]*[\\\/]?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         public static int GetOnlyRating(string path)
         {
@@ -206,7 +202,6 @@ namespace ZipPla
                 pettern0 += @"(?:" + info.MnemonicPatternPair + ")|";
             }
             pettern0 = pettern0.Substring(0, pettern0.Length - 1) + @")";
-            //var fileNameRegexPattern = @"\s*\{\s*zpi\s*\$\s*((?:" + pettern0 + ";)*" + pettern0 + @")?;?\s*\}\s*"; // 前後の空白を吸収
             var fileNameRegexPattern = @"\s?\{\s*zpi\s*\$\s*((?:" + pettern0 + ";)*" + pettern0 + @")?;?\s*\}"; // 頭の空白を最大一つだけ吸収
             fileNameRegex = new Regex(fileNameRegexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }

@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -266,7 +265,6 @@ namespace ZipPla
                         var iconPath = !IsVirtualPath ? path : null;
                         if (cond != LoadResult.LoadError)
                         {
-                            //using (var b = GetFileDirectoryForeBrush(path))
                             var b = GetFileDirectoryForeBrush(path);
                             {
                                 drawFileImage(e.Graphics, thumbRect, tvCatalog.Font, b/*Brushes.Black*/, str, iconPath, lastWriteTime, null, isDir, isExist: InDirectoryVirtualDirectoryOrSmartDirectory);
@@ -302,7 +300,6 @@ namespace ZipPla
                             InMovie && getMoviePostionTuple(name)?.Equals(LocationZipPlaInfo.ThumbnailInfo) == true ||
                             InArchive && e.DataIndex == LocationZipPlaInfo.ThumbnailInfo?.Item1)
                         {
-                            //e.Graphics.DrawString(Message.Cover, tvCatalog.Font, Brushes.Black, thumbRect);
                             var font = Program.StyledFont(tvCatalog.Font, FontStyle.Bold); // 描くたびに作らない（X19）
                             drawSimpleString(e.Graphics, Message.Cover, font, thumbRect, Color.Black, Brushes.Pink, tvCatalog_ThumbnailPaint_CoverStringWidthDictionary);
                         }
@@ -319,13 +316,11 @@ namespace ZipPla
         private void tvCatalog_MouseMove_RatingChangePart()//(int mouseDataIndex)
         {
             if (!showRating) return;
-            //if (mgCatalog.InGesturing) return;
             if (!InDirectoryVirtualDirectoryOrSmartDirectory) return;
             if (CreatingZipPathArray) return;
             if (drawRating_Bound.IsEmpty) return;
             var clientCursorPosition = tvCatalog.PointToClient(Cursor.Position);
             var dataIndex = mgCatalog.InGesturing || cmsRightClick.Visible ? -1 : tvCatalog.PointToIndex(clientCursorPosition);
-            //var dataIndex = mgCatalog.InGesturing ? -1 : mouseDataIndex;
 
             Graphics g = null;
 
@@ -350,7 +345,6 @@ namespace ZipPla
                     }
                 }
                 tvCatalog_MouseMove_RatingChangePart_TempIndex = -1;
-                //tvCatalog_MouseMove_RatingChangePart_MouseEnterTime = DateTime.MaxValue;
                 toolTip.Hide(tvCatalog);
             }
 
@@ -441,7 +435,6 @@ namespace ZipPla
                         }
                     }
                     tvCatalog_MouseMove_RatingChangePart_TempIndex = -1;
-                    //tvCatalog_MouseMove_RatingChangePart_MouseEnterTime = DateTime.MaxValue;
                     toolTip.Hide(tvCatalog);
                 }
             }
@@ -452,7 +445,6 @@ namespace ZipPla
         private void tagToolStripMenuItem_Paint(object sender, PaintEventArgs e)
         {
             var rect = e.ClipRectangle;
-            //var rect = (sender as ToolStripMenuItem).Bounds;
             rect.Width -= rect.Height * 3 / 2;// selectedFileNameToolStripTextBox.ContentRectangle.Width;// - cmsRightClick.Left;
 
             rect.Y -= 1; // Windows 10 64bit 2016/09 100%, 175%, 225% でドットレベルでの一致を確認
@@ -494,7 +486,6 @@ namespace ZipPla
         {
             var changed = SetItemLoadLevel(ref itemLoadLevel, toolStripMenuItem,
                 itemLoadLevel == ItemLoadLevel.Full ? ItemLoadLevel.Header : itemLoadLevel == ItemLoadLevel.Header ? ItemLoadLevel.Ignore : ItemLoadLevel.Full, // エクスプローラーのプロパティと同じ順
-                                                                                                                                                                //itemLoadLevel == ItemLoadLevel.Ignore ? ItemLoadLevel.Full : ItemLoadLevel.Ignore,
                 checkAllLoadLevel: true);
             if (changed && InDirectoryVirtualDirectoryOrSmartDirectory) UpdatePreview();
         }
@@ -562,7 +553,6 @@ namespace ZipPla
 
             var text = bookmark.SimpleBookmark?.GetDisplayString() ?? "";
             var font = e.CellStyle.Font;
-            //var size = TextRenderer.MeasureText(text, font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
             var size = MeasureStringSizeByTextRenderer(e.Graphics, text, font, dgvDirectoryList_CellPainting_SizeDictionary);
 
             var rect = e.CellBounds;
@@ -603,8 +593,6 @@ namespace ZipPla
                 e.Graphics.DrawLine(/*isSelected ? Pens.White : foreColor == Color.White ? Pens.White :*/isSelected ? Pens.Gray : Pens.LightGray,
                     e.ClipBounds.Left + margin, vCenter, e.ClipBounds.Right - margin, vCenter);
 
-                //rect.X = Math.Max(rect.X, rect.X + (e.CellBounds.Width - rect.Width) / 2) - margin;
-                //rect.Width = Math.Min(rect.Width + 2 * margin, e.CellBounds.Right - rect.Left);
 
                 rect.X = e.CellBounds.X;
                 rect.Width = e.CellBounds.Width;
@@ -617,7 +605,6 @@ namespace ZipPla
 
         }
 
-        //private ToolStripMenuItem[] setMenuItemEventHandler_menuItemArray = null;
         private void setMenuItemEventHandler()
         {
             var list = new List<ToolStripMenuItem>();
@@ -632,13 +619,11 @@ namespace ZipPla
                     }
                 }
             }
-            //setMenuItemEventHandler_menuItemArray = list.ToArray();
 
 
             ForeColorManager.Set(blackToolStripMenuItem, grayToolStripMenuItem, selectColorToolStripMenuItem);
             ForeColorManager.Set(list);
 
-            //ToolStripManager.Renderer = new ToolStripProfessionalRenderer(new SuitableForeColorProfessionalColorTable());
         }
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
@@ -671,22 +656,17 @@ namespace ZipPla
             var info = new ZipPlaInfo(cl);
             info.ThumbnailInfo = null;
             var newPath = info.GetPathOfCurrentInfo(isDir: false); // InMovie または InArchive なら親は動画または圧縮ファイルでありフォルダではない
-            //StopReloadAndRenameCurrentLocation(cl, info.GetPathOfCurrentInfo(), (success) =>
             StopReloadAndRenameCurrentLocation(cl, newPath, (success) =>
             {
                 string preloc;
                 int prelen;
                 if (success && undoBufferIndex > 0 && newPath.StartsWith(preloc = undoBuffer[undoBufferIndex - 1].Location + Path.DirectorySeparatorChar) &&
-                    // cl.Substring(prelen = preloc.Length).ToLower() == undoBuffer[undoBufferIndex - 1].SelectedFileName.ToLower())
                     newPath.Substring(prelen = preloc.Length).ToLower() == undoBuffer[undoBufferIndex - 1].SelectedFileName.ToLower())
                 {
-                    //currentLocation = newPath;
-                    //undoBuffer[undoBufferIndex - 1].SelectedFileName = newPath.Substring(prelen);
                     UpdatePreview(renamedLocation: newPath);
                 }
                 else if (success)
                 {
-                    //UpdatePreview(renamedLocation: newPath);
                     changeCurrentAndGoUpFromCurrentLocation(newPath);
                 }
                 else
@@ -715,20 +695,15 @@ namespace ZipPla
             try { oldName = Path.GetFileName(cl); } catch { oldName = cl; }
             string preloc;
             int prelen;
-            //StopReloadAndRenameCurrentLocation(cl, info.GetPathOfCurrentInfo(), (success) =>
             StopReloadAndRenameCurrentLocation(cl, newPath, (success) =>
             {
                 if (success && undoBufferIndex > 0 && newPath.StartsWith(preloc = undoBuffer[undoBufferIndex - 1].Location + Path.DirectorySeparatorChar) &&
-                    //cl.Substring(prelen = preloc.Length).ToLower() == undoBuffer[undoBufferIndex - 1].SelectedFileName.ToLower())
                     newPath.Substring(prelen = preloc.Length).ToLower() == undoBuffer[undoBufferIndex - 1].SelectedFileName.ToLower())
                 {
-                    //currentLocation = newPath;
-                    //undoBuffer[undoBufferIndex - 1].SelectedFileName = newPath.Substring(prelen);
                     btnGoToBack.PerformClick();
                 }
                 else if (success)
                 {
-                    //UpdatePreview(renamedLocation: newPath);
                     changeCurrentAndGoUpFromCurrentLocation(newPath);
                 }
                 else
@@ -783,7 +758,6 @@ namespace ZipPla
                                 StopLookAheadProcess();
                             }
 
-                            //if (bwBusy)
                             else
                             {
                                 try
@@ -830,7 +804,6 @@ namespace ZipPla
                 }
             };
 
-            //if (bmwMakePreview.IsBusy)
             if (bwBusy)
             {
                 MakePreview_Que = false;
@@ -868,7 +841,6 @@ namespace ZipPla
         {
             var items = thumbnailSizeToolStripMenuItem.DropDownItems;
 
-            //var isPlaClip = clipModeByControl == ClipMode.PlaClip;
 
             var inSizeBlock = false;
             foreach (object itemObject in items)
@@ -1023,7 +995,6 @@ namespace ZipPla
         {
             showRating = showRatingToolStripMenuItem.Checked = !showRating;
             setTagfilterLocationIfRatingFilterVisibleChanged();
-            //UpdatePreview();
             tvCatalog.Invalidate();
         }
 
@@ -1060,10 +1031,8 @@ namespace ZipPla
             btnFilterCommands.FlatStyle = FlatStyle.Flat;
             btnFilterCommands.FlatAppearance.BorderColor = BackColor;
             btnFilterCommands.Text = null;
-            //btnFilterCommands.Paint += btnFilterCommands_Paint;
             btnFilterCommands.Image = getIcon(drawInvertSearchIcon, btnFilterCommands.ClientRectangle.Width, btnFilterCommands.ClientRectangle.Height);
 
-            //pbSearch.Image = getSearchIcon(pbSearch.ClientRectangle.Width, pbSearch.ClientRectangle.Height);
         }
 
         private Bitmap getIcon(Action<Graphics, RectangleF> drawer, int width, int height)

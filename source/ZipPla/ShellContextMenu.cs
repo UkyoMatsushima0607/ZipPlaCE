@@ -584,7 +584,6 @@ namespace Peter
             }
             finally
             {
-                //hook.Uninstall();
                 if (pMenu != IntPtr.Zero)
                 {
                     DestroyMenu(pMenu);

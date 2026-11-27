@@ -302,7 +302,6 @@ namespace ZipPla
                     for (var i = 0; i < strictLengthList.Count; i++)
                     {
                         var length = strictLengthList[i];
-                        //if (length > DragDelta && length * 19 > maxLength * 7 &&
                         if (length > DragDelta && length * 10 > maxLength &&
                             (userDirectionList.Count == 0 || userDirectionList.Last() != strictDirectionList[i]))
                         {
@@ -394,7 +393,6 @@ namespace ZipPla
                     owner.MouseDown -= Owner_MouseDown;
                     owner.MouseUp -= Owner_MouseUp;
 
-                    //Canvas.Dispose();
                 }
 
                 // TODO: アンマネージ リソース (アンマネージ オブジェクト) を解放し、下のファイナライザーをオーバーライドします。

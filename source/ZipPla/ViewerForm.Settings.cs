@@ -52,9 +52,7 @@ namespace ZipPla
 
                 if (!fullscreen && (/*WindowState == FormWindowState.Normal ||*/ WindowState == FormWindowState.Maximized))
                 {
-                    //var pbViewSize = pbView.Size
                     var pbViewSize = pbView.Bounds;
-                    //var bounds = Screen.PrimaryScreen.Bounds;
                     var bounds = Screen.FromControl(this).Bounds;
 
                     config.MaximizedSizeWidthMargin = bounds.Width - pbViewSize.Width;
@@ -144,7 +142,6 @@ namespace ZipPla
 
         FormWindowState? LoadSettings_FormWindowStateFromSetteingFile = null;
 
-        //Point? LoadSettings_LoadedLocation = null;
         DateTime LoadSettings_LoadedFileTimeStampForLookAhead = DateTime.MinValue;
 
         DateTime? LoadSettings_LoadedFileTimeStampForLookAhead_Setter = null;
@@ -332,7 +329,6 @@ namespace ZipPla
             {
                 //normalStateSize = 
 
-                //prevSize = Size = size;
 
                 SetSizeWithPbSizeMemoryForMinimize(size);
                 prevSize = size;
@@ -360,18 +356,14 @@ namespace ZipPla
             }
             else
             {
-                //normalStateSize = size;
                 prevSize = size;
                 SetSizeWithPbSizeMemoryForMinimize(size);
-                //Size = size;
                 if (point != null)
                 {
                     var p = (Point)point;
                     var settingRect = new Rectangle(p, size);
                     var rect = currentScreen ?? Screen.FromRectangle(settingRect).Bounds;
                     if (rect.IntersectsWith(settingRect))
-                    //var rect = new Rectangle(p, size);
-                    //if (Screen.AllScreens.Any(screen => screen.Bounds.IntersectsWith(rect)))
                     {
                         normalStateLocation = point;
                         if (ViewerForm_Load_Called)
@@ -385,7 +377,6 @@ namespace ZipPla
                     }
                 }
 
-                //LoadSettings_FormWindowStateFromSetteingFile = maximized ? FormWindowState.Maximized : FormWindowState.Normal;
             }
 
             // ピクチャーボックスの位置調整などがあるので常に行う
@@ -641,8 +632,6 @@ namespace ZipPla
         {
             try
             {
-                //VirtualFolder.AddBookmarkData(Program.HistorySorPath, currentArchiveFilePath, Math.Max(0,currentPage), limitOfItemsCount: Program.GetLimitOfHistoryCount(), deleteLostPath: true);
-                //SendSorMessageToCatalogForm(currentArchiveFilePath, Program.HistorySorPath, Math.Max(0, currentPage), requestToUpdateLastAccessTime: true);
 
 
                 var page = loader == null || loader.Type != PackedImageLoader.PackType.Directory ? Math.Max(0, currentPage) : -1;
@@ -653,7 +642,6 @@ namespace ZipPla
             catch { }
         }
 
-        //void f(object s, EventArgs e) { optionToolStripMenuItem.Text = pbView.Bounds.ToString(); }
 
         bool pbView_SizeChanged_SizeChanging = false;
 

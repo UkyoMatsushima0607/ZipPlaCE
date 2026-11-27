@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,14 +32,12 @@ namespace ZipPla
     {
         bool CatalogForm_FormClosing_FormClosed = false;
 
-        //bool CatalogForm_FormClosing_Force = false;
 #if AUTOBUILD
         private async void CatalogForm_FormClosing(object sender, FormClosingEventArgs e)
 #else
         private void CatalogForm_FormClosing(object sender, FormClosingEventArgs e)
 #endif
         {
-            //if (CatalogForm_FormClosing_Force) return;
 
             if (CatalogForm_FormClosing_FormClosed) return;
 
@@ -63,7 +60,6 @@ namespace ZipPla
                 Visible = false;
                 e.Cancel = true;
 #if AUTOBUILD
-                //await Task.Run(() => Thread.Sleep(10 * 1000));
                 await Task.Delay(10 * 1000);
                 Application.Exit();
 #endif
@@ -87,8 +83,6 @@ namespace ZipPla
             }
         }
 
-        //Size SaveSettings_WindowSizeWhenNotMaximized;
-        //Point SaveSettings_WindowLocationWhenNotMaximized;
         private bool SaveSettings()
         {
             try
@@ -106,8 +100,6 @@ namespace ZipPla
                 }
                 else
                 {
-                    //config.Size = SaveSettings_WindowSizeWhenNotMaximized;
-                    //config.Point = SaveSettings_WindowLocationWhenNotMaximized;
 
                     var bounds = /*WindowState == FormWindowState.Normal ? Bounds :*/ RestoreBounds;
                     config.Size = bounds.Size;
@@ -187,7 +179,6 @@ namespace ZipPla
                 config.SynchroFromBarToTree = SynchroFromBarToTree;
                 config.CollapseOthersWhenSynchronizing = CollapseOthersWhenSynchronizing;
                 config.FolderSortMode = FolderSortMode;
-                //config.CheckDirectorySize = CheckDirectorySize;
                 config.ArchivesInArchiveMode = ArchivesInArchiveMode;
                 config.ReadOnMemoryMode = ReadOnMemoryMode;
                 config.OpenInPreviousImageFilterSetting = OpenInPreviousImageFilterSetting;
@@ -244,7 +235,6 @@ namespace ZipPla
 
             Color color;
             bool maximized;
-            //int width, height;
             Size size;
             Point point;
             string location;
@@ -278,7 +268,6 @@ namespace ZipPla
             ItemSelectionFeedback feedback;
             bool treeToBar, barToTree, collap;
             FolderSortMode folderSortMode;
-            //bool checkDirectorySize;
             ArchivesInArchiveMode aia;
             ReadOnMemoryMode readOnMemoryMode;
             bool prevImageFilter;
@@ -302,8 +291,6 @@ namespace ZipPla
             double mouseGestureLineWidth;
             Color mouseGestureLineColor;
             MouseGestureCommand[] mgCommands;
-            //var locationHistory = new List<string>();
-            //var filterHistory = new List<string>();
             string[] locationHistory, filterHistory;
             try
             {
@@ -417,7 +404,6 @@ namespace ZipPla
                 barToTree = config.SynchroFromBarToTree;
                 collap = config.CollapseOthersWhenSynchronizing;
                 folderSortMode = config.FolderSortMode;
-                //checkDirectorySize = config.CheckDirectorySize;
                 aia = config.ArchivesInArchiveMode;
                 readOnMemoryMode = config.ReadOnMemoryMode;
                 prevImageFilter = config.OpenInPreviousImageFilterSetting;
@@ -464,8 +450,6 @@ namespace ZipPla
             }
             else
             {
-                //Screen.FromControl(this);
-                //Bounds = settingRect;
                 
                 var evh = null as EventHandler;
                 evh = (sender, e) =>
@@ -556,7 +540,6 @@ namespace ZipPla
             this.showIcon = showIconToolStripMenuItem.Checked = showIcon;
             this.showRating = showRatingToolStripMenuItem.Checked = showRating;
             this.showTags = showTagsToolStripMenuItem.Checked = showTags;
-            //tvCatalog.ShowText = showFilenameToolStripMenuItem.Checked = showFilename;
             setShowFileName(showFilename);
 
             Program.DecodeDisplayIndices(dgvFileList.Columns, fileListOrder);
@@ -567,7 +550,6 @@ namespace ZipPla
             if (bookmarkHeight < splBookmark.MinSize) bookmarkHeight = splBookmark.MinSize;
             if (fileListWidth < SidePanellMinWidth) fileListWidth = SidePanellMinWidth;
 
-            //pnlBookmark.Height = bookmarkHeight;
             pnlBookmarkNoFillHeight = bookmarkHeight;
             bookmarkToolStripMenuItem.Checked = bookmark;
             pnlLeft.Width = bookmarkWidth;
@@ -683,7 +665,6 @@ namespace ZipPla
 
             SetFolderSortMode(folderSortMode, reSort: false);
 
-            //CheckDirectorySize = checkDirectorySize;
 
             ArchivesInArchiveMode = aia;
             if (simplifiedKeyBoard == null)
@@ -731,14 +712,10 @@ namespace ZipPla
                     thumbnailCache = DefaultThumbnailCache;
                 }
             }
-            //archivesFilesPDFFielsToolStripMenuItem.Checked = archives;
             ArchiveLoadLevel = archives;
             bindingModeByControl = binding2;
-            //imageFilesToolStripMenuItem.Checked = images;
             ImageLoadLevel = images;
-            //videoFilesToolStripMenuItem.Checked = videos;
             VideoLoadLevel = videos;
-            //otherFilesToolStripMenuItem.Checked = others;
             OtherLoadLevel = others;
 
             SubfolderMode = subfolderMode;
@@ -749,7 +726,6 @@ namespace ZipPla
             var dynamicStringSelections = generalConfig.DynamicStringSelections;
             var dynamicStringSelectionsEnabled = generalConfig.DynamicStringSelectionsEnabled;
             allowRenameByCmsRightClick = generalConfig.DynamicStringSelectionsAllowUserToRenameItem;
-            //startApplicationWithAccessKey = generalConfig.StartWithAccessKey;
             dragAndDropAction = generalConfig.DragAndDropAction;
             checkNgen = generalConfig.CheckNgen;
 
@@ -874,7 +850,6 @@ namespace ZipPla
             bool dssEnabled;
             DynamicStringSelectionInfo[] dss;
             var preDDA = dragAndDropAction;
-            //var needToReload = Program.ShowSetting(this, out ApplicationArray, out dssEnabled, out dss);
             Program.ShowSetting(this, out ApplicationArray, /*out startApplicationWithAccessKey,*/ out dssEnabled,
                 out allowRenameByCmsRightClick, out dss, out dragAndDropAction, out var historyTrimmed);
             setNewDynamicStringSelectionToolStripMenuItems(dssEnabled, dss);

@@ -55,7 +55,6 @@ namespace ZipPla
 
         public static Bitmap CreateNew(Bitmap src, Size newSize, bool parallel, BackgroundWorker backgroundWorker = null)
         {
-            //var result = new Bitmap(newSize.Width, newSize.Height, PixelFormat.Format24bppRgb);
             var result = new Bitmap(newSize.Width, newSize.Height, src.PixelFormat);
             try
             {
@@ -102,7 +101,6 @@ namespace ZipPla
         {
             var srcWidth = srcBitmap.Width;
             var srcHeight = srcBitmap.Height;
-            //var pixelFormat = FlattenFormat(srcBitmap.PixelFormat);
             var srcPixelFormat = srcBitmap.PixelFormat;
             var dstPixelFormat = dstBitmap.PixelFormat;
             var srcBytesPerPixel = Image.GetPixelFormatSize(srcPixelFormat) >> 3;
@@ -131,7 +129,6 @@ namespace ZipPla
         {
             var srcWidth = srcBitmap.Width;
             var srcHeight = srcBitmap.Height;
-            //var pixelFormat = FlattenFormat(srcBitmap.PixelFormat);
             var srcPixelFormat = srcBitmap.PixelFormat;
             var dstPixelFormat = dstImage.PixelFormat;
             var srcBytesPerPixel = Image.GetPixelFormatSize(srcPixelFormat) >> 3;
@@ -152,7 +149,6 @@ namespace ZipPla
         {
             var srcWidth = srcImage.Width;
             var srcHeight = srcImage.Height;
-            //var pixelFormat = FlattenFormat(srcBitmap.PixelFormat);
             var srcPixelFormat = srcImage.PixelFormat;
             var dstPixelFormat = dstImage.PixelFormat;
             var srcBytesPerPixel = Image.GetPixelFormatSize(srcPixelFormat) >> 3;
@@ -313,7 +309,6 @@ namespace ZipPla
                         var t01 = yT0 * xT1;
                         var t10 = yT1 * xT0;
                         var t11 = yT1 * xT1;
-                        //for (var i = 0; i < bytePerPixel; i++)
                         {
                             const int i = 0;
                             var dstLocali = (int)(t00 * srcLocal00[i] + t01 * srcLocal01[i] + t10 * srcLocal10[i] + t11 * srcLocal11[i] + 0.5);
@@ -341,7 +336,6 @@ namespace ZipPla
                         var t01 = yT0 * xT1;
                         var t10 = yT1 * xT0;
                         var t11 = yT1 * xT1;
-                        //for (var i = 0; i < bytePerPixel; i++)
                         {
                             const int i = 0;
                             var dstLocali = (int)(t00 * srcLocal00[i] + t01 * srcLocal01[i] + t10 * srcLocal10[i] + t11 * srcLocal11[i] + 0.5);
@@ -373,7 +367,6 @@ namespace ZipPla
                         var t01 = yT0 * xT1;
                         var t10 = yT1 * xT0;
                         var t11 = yT1 * xT1;
-                        //for (var i = 0; i < bytePerPixel; i++)
                         {
                             const int i = 0;
                             var dstLocali = (int)(t00 * srcLocal00[i] + t01 * srcLocal01[i] + t10 * srcLocal10[i] + t11 * srcLocal11[i] + 0.5);

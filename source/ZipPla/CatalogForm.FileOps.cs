@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -178,12 +177,10 @@ namespace ZipPla
                         var name = ZipNameArray[index]; if (name == null) return;
                         deleteList[k] = path;
                         showIndexArray[k] = d2s[index];
-                        //if (!isSor) isDirList.Add(name.EndsWith(Path.DirectorySeparatorChar.ToString()));
                     }
                     var sorter = Enumerable.Range(0, deleteList.Length).OrderBy(i => showIndexArray[i]).ToArray();
                     Arrange(deleteList, sorter);
                     Arrange(selectedIndices, sorter);
-                    //deleteList.Sort()
                 }
 
                 var deleteFromDisk = false;
@@ -218,7 +215,6 @@ namespace ZipPla
                             ZipPathArray[index] = null;
                             ZipNameArray[index] = null;
                             tvCatalog[index] = null; // これで Dispose される
-                            //deleteList.Add(path);
                             if (!isSor) isDirList.Add(name.EndsWith(Path.DirectorySeparatorChar.ToString()));
                         }
                         indexindex++;
@@ -248,7 +244,6 @@ namespace ZipPla
                 {
 
                     var count = deleteList.Length;
-                    //Exception exception = null;
 
                     StopLookAheadProcess();
 
@@ -477,7 +472,6 @@ namespace ZipPla
         private void gotToUnderBuffer(int index, ApplicationProviderUser user)
         {
             if (index == undoBufferIndex) return;
-            //if (CreatingZipPathArray) return;
             var preIndex = undoBufferIndex;
             UndoBufferClass newData = null;
             if (index >= 0 && index < undoBuffer.Count)
@@ -490,7 +484,6 @@ namespace ZipPla
 
             if (!string.IsNullOrEmpty(newData?.Location))
             {
-                //zabLocation.Text = newData.Location;
 
                 // キー操作でも選択項目が存在すれば一番上を選択するという操作は行わない
                 if (user == ApplicationProviderUser.EnterKey && !string.IsNullOrEmpty(newData.SelectedFileName)) user = ApplicationProviderUser.MouseClick;
@@ -649,10 +642,8 @@ namespace ZipPla
                 catch { }
 
                 await Task.Run(() => Invoke((MethodInvoker)(() => CloseVisibleContextMenuStrips())));
-                //var result = MessageBox.Show(this, message, Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
                 var result = MessageForm.Show(this, fullMessage.ToString(), Message.Question, Message._Yes, Message._No, MessageBoxIcon.Question);
                 await Task.Run(() => Invoke((MethodInvoker)(() => tvCatalog.DoMouseUp())));
-                //return result == DialogResult.OK;
                 return result == 0;
             }
             else
@@ -721,7 +712,6 @@ namespace ZipPla
                 changes = needToReloadEvenIfFileNameIsNotChanged;
                 for (var i = 0; i < count; i++)
                 {
-                    //var nameChange = paths[i].ToLower() != newPaths[i].ToLower();
                     changes[i] = changes[i] || paths[i].ToLower() != newPaths[i].ToLower();
                 }
             }
@@ -774,7 +764,6 @@ namespace ZipPla
                                 if (oldPath.ToLower() != path.ToLower()) Program.FileOrDirectoryMove(oldPath, path); // ここで例外が発生した場合 ZipPathArray 等の書き換えは行われない
 
                                 ZipPathArray[index] = path;
-                                //var name = path.Substring(dirPathFullPathLengthPlusOne);
 
                                 var name = getRelativePath(path, ZipNameArray[index]);// name + (isDir ? Path.DirectorySeparatorChar.ToString() : "");
                                 ZipNameArray[index] = name;
@@ -830,7 +819,6 @@ namespace ZipPla
 
             if (allTargetsAreLoaded)
             {
-                //await Task.Run(renameAction);
                 renameAction();
             }
             else
@@ -845,7 +833,6 @@ namespace ZipPla
                 {
                     if (bmwMakePreview.CurrentThreadCount <= 1) // 自分はカウントされていて良い
                     {
-                        //await Task.Run(renameAction);
                         renameAction();
 
                         bmwMakePreview.ThreadCount = tempThreadCount;

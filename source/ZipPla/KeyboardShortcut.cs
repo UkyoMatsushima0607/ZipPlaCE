@@ -148,7 +148,6 @@ namespace ZipPla
                     fullShortcutList.Add(new HashSet<Keys>(keyState));
                 }
                 keyState.Add(k);
-                //fullShortcutList.Add(new HashSet<Keys>(keyState));
                 fullShortcutList.Add(keyState);
             }
             return fullShortcutList.ToArray();
@@ -317,7 +316,6 @@ namespace ZipPla
                     else
                     {
                         enabled = false;
-                        //KeySequence.Clear();
                     }
                     EnabledChanged?.Invoke(Owner, new EventArgs());
                 }
@@ -356,7 +354,6 @@ namespace ZipPla
             
             // 矢印キーなどでも KeyUp は見落とさない
             Owner.KeyUp += Owner_KeyUp;
-            //Owner.Deactivate += Owner_Deactivate;
             
         }
 
@@ -509,8 +506,6 @@ namespace ZipPla
         {
             Owner_KeyDownOrUp(new KeyEventArgs(e.KeyData), e, isUp: false);
         }
-        //public void PerformKeyDown(Keys keyData) { Owner_KeyDownOrUp(new KeyEventArgs(keyData), isUp: false); }
-        //private void Owner_KeyDown(object sender, KeyEventArgs e) { Owner_KeyDownOrUp(e, isUp: false); }
         private void Owner_KeyUp(object sender, KeyEventArgs e)
         {
             Owner_KeyDownOrUp(e, e, isUp: true);
@@ -833,7 +828,6 @@ namespace ZipPla
                 {
                     // TODO: マネージ状態を破棄します (マネージ オブジェクト)。
                     Owner.KeyPreview = originalKeyPreview;
-                    //Owner.KeyDown -= Owner_KeyDown;
                     Owner.MouseDown -= Control_MouseDown;
                     Owner.MouseWheel -= Control_MouseWheel;
                     Owner.MouseUp -= Control_MouseUp;

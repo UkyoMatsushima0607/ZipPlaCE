@@ -80,7 +80,6 @@ namespace ZipPla
             {
 
                 case WM_DRAWCLIPBOARD:
-                    //if (Clipboard.ContainsFileDropList())
                     {
                         ClipboardHandler(this,
                                 new ClipboardEventArgs(null));

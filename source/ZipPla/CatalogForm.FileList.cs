@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -70,7 +69,6 @@ namespace ZipPla
                     var si = tvCatalog.SelectedIndex;
                     if (si >= 0)
                     {
-                        //tvCatalog.ScrollBarToIndex(si);
                         tvCatalog.ScrollBarToIndexWithMinimalMove(tvCatalog.DataIndexToShowIndex[si]);
                     }
                     else
@@ -91,7 +89,6 @@ namespace ZipPla
                     {
                         tvCatalog.SelectedIndex = -1; // プロパティの set の処理において冗長な描画が入るが、影響の小ささから可読性を優先。
                         GetSortArray_RandomSeed = null;
-                        //GetSortArray_RandomOrder = null;
                         tvCatalog.ShowIndexToDataIndex = GetSortArray(preSortArray: null); // ランダムは安定ソート不要
                         success = true;
                     }
@@ -106,7 +103,6 @@ namespace ZipPla
                     }
                 }
             }
-            //cbSortBy_DropDownClosed_Resorted = false;
         }
 
         private bool notNeedToIgnoreMouseMoveOnRating() { return !mgFileList.InGesturing; }// 右クリックメニュー対応はクラス内で && (MouseButtons & MouseButtons.Right) != MouseButtons.Right && !cmsRightClick.Visible; }
@@ -467,7 +463,6 @@ namespace ZipPla
             var setter = volatilitySortCancelIfChanged ? (setFileListRoDynamicPart_SetterDelegate)substitutionWithCheckForCellAndRemoveSortGlyphDirection : substitutionWithCheckForCell;
 
             setter(ref changed, row, tbcPage, getPageString(cPage, tPage));
-            //if(InArchive || ImageLoader.SupportsAtLeastThumbnailReading(name))
             var ffmpegExists = null as bool?;
             var extensionWithPeriodInLower = null as string;
             if (InArchive || ImageLoader.SupportsGetImageInfoByExtensionWithPeriodInLower(extensionWithPeriodInLower = ImageLoader.GetExtensionWithPeriodInLowerSafety(name), ref ffmpegExists))
@@ -1060,11 +1055,8 @@ namespace ZipPla
                     }
 
                     var periodWidth = periodSize.Width;// TextRenderer.MeasureText(graphics, ".", cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
-                    //var fullSize = TextRenderer.MeasureText(graphics, "★★★★★", cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding);
                     var preStr = "★★★★★".Substring(0, r);
                     var sufStr = "★★★★★".Substring(r);
-                    //var height = paintRect.Height;
-                    //paintRect.Inflate(-2, -2);
                     paintRect.X += (paintRect.Width - fullWidth) / 2;
                     paintRect.Y += (paintRect.Height - periodSize.Height + 1) / 2;
                     var starsRectangle = paintRect;
@@ -1076,7 +1068,6 @@ namespace ZipPla
                     TextRenderer.DrawText(graphics, sufStr, cellStyle.Font, paintRect, gray, TextFormatFlags.NoPadding);
                 }
 
-                //base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts);
             }
 
             private bool sizeNotSet = true;
@@ -1116,7 +1107,6 @@ namespace ZipPla
                 Rectangle paintRect = GetCellContentRectangle(cellBounds, this.BorderWidths(advancedBorderStyle), cellStyle);
 
                 base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts & ~DataGridViewPaintParts.ContentForeground);
-                //return;
 
                 //テキストを表示する
                 if ((paintParts & DataGridViewPaintParts.ContentForeground) ==
@@ -1133,12 +1123,8 @@ namespace ZipPla
                     Color fColor = isSelected ? cellStyle.SelectionForeColor : cellStyle.ForeColor;
 
                     var periodSize = TextRenderer.MeasureText(graphics, ".", cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
-                    //var periodWidth = 0 * periodSize.Width;// TextRenderer.MeasureText(graphics, ".", cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix).Width;
 
-                    //var charHeight = periodSize.Height;
-                    //var hShift = 1;
                     var charHeight = getCharHeight(cellStyle.Font, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
-                    //charHeight = periodSize.Height;
 
                     var vPadding = Math.Max(0, (paintRect.Height - charHeight) / 4);
 
@@ -1154,7 +1140,6 @@ namespace ZipPla
                     while (tLen2 < tLen0 && name[tLen2] == nameTrimed[tLen2]) tLen2++;
                     if (Tags == null || indexLengthTagTorios == null)
                     {
-                        //TextRenderer.DrawText(graphics, name, cellStyle.Font, paintRect, fColor, flags);
                         TextRenderer.DrawText(graphics, nameTrimed, cellStyle.Font, paintRect, fColor, flags);
 
                     }
@@ -1173,28 +1158,21 @@ namespace ZipPla
                             // if( そのタグが描画対象でなければコンティニュー)
 
 
-                            //var str = name.Substring(index, torio.Item1 - index);
                             var str = nameTrimed.Substring(Math.Min(tLen, index), Math.Max(0, Math.Min(tLen, torio.Item1) - index));
                             var width = TextRenderer.MeasureText(graphics, str, cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix).Width;
-                            //TextRenderer.DrawText(graphics, str, cellStyle.Font, paintRect, fColor, flags);
                             strs[2 * i] = str;
                             rectangles[2 * i] = paintRect;
                             paintRect.X += width;
                             paintRect.Width -= width;
-                            //str = name.Substring(torio.Item1, torio.Item2);
-                            //str = nameTrimed.Substring(Math.Min(tLen, torio.Item1), Math.Max(0, Math.Min(tLen - torio.Item1, torio.Item2)));
                             str = nameTrimed.Substring(Math.Min(tLen2, torio.Item1), Math.Max(0, Math.Min(tLen2 - torio.Item1, torio.Item2)));
                             width = TextRenderer.MeasureText(graphics, str, cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix).Width;
-                            //var tagWidth = TextRenderer.MeasureText(graphics, tagPart, cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
                             using (var b = new SolidBrush(tag.BackColor))
                             {
-                                //graphics.FillRectangle(b, new Rectangle(paintRect.X + hShift, paintRectYForBG, tagWidth, height));
 
                                 var baseRect = new Rectangle(paintRect.X, paintRectYForBG, width, height);
                                 var drawRect = GetHShift(baseRect, str, cellStyle.Font, flags);
                                 if (!drawRect.IsEmpty) graphics.FillRectangle(b, drawRect);
                             }
-                            //TextRenderer.DrawText(graphics, str, cellStyle.Font, paintRect, tag.ForeColor, flags);
                             colors[i] = tag.ForeColor;
                             strs[2 * i + 1] = str;
                             rectangles[2 * i + 1] = paintRect;
@@ -1209,12 +1187,10 @@ namespace ZipPla
                             TextRenderer.DrawText(graphics, strs[2 * j], cellStyle.Font, rectangles[2 * j], fColor, flags);
                             TextRenderer.DrawText(graphics, strs[2 * j + 1], cellStyle.Font, rectangles[2 * j + 1], colors[j], flags);
                         }
-                        //TextRenderer.DrawText(graphics, name.Substring(index), cellStyle.Font, paintRect, fColor, flags);
                         TextRenderer.DrawText(graphics, nameTrimed.Substring(Math.Min(tLen, index)), cellStyle.Font, paintRect, fColor, flags);
 
                     }
                 }
-                //base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts);
             }
 
             static int getCharHeight_charHeight = -1;
@@ -1223,7 +1199,6 @@ namespace ZipPla
             {
                 if (getCharHeight_charHeight < 0)
                 {
-                    //getDrawRainbowParams_hShift = GetHShift("A", font, flagsForShift);
 
                     getCharHeight_charHeight = TextRenderer.MeasureText("A", font, new Size(int.MaxValue, int.MinValue), flags).Height;
                 }
@@ -1423,7 +1398,6 @@ namespace ZipPla
                 var si = tvCatalog.SelectedIndex;
                 if (si >= 0)
                 {
-                    //tvCatalog.ScrollBarToIndex(si);
                     tvCatalog.ScrollBarToIndexWithMinimalMove(tvCatalog.DataIndexToShowIndex[si]);
                 }
                 else if (scrollToTopIfNoSelection)
@@ -1734,7 +1708,6 @@ namespace ZipPla
         private void cmsRightClickPrepareAndShowForKeyOnFileList(bool onlyTag, Keys modifierKeys)
         {
             var mk = modifierKeys;
-            //var mk = ModifierKeys;
             if (tvCatalog.SelectedIndicesCount > 0)
             {
                 var selectedRow = dgvFileList_FirstDisplayedSelectedRow();
@@ -1743,7 +1716,6 @@ namespace ZipPla
                 var m2 = Math.Min(rect.Height, rect.Width) / 2;
                 var p = dgvFileList.PointToScreen(new Point(rect.X + m2, rect.Y + m2));
 
-                //cmsRightClickPrepareAndShow(p, onlyTag);
                 if (onlyTag)
                 {
                     cmsRightClickPrepareAndShow_(p, true);
@@ -1757,7 +1729,6 @@ namespace ZipPla
             {
                 var p = dgvFileList.PointToScreen(dgvFileList.Location);
                 p.Y += dgvFileList.ColumnHeadersHeight;
-                //cmsRightClickPrepareAndShow_(p);
 
                 rightClickContextMenuPrepareAndShow(p, mk);
             }
@@ -1793,7 +1764,6 @@ namespace ZipPla
 
         private void renameToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //if (!dgvFileList.Focused) return;
             if (!fileListToolStripMenuItem.Checked || !dgvFileList.Visible) return;
 
             if (renameToolStripMenuItem_Click_OldName != null) return;

@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,12 +30,10 @@ namespace ZipPla
 {
     public partial class CatalogForm
     {
-        //private DateTime CheckAndRecoverWaitingProcess_INIModified;
         bool CheckAndRecoverWaitingProcess(bool forceDisposing = false, bool forcePrepare = false)
         {
             // 待ちプロセスがユーザーなどに消される可能性を考慮
             var hasExited = waitingProcess == null || waitingProcess.HasExited;
-            //var iniLastWriteTime = Configuration.GetLastWriteTime();
 
             if (
                 (hasExited/* || iniLastWriteTime > CheckAndRecoverWaitingProcess_INIModified*/)
@@ -100,7 +97,6 @@ namespace ZipPla
             if (path == null) return;
             if (!InDirectoryVirtualDirectoryOrSmartDirectory && !InArchive) return;
             if (IsOpenedByExternalApplication(path)) return;
-            //if (GPSizeThumbnail.TrySet_Creating.Contains(path)) return;
             CheckAndRecoverWaitingProcess();
 
             if (SetLookAheadArchive_BlackPrefix != null && path.StartsWith(SetLookAheadArchive_BlackPrefix)) return;
@@ -188,7 +184,6 @@ namespace ZipPla
             }
         }
 
-        //private static readonly TimeSpan DoubleClickTimeSpan = TimeSpan.FromMilliseconds(SystemInformation.DoubleClickTime);
         int OpenWaitingProcess_LastOpenningTime;
 
         string OpenWaitingProcess_LastOpenningPath;
@@ -279,7 +274,6 @@ namespace ZipPla
                 do
                 {
                     OpenWaitingProcess_Opening = true;
-                    //await Task.Run(() => Thread.Sleep(10));
                     await Task.Delay(10);
                     waitTime += 10;
 
@@ -372,10 +366,8 @@ namespace ZipPla
             {
                 try
                 {
-                    //if (File.Exists(Configuration.XmlPath))
                     if (Configuration.ConfigFileExists())
                     {
-                        //if (BookmarkConfigModifiedDateTime < File.GetLastWriteTime(Configuration.XmlPath))
                         if (BookmarkConfigModifiedDateTime < Configuration.GetLastWriteTimeWithoutFileCheckWithException())
                         {
                             loadBookmarkFromConfig(reload: true);
@@ -456,7 +448,6 @@ namespace ZipPla
             var lr = LoadResultArray;
             if (lr == null || lr.Length != count) return;
             var lrd = lr[dataIndex];
-            //if (lrd == LoadResult.LoadError || lrd == LoadResult.FileNotFound || thumbnailCache == GPSizeThumbnail.AlternateDataStream && lrd == LoadResult.NotYet) return;
             if (lrd == LoadResult.LoadError || lrd == LoadResult.FileNotFound) return;
 
             if (dataIndex >= count) return;
@@ -477,7 +468,6 @@ namespace ZipPla
             if (altSepPos >= 0)
             {
                 SetLookAheadArchive(path, -1);
-                //SetLookAheadArchive(path.Substring(0, altSepPos), dataIndex);
             }
             else
             {
@@ -618,7 +608,6 @@ namespace ZipPla
                             for (var i = 0; i < 1000; i++)
                             {
                                 await Task.Delay(100).ConfigureAwait(false);
-                                //GPSizeThumbnail.AddBlackListWeight(path);
                                 DateTime? now_;
                                 GPSizeThumbnail.EnterEditing(path);
                                 try
@@ -685,7 +674,6 @@ namespace ZipPla
                         // 子の変更がかかった場合。実フォルダフォルダ監視に先を越されて意味がない
                         if (!CreatingZipPathArray && (InVirtualDirectory || InSmartDirectory))
                         {
-                            //Thread.Sleep(5 * 1000);
                             ReloadOneThumbnailForSubThread(newold.Old, newold.New, startingGuid);
                             swapPathAndNameInSorBookmarkUndoBuff(newold.Old, newold.New, needToSaveBookmark: true);
                         }
@@ -869,7 +857,6 @@ namespace ZipPla
             var guid = Guid.NewGuid().ToString();
             currentIpcChanne.Register(lookAheadInfo, guid); // 依頼を書いて Accept を false にすると待機ビューアへ送る（P3）
 
-            //CheckAndRecoverWaitingProcess_INIModified = iniModified;
 
             var psi = new ProcessStartInfo();
             psi.FileName = Application.ExecutablePath;

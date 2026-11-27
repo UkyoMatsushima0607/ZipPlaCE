@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -58,9 +57,7 @@ namespace ZipPla
         //● private readonly System.Windows.Forms.ContextMenuStrip cbFilter_MouseDown_DummyCMS = new System.Windows.Forms.ContextMenuStrip();
         private void cbFilter_MouseDown(object sender, MouseEventArgs e)
         {
-            //● var leftRight = false;
             if (e.Button == MouseButtons.Middle
-                //● || (leftRight = MouseButtons == (MouseButtons.Left | MouseButtons.Right))
                 )
             {
                 var currentText = cbFilter.Text;
@@ -127,10 +124,8 @@ namespace ZipPla
             }
         }
 
-        //private static readonly char[] GetALineFromString_Spaces = new char[] { ' ', '\t', '　' };
         private static readonly char[] GetShortString_Spaces = new char[] { ' ', '\t', '\r', '\n' };
 
-        //private static Regex GetALineFromString_SpacesReplacer = new Regex("(?:" + string.Join("|", GetALineFromString_Spaces) + ")+", RegexOptions.Compiled);
         private static string GetShortString(string input)
         {
             const int maxLen = 1000;
@@ -201,7 +196,6 @@ namespace ZipPla
                     string child = "";
                     try
                     {
-                        //child = Path.GetFileName(path);
                         child = getFileName(path); // 動画の Duration を想定
                     }
                     catch { }
@@ -233,9 +227,7 @@ namespace ZipPla
             var index = Array.IndexOf(zpa, path);
             if (index < 0) return null;
             var path0 = index > 0 ? zpa[index - 1] : null;
-            //if (string.IsNullOrEmpty(path0)) return null;
             var path1 = index < zpa.Length - 1 ? zpa[index + 1] : null;
-            //if (string.IsNullOrEmpty(path1)) return null;
             var altPos = path.IndexOf(Path.AltDirectorySeparatorChar);
             if (altPos < 0 || altPos >= path.Length - 1 || path0 != null && altPos >= path0.Length - 1 || path1 != null && altPos >= path1.Length - 1) return null;
             TimeSpan t; if (!TimeSpan.TryParse(path.Substring(altPos + 1), out t)) return null;
@@ -342,22 +334,16 @@ namespace ZipPla
                 var tsmiItems = new ToolStripMenuItem[6];
                 tsmiItems[0] = new ToolStripMenuItem(Message.AndInclude1.Replace("$1", tagName));
                 tsmiItems[0].Click += tagAndInclude1_Click;
-                //tsmiItems[0].ShortcutKeyDisplayString = Message.LeftClick;
                 tsmiItems[1] = new ToolStripMenuItem(Message.AndExclude1.Replace("$1", tagName));
                 tsmiItems[1].Click += tagAndExclude1_Click;
-                //tsmiItems[1].ShortcutKeyDisplayString = "Shift+" + Message.LeftClick;
                 tsmiItems[2] = new ToolStripMenuItem(Message.Include1.Replace("$1", tagName));
                 tsmiItems[2].Click += tagInclude1_Click;
-                //tsmiItems[2].ShortcutKeyDisplayString = Message.MiddleClick;
                 tsmiItems[3] = new ToolStripMenuItem(Message.Exclude1.Replace("$1", tagName));
                 tsmiItems[3].Click += tagExclude1_Click;
-                //tsmiItems[3].ShortcutKeyDisplayString = "Shift+" + Message.MiddleClick;
                 tsmiItems[4] = new ToolStripMenuItem(Message.OrInclude1.Replace("$1", tagName));
                 tsmiItems[4].Click += tagOrInclude1_Click;
-                //tsmiItems[4].ShortcutKeyDisplayString = "Ctrl+" + Message.LeftClick;
                 tsmiItems[5] = new ToolStripMenuItem(Message.OrExclude1.Replace("$1", tagName));
                 tsmiItems[5].Click += tagOrExclide1_Click;
-                //tsmiItems[5].ShortcutKeyDisplayString = "Ctrl+Shift+" + Message.LeftClick;
                 tsmi.DropDownItems.AddRange(tsmiItems);
 
                 tsmi.ToolTipText = Message.RightClickDownFlickToOpenContextMenu;
@@ -753,7 +739,6 @@ namespace ZipPla
         private void increaseReferenceValueToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ratingReferenceValue++;
-            //setTagFilterLocation();
             ratingFilterToolStripMenuItem_DropDownOpening(null, null);
             setFilterDropDownLocation(ratingFilterToolStripMenuItemDropDown);
         }
@@ -761,7 +746,6 @@ namespace ZipPla
         private void decreaseReferenceValueToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ratingReferenceValue--;
-            //setTagFilterLocation();
             ratingFilterToolStripMenuItem_DropDownOpening(null, null);
             setFilterDropDownLocation(ratingFilterToolStripMenuItemDropDown);
         }
@@ -845,7 +829,6 @@ namespace ZipPla
                 var text = cbFilter.Text;
                 if (text == null) text = "";
 
-                //var trim = SearchManager.TrimOperatorAndDoubleQuotations(str);
 
 
                 var b = new StringBuilder(Math.Max(1, text.Length + str.Length + 1));
@@ -888,7 +871,6 @@ namespace ZipPla
                 {
                     if (text.EndsWith(" ") || text == "") cbFilter.Text = text + str;
                     else cbFilter.Text = text + " " + str;
-                    //cbFilter.SelectionStart = cbFilter.Text.Length;
                     cbFilter.Select(cbFilter.Text.Length - str.Length, str.Length);
                 }
 
@@ -940,7 +922,6 @@ namespace ZipPla
                 }
             }
 
-            //var wa = Screen.FromControl(this).WorkingArea;
             if (x < wa.Left) x = wa.Left;
             else if (x + width > wa.Right) x = wa.Right - width;
             if (y < wa.Top) y = wa.Top;
@@ -1046,7 +1027,6 @@ namespace ZipPla
             var copy = new ToolStripItem[itemsCount + optionsCount];
             items.CopyTo(copy, 0);
             items.Clear();
-            //Array.Copy(copy, start, copy, start + optionsCount, items.Count - start);
             for (var i = itemsCount - 1; i >= start; i--) copy[i + optionsCount] = copy[i];
 
             foreach (var option in options)
@@ -1085,7 +1065,6 @@ namespace ZipPla
 
             cmsi.Click += (sender, e) =>
             {
-                //if (clipModeByControl == ClipMode.PlaClip) return;
                 var toolStripMenuItem = sender as ToolStripMenuItem;
                 if (!toolStripMenuItem.Checked)
                 {
@@ -1112,7 +1091,6 @@ namespace ZipPla
                     if (Math.Abs(setAspectRatioOption_Ratios[i] - aspectRatio) < 0.00000000001)
                     {
                         items[i].Checked = true;
-                        //items[i].Enabled = false;
                         if (i < count)
                         {
                             found1 = true;
@@ -1125,7 +1103,6 @@ namespace ZipPla
                     else
                     {
                         items[i].Checked = false;
-                        //items[i].Enabled = true;
                     }
                 }
                 allRatiosToolStripMenuItem.Checked = !found1 && found2;
@@ -1193,13 +1170,10 @@ namespace ZipPla
             ratingFilterToolStripMenuItem_Paint_StarRectangle.Size = new Size(w5, h);
 
             Color gold, gray;
-            //if (ratingFilterToolStripMenuItem.DropDown.Visible || ratingFilterToolStripMenuItem.Bounds.Contains(menuStripForTagFilter.PointToClient(Cursor.Position)))
             if (ratingFilterToolStripMenuItem_Dropdowned || ratingFilterToolStripMenuItem.Selected)
             {
                 gold = Color.DarkGoldenrod;
                 gray = Color.LightGray;
-                //gold = Color.Gold;
-                //gray = Color.LightSlateGray;
             }
             else
             {

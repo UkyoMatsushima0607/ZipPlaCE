@@ -40,8 +40,6 @@ namespace ZipPla
                 {
                     for (var i = 0; i < zoomedSizeArray.Length; i++)
                     {
-                        //var original = originalBitmapExArray[i];
-                        //if (original == null) continue;
                         var size = zoomedSizeArray[i];
                         var width = size.Width;
                         var height = size.Height;
@@ -78,9 +76,7 @@ namespace ZipPla
             public void SetErrorImage(int i, Size size)
             {
                 var bitmapEx = virtualBitmapExArray[i];
-                //var size = bitmapEx.Size;
                 bitmapEx?.Dispose();
-                // bitmapEx = new VirtualBitmapEx(BitmapEx.ConvertToBitmapEx(Program.GetErrorImage(size.Width, size.Height)));
                 virtualBitmapExArray[i] = VirtualBitmapEx.GetErrorImage(size);
             }
 
@@ -94,7 +90,6 @@ namespace ZipPla
 
         }
 
-        //private Tuple<int, int> Magnifier_VisiblePage = null;
         private int Magnifier_currentPageReady = -1;
 
         private MagnifierCanvas Magnifier_ZoomedPage = null;
@@ -132,7 +127,6 @@ namespace ZipPla
 
             var arrangedZoomedSizeArray = new Size[nextPage - currentPage];
             var originalBitmapExArray = new BitmapEx[nextPage - currentPage];
-            //var canvasIndex = 0;
             var nextPage1 = nextPage - 1;
             var preFiltered = PreFilteredImageArray;
             if (preFiltered == null || nextPage1 >= preFiltered.Length) return; // 本が切り替わった
@@ -144,7 +138,6 @@ namespace ZipPla
                 canvasIndex++;
             }
 
-            //BitmapEx canvasExArray = new Bitmap(totalWidth, zoomedHeight, PixelFormat.Format24bppRgb);
             var canvas = new MagnifierCanvas(arrangedZoomedSizeArray/*, originalBitmapExArray, isEntity*/);
             var offsets = canvas.Offsets;
 
@@ -152,12 +145,9 @@ namespace ZipPla
             {
                 var cumulativeWidth = 0;
                 var pageLeftToRight = BindingMode == BindingMode.LeftToRight;
-                //Graphics graphics = null;
-                //canvasIndex = 0;
                 for (var i = nextPage1; i >= currentPage; i--)
                 {
                     var canvasIndex = nextPage1 - i;
-                    //var canvas1 = canvas[canvasIndex];
                     var imgEx = originalBitmapExArray[canvasIndex];
                     var zoomedSize = zoomedSizeArray[i - currentPage];
                     var zoomedWidth = zoomedSize.Width;
@@ -179,8 +169,6 @@ namespace ZipPla
                             var isEntity = imgEx.FrameCount == 1/* && BitmapEx.GetDataSizeInBytes(imgEx, zoomedSize) < GetUserMemoryUBound() / 2*/;
                             if (isEntity)
                             {
-                                //var rect = new Rectangle(X, (zoomedHeight - zoomedHeightI) / 2, zoomedWidth, zoomedHeightI);
-                                //var rect = new Rectangle(0, (zoomedHeight - zoomedHeightI) / 2, zoomedWidth, zoomedHeightI);
 
 
                                 var gamma = ResizeGammaMagnifier;
@@ -210,7 +198,6 @@ namespace ZipPla
                                     switch (scalingAlgorithm)
                                     {
                                         case ScalingAlgorithm.HighSpeed: return QuickGraphic.CreateNew(img, size, parallel, bwMagnifierMaker);
-                                        //case ScalingAlgorithm.HighSpeed: LongVectorImageResizer.Spline4(img, 2, canvas, rect, parallel, bwMagnifierMaker); break;
                                         case ScalingAlgorithm.NearestNeighbor: return LongVectorImageResizer.NearestNeighbor(img, size, parallel, bwMagnifierMaker);
                                         case ScalingAlgorithm.AreaAverage: return LongVectorImageResizer.AreaAverage(img, pixelsPerPixelToBeLeft, gamma, size, parallel, bwMagnifierMaker);
                                         case ScalingAlgorithm.Lanczos1: return LongVectorImageResizer.Lanczos(1, img, pixelsPerPixelToBeLeft, gamma, size, parallel, bwMagnifierMaker);
@@ -221,7 +208,6 @@ namespace ZipPla
                                         case ScalingAlgorithm.Spline16: return LongVectorImageResizer.Spline16(img, pixelsPerPixelToBeLeft, gamma, size, parallel, bwMagnifierMaker);
                                         case ScalingAlgorithm.Spline36: return LongVectorImageResizer.Spline36(img, pixelsPerPixelToBeLeft, gamma, size, parallel, bwMagnifierMaker);
                                         case ScalingAlgorithm.Spline64: return LongVectorImageResizer.Spline64(img, pixelsPerPixelToBeLeft, gamma, size, parallel, bwMagnifierMaker);
-                                        //default: QuickGraphic.DrawImage(canvas, rect, img, bwMagnifierMaker); break;
 
                                         // 品質の良さを重視する場合
                                         // 他のオプションがあるので現在は不採用
@@ -242,7 +228,6 @@ namespace ZipPla
                                 }
 
 
-                                //sw.Stop(); MessageBox.Show($"{sw.Elapsed}");
                                 try
                                 {
                                     if (ViewerMode != ViewerModeEnum.CoverSetting)
@@ -310,13 +295,10 @@ namespace ZipPla
                     }
                     cumulativeWidth += zoomedWidth;
                 }
-                //graphics?.Dispose();
             }
             catch
             {
-                //if(canvas != null) canvas.Dispose();
                 canvas.Dispose();
-                //canvas = MagnifierCanvas.FromBitmapEx(BitmapEx.ConvertToBitmapEx(Program.GetErrorImage(totalWidth, zoomedHeight)));
                 canvas = MagnifierCanvas.GetErrorCanvas(new Size(totalWidth, zoomedHeight));
             }
 
@@ -337,7 +319,6 @@ namespace ZipPla
         {
             return new VirtualBitmapEx(source, virtualSize, algorithm.ScaleDown == ScalingAlgorithm.NearestNeighbor,
                 algorithm.ScaleUp == ScalingAlgorithm.AreaAverage || algorithm.ScaleUp == ScalingAlgorithm.NearestNeighbor);
-            //upScaleNearestNeighbor: true);
         }
 
         private void bwMagnifierMaker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -348,11 +329,9 @@ namespace ZipPla
             Magnifier_currentPageReady = t == null ? -1 : t.Item2;
 
 
-            //optionToolStripMenuItem.Text = $"mag loaded: {ViewerMode} {bwMagnifierMaker_Q == null} {MagnifierPhase2_Q}";
 
             if (bwMagnifierMaker_Q == null)
             {
-                //bmwLoadEachPage.ThreadCount = 1;
                 if (MagnifierPhase2_Q)
                 {
                     MagnifierPhase2_Q = false;
@@ -405,7 +384,6 @@ namespace ZipPla
         private void MagnifierPhase1(Point? initialCenterLocation, bool ifNoopThenQ = false)
         {
             var nextPage = NextPage;
-            //if (currentPage < 0 || nextPage <= currentPage) return;
             if (currentPage < 0 || nextPage < currentPage || nextPage == currentPage && getCurrentPageDivison() <= 1 || ResizedImageArray == null ||
                 ResizedImageArray.Length <= currentPage || ResizedImageArray[currentPage] == null)
             {
@@ -478,7 +456,6 @@ namespace ZipPla
             ViewerMode = ViewerModeEnum.MagnifierClosing;
             ksViewForm.Enabled = false;
             pbView_Paint_Rectangle_FillAround = false;
-            //GetMagnifierRectangle_LastCursorPosition = null;
             if (!toPhase4) ShwoMagnifierRectangle();
         }
 
@@ -510,8 +487,6 @@ namespace ZipPla
 
         Point? GetMagnifierRectangle_LastCursorPosition = null;
 
-        //VectorD GetMagnifierRectangle_LastCursorDelta;
-        // bool GetMagnifierRectangle_LastSmooth;
 
 
         private Rectangle GetMagnifierRectangle(bool PreviewMode, VectorD? delta)
@@ -618,9 +593,7 @@ namespace ZipPla
             var pointClient = pbView.PointToClient(pointScreen);
             PointD pointAsLocation;
 
-            //PointD GetMagnifierRectangle_LastRectanglePosition;
 
-            //var size = new Size((int)Math.Round((2 * pbViewSize.Width + MagnifyingPower) / (2 * MagnifyingPower)), (int)Math.Round((2 * pbViewSize.Height + MagnifyingPower) / (2 * MagnifyingPower)));
             var size = GetPreviewModeMagnifierRectangleSize(pbViewSize, magPower);
 
             var whInt = size.Width / 2;
@@ -630,7 +603,6 @@ namespace ZipPla
             var corsorYMin = offsetY + hhInt;
             var corsorYMax = offsetY + totalHeight - size.Height + hhInt;
 
-            //if (!PreviewMode && delta == null || PreviewMode && GetMagnifierRectangle_LastCursorPosition == null)
             if (delta == null && GetMagnifierRectangle_LastCursorPosition == null)
             {
                 pointAsLocation = pointClient;
@@ -644,20 +616,16 @@ namespace ZipPla
                     Cursor.Position = pointTruncated;
                 }
 
-                //GetMagnifierRectangle_LastRectanglePosition = new PointD(pointTruncated.X - size.Width / 2/0, pointTruncated.Y - size.Height / 2.0);
             }
             else
             {
                 touchMode = true;
 
                 var wh = size.Width / 2.0;
-                //var whMinus = wh - 0.25;
                 var hh = size.Height / 2.0;
-                //var hhMinus = hh - 0.25;
 
                 if (GetMagnifierRectangle_LastCursorPosition != null)
                 {
-                    //var delta = new VectorD(pointClient, (Point)GetMagnifierRectangle_LastCursorPosition);
 
                     pointAsLocation = (Point)GetMagnifierRectangle_LastCursorPosition;
 
@@ -666,9 +634,7 @@ namespace ZipPla
                     //GetMagnifierRectangle_LastCursorDelta = (VectorD)delta;
                     //var smooth = sharpness(delta, preDelta) < 1;
 
-                    //if (!GetMagnifierRectangle_LastSmooth) delta += preDelta;
 
-                    //if (smooth)
                     {
 
                         if (delta != null)
@@ -680,18 +646,14 @@ namespace ZipPla
                             var magDelta = (VectorD)delta / magPower;
                             pointAsLocation -= magDelta;
 
-                            //pointAsLocation.X = Math.Max(offsetX + wh, Math.Min(offsetX + totalWidth - wh, pointAsLocation.X));
-                            //pointAsLocation.Y = Math.Max(offsetY + hh, Math.Min(offsetY + totalHeight - hh, pointAsLocation.Y));
                         }
                         
 
                     }
 
-                    //GetMagnifierRectangle_LastSmooth = smooth;
 
                     GetMagnifierRectangle_LastCursorPosition = new PointD(Math.Max(cursorXMin, Math.Min(corsorXMax, pointAsLocation.X)),
                         Math.Max(corsorYMin, Math.Min(corsorYMax, pointAsLocation.Y))).Round();
-                    //GetMagnifierRectangle_LastCursorPosition = pointAsLocation.Round();// pointClient;
                 }
                 else
                 {
@@ -799,7 +761,6 @@ namespace ZipPla
                     if (bl > 0)
                     {
                         var n = Math.Ceiling(bl / shiftLocal);
-                        //optionToolStripMenuItem.Text = n.ToString() + "  " + (xxxx++);
                         var fitted = bl / n;
                         shiftLocal = fitted;
                     }
@@ -817,7 +778,6 @@ namespace ZipPla
             return ScrollResult.Scrolled;
         }
 
-        //int xxxx = 0;
 
         // 16:10 で横が3段階にならないようにするには横のオーバーラップが 2 - 1.25√2 ≒ 0.232233 以下でなければならない
         // 縦を3段階にするには縦のオーバーラップが 0 より大きくなければならない
@@ -1009,7 +969,6 @@ namespace ZipPla
             else if (ViewerMode == ViewerModeEnum.Magnifier)
             {
                 disableMagnifier();
-                //disableMagnifierForKeyboard();
             }
         }
 
@@ -1045,7 +1004,6 @@ namespace ZipPla
             var vm = ViewerMode;
             if (vm == ViewerModeEnum.Normal)
             {
-                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
                 UserMagnifierOpeningOrClosing = true;
                 if (withOperatingGuide) pbView_Paint_RectangleMessage = Message.MagnifierOperatingGuide.Replace("\\n", "\n");
                 MagnifierPhase1(null);
@@ -1059,7 +1017,6 @@ namespace ZipPla
             }
             else if(vm == ViewerModeEnum.Magnifier)
             {
-                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
                 UserMagnifierOpeningOrClosing = true;
                 MagnifierPhase3(toPhase4: true);
                 MagnifierPhase4(toPhase1: true);
@@ -1086,7 +1043,6 @@ namespace ZipPla
 
         private void MagnifierPhase2_KeyUpEventHandler(object sender, KeyEventArgs e)
         {
-           // UserMagnifierOpeningOrClosing = false;
             var actions = ksViewForm.Actions;
             if (actions == null || actions.Any(action =>
                 IsEnableMagnifierCommand((Command)action.Key) && action.Shortcut.LastOrDefault()?.Contains(e.KeyCode) == true))
@@ -1123,7 +1079,6 @@ namespace ZipPla
             var vm = ViewerMode;
             if (vm == ViewerModeEnum.Magnifier)
             {
-                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
                 UserMagnifierOpeningOrClosing = true;
                 if (withOperatingGuide) pbView_Paint_RectangleMessage = Message.MagnifierOperatingGuide.Replace("\\n", "\n");
                 MagnifierPhase3(toPhase4: false);
@@ -1137,7 +1092,6 @@ namespace ZipPla
             }
             else if(vm == ViewerModeEnum.Normal)
             {
-                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
                 UserMagnifierOpeningOrClosing = true;
                 MagnifierPhase1(null);
                 MagnifierPhase2();

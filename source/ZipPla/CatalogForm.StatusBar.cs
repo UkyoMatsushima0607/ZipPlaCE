@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -76,7 +75,6 @@ namespace ZipPla
             var selectedCount = 0;
             long fileSize = 0;
             bool? ffmpegExists = null;
-            //var atLeastOneDir = false;
             List<string> dirPathList = null;
             if (selectedIndices != null && selectedIndices.Any(i => i >= 0))
             {
@@ -92,7 +90,6 @@ namespace ZipPla
                                 selectedCount++;
                                 var name = ZipNameArray[selectedIndex];
                                 var isDir = name.EndsWith(Path.DirectorySeparatorChar.ToString());
-                                //if (isDir) atLeastOneDir = true;
                                 if (selectedCount == 1)
                                 {
                                     var path = ZipPathArray[selectedIndex];
@@ -157,7 +154,6 @@ namespace ZipPla
                     }
                 }
             }
-            //var needToCheckDirSize = false;
             {
                 if (fileSize >= 0)
                 {

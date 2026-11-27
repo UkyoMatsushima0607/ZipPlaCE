@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -83,7 +82,6 @@ namespace ZipPla
         public SelectionHighlightMode SelectionHighlightMode = SelectionHighlightMode.WhenMouseLeaves;
         public FilterRemovingMode? FilterRemovingMode;
         public bool LoadLastViewedPageFromHistory = false;
-        //public DoubleClickMode DoubleClickFileOpenMode = DoubleClickMode.IgnoreMouseMove;
         public DoubleClickMode? DoubleClickFileOpenMode = null; // 移行用
         public CatalogFormContextMenu RightClickContextMenu = CatalogFormContextMenu.ZipPla;
         public CatalogFormContextMenu MiddleContextMenu = CatalogFormContextMenu.Tag;
@@ -93,7 +91,6 @@ namespace ZipPla
         public bool SynchroFromBarToTree = false;
         public bool CollapseOthersWhenSynchronizing = false;
         public FolderSortMode FolderSortMode = FolderSortMode.None;
-        //public bool CheckDirectorySize = false;
         public ArchivesInArchiveMode ArchivesInArchiveMode = ArchivesInArchiveMode.Ignore;
         public ReadOnMemoryMode ReadOnMemoryMode = ReadOnMemoryMode.None;
         public bool OpenInPreviousImageFilterSetting = true;

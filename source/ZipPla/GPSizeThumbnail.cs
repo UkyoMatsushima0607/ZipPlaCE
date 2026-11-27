@@ -284,7 +284,6 @@ namespace ZipPla
             var pathInLower = path.ToLower();
             try
             {
-                //editingInfo[pathInLower] = File.GetLastWriteTime(path);
                 editingInfo[pathInLower] = File.GetLastAccessTime(path);
             }
             catch { }
@@ -295,7 +294,6 @@ namespace ZipPla
             DateTime time;
             try
             {
-                //return editingInfo.TryGetValue(pathInLower, out time) && File.GetLastWriteTime(path) <= time;
                 return editingInfo.TryGetValue(pathInLower, out time) && File.GetLastAccessTime(path) <= time;
             }
             catch
@@ -897,8 +895,6 @@ namespace ZipPla
         }
         
 
-        //public static readonly ImageCodecInfo TrySet_ImageCodecInfo = GetEncoderInfo(ImageFormat.Jpeg);
-        //public static readonly EncoderParameters TrySet_EncoderParameters = GetJpegEncoderParameters(JPEG_QUALITY);
         private static readonly HashSet<string> TrySet_Creating = new HashSet<string>(); // スレッドセーフ
         public static bool TrySet(string cachRoot, string fileName, Size requiredSize, bool letterBox, bool fullSizeCache, Bitmap thumbnail, byte[] gpData)
         {
@@ -1418,7 +1414,6 @@ namespace ZipPla
 
             biggestBitmap = null;
             biggestBitmapPixelRatio = 0;
-            //MemoryStream memoryStream = null;
 
 
             if (pending == null) // 後回しの書き込みでは TrySetDeferred で登録済み
@@ -1438,7 +1433,6 @@ namespace ZipPla
 
                 var ads = cacheRoot == AlternateDataStream;
 
-                //var driveInfo = new DriveInfo(fileName);
                 long sizeBound;
                 if (ads)
                 {
@@ -1526,7 +1520,6 @@ namespace ZipPla
                         try
                         {
                             var m = new MemoryStream();
-                            //img.Save(m, TrySet_ImageCodecInfo, TrySet_EncoderParameters);
                             SaveCacheImage(m, img);
 
                             if (sizeBound < long.MaxValue / 2)
@@ -1685,7 +1678,6 @@ namespace ZipPla
                             else // ファイルに保存
                             {
                                 var cachePath = GetCachePath(fileName, cacheRoot);
-                                //DeleteItemAndParents(cachePath, false, cachePath);
                                 CreateDirectoryWithItsParents(Path.GetDirectoryName(cachePath));
                                 using (var fileStream = new FileStream(cachePath, FileMode.Create, FileAccess.Write))
                                 {

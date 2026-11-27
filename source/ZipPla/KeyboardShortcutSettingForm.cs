@@ -45,7 +45,6 @@ namespace ZipPla
         public string UseMButtonWarningMessage;
         public string UseRButtonWarningMessage;
 
-        //private int LButtonCount = 0;
 
         public string ShortcutText
         {
@@ -230,7 +229,6 @@ namespace ZipPla
             if (Control_MouseUp_LButton_Accept || key != (UseLButton ? Keys.LButton : Keys.None))
             {
                 Control_KeyUpTemplate();
-                //KeyboardShortcutSettingForm_KeyUp(sender, new KeyEventArgs(key));
             }
             Control_MouseUp_LButton_Accept = true;
         }
@@ -283,7 +281,6 @@ namespace ZipPla
 
         private void Control_KeyUpTemplate(KeyEventArgs e = null)
         {
-            //var preLButtonCount = LButtonCount;
             insertShortcutWithAlert(addedKeys);
 
             if (e != null) e.Handled = true;
@@ -294,7 +291,6 @@ namespace ZipPla
         private void endAddMode()
         {
             addedKeys.Clear();
-            //KeyDown -= KeyboardShortcutSettingForm_KeyDown;
             PreviewKeyDown -= Control_PreviewKeyDown;
             MouseDown -= Control_MouseDown;
             MouseUp -= Control_MouseUp;
@@ -358,7 +354,6 @@ namespace ZipPla
         private void insertShortcut(IReadOnlyList<Keys> keys, int templateIndex)
         {
             if (keys == null || keys.Count == 0) return;
-            //var key = templates[templateIndex].Key;
             var displayableShortcut = new DisplayableShortcut(KeyboardShortcutAction.SimpleShortcutToFullShortcut(keys), KeyboardShortcutAction.GetNameOfShortcut(keys));
             int index;
             DataGridViewRow row;
@@ -416,9 +411,7 @@ namespace ZipPla
         
         private Tuple<HashSet<Keys>[], int>[] getCurrentCommands()
         {
-            //var templateStrings = (from t in templates select t.DisplayedText).ToArray();
 
-            //var templateIndexToKey = (from t in templates select t.Key).ToArray();
             
             return (from DataGridViewRow row in dataGridView.Rows
                     select Tuple.Create(
@@ -588,7 +581,6 @@ namespace ZipPla
             var r = e.RowIndex;
             if (c >= 1 && r >= 0 && !dataGridView[c, r].IsInEditMode)
             {
-                //dataGridView.EndEdit();
                 SendKeys.SendWait("{F4}");
             }
         }
@@ -665,8 +657,6 @@ namespace ZipPla
         {
             if (baseSetting == null) baseSetting = new Tuple<HashSet<Keys>[], int>[0];
             var sup = defaultCommands.Where(d => baseSetting.All(c => !(c.Item2 == d.Item2 && ViewerFormConfig.UseMouse(c.Item1) == ViewerFormConfig.UseMouse(d.Item1)) &&
-           // !competesShortcut(c.Item1, d.Item1)));
-           // !intersectsShortcut(c.Item1, d.Item1)));
             !WeaklyCompetesShortcut(c.Item1, d.Item1)));
             changed = sup.Any();
             if (changed)
@@ -752,7 +742,6 @@ namespace ZipPla
         private void btnDefault_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show(MessageBoxOwner, DoYouRestoreDefaultSettingOfKeyboardShortcutText, Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
-            //if (MessageForm.Show(MessageBoxOwner, DoYouRestoreDefaultSettingOfKeyboardShortcutText, Message.Question, Message.OK, Message.Cancel, MessageBoxIcon.Question) == 0)
             {
                 var rows = defaultCommands.Select(d => getRow(d)).ToArray();
                 dataGridView.Rows.Clear();

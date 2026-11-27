@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -298,7 +297,6 @@ namespace ZipPla
                             loadThumbnail = isImage ? imageLoad : otherLoad;
                         }
 
-                        //if (ImageLoadLevel == ItemLoadLevel.Full)
                         if (loadThumbnail)
                         {
                             return GetImageThumbnail(zipPath, backgroundWorker, out filecount, out loadError, out fileSize, out imageInfo);
@@ -424,7 +422,6 @@ namespace ZipPla
                 {
                     using (var img = MovieThumbnailLoader.GetThumbnail(zipPath, sizeProviderForVideo, positionProvider, backgroundWorker, TimeSpan.FromSeconds(10), ref movieInfo))
                     {
-                        //imageInfo = new ImageInfo(img);
                         imageInfo = null;
                         return DoJustClipping(img, needToResize: false);
                     }
@@ -464,12 +461,10 @@ namespace ZipPla
                         }
                     }
 
-                    //throw new Exception();
                     var pp = index < 0 ? positionProviderForMovie : new Func<TimeSpan, TimeSpan>(t => TimeSpan.FromSeconds(index));
                     // 位置を指定していない動画は、長さの 1/3 以降の最初のキーフレームで作る（速い）。位置を指定した動画は、その時刻ちょうどのコマ
                     using (var img = MovieThumbnailLoader.GetThumbnail(zipPath, /*sizeProvider*/ null, pp, backgroundWorker, TimeSpan.FromSeconds(10), ref movieInfo, nextKeyframe: index < 0))
                     {
-                        //imageInfo = new ImageInfo(img);
                         imageInfo = null;
                         Bitmap resized;
                         Fraction resizedRatio;
@@ -499,7 +494,6 @@ namespace ZipPla
                 if (backgroundWorker != null && backgroundWorker.CancellationPending) return null;
                 var result = Program.GetErrorImage(tvCatalog.ThumbnailWidth, tvCatalog.ThumbnailHeight);
                 return result;
-                //return GetOtherFileThumbnail(zipPath, backgroundWorker, out filecount, out loadError, out fileSize, out imageInfo);
             }
         }
 
@@ -560,7 +554,6 @@ namespace ZipPla
 
         private static TimeSpan positionProviderForMovie(TimeSpan srcPosition)
         {
-            //return TimeSpan.FromSeconds(1);
             return TimeSpan.FromSeconds(srcPosition.TotalSeconds / 3);
         }
 
@@ -578,12 +571,10 @@ namespace ZipPla
                     fileSize = (new FileInfo(zipPath)).Length;
                 }
                 catch { }
-                //using (var b = GetFileBackBrush(zipPath))
                 var b = GetFileBackBrush(zipPath);
                 {
                     return getImageWithFileIInfo(tvCatalog.ThumbnailWidth, tvCatalog.ThumbnailHeight,
                         /*Brushes.LightGray*/ b);//,
-                                                 //DefaultFont, Path.GetFileName(zipPath), zipPath);
                 }
             }
             catch
@@ -611,7 +602,6 @@ namespace ZipPla
             {
                 Bitmap img;
                 GPSizeThumbnail.FocusCache focusCache = null; // キャッシュファイルの注目点の記録（P4）
-                //if (thumbnailCache != null && ImageLoader.SupportsFullReading(zipPath, ffmpegExists: true) && ImageInfo.Supports(zipPath))
                 if (thumbnailCache != null && ImageLoader.SupportsFullReading(zipPath, ffmpegExists: true))
                 {
                     byte[] data;
@@ -673,7 +663,6 @@ namespace ZipPla
                     using (img)
                     {
                         loadError = LoadResult.Success;
-                        //var sw = new Stopwatch();sw.Start();
 #if PERFLOG
                         var perfClip = PerfTrace.Now();
 #endif
@@ -681,7 +670,6 @@ namespace ZipPla
 #if PERFLOG
                         PerfTrace.AddStage("clip", PerfTrace.Now() - perfClip);
 #endif
-                        //sw.Stop();MessageBox.Show($"{sw.Elapsed}");
                         return result;
                     }
                 }
@@ -691,10 +679,8 @@ namespace ZipPla
                     return null;
                 }
             }
-            //catch (Exception e)
             catch
             {
-                // MessageBox.Show(e.ToString());
                 loadError = LoadResult.LoadError;
                 imageInfo = null;
                 if (backgroundWorker != null && backgroundWorker.CancellationPending) return null;
@@ -822,7 +808,6 @@ namespace ZipPla
                 // 自前のアルゴリズムを使う方法
                 using (var g = Graphics.FromImage(result))
                 {
-                    //g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
 
                     switch (clipMode)
                     {
@@ -855,7 +840,6 @@ namespace ZipPla
                                 }
                                 else
                                 {
-                                    //g.DrawImageUnscaledAndClipped(src, Round(poorRect));
                                     g.DrawImageUnscaled(src, (int)Math.Round(poorRect.X), (int)Math.Round(poorRect.Y));
                                 }
                                 break;
@@ -877,7 +861,6 @@ namespace ZipPla
                                 }
                                 else
                                 {
-                                    //g.DrawImageUnscaledAndClipped(src, Round(poorRectP));
                                     g.DrawImageUnscaled(src, -(int)Math.Round(poorRectP.X), -(int)Math.Round(poorRectP.Y));
                                 }
                                 break;
@@ -980,13 +963,10 @@ namespace ZipPla
         private static Brush GetFileBackBrush(string path)
         {
             return SystemColorsWindowIsNearToWhite ? Brushes.LightGray : Brushes.DimGray;// Brushes.LightYellow;;
-            //return SystemColorsWindowIsNearToWhite ? Brushes.LightGray : Brushes.MidnightBlue;// Brushes.LightYellow;;
-            //return SystemBrushes.Window;
         }
 
         private static Brush GetDirectoryBackBrush(string path)
         {
-            //return SystemColorsWindowIsNearToWhite ? Brushes.LightYellow : Brushes.SaddleBrown;// Brushes.LightYellow;;// Brushes.LightYellow;;
             return SystemColorsWindowIsNearToWhite ? Brushes.LightYellow : Brushes.DarkSlateGray;// Brushes.LightYellow;;// Brushes.LightYellow;;
         }
 
@@ -1085,7 +1065,6 @@ namespace ZipPla
                             if (got != null) got.Dispose();
                         }
                     }
-                    //else throw new Exception();
                     data = null;
                 }
 
@@ -1118,8 +1097,6 @@ namespace ZipPla
                         filecount = entries.Count;
                         if (loader.Type != PackedImageLoader.PackType.Directory) rememberArchiveEntryCount(zipPath, filecount);
 
-                        //var byZipPlaImageFile = false;
-                        //if (coverPage == null)
                         if (index >= 0)
                         {
                             if (backgroundWorker != null && backgroundWorker.CancellationPending)
@@ -1141,7 +1118,6 @@ namespace ZipPla
 
                                     MaxPointRectangleF = getCoverRectangleByRatioFromThumbnailInfo(givenSize ? Math.Sqrt(0.5) : ratio, MaxPointImage.Size, v);
 
-                                    //MaxPointRectangleF = getCoverRectangleByGivenImageFromThumbnailInfo(width, height, MaxPointImage.Size, v);
 
 
                                     ///////////
@@ -1154,8 +1130,6 @@ namespace ZipPla
                                 }
                             }
                             catch (ArgumentException) { }
-                            //localClipMode = ClipMode.PlaClip;
-                            //localClipMode = byZipPlaImageFile ? currentClipMode : ClipMode.PlaClip;
                         }
                         else
                         {
@@ -1166,8 +1140,6 @@ namespace ZipPla
                                 if (isZipPlaCoverImageFile(entries[i].Path))
                                 {
                                     zipPlaImageIndex = i;
-                                    //coverPage = i;
-                                    //byZipPlaImageFile = true;
                                     break;
                                 }
                             }
@@ -1187,10 +1159,7 @@ namespace ZipPla
                                         MaxPointImage = image;
 
                                         isZipPlaImageData = true;
-                                        //MaxPointRectangleF = new RectangleF(new PointF(0, 0), MaxPointImage.Size);
 
-                                        //MaxPoint = point;
-                                        //MaxPointRectangleF = rect;
                                     }
                                     catch
                                     {
@@ -1244,7 +1213,6 @@ namespace ZipPla
                                     catch (ArgumentException) { }
                                     ReadNextDownPoint--;
                                 }
-                                //localClipMode = currentClipMode;
                             }
                         }
                     }
@@ -1267,25 +1235,20 @@ namespace ZipPla
                     imageInfo = null;
                     if (isDirectory)
                     {
-                        //using (var b = GetDirectoryBackBrush(zipPath))
                         var b = GetDirectoryBackBrush(zipPath);
                         {
                             return getImageWithFileIInfo(width, height,
                                 b);//,
-                                   //DefaultFont, FileDirectoryForeBrush, Path.GetFileName(zipPath), zipPath);
                         }
                     }
                     else
                     {
-                        //using (var b = GetFileBackBrush(zipPath))
                         var b = GetFileBackBrush(zipPath);
                         {
                             return getImageWithFileIInfo(width, height,
                                 b);//,
-                                   //DefaultFont, FileDirectoryForeBrush, Path.GetFileName(zipPath), zipPath);
                         }
                     }
-                    //return Program.GetErrorImage(tvCatalog.ThumbnailWidth, tvCatalog.ThumbnailHeight);
                 }
 
                 var resized = false;
@@ -1321,12 +1284,10 @@ namespace ZipPla
                     if (index >= 0)
                     {
                         var v = thumbnailInfo?.Item2;
-                        //MaxPointRectangleF = getCoverRectangleByGivenImageFromThumbnailInfo(width, height, MaxPointImage.Size, v);
                         MaxPointRectangleF = getCoverRectangleByRatioFromThumbnailInfo(givenSize ? Math.Sqrt(0.5) : ratio, MaxPointImage.Size, v);
                     }
                     else if (isZipPlaImageData)
                     {
-                        //MaxPointRectangleF = new RectangleF(new PointF(0, 0), MaxPointImage.Size);
                     }
                     else
                     {
@@ -1371,9 +1332,7 @@ namespace ZipPla
                             float z = 0;
                             if (ratio < 0.7 || ratio > 0.714)
                             {
-                                //throw new Exception();
                                 z = Math.Min(MaxPointRectangleF.Width / canvas.Width, MaxPointRectangleF.Height / canvas.Height);
-                                //var zHalf = z / 2;
                                 var rectWidth = z * canvas.Width;// - zHalf;
                                 var rectHeight = z * canvas.Height;// - zHalf;
 #if PERFLOG
@@ -1453,21 +1412,17 @@ namespace ZipPla
                 if (isDirectory)
                 {
                     var b = GetDirectoryBackBrush(zipPath);
-                    //using (var b = GetDirectoryBackBrush(zipPath))
                     {
                         return getImageWithFileIInfo(width, height,
                             b);//,
-                               //DefaultFont, FileDirectoryForeBrush, Path.GetFileName(zipPath), zipPath);
                     }
                 }
                 else
                 {
                     var b = GetFileBackBrush(zipPath);
-                    //using (var b = GetFileBackBrush(zipPath))
                     {
                         return getImageWithFileIInfo(width, height,
                             b);//,
-                               // DefaultFont, FileDirectoryForeBrush, Path.GetFileName(zipPath), zipPath);
                     }
                 }
             }
@@ -1534,9 +1489,7 @@ namespace ZipPla
             // サムネイルの上にアイコンが重ならないよう描画自体を止めていた。読み込み結果を戻すようにしたので元に戻した（A11）
             try
             {
-                //var icon = iconPath != null ? FileTypeManager.GetLargeIconBitmap(iconPath, useFileAttrinutes: !isExist) : null;
                 var icon = iconPath != null ? SmartStaticIconProvider.GetLarge(iconPath, lastWriteTime, isDir) : null;
-                //try
                 {
                     var size = g.MeasureString(text, font, rect.Width);
                     size.Width += drawLeftMagin + drawRightMagin;
@@ -1560,9 +1513,7 @@ namespace ZipPla
                     g.DrawString(text, font, foreBrush, new RectangleF(textRectangle.X + drawLeftMagin, textRectangle.Y + drawTopMagin,
                         textRectangle.Width - (drawLeftMagin + drawRightMagin), textRectangle.Height - (drawTopMagin + drawBottomMagin)));
                 }
-                //finally
                 {
-                    //icon?.Dispose();
                 }
             }
             catch
@@ -1577,7 +1528,6 @@ namespace ZipPla
             using (var g = Graphics.FromImage(result))
             {
                 g.FillRectangle(backBrush, 0, 0, width, height);
-                //drawFileImage(g, width, height, font, foreBrush, text, iconPath);
             }
             return result;
         }
@@ -1592,14 +1542,9 @@ namespace ZipPla
 
         private static void drawSimpleString(Graphics g, string str, Font font, Rectangle rect, Color foreColor, Brush backBrush, Dictionary<string, Size> sizeDictionary)
         {
-            //var paintSize = TextRenderer.MeasureText(g, "★★★★★", DefaultFont);
-            //var stringSize = TextRenderer.MeasureText(g, str, font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
             var stringSize = MeasureStringSizeByTextRenderer(g, str, font, sizeDictionary);
 
-            //var sizeBack = new Size((int)(stringSize.Width + 0.5) + drawLeftMagin + drawRightMagin, (int)(stringSize.Height + 0.5) + drawTopMagin + drawBottomMagin);
-            //var rectBack = new Rectangle(rect.X, rect.Y, stringSize.Width + TextRenderer.MeasureText(g, "★", font).Width / 2, stringSize.Height * 4 / 3);
             var rectBack = new Rectangle(rect.X, rect.Y, stringSize.Width + MeasureStringSizeByTextRenderer(g, str, font, sizeDictionary).Width / 2, stringSize.Height * 4 / 3);
-            //var rectBack = new Rectangle(rect.X, rect.Y, sizeBack.Width, sizeBack.Height);
             var rectFore = rectBack;
             rectFore.X += (rectBack.Width - stringSize.Width) / 2;
             g.FillRectangle(backBrush, rectBack);
@@ -1625,7 +1570,6 @@ namespace ZipPla
 
         private bool drawRating_StarSizeNotSet = true;
 
-        //private Size drawRating_PaintSize;
         private Size drawRating_FiveStarSize;
 
         private Point drawRating_FiveStarLocation;
@@ -1646,7 +1590,6 @@ namespace ZipPla
                 drawRating_StarSizeNotSet = false;
 
                 var fiveStarRect = RainbowDataGridViewTextBoxCell.GetCharRectangle("★★★★★", font, TextFormatFlags.NoPadding, onlyHorizontal: false);
-                //MessageBox.Show(fiveStarRect.ToString());
                 var frameLeft = Program.DpiScaling(3);
                 var frameRight = frameLeft;
                 var frameTop = Program.DpiScaling(2);
@@ -1656,8 +1599,6 @@ namespace ZipPla
 
                 drawRating_Bound0 = new Rectangle(0, 0, drawRating_FiveStarSize.Width + frameLeft + frameRight, drawRating_FiveStarSize.Height + frameTop + frameBottom);
 
-                //drawRating_PaintSize = TextRenderer.MeasureText(g, "★★★★★", DefaultFont);
-                //drawRating_FiveStarSize = fiveStarSize.Width; // TextRenderer.MeasureText(g, "★★★★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
 
                 drawRating_PartStarSizesWidth = new int[6]
                 {
@@ -1671,17 +1612,12 @@ namespace ZipPla
 
             }
 
-            //var paintSize = TextRenderer.MeasureText(g, "★★★★★", DefaultFont);
-            //var fiveStarsSize = TextRenderer.MeasureText(g, "★★★★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding);
             var partStars = "★★★★★".Substring(0, r);
-            //var partStarsSize = TextRenderer.MeasureText(g, partStars, DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding);
 
-            //var rectBack = new Rectangle(rect.X, rect.Y, drawRating_PaintSize.Width, drawRating_PaintSize.Height * 4 / 3);
             var rectBack = new Rectangle(rect.Location, drawRating_Bound0.Size);
             var rectFore = rectBack;
             rectFore.X += drawRating_FiveStarLocation.X; //(rectBack.Width - drawRating_FiveStarSize.Width) / 2;
             rectFore.Y += drawRating_FiveStarLocation.Y;
-            //rectFore.X += TextRenderer.MeasureText(g, ",", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
 
             if (!rect.Contains(rectBack))
             {
@@ -1698,8 +1634,6 @@ namespace ZipPla
             drawRating_Bound = drawRating_Bound0;
             drawRating_StarsBound = new Rectangle((rectBack.Width - drawRating_FiveStarSize.Width) / 2, 0, drawRating_FiveStarSize.Width, drawRating_FiveStarSize.Height);
 
-            //drawRating_Bound = new Rectangle(0, 0, drawRating_PaintSize.Width, drawRating_PaintSize.Height * 4 / 3);
-            //drawRating_StarsBound = new Rectangle((rectBack.Width - drawRating_FiveStarSizeWidth) / 2, 0, drawRating_FiveStarSizeWidth, drawRating_PaintSize.Height);
         }
 
         private static SizeF MeasureStringSizeByGraphics(Graphics g, string str, Font font, Dictionary<string, SizeF> sizeDictionary)
@@ -1766,7 +1700,6 @@ namespace ZipPla
 
                 using (var b = new SolidBrush(tag.ForeColor))
                 {
-                    //g.DrawString(tagName, font, b, Math.Max(0, topLeft.X) + drawLeftMagin, topLeft.Y + drawTopMagin);
                     if (fullDisplayed)
                     {
                         g.DrawString(tagName, font, b, stringRect.Location);
@@ -1811,7 +1744,6 @@ namespace ZipPla
 
             var blankAvoidRectangle = Program.GetBlankAvoidRectangle(image, thumbWidth, thumbHeight, 20, true);
 
-            //MessageBox.Show($"{image.Width} {image.Height}\n{blankAvoidRectangle.X} {blankAvoidRectangle.Y} {blankAvoidRectangle.Width} {blankAvoidRectangle.Height}");
 
             point = 0;
             if (blankAvoidRectangle == Rectangle.Empty)
@@ -1842,8 +1774,6 @@ namespace ZipPla
 
             const float AspectRatio = 148f / 210f;
             const float ThickRatio = 15f / 210f;
-            //const float ArmRatio = 85f / 210f;
-            //const float ArmRatio = 82f / 210f;
             const float ArmRatio = 75f / 210f;
 
             var dstAsp = dstWidth / dstHeight;
@@ -1867,7 +1797,6 @@ namespace ZipPla
             {
                 cutPerOpposite = srcAsp - dstAsp;
             }
-            //else if (srcAsp < dstAsp + dstTck + (dstArm + dstAsp)*0.5)
             else if (srcAsp < dstAsp + dstTck + dstArm * 0.45 + dstAsp * 0.55) // ここは非常にシビア
             {
                 cutPerOpposite = srcAsp - dstAsp - dstTck;
@@ -1879,7 +1808,6 @@ namespace ZipPla
             else if (srcAsp < dstArm + dstAsp + dstTck + dstAsp + dstArm * 0.15)
             {
                 cutPerOpposite = srcAsp - 2 * dstAsp - dstTck;
-                //cutPerOpposite = dstArm;
             }
             else
             {
@@ -2116,9 +2044,7 @@ namespace ZipPla
                         {
                             if (oldPath != null && oldPath != ZipPathArray[index]) return;
                             ZipPathArray[index] = path;
-                            //var name = path.Substring(dirPathFullPathLengthPlusOne);
 
-                            //isDir = oldPath != null ? ZipNameArray[index].EndsWith(Path.DirectorySeparatorChar.ToString()) : Directory.Exists(newPath);
                             isDir = Directory.Exists(newPath);
                             ZipNameArray[index] = zipName = getRelativePath(path, isDir);// name + Path.DirectorySeparatorChar;
 
@@ -2164,7 +2090,6 @@ namespace ZipPla
                         }
                         catch { }
                     }
-                    //if (fileSize >= 0)
                     {
                         if (startingGuid != loadingGuid)
                         {

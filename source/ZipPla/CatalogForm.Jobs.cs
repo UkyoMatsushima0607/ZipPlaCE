@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -220,13 +219,10 @@ namespace ZipPla
         {
             {
                 var plainFile = headerResult.PlainFile;
-                //var singlePath = "";
                 try
                 {
                     bool loadedIsSelected = false;
-                    //bool singleEmpty = false;
                     bool singleCannotOpen = false;
-                    //bool isDir = false;
                     string path, name;
                     lock (ZipPathArrayLocker)
                     {
@@ -253,7 +249,6 @@ namespace ZipPla
                         if (headerResult.FileSize >= 0) ZipSizeArray[index] = headerResult.FileSize;
                         if (headerResult.ImageInfo != null) ImageInfoArray[index] = headerResult.ImageInfo;
                         if (headerResult.MovieInfo != null) MovieInfoArray[index] = headerResult.MovieInfo;
-                        //page = ZipPageArray[index];
                         path = ZipPathArray[index];
                         name = ZipNameArray[index];
 
@@ -268,12 +263,9 @@ namespace ZipPla
                                     var selectedIndex = selectedIndices[0];
                                     if (0 <= selectedIndex && selectedIndex < LoadResultArray.Length)
                                     {
-                                        //singlePath = ZipPathArray[selectedIndex];
                                         var loadResult = LoadResultArray[selectedIndex];
                                         singleCannotOpen = loadResult == LoadResult.FileNotFound || loadResult == LoadResult.LoadError;
-                                        //if (singleCannotOpen)
                                         {
-                                            // isDir = ZipNameArray[selectedIndex].EndsWith(Path.DirectorySeparatorChar.ToString());
                                         }
                                     }
                                 }
@@ -566,7 +558,6 @@ namespace ZipPla
             var index = startIndex;
             foreach (var app in applicationArray)
             {
-                //if (selectedPaths.Length > 1 && app.GetMultiFileMode() == MultiFileMode.Single) continue;
                 var ok = app.Supports(infos);
                 var isDefault = addDefault && app.IsDefaultFor(infos);
 
@@ -629,14 +620,11 @@ namespace ZipPla
                 {
                     if (LoadResultArray[newIndex] != LoadResult.LoadError && LoadResultArray[newIndex] != LoadResult.FileNotFound)
                     {
-                        //SetLookAheadArchive(ZipPathArray[newIndex], ZipPageArray[newIndex]);
                         SetLookAheadArchive(newIndex);
                     }
-                    //ShowStatusBar(newIndex);
                 }
                 else
                 {
-                    //ShowStatusBar(-1);
                 }
                 ShowStatusBar();
             }
@@ -676,7 +664,6 @@ namespace ZipPla
                     else f = minimumShowSelectedIndex;
                     if (0 <= f && f < dgvFileList.RowCount)
                     {
-                        //dgvFileList.Focus();
                         dgvFileList.CurrentCell = dgvFileList.Rows[f].Cells[tbcFileName.Index];
                         if (dgvFileList.FirstDisplayedScrollingRowIndex != firstDisplayedScrollingRowIndex)
                         {

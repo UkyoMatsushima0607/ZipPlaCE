@@ -61,7 +61,6 @@ namespace ZipPla
         }
 
 
-        //public string Gesture1IsAlreadyRegistered = "Gusture \"$1\" is already registered.";
         public string EnabledText { get { return cbEnabled.Text; } set{ cbEnabled.Text = value; } }
         public string GestureToAddCommandText { get { return gbMouseGestureRegion.Text; } set { gbMouseGestureRegion.Text = value; } }
         public string AppearanceText { get { return gbAppearance.Text; } set { gbAppearance.Text = value; } }
@@ -72,7 +71,6 @@ namespace ZipPla
             {
                 tbcGesture.HeaderText = value;
                 tbcGesture.MinimumWidth = TextRenderer.MeasureText(value + "   ", dataGridView.ColumnHeadersDefaultCellStyle.Font).Width;
-                //Shown += (sender, e) => tbcGesture.MinimumWidth = TextRenderer.MeasureText(value, dataGridView.ColumnHeadersDefaultCellStyle.Font).Width + tbcGesture.Width - tbcGesture.HeaderCell.GetContentBounds(-1).Width;
             }
         }
         public string CommandText { get { return cbcCommand.HeaderText; } set { cbcCommand.HeaderText = value; } }
@@ -208,8 +206,6 @@ namespace ZipPla
                 try
                 {
                     gestureListener = new GestureListener(this, new GestureConfig[] {
-                //new GestureConfig(0, 1, 0),
-                //new GestureConfig(3, 1, 0),
                     new GestureConfig(4, 2 | 4 | 16 , 8 ), // パン、向き拘束なし
 
             });
@@ -378,7 +374,6 @@ namespace ZipPla
             return (from DataGridViewRow row in dataGridView.Rows
                     select Tuple.Create(
                         (row.Cells[tbcGesture.Index].Value as DisplayableGesture).Gesture,
-                        // templates[Array.IndexOf(templateStrings, row.Cells[cbcCommand.Index].Value.ToString())].Key)).ToArray();
                         getTemplateIndex(row.Cells[cbcCommand.Index].Value.ToString())
                         )).ToArray();
         }

@@ -401,7 +401,6 @@ namespace ZipPla
                 pixelFormat == PixelFormat.Format64bppArgb ||
                 pixelFormat == PixelFormat.Format64bppPArgb ||
                 pixelFormat == PixelFormat.Format8bppIndexed //||
-                                                             //pixelFormat == PixelFormat_Format32bppCMYK
                ))
             {
                 // これでパフォーマンスが上がるわけでもなく、失敗することが増えるだけ
@@ -469,7 +468,6 @@ namespace ZipPla
                                 var data = sample.LockBits(sampleRect, ImageLockMode.WriteOnly, PixelFormat.Format48bppRgb);
                                 try
                                 {
-                                    //Marshal.Copy(buff, 0, data.Scan0, 8193);
                                     fixed (short* buffAdr = buff)
                                     {
                                         NativeMethods.CopyMemory(data.Scan0, (IntPtr)buffAdr, 8193 * sizeof(short));
@@ -483,7 +481,6 @@ namespace ZipPla
                                 data = sample.LockBits(sampleRect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
                                 try
                                 {
-                                    //Marshal.Copy(data.Scan0, ToBitmap24_RGBLookUp, 0, 8193);
                                     fixed (byte* ToBitmap24_RGBLookUpAdr = ToBitmap24_RGBLookUp)
                                     {
                                         NativeMethods.CopyMemory((IntPtr)ToBitmap24_RGBLookUpAdr, data.Scan0, 8193 * sizeof(byte));

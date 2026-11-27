@@ -141,13 +141,9 @@ namespace ZipPla
             return c1 != 'z' && c1 != 'e' && (c1 != 'c' || extensionWithPeriodInLowerCase[3] != 'z'); // ".7z" は c1 != 'c' を満たすので IndexOutOfRangeException は投げられない
         }
 
-        //private readonly static string sevenZipPath_Installed = Path.Combine(Environment.GetFolderPath(
-        //    !Environment.Is64BitProcess && Environment.Is64BitOperatingSystem ? Environment.SpecialFolder.ProgramFilesX86 : Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.dll");
         private readonly static string sevenZipPath_Local_xXX = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), Environment.Is64BitProcess ? "7z-x64.dll" : "7z-x86.dll");
         private readonly static string sevenZipPath_Local = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "7z.dll");
-        //private readonly static string[] sevenZipPath_RegPaths = new string[] { @"HKEY_CURRENT_USER\Software\7-Zip" };
         private readonly static string[] sevenZipPath_RegPaths = new string[] { @"HKEY_CURRENT_USER\Software\7-Zip", @"HKEY_LOCAL_MACHINE\Software\7-Zip" };
-        //private readonly static string sevenZipPath_Name = Environment.Is64BitProcess ? Environment.Is64BitOperatingSystem ? "Path" : "Path64" : Environment.Is64BitOperatingSystem ? "Path32" : "Path";
         private readonly static string sevenZipPath_Name = Environment.Is64BitProcess ? "Path64" : "Path32";
         public static string GetSevenZipPath()
         {
@@ -211,7 +207,6 @@ namespace ZipPla
         {
             bool gotPathFromRegistry;
             var path = GetSevenZipPath(out gotPathFromRegistry);
-            //if (path != null && !gotPathFromRegistry)
             if (path != null) // 安全性をとってこちらを採用
                 {
                 string signature = null;
@@ -425,7 +420,6 @@ namespace ZipPla
         /// </summary>
         public int LoadedDepth { get; private set; } = 0;
 
-        //public PackedImageLoader(string path) : this(path, 0, false) { }
 
         public PackedImageLoader(string path, int leftHierarchies, PackedImageLoaderSearchMode searchMode, 
             bool animation = false, PackedImageLoaderOnMemoryMode onMemory = PackedImageLoaderOnMemoryMode.None)
@@ -602,7 +596,6 @@ namespace ZipPla
 
             var count = fullEntriesList.Count;
 
-            //var fullEntries = fullEntriesList.OrderBy(entry => entry.Path, new LogicalStringComparer()).ToArray();
             var fullEntries = Enumerable.Range(0, count).OrderBy(i => replaced[i], new LogicalStringComparer()).Select(i => fullEntriesList[i]).ToArray();
 
             replaced = null;
@@ -744,7 +737,6 @@ namespace ZipPla
                     path1 = path2;
                     continue;
                 }
-                //var lenC = centerCenter ? len1 : len0;
                 var lenBound = Math.Min(lenShort + 3, lenCenter);
                 while(j < lenBound)
                 {
@@ -1267,7 +1259,6 @@ namespace ZipPla
                 zipArchiveEntries = zipArchive.Entries.ToArray();
                 var result = new List<PackedImageEntry>();
                 var length = zipArchiveEntries.Length;
-                //var needAny = neededFileInfos != 0;
                 var needTime = (neededFileInfos & PackedImageLoaderFileInfo.LastWriteTime) == PackedImageLoaderFileInfo.LastWriteTime;
                 var needSize = (neededFileInfos & PackedImageLoaderFileInfo.Size) == PackedImageLoaderFileInfo.Size;
                 var ffmpegEixsts = MovieThumbnailLoader.ffmpegExists();
@@ -1315,8 +1306,6 @@ namespace ZipPla
                 {
                     iArchive = stream != null ? ArchiveFactory.Open(stream) : ArchiveFactory.Open(path);
                 }
-                //var leftSize = long.MaxValue;
-                //if (iArchive.IsSolid) leftSize = SolidSizeBound;
 
                 var ffmpegEixsts = MovieThumbnailLoader.ffmpegExists();
                 var h = leftHierarchies - 1;
@@ -1325,8 +1314,6 @@ namespace ZipPla
 
                 foreach (var entry in iArchive.Entries)
                 {
-                    //leftSize -= entry.Size;
-                    //if (leftSize < 0) break;
                     if (ImageLoader.SupportsFullReading(entry.Key, ffmpegEixsts))
                     {
                         return true;
@@ -1363,8 +1350,6 @@ namespace ZipPla
                     throw new NotSupportedException();
                 }
             }
-            //var sizeBound = long.MaxValue;
-            //long size = 0;
 
             var ffmpegEixsts = MovieThumbnailLoader.ffmpegExists();
             var h = leftHierarchies - 1;
@@ -1412,15 +1397,12 @@ namespace ZipPla
                 {
                     iArchive = stream != null ? ArchiveFactory.Open(stream) : ArchiveFactory.Open(path);
                 }
-                //var leftSize = long.MaxValue;
                 if (iArchive.IsSolid)
                 {
                     OpenInnerImageStreamSharpCompress_IsSolid = true;
-                    //leftSize = SolidSizeBound;
                 }
                 
                 var needToIgnoreMacList = Type == PackType.Zip;
-                //var macFileList = needToIgnoreMacList ? new List<PackedImageEntry>() : null;
                 
                 iArchiveEntries = iArchive.Entries.ToArray();
                 if (OpenInnerImageStreamSharpCompress_IsSolid)
@@ -1436,8 +1418,6 @@ namespace ZipPla
                 {
                     var entry = iArchiveEntries[i];
                     var size = entry.Size;
-                    //leftSize -= size;
-                    //if (leftSize < 0) break;
                     var path = entry.Key;
                     if (ImageLoader.SupportsFullReading(path, ffmpegEixsts))
                     {
@@ -1456,7 +1436,6 @@ namespace ZipPla
 
                         if (needToIgnoreMacList && maxosxIgnore(entry.Key))
                         {
-                            //macFileList.Add(piEntry);
                             continue;
                         }
 
@@ -1526,12 +1505,8 @@ namespace ZipPla
 
             // RAR5 の Solid はパフォーマンスに甚大な影響は与えないので明示的なキャッシングは行わない
 
-            //var sizeBound = long.MaxValue;
-            //long totalSize = 0;
             
-            //System.Windows.Forms.MessageBox.Show($"get entries");
             sevenZipArchiveEntries = sevenZipArchive.Entries.ToArray();
-            //System.Windows.Forms.MessageBox.Show("got entries");
             var result = new List<PackedImageEntry>();
             var length = sevenZipArchiveEntries.Length;
             var needTime = (neededFileInfos & PackedImageLoaderFileInfo.LastWriteTime) == PackedImageLoaderFileInfo.LastWriteTime;
@@ -1583,7 +1558,6 @@ namespace ZipPla
         {
             try
             {
-                //if (pdfArchive == null) pdfArchive = new PdfReader(path, null, true);
                 if (pdfArchive == null) pdfArchive = GetPdfReader(stream, null);
                 return pdfArchive.NumberOfPages > 0;
             }
@@ -1601,7 +1575,6 @@ namespace ZipPla
         {
             try
             {
-                //if (pdfArchive == null) pdfArchive = new PdfReader(path, null, true);
                 if (pdfArchive == null) pdfArchive = GetPdfReader(stream, null);
                 var result = new List<PackedImageEntry>();
                 var length = pdfArchive.NumberOfPages;
@@ -2233,7 +2206,6 @@ namespace ZipPla
 
             Bitmap result;
             GetInnerImageStreamPdf(physicalIndex, getImage: true, extensionWithPeriodForPDF: out var dummy, image: out result).Dispose();
-            //using (var ms = GetInnerImageStreamPdf(physicalIndex))
             {
                 // pdf ↓ が必要なデータが入っていることは想定できず拡張子が分からないデメリットに見合わない
                 //result0 = ImageFromStream(stream, filePathForGetFileType: null);
@@ -2253,7 +2225,6 @@ namespace ZipPla
         {
             try
             {
-                //var sw = new System.Diagnostics.Stopwatch(); var s = "";  sw.Start();
 
                 var page = pdfArchive.GetPageN(physicalIndex + 1); // ページは１オリジン
                 var res = PdfReader.GetPdfObject(page.Get(PdfName.RESOURCES)) as PdfDictionary;
@@ -2264,7 +2235,6 @@ namespace ZipPla
                 }
                 var cb = xobj.Keys.Count;
 
-                //sw.Stop(); s += $"{sw.Elapsed}\n"; sw.Restart();
 
                 foreach (var name in xobj.Keys)
                 {
@@ -2387,7 +2357,6 @@ namespace ZipPla
 
         // PDF から取り出した JPEG を読むときの名前（形式の判定にだけ使う、D2）
         private const string PdfPlainJpegName = "x.jpg";
-        // PDF の JPXDecode の画像を読むときの名前。従来の読み方（RiosFastPdfImageDecoder → GetFullBitmap(…, "x.jp2")）と同じ（D6）
         private const string PdfJpxName = "x.jp2";
 
         /// <summary>
@@ -2574,7 +2543,6 @@ namespace ZipPla
             Bitmap result;
             try
             {
-                //result = Image.FromStream(stream);
                 result = ImageLoader.GetFullBitmap(stream, filePathForGetFileType, animation, streamLength);
             }
             catch (Exception e)

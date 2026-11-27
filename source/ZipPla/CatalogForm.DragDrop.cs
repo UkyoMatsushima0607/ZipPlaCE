@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -116,7 +115,6 @@ namespace ZipPla
                 var di = s2d[si]; if (di < 0) return; // 想定外
                 int zpaLength;
                 var zna = ZipNameArray; if (zna == null || (zpaLength = zna.Length) <= di) return; // 想定外 
-                //var path = zpa[di]; if (string.IsNullOrEmpty(path)) return;
                 var name = zna[di]; if (string.IsNullOrEmpty(name)) return;
                 if (name[name.Length - 1] == Path.DirectorySeparatorChar)
                 {
@@ -364,7 +362,6 @@ namespace ZipPla
                 {
 
                     byte[] data;
-                    //if (GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, out data))
                     if (GPSizeThumbnail.TryGet(thumbnailCache, zipPath, getArchiveIndexWithAIAInfo(zipPath), stat?.LastWriteTime, out data))
                     {
                         try
@@ -499,11 +496,7 @@ namespace ZipPla
             {
                 if ((e.KeyState == DragEventKeyState_LeftButton || e.KeyState == (int)Keys.RButton) && e.Data.GetDataPresent(DataFormats.FileDrop))
                 {
-                    //string[] Files = (string[])e.Data.GetData(DataFormats.FileDrop, false);
-                    //string[] Files = (from rawPath in (string[])e.Data.GetData(DataFormats.FileDrop, false) select Program.GetTargetIfItIsLink(rawPath)).ToArray();
                     string[] Files = ShortcutResolver.Exec((string[])e.Data.GetData(DataFormats.FileDrop, false)).ToArray();
-                    //if (Files.All(file => VirtualFolder.DirectoryOrBookmarkExists(file)))
-                    //if (Files.Any(file => VirtualFolder.DirectoryOrBookmarkExists(file)))
                     if (Files.Any(file => Directory.Exists(file) || IsSupportedByCatalogFormExceptFolder(file) && File.Exists(file)))
                     {
                         dgvDirectoryList_DragEnter_ByLeftClick = e.KeyState == (int)Keys.LButton;
@@ -537,8 +530,6 @@ namespace ZipPla
             {
                 if (e.Data.GetDataPresent(DataFormats.FileDrop))
                 {
-                    //var Files = ((string[])e.Data.GetData(DataFormats.FileDrop, false));
-                    //string[] Files = (from rawPath in (string[])e.Data.GetData(DataFormats.FileDrop, false) select Program.GetTargetIfItIsLink(rawPath)).ToArray();
                     string[] Files = ShortcutResolver.Exec((string[])e.Data.GetData(DataFormats.FileDrop, false)).ToArray();
 
                     var dropInfo = Tuple.Create(Files, new Point(e.X, e.Y));

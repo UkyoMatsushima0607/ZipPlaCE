@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -138,10 +137,8 @@ namespace ZipPla
             return result;
         }
 
-        //int[] GetSortArray_RandomOrder = null;
         string GetSortArray_RandomSeed;
 
-        //bool GetSortArray_RandomSeed_Set = false;
         public static readonly LogicalStringComparer GetSortArray_NaturalSort = new LogicalStringComparer();
 
         private static readonly filePathComparator GetSortArray_FilePathComparator = new filePathComparator();
@@ -353,7 +350,6 @@ namespace ZipPla
                         {
                             var now = DateTime.Now;
                             GetSortArray_RandomSeed = now.Ticks.ToString();
-                            //GetSortArray_RandomSeed_Set = true;
                         }
 
                         // ZipPathArray を使った場合：
@@ -570,7 +566,6 @@ namespace ZipPla
             }
         }
 
-        //private static System.Security.Cryptography.MD5CryptoServiceProvider getHash64_MD5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
 
         // 計算速度は早い順で SHA256Managed > SHA256Cng > SHA256CryptoServiceProvider
         // 対応範囲の広さは SHA256Managed > SHA256Cng = SHA256CryptoServiceProvider
@@ -652,7 +647,6 @@ namespace ZipPla
             dgvFileList.Columns[tbcSize.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.SizeInAsc ? SortOrder.Ascending : sortMode == SortMode.SizeInDesc ? SortOrder.Descending : SortOrder.None;
             var temp = cbSortBy_SelectedValueChanged_Stop;
             cbSortBy_SelectedValueChanged_Stop = true;
-            //while (cbSortBy.Items.Count > (int)SortMode.Random + 1) cbSortBy.Items.RemoveAt(cbSortBy.Items.Count - 1);
             cbSortBy.SelectedIndex = (int)sortMode;
             cbSortBy_SelectedValueChanged_Stop = temp;
         }

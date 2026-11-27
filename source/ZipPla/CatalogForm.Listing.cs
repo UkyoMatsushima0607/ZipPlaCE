@@ -2,7 +2,6 @@
 using Common;
 using GenerarClasses;
 using SharpCompress.Common;
-//using SharpCompress.Reader;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -99,7 +98,6 @@ namespace ZipPla
                 }
 
                 var fullPath = Path.GetFullPath(/*File.Exists(text)*/ !isDir ? text : GetDirectoryPathWithSeparator(text));
-                //if (fullPath != text) zabLocation.Text = getPathWithoutSeparator(fullPath);
                 if (fullPath != text) zabLocation.SetText(getPathWithoutSeparator(fullPath), makeButtons: false, makeEvent: false);
             }
             catch (Exception error)
@@ -114,7 +112,6 @@ namespace ZipPla
             setNonVolatilitySort();
 
             preCurrentLocation = getPathWithoutSeparator(zabLocation.Text);
-            //addToolStripMenuItem.Enabled = false;
 
 
             undoBufferUpdateForMovingLocation(manualUndoShift, prevProfileInfo);
@@ -173,22 +170,17 @@ namespace ZipPla
                 bwMakePreviewPrepare.RunWorkerAsync(preCurrentLocation);
             }
 
-            //MessageBox.Show($"{InvokeRequired}");
-            //optionToolStripMenuItem.Text = "a";
 
             if (needToSynchroTree && SynchroFromBarToTree && folderTreeToolStripMenuItem.Checked)
             {
                 setToTree(text, CollapseOthersWhenSynchronizing);
             }
-            //optionToolStripMenuItem.Text = "b";
 
             if (finalMessage != null) MessageBox.Show(this, finalMessage, Message.Warning, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private void setToTree(string path, bool collapse)
         {
-            //var treeWnd = explorerTreeView.TreeViewWnd;
-            //treeWnd.BeginUpdate();
             explorerTreeView.BeginUpdate();
             try
             {
@@ -337,10 +329,8 @@ namespace ZipPla
             else fileName = zna[index];
             if (string.IsNullOrEmpty(fileName)) fileName = null;
 
-            //zabLocation.Text = loc;
             zabLocation.SetText(loc, makeButtons: locChanged, makeEvent: locChanged);
 
-            //MakePreview(tvCatalog.ScrollBarPercentage, tvCatalog.SelectedIndex, fScrollbar: dgvFileList.FirstDisplayedScrollingRowIndex)
             MakePreview_StopResetFilter = stopResetFilter;
             MakePreview(tvCatalog.ScrollBarPercentage, selectedIndex: -1, /*tvCatalog.SelectedIndex*/ selectedFileName: fileName, fScrollbar: dgvFileList.FirstDisplayedScrollingRowIndex);
         }
@@ -351,7 +341,6 @@ namespace ZipPla
             {
                 if (Directory.Exists(path))
                 {
-                    //if (!IsDisplay(SubfolderMode)) return true;
 
                     return hasAttributeToSkip(new DirectoryInfo(path));
                 }
@@ -506,7 +495,6 @@ namespace ZipPla
 
             int[] MatchIndexArray = new int[filePathsLength + folderPathsLength];
             int[] initialPageCountArray = new int[filePathsLength];
-            //bool[] IsImageFileArray = new bool[filePathsLength];
             int MatchFilesCount = 0;
             var ffmpegExists = MovieThumbnailLoader.ffmpegExists();
             for (var i = 0; i < filePathsLength; i++)
@@ -519,10 +507,8 @@ namespace ZipPla
                 {
                     continue;
                 }
-                //if (!PackedImageLoader.SupportedArchivesPath.IsMatch(path) && !PackedImageLoader.IsSupertedImage(path)) continue;
                 if (hasAttributeToSkip(entityInfo)) continue;
 
-                //IsImageFileArray[MatchFilesCount] = isImageFile;
                 MatchIndexArray[MatchFilesCount] = i;
                 initialPageCountArray[MatchFilesCount] = initialPageCount;
 
@@ -553,7 +539,6 @@ namespace ZipPla
 
             var MatchCountFolderPathsLength = MatchFilesAndFoldersCount; // MatchFilesCount + folderPathsLength;
 
-            //zipPathArrayDup = new string[MatchCountFolderPathsLength * 2];
 
             var isNotDirectory = !isDirectory; //filePages != null && folderPages != null;
 
@@ -616,7 +601,6 @@ namespace ZipPla
                 lastAccessTimeArray[i] = Program.GetLastAccessTime(dirInfo);// dirInfo.LastAccessTime;
                 modifiedTimeArray[i] = Program.GetLastWriteTime(dirInfo);// dirInfo.LastWriteTime;
                 fileCountArray[i] = -1;
-                //ImageSizeArray[i] = Size.Empty;
                 loadResultArray[i] = LoadResult.NotYet;
                 zipSizeArray[i] = -1; // フォルダのサイズ取得は時間がかかるので GetThumbnail で行う Program.GetDirectoryFileSize(dirInfo);
                 zipMaskArray[i] = true;
@@ -653,8 +637,6 @@ namespace ZipPla
             var dirPath = (string)e.Argument;
             var dirPathWithSeparator = GetDirectoryPathWithSeparator(dirPath);
 
-            // Path.GetFullPath("C:") がカレントディレクトリを返すのでこの方法は使えない
-            //var dirPathFullPathLengthPlusOne = Path.GetFullPath(dirPath).Length + 1;
             var dirFullPathWithSeparator = Path.GetFullPath(dirPathWithSeparator);
             var dirPathFullPathLengthPlusOne = dirFullPathWithSeparator.Length;
 
@@ -746,8 +728,6 @@ namespace ZipPla
                             }
                         }
 
-                        //fileInfos = (from path in filePaths select new FileInfo(path)).ToArray();
-                        //dirInfos = (from path in folderPaths select new DirectoryInfo(path)).ToArray();
                         if (bwMakePreviewPrepare.CancellationPending)
                         {
                             return;
@@ -755,7 +735,6 @@ namespace ZipPla
                     }
                     else if (SmartFolder.IsSmartFolderPath(dirPath))
                     {
-                        //var searchPatternForFiles = GetFileFilter(archiveSkip, imageSkip, videoSkip, otherSkip);
                         const string searchPatternForFiles = "*";
 
                         type = LoadTargetType.SmartFolder;
@@ -795,10 +774,8 @@ namespace ZipPla
                 }
                 else
                 {
-                    //var searchPatternForFiles = GetFileFilter(archiveSkip, imageSkip, videoSkip, otherSkip);
                     const string searchPatternForFiles = "*";
 
-                    //sw.Restart();
 
                     type = LoadTargetType.Directory;
                     var dirInfo = new DirectoryInfo(dirPathWithSeparator);
@@ -830,7 +807,6 @@ namespace ZipPla
                     }
                     filePathsLength = fileInfos.Length;
 
-                    //sw.Stop(); ss += $"GetFiles:\t{sw.Elapsed}\n";
 
 
                     if (bwMakePreviewPrepare.CancellationPending)
@@ -893,7 +869,6 @@ namespace ZipPla
                 return;
             }
 
-            //string[] ZipPathArrayDup = null;
 
             if (type == LoadTargetType.ImageArchive)
             {
@@ -932,7 +907,6 @@ namespace ZipPla
                 var entries = loader.Entries;
                 var fileCount = entries.Length;
 
-                //ZipPathArrayDup = new string[fileCount * 2];
 
                 lock (ZipPathArrayLocker)
                 {
@@ -1005,8 +979,6 @@ namespace ZipPla
                     return;
                 }
 
-                //const double minimumMovieThumbnailInterval = 1.0;
-                //const int maximumMovieThumbnailCount = 60;
                 int maximumMovieThumbnailCount = MaxCaptchaCountInAVideo <= 0 ? Math.Max(5, GetThumbnailCountInTvCatalogOrFileList(movieInfo)) : MaxCaptchaCountInAVideo;
 
                 int thumbnailCount;
@@ -1057,7 +1029,6 @@ namespace ZipPla
 
                 }
 
-                //ZipPathArrayDup = new string[thumbnailCount * 2];
 
                 lock (ZipPathArrayLocker)
                 {
@@ -1131,7 +1102,6 @@ namespace ZipPla
 
                 try
                 {
-                    //sw.Start();
                     getDirectoryItemsInfo(
                         //out ZipPathArrayDup,
                         out items,
@@ -1145,8 +1115,6 @@ namespace ZipPla
                         filePages,
                         dirInfos,
                         folderPages);
-                    //sw.Stop(); ss += $"GetDirInfo:\t{sw.Elapsed}\n";
-                    //MessageBox.Show($"{PackedImageLoader.Supports(".ZIP")}\n{PackedImageLoader.Supports("aaa")}\n{ss}");
                 }
                 catch (TimeoutException)
                 {
@@ -1216,8 +1184,6 @@ namespace ZipPla
                 catch (ObjectDisposedException) { }
                 return;
             }
-            //sw.Stop();
-            //MessageBox.Show($"{sw.Elapsed} {Image.GetPixelFormatSize(0)}");
 
             e.Result = true; // completed に成功を伝え、Creating を false にさせない
 
@@ -1226,11 +1192,9 @@ namespace ZipPla
                 Invoke((MethodInvoker)(() =>
                 {
                     currentLocation = dirPath;
-                    //addToolStripMenuItem.Enabled = locationValid();
                     currentClipMode = clipModeByControl;
                     currentBindingMode = bindingModeByControl;
 
-                    //DefaultLeftToRight = SettingForm.LeftToRight;
                     InArchive = type == LoadTargetType.ImageArchive; // directoryは含まない。これによって currentLocation のリネームで対象がファイルであることを担保しているので不用意に変更しないこと
                     InMovie = type == LoadTargetType.Movie;
                     InRealDirectory = type == LoadTargetType.Directory;
@@ -1250,7 +1214,6 @@ namespace ZipPla
                     TrimHistoryItems(cbLocation.Items, LocationHistoryLimit); // 古いものから捨てる（S1）
                     zabLocation.Text = dirPath;
 
-                    //bmwMakePreview.RunWorkerAsyncWithInterrupt(ZipPathArrayDup, false);
                     bmwMakePreview.RunWorkerAsyncWithInterrupt(new object[2 * initialZipPathLength], false);
 
                     Text = $"{SimpleBookmark.GetDisplayName(dirPath)} - {Program.Name}";
@@ -1305,19 +1268,14 @@ namespace ZipPla
             }
         }
 
-        //private readonly Dictionary<string, FileSystemWatcher> folderWatchers = new Dictionary<string, FileSystemWatcher>();
 
-        //private static readonly Color sorColor = Color.LightGreen;
         private void bmwMakePreview_RunWorkerStarting(object sender, BackgroundMultiWorker.RunWorkerStartingEventArgs e)
         {
 #if PERFLOG
             MakePreviewPerfLog.Start(e.Arguments?.Cast<object>().Count() ?? -1);
 #endif
             resetDeferredHeaders(e.WorkSetGuid); // K33（下の SetBackgroundMode が表示中の項目を設定する）
-            //var sw = new Stopwatch();
-            //var ss = "";
 
-            //sw.Restart();
 
 
             SetFileListPageHeaderWidth();
@@ -1355,14 +1313,11 @@ namespace ZipPla
 
                 var len = ZipNameArray.Length;
 
-                //sw.Stop(); ss += $"sortStart:\t{sw.Elapsed}\n"; sw.Restart();
                 var sortedArray = GetSortArray(preSortArray: null, careTvCatalog: false);
-                //sw.Stop(); ss += $"srtEnd:\t{sw.Elapsed}\n"; sw.Restart();
                 tvCatalog.ThumbnailAppearanceKey = getThumbnailAppearanceKey(); // 同じならメモリキャッシュを残す（K26）
                 tvCatalog.Clear(len, selectedIndex, tScrollbar, sortedArray, ChangeThumbnailSize_Width, ChangeThumbnailSize_Height, Program.DpiScaling(ChangeThumbnailSize_Padding * currentMinimumFrameThickness));
                 sortedArray = null;
 
-                //sw.Stop(); ss += $"clearEnd:\t{sw.Elapsed}\n"; sw.Restart();
                 for (var i = 0; i < len; i++)
                 {
                     var item = new ThumbViewerItem()
@@ -1372,11 +1327,9 @@ namespace ZipPla
                         Text = ZipNameArray[i],
                     };
                     if (i == selectedIndex) item.selected = true;
-                    //tvCatalog[i] = item;
                     tvCatalog.SilentSet(i, item);
                 }
 
-                //sw.Stop(); ss += $"setEnd:\t{sw.Elapsed}\n"; sw.Restart();
 
                 tvCatalog.DrawStop = false;
                 tvCatalog.Update();
@@ -1388,12 +1341,8 @@ namespace ZipPla
                 // そもそもブラックリストに登録しないという実装もあり得るが、こちらの方が安定した動作が期待される
                 GPSizeThumbnail.ClearBlackList();
 
-                //sw.Stop(); ss += $"waitStart:\t{sw.Elapsed}\n"; sw.Restart();
-                //sw.Stop(); ss += $"waitStop:\t{sw.Elapsed}\n"; sw.Restart();
 
-                //sw.Stop(); ss += $"flStart:\t{sw.Elapsed}\n"; sw.Restart();
                 setFileListFromThumbnailViewer();
-                //sw.Stop(); ss += $"flEnd:\t{sw.Elapsed}\n"; sw.Restart();
             }
 
 
@@ -1430,8 +1379,6 @@ namespace ZipPla
             bmwMakePreviewRunWorkerStartingFinalAction?.Invoke();
 
             loadingGuid = e.WorkSetGuid;
-            //sw.Stop(); ss += $"fin:\t{sw.Elapsed}\n";
-            //MessageBox.Show(ss);
 
         }
 

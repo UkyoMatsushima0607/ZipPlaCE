@@ -310,7 +310,6 @@ namespace ZipPla
         private static bool DirMightHaveSpecialIcon(string pathInLowerCase)
         {
             return SimpleBookmark.HasDesktopIni(pathInLowerCase) == true;
-            //return SimpleBookmark.MightBeSpecialDirectory(pathInLowerCase);
         }
 
         private static string GetExtension(string path)

@@ -17,7 +17,6 @@ namespace ZipPla
 #if !DEBUG
             if (Program.DisplayMagnification == 1) return;
 #endif
-            // var imageScalingSize = toolStrip.ImageScalingSize;
             var height = Program.DpiScaling(16); // imageScalingSize.Height;
             var square = new Size(height, height);
 
