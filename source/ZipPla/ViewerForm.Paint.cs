@@ -1146,5 +1146,139 @@ namespace ZipPla
                 }
             }
         }
+
+        private void ShowCurrentPageToStatusBar()
+        {
+            var oiia = OriginalImageInfoArray;
+            int i;
+            if (oiia != null && (i = mtbPage.Value) >= 0 && i < oiia.Length)
+            //if (!string.IsNullOrEmpty(currentArchiveFilePath))
+            {
+                var imgInfo = oiia[i];
+                Size s;
+                if (imgInfo != null)
+                {
+                    try
+                    {
+                        s = imgInfo.Size;
+                    }
+                    catch // 関数が呼び出された後、ここに到達する前に img が Dispose された場合
+                    {
+                        s = Size.Empty;
+                    }
+                }
+                else
+                {
+                    s = Size.Empty;
+                }
+                // 描画のたびに呼ばれるので、表示する値が変わったときだけ文字列を作る（V19）
+                var max = mtbPage.Maximum;
+                if (showCurrentPageToStatusBar_Shown && showCurrentPageToStatusBar_Page == i && showCurrentPageToStatusBar_Max == max && showCurrentPageToStatusBar_Size == s) return;
+                showCurrentPageToStatusBar_Shown = true;
+                showCurrentPageToStatusBar_Page = i;
+                showCurrentPageToStatusBar_Max = max;
+                showCurrentPageToStatusBar_Size = s;
+                pageToolStripStatusLabel.Text =$" {i + 1} / {max + 1}";
+                imageSizeToolStripStatusLabel.Text = s.Width <= 0 || s.Height <= 0 ? "?x?" : $"{s.Width}x{s.Height}";
+            }
+            else
+            {
+                showCurrentPageToStatusBar_Shown = false;
+                pageToolStripStatusLabel.Text = null;
+                imageSizeToolStripStatusLabel.Text = null;
+            }
+        }
+
+        private bool showCurrentPageToStatusBar_Shown = false;
+
+        private int showCurrentPageToStatusBar_Page, showCurrentPageToStatusBar_Max;
+
+        private Size showCurrentPageToStatusBar_Size;
+
+        Tuple<int, int, int, int, Size[]> bwMagnifierMaker_Q = null;
+
+        bool showCurrentPage_PagePrepared = false;
+
+        Size showCurrentPage_PrevDrawSize = Size.Empty;
+
+        int shownImegesPage = -1;
+
+        private void showCurrentPage(bool setBackgroundModeIfPausing = true)
+        {
+            if (ResizedImageArray == null) return;
+
+            // ページが移ったら先読みの範囲を作り直す（読み終えて止まっているワーカーもここで再開する）
+            if (currentPage >= 0 && currentPage != prefetchOrderPage)
+            {
+                if (SeekBarDragging) mtbPage_DragDeferred = true; // ドラッグ中はトラックバーの処理に任せ、離したときに作り直す（V24）
+                else SetBackgroundMode();
+            }
+            else if (setBackgroundModeIfPausing) SetBackgroundModeIfPausing();
+
+
+            if (pbView_SizeChanged_SizeChanging) return;
+
+            // 表示の近くに来たページの原寸を読み直し、遠ざかったページの原寸を捨てる（C1）。ドラッグ中は離したときに行う（V24）
+            if (SeekBarDragging)
+            {
+                mtbPage_DragDeferred = true;
+            }
+            else
+            {
+                ReloadTrimmedOriginalsNearCurrent();
+                TrimOriginals();
+            }
+
+            var magNotMaked = !MagnifierCanvasPrepared();
+            
+            if (MagnifierPhase1_Q)
+            {
+                MagnifierPhase1_Q = false;
+                MagnifierPhase1(MagnifierPhase1_QValue, ifNoopThenQ: true);
+                //optionToolStripMenuItem.Text = $"phase1 by Q {MagnifierPhase1_Q}";
+            }
+            else if (ViewerMode == ViewerModeEnum.Magnifier && magNotMaked)
+            {
+                pbView_Paint_Rectangle = Rectangle.Empty;
+                ViewerMode = ViewerModeEnum.Normal;
+                MagnifierPhase1(GetMagnifierRectangle_LastCursorPosition, ifNoopThenQ: true);
+                MagnifierPhase2_Q = true;
+            }
+
+            //if (ViewerMode == ViewerModeEnum.CoverSetting && pbView_Paint_Rectangle == Rectangle.Empty)
+            if (ViewerMode == ViewerModeEnum.CoverSetting)
+            {
+                pbView_Paint_Rectangle = GetCoverRectangleForDisplay();
+            }
+
+            // 読み込みの表示を行うため画像が準備されているかどうかにかかわらず Paint する
+            //if (currentPage < NextPage)
+            {
+                showCurrentPage_PagePrepared = true;
+                //pbView.Invalidate(false); // 描画は Paint イベントハンドラで行われる
+                pbPaintInvalidate();
+            }
+
+            //shownImegesPath = currentArchiveFilePath;
+            shownImegesPath = currentStartingFilePath;
+
+            // ルーペを使わずにページを送り続けたら、ルーペを使っていない状態に戻す（V25）
+            if (magnifierWanted && currentPage != shownImegesPage && shownImegesPage >= 0 && ViewerMode == ViewerModeEnum.Normal)
+            {
+                if (++magnifierUnusedPageTurns >= MagnifierUnusedPageTurnsLimit)
+                {
+                    magnifierWanted = false;
+                    magnifierUnusedPageTurns = 0;
+                    TrimOriginals(); // 残していた原寸を捨てる
+                }
+            }
+            shownImegesPage = currentPage;
+            
+            // 拡大モードの作成。ルーペを一度も使っていなければ作らない（ページ送りのたびに全コアで数十 ms 使い、見開きで 20〜80MB 持っていた）（V2）
+            if (magNotMaked && magnifierWanted)
+            {
+                resetMagnifier();
+            }
+        }
     }
 }

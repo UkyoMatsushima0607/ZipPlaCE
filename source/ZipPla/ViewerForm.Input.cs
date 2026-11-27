@@ -397,5 +397,544 @@ namespace ZipPla
                 control.PerformLayout();
             }
         }
+
+        double? gestureListener_Rotate_Degrees = null;
+
+        private void gestureListener_Rotate(object sender, RotateEventArgs e)
+        {
+            CloseAllMenu();
+            if (ViewerMode == ViewerModeEnum.Normal || ViewerMode == ViewerModeEnum.Magnifier)
+            //if (ViewerMode == ViewerModeEnum.Normal || ViewerMode == ViewerModeEnum.Magnifier || ViewerMode == ViewerModeEnum.MagnifierOpening)
+            {
+                double deg;
+                if (e.Begin)
+                {
+                    gestureListener_Rotate_Degrees = 0;
+                    deg = 0;
+                }
+                else if (e.End)
+                {
+                    gestureListener_Rotate_Degrees = null;
+                    return;
+                }
+                else
+                {
+                    if (gestureListener_Rotate_Degrees == null)
+                    {
+                        gestureListener_Rotate_Degrees = 0;
+                        deg = e.Degrees;
+                    }
+                    else
+                    {
+                        deg = (double)gestureListener_Rotate_Degrees - e.Degrees;// フィルタと符号が逆
+                        gestureListener_Rotate_Degrees = deg;
+                    }
+                }
+
+                const double roteDegree = 45;
+                var currentDegrees = imageFilter.RotationAngle;
+                if (currentDegrees == 270 && deg < 0 || currentDegrees == 90 && deg > 0)
+                {
+                    gestureListener_Rotate_Degrees = 0;
+                }
+                else if (deg <= -roteDegree)
+                {
+                    imageFilter.RotationAngle = currentDegrees == 0 ? 270 : 0;
+                    reloadForChangeFilter(forOnlyPostFilter: false);
+                    gestureListener_Rotate_Degrees = deg + 90;
+                }
+                else if (gestureListener_Rotate_Degrees >= roteDegree)
+                {
+                    imageFilter.RotationAngle = currentDegrees == 0 ? 90 : 0;
+                    reloadForChangeFilter(forOnlyPostFilter: false);
+                    gestureListener_Rotate_Degrees = deg - 90;
+                }
+            }
+            else
+            {
+                gestureListener_Rotate_Degrees = null;
+            }
+        }
+
+        private void gestureListener_TwoFingerTap(object sender, TwoFingerTapEventArgs e)
+        {
+            CloseAllMenu();
+            if (ViewerMode == ViewerModeEnum.Magnifier)
+            {
+                MagnifierPhase3(toPhase4: true);
+                MagnifierPhase4(toPhase1: false);
+            }
+            else if (ViewerMode == ViewerModeEnum.Normal)
+            {
+                MagnifierPhase1(pbView.PointToClient(e.Location));
+                MagnifierPhase2();
+            }
+            else if (ViewerMode == ViewerModeEnum.MagnifierOpening)
+            {
+                var value = magnifyingPower.GetValue();
+                if (value == null || value > 1)
+                {
+                    MagnifierPhase2();
+                }
+                else
+                {
+                    MagnifierPhase2();
+                    MagnifierPhase3(toPhase4: true);
+                    MagnifierPhase4(toPhase1: false);
+                }
+            }
+        }
+
+        private void gestureListener_Zoom(object sender, ZoomEventArgs e)
+        {
+            CloseAllMenu();
+            TouchListener_Pan_Delta = null;
+            if (ViewerMode == ViewerModeEnum.CoverSetting) return;
+
+            if (e.Begin)
+            {
+                if (gestureListener_Rotate_Degrees == null && (ViewerMode == ViewerModeEnum.Normal || ViewerMode == ViewerModeEnum.Magnifier))
+                {
+                    if (ViewerMode == ViewerModeEnum.Magnifier)
+                    {
+                        MagnifierPhase3(toPhase4: true);
+                        MagnifierPhase4(toPhase1: false);
+                    }
+                    else
+                    {
+                        //resetMagnifyingPower(1, checkChange: true, redraw: false);
+                    }
+
+                    // 係数の設定
+                    // 0.7 を基本とし、
+                    // GetCenterOfMagnifierRectangle_DistanceCoef * longer / Math.Max(1, e.Distance) が 4 を上回るならそうならないように更に小さくする
+                    var pbViewSize = pbView.Size;
+                    var longer = Math.Max(1, Math.Max(pbViewSize.Width, pbViewSize.Height));
+                    GetCenterOfMagnifierRectangle_DistanceCoef = Math.Min(0.7, 4.0 / longer * e.Distance);
+
+                    MagnifyingInfo newMagPower;
+                    MagnifierPhase1(GetCenterOfMagnifierRectangle(e, out newMagPower));
+
+                    if (ViewerMode == ViewerModeEnum.MagnifierOpening)
+                    {
+                        resetMagnifyingPower(newMagPower, checkChange: true, redraw: true);
+                    }
+
+                }
+            }
+            else if (!e.End)
+            {
+                if (ViewerMode == ViewerModeEnum.MagnifierOpening)
+                {
+                    MagnifyingInfo newMagPower;
+                    GetMagnifierRectangle_LastCursorPosition = GetCenterOfMagnifierRectangle(e, out newMagPower);
+                    resetMagnifyingPower(newMagPower, checkChange: true, redraw: true);
+                }
+            }
+            else
+            {
+                var value = magnifyingPower.GetValue();
+                if (value == null || value > 1)
+                {
+                    MagnifierPhase2();
+                }
+                else
+                {
+                    MagnifierPhase2();
+                    MagnifierPhase3(toPhase4: true);
+                    MagnifierPhase4(toPhase1: false);
+                }
+            }
+        }
+
+        private double GetCenterOfMagnifierRectangle_DistanceCoef;
+
+        private Point GetCenterOfMagnifierRectangle(ZoomEventArgs e, out MagnifyingInfo newMagnifyingPower)
+        {
+            var center = pbView.PointToClient(e.Location);
+            var distance = e.Distance;
+            var pbViewSize = getCurrentPbViewSize();
+            var dicreasedLonger = GetCenterOfMagnifierRectangle_DistanceCoef * Math.Max(pbViewSize.Width, pbViewSize.Height);
+
+            var imageSize_ = getCurrentVisibleImageSize(pbViewSize);
+
+            var value = dicreasedLonger / Math.Max(1, distance);
+
+            if (imageSize_ == null)
+            {
+                value = Math.Min(4, Math.Max(1, value));
+                newMagnifyingPower = MagnifyingInfo.FromValue(value);
+
+            }
+            else
+            {
+                var imageSize = (Size)imageSize_;
+                var fits = new List<double>();
+                var mh = MagnifyingInfo.FitHorizontal.GetPower(pbViewSize, imageSize);
+                if (mh < 4 && mh > 1) fits.Add(mh);
+                var mv = MagnifyingInfo.FitVertical.GetPower(pbViewSize, imageSize);
+                if (mv < 4 && mv > 1) fits.Add(mv);
+                fits.Sort();
+                var margin = 0.1;
+                for (var i = fits.Count - 1; i >= 0; i--)
+                {
+                    var m = fits[i];
+                    var mInv = 1 / m;
+                    var vInv = 1 / value;
+                    if (vInv <= mInv) break;
+                    else if (vInv - margin <= mInv)
+                    {
+                        value = m;
+                        break;
+                    }
+                    else
+                    {
+                        value = 1 / (vInv - margin);
+                    }
+                }
+
+                // GetValue が 1 以下になる場合はその値で FromValue し直すことで拡大を行わないことを知らせる
+                // 等倍の場合、他のページも等倍の可能性が高いのでフィットの必要性は低く、これを行う必要は認められない。
+                if (value <= 1)
+                {
+                    newMagnifyingPower = MagnifyingInfo.FromValue(1);
+                }
+                else if (value == mh)
+                {
+                    newMagnifyingPower = MagnifyingInfo.FitHorizontal;
+                }
+                else if (value == mv)
+                {
+                    newMagnifyingPower = MagnifyingInfo.FitVertical;
+                }
+                else if (value < 4)
+                {
+                    newMagnifyingPower = MagnifyingInfo.FromValue(value);
+                }
+                else
+                {
+                    newMagnifyingPower = MagnifyingInfo.FromValue(4);
+                }
+
+            }
+
+            // サイズの設定
+            // 現在表示中の画像サイズが取得できなければ常に FromValue で。
+
+            return center;
+        }
+
+        private void currentImageLongPathToolStripTextBox_MouseLeave(object sender, EventArgs e)
+        {
+            if (HideUI && mtbPageTop_As_Reference_pbViewBottom == 0)
+            {
+                var cursorPosition = Cursor.Position;
+                
+                // 境界上に乗っていた場合にその後 MouseLeave が発生しなくなる現象への対策
+                // ポインタが境界上に飛び込んだ場合の対処はタイマーに任せる
+                var positionOnClient = statusStrip.PointToClient(cursorPosition);
+                var bounds = currentImageLongPathToolStripTextBox.Bounds;
+                if (bounds.Contains(positionOnClient))
+                {
+                    var dl = positionOnClient.X - bounds.Left + 1;
+                    var dr = bounds.Right - positionOnClient.X;
+                    var dt = positionOnClient.Y - bounds.Top + 1;
+                    var db = bounds.Bottom - positionOnClient.Y;
+                    var dm = Math.Min(Math.Min(Math.Min(dl, dr), dt), db);
+                    if (dm == db)
+                    {
+                        cursorPosition.Y += db;
+                        Cursor.Position = cursorPosition;
+                    }
+                }
+
+                if (!pbView.ClientRectangle.Contains(pbView.PointToClient(Cursor.Position)))
+                {
+                    hideUnderUI(null, null);
+                }
+            }
+        }
+
+        private void hideUnderUIForMouseLeave(object sender, EventArgs e)
+        {
+            if (HideUI && mtbPageTop_As_Reference_pbViewBottom == 0)
+            {
+                var cursorPosition = Cursor.Position;
+                var clientPoint = PointToClient(cursorPosition);
+                var x = pnlSeekbar.Left;
+                var y = pnlSeekbar.Top;
+                if (!new Rectangle(x, y, statusStrip.Right - x, statusStrip.Bottom - y).Contains(clientPoint) ||
+                    !ActivateManager.InVisibleRegion(this, clientPoint, cursorPosition, checkParentsCount: 3))
+                {
+                    hideUnderUI(null, null);
+                }
+            }
+        }
+
+        // 上が期待通りに働かないので下で対処
+        private bool MouseInPbView = false;
+
+        private void pbView_MouseEnter(object sender, EventArgs e)
+        {
+            MouseInPbView = true;
+            hideUnderUI(null, null);
+            //pbView.Focus();
+            focusIfRightness(pbView);
+
+            if (ViewerMode == ViewerModeEnum.MagnifierOpening || ViewerMode == ViewerModeEnum.Magnifier || ViewerMode == ViewerModeEnum.MagnifierClosing)
+            {
+                Program.HideCursor();
+            }
+        }
+
+        Point pbView_MouseMove_prevPos;
+
+        Point? pbView_MouseMove_prevContPos = null;
+
+        bool pbView_PreviewKeyDown_To_pbView_MouseMove_StopShwoMagnifierRectangle = false;
+
+        private void pbView_MouseMove(object sender, MouseEventArgs e)
+        {
+            var stopShowMag = pbView_PreviewKeyDown_To_pbView_MouseMove_StopShwoMagnifierRectangle;
+            pbView_PreviewKeyDown_To_pbView_MouseMove_StopShwoMagnifierRectangle = false;
+            if (pbView_MouseMove_prevPos == e.Location) return;
+            var afterEnter = pbView_MouseMove_prevContPos == null;
+            pbView_MouseMove_prevContPos = pbView_MouseMove_prevPos = e.Location;
+            TouchListener_Pan_Delta = null;
+
+            if (!afterEnter) ksViewForm.IgnoreAnyMouseEventOnce = MouseButtons.None;
+
+            if (!(ViewerMode == ViewerModeEnum.MagnifierOpening || ViewerMode == ViewerModeEnum.Magnifier || ViewerMode == ViewerModeEnum.MagnifierClosing))
+            {
+                Program.ShowCursor();
+            }
+            //setMouseButtonShape(GetPositionOnView(e.Location));
+
+            //var y = pbView.PointToScreen(e.Location).Y;
+            if (!CursorBounded())
+            {
+                var y = e.Location.Y;
+                if (menuStrip_Bottom > 0 && y < menuStrip_Bottom)
+                {
+                    menuStrip.Visible = true;
+                    menuStrip_Bottom = 0;
+
+                    hideUnderUI(null, null); // currentImageLongPathToolStripTextBox_MouseLeave の仕様が期待通りでないので
+                }
+                else if (showUnderUI(e.Location)) { }
+            }
+
+            if (ViewerMode == ViewerModeEnum.MagnifierOpening || ViewerMode == ViewerModeEnum.MagnifierClosing)
+            {
+                ShwoMagnifierRectangle();
+            }
+            else if (ViewerMode == ViewerModeEnum.Magnifier)
+            {
+                var showMag = TouchListener_Pan_Delta == null && GetMagnifierRectangle_LastCursorPosition == null;
+
+                if (showMag)
+                {
+                    //pbView.Invalidate(false); // 描画は Paint イベントハンドラで行われる
+                    pbPaintInvalidate();
+                }
+            }
+            else if (ViewerMode == ViewerModeEnum.CoverSetting)
+            {
+                if (!stopShowMag) ShwoCoverRectangle();
+            }
+            else if (DrawMeasure) pbPaintDrawOnlyMeasure();
+        }
+
+        private bool showUnderUI(Point pbViewClientPoint)
+        {
+            //if (mtbPage_Top > 0 && pbViewClientPoint.Y >= mtbPage_Top)
+            if (mtbPageTop_As_Reference_pbViewBottom != 0 && pbViewClientPoint.Y >= pbView.Bottom + mtbPageTop_As_Reference_pbViewBottom)
+            {
+                pnlSeekbar.Visible = true;
+                pnlSeekbar_PreStatusStripVisibleTrue();
+                statusStrip.Visible = true;
+                if (SetCurrentImageLongPathRequired) SetCurrentImageLongPath();
+                //mtbPage_Top = 0;
+                mtbPageTop_As_Reference_pbViewBottom = 0;
+                return true;
+            }
+            return false;
+        }
+
+        // 画面のちらつきを回避する
+        private void pnlSeekbar_PreStatusStripVisibleTrue()
+        {
+            if (statusStrip_VisibleChanged_FirstVisible)
+            {
+                var currentBound = statusStrip.Bounds;
+                var statusStripBound = new Rectangle(pnlSeekbar.Left, statusStrip.Parent.Bottom - currentBound.Height, pnlSeekbar.Width, currentBound.Height); // 二回目以降と完全に一致
+                statusStrip.Bounds = statusStripBound;
+            }
+        }
+
+        private int mtbPage_MouseMove_LastCallCount = -1;
+
+        private int mtbPage_MouseMove_LastTick;
+
+        private System.Windows.Forms.Timer mtbPage_MouseMove_Timer;
+
+        private void mtbPage_MouseMove(object sender, MouseEventArgs e)
+        {
+            mtbPage.ValueCanChangedByMouseButton = true;
+            if (ResizedImageArray == null) return;
+            if (mtbPage.PointToValue(e.Location) == mtbPage_MouseMove_LastValue && SetBackgroundMode_CallCount == mtbPage_MouseMove_LastCallCount) return;
+            var elapsed = unchecked(Environment.TickCount - mtbPage_MouseMove_LastTick);
+            if (0 <= elapsed && elapsed < mtbPage_MouseMove_Interval)
+            {
+                if (mtbPage_MouseMove_Timer == null)
+                {
+                    mtbPage_MouseMove_Timer = new System.Windows.Forms.Timer(components) { Interval = mtbPage_MouseMove_Interval };
+                    mtbPage_MouseMove_Timer.Tick += (s, ev) => SetBackgroundModeForTrackbarHover();
+                }
+                if (!mtbPage_MouseMove_Timer.Enabled) mtbPage_MouseMove_Timer.Start();
+                return;
+            }
+            SetBackgroundModeForTrackbarHover();
+        }
+
+        private void SetBackgroundModeForTrackbarHover()
+        {
+            mtbPage_MouseMove_Timer?.Stop();
+            mtbPage_MouseMove_LastTick = Environment.TickCount;
+            mtbPage_MouseMove_LastValue = mtbPage.PointToValue(mtbPage.PointToClient(Cursor.Position));
+            SetBackgroundMode();
+            mtbPage_MouseMove_LastCallCount = SetBackgroundMode_CallCount;
+        }
+
+        private bool MouseDownForCoverSettingExit = false;
+
+        private void pbView_MouseDown(object sender, MouseEventArgs e)
+        {
+            // キーボードショートカットに置き換え
+            if (e.Button == MouseButtons.Left)
+            {
+                if (ksViewForm.IgnoreAnyMouseEventOnce != MouseButtons.Left)
+                {
+                    if (ViewerMode == ViewerModeEnum.CoverSetting)
+                    {
+                        SetCoverForThumbnail();
+                        ksViewForm.IgnoreMouseEventOnce = e;
+                    }
+                }
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                if (ViewerMode == ViewerModeEnum.CoverSetting)
+                {
+                    ExitCoverSetting();
+                    if (mgView.Enabled)
+                    {
+                        MouseDownForCoverSettingExit = true;
+                    }
+                    else
+                    {
+                        ksViewForm.IgnoreMouseEventOnce = e;
+                    }
+                }
+            }
+            //setMouseButtonShape(position);
+        }
+
+        private void closeWindowtoolStripMenuItem_MouseEnter(object sender, EventArgs e)
+        {
+            // メニューバー上のボタンの色の変化をマウスカーソルの位置と正確に一致させるための処理
+            if (FullScreen)
+            {
+                var tsmi = (ToolStripMenuItem)sender;
+                tsmi.Select();
+            }
+            
+            // 古い方法
+        }
+
+        private bool KeysUpState = false;
+
+        private bool KeysDownState = false;
+
+        private bool KeysLeftState = false;
+
+        private bool KeysRightState = false;
+
+        private void Control_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down || e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
+            {
+                var preUp = KeysUpState;
+                var preDown = KeysDownState;
+                var preLeft = KeysLeftState;
+                var preRight = KeysRightState;
+
+                var up = e.KeyCode == Keys.Up; ;
+                var down = e.KeyCode == Keys.Down;
+                var left  = e.KeyCode == Keys.Left;
+                var right = e.KeyCode == Keys.Right;
+
+                KeysUpState = KeysUpState || up;
+                KeysDownState = KeysDownState || down;
+                KeysLeftState = KeysLeftState || left;
+                KeysRightState = KeysRightState || right;
+
+                var vm = ViewerMode;
+                if (vm == ViewerModeEnum.MagnifierOpening || vm == ViewerModeEnum.MagnifierClosing)
+                {
+                    var r = BoolToInt(KeysRightState);
+                    var l = BoolToInt(KeysLeftState);
+                    var d = BoolToInt(KeysDownState);
+                    var u = BoolToInt(KeysUpState);
+
+                    var sum = r + l + d + u;
+
+                    if (sum == 1 || sum == 2 && (KeysRightState ^ KeysLeftState))
+                    {
+                        var xu = r - l;
+                        var yu = d - u;
+
+                        var currentPosition = Cursor.Position;
+                        Cursor.Position = new Point(currentPosition.X + Control_PreviewKeyDown_Speed * xu, currentPosition.Y + Control_PreviewKeyDown_Speed * yu);
+                    }
+                    else if (sum == 2)
+                    {
+                        // 直前の操作をキャンセル
+                        var xu = !preRight && right ? +1 : !preLeft && left ? -1 : 0;
+                        var yu = !preDown && down ? +1 : !preUp && up ? -1 : 0;
+                        if (xu != 0 || yu != 0)
+                        {
+                            var currentPosition = Cursor.Position;
+                            pbView_PreviewKeyDown_To_pbView_MouseMove_StopShwoMagnifierRectangle = true;
+                            Cursor.Position = new Point(currentPosition.X + Control_PreviewKeyDown_Speed * xu, currentPosition.Y + Control_PreviewKeyDown_Speed * yu);
+                        }
+
+                        // 上下で拡大、左右で縮小
+                        changeMagnifyingPowerInMagnifierOpeningOrClosing(zoomUp: KeysUpState);
+                    }
+                }
+            }
+            else if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.LControlKey || e.KeyCode == Keys.RControlKey)
+            {
+                changeMagnifyingPowerInMagnifierOpeningOrClosing(zoomUp: true);
+            }
+            else if (e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.LShiftKey || e.KeyCode == Keys.RShiftKey)
+            {
+                changeMagnifyingPowerInMagnifierOpeningOrClosing(zoomUp: false);
+            }
+        }
+
+        private void ViewerForm_KeyUp(object sender, KeyEventArgs e)
+        {
+            KeysUpState = KeysUpState && e.KeyCode != Keys.Up;
+            KeysDownState = KeysDownState && e.KeyCode != Keys.Down;
+            KeysLeftState = KeysLeftState && e.KeyCode != Keys.Left;
+            KeysRightState = KeysRightState && e.KeyCode != Keys.Right;
+        }
+
+        private static int BoolToInt(bool b)
+        {
+            return b ? 1 : 0;
+        }
     }
 }

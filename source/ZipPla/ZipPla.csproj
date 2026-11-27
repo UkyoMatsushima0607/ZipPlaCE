@@ -176,6 +176,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ViewerForm.FullScreen.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="CatalogForm.FilterBox.cs">
       <DependentUpon>CatalogForm.cs</DependentUpon>
     </Compile>

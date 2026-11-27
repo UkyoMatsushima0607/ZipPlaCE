@@ -412,5 +412,131 @@ namespace ZipPla
 
             saveToHistory = true;
         }
+
+        public static CommandLineOptionInfo CommandLineOptionAnalyzer(string[] args, int start)
+        {
+            var result = new CommandLineOptionInfo();
+
+            var position = start;
+            var lastRead = start - 1;
+            for (; position < args.Length; position++)
+            {
+                var name = args[position];
+                if (string.IsNullOrEmpty(name)) continue;
+                string value;
+                var eq = name.IndexOf(commandLineEqual);
+                if (eq <= 0)
+                {
+                    break;
+                }
+                var position0 = position;
+                if (eq > 0)
+                {
+                    if (eq < name.Length - commandLineEqual.Length)
+                    {
+                        value = name.Substring(eq + commandLineEqual.Length);
+                        name = name.Substring(0, eq);
+                    }
+                    else if (++position < args.Length)
+                    {
+                        name = name.Substring(0, eq);
+                        value = args[position];
+                    }
+                    else
+                    {
+                        position = position0;
+                        break;
+                    }
+                }
+                else if (++position < args.Length)
+                {
+                    value = args[position];
+                    if (string.IsNullOrEmpty(value)) continue;
+                    if (value == commandLineEqual)
+                    {
+                        if (++position < args.Length)
+                        {
+                            value = args[position];
+                        }
+                        else
+                        {
+                            position = position0;
+                            break;
+                        }
+                    }
+                    else if (value.Length > commandLineEqual.Length && value.StartsWith(commandLineEqual))
+                    {
+                        value = value.Substring(commandLineEqual.Length);
+                    }
+                    else
+                    {
+                        position = position0;
+                        break;
+                    }
+                }
+                else
+                {
+                    position = position0;
+                    break;
+                }
+                if (string.IsNullOrEmpty(value) || value.Contains(commandLineEqual))
+                {
+                    position = position0;
+                    break;
+                }
+
+                bool read;
+                if (string.Compare(name, "c", ignoreCase: true) == 0)
+                {
+                    CoverBindingMode? r;
+                    if (read = TryParse(value, ignoreCase: true, result: out r)) result.CoverBindingMode = r;
+                }
+                else if (string.Compare(name, "i", ignoreCase: true) == 0)
+                {
+                    bool? r;
+                    if (read = TryParse(value, ignoreCase: true, result: out r) && r != null) result.OpenInPreviousImageFilterSetting = (bool)r;
+                }
+                else if (string.Compare(name, "f", ignoreCase: true) == 0)
+                {
+                    InitialFullscreenMode r;
+                    if (read = TryParse(value, ignoreCase: true, result: out r)) result.InitialFullscreenMode = r;
+                }
+                else if (string.Compare(name, "b", ignoreCase: true) == 0)
+                {
+                    Color r;
+                    if (read = ColorTryParse(value, result: out r)) result.BackColor = r;
+                }
+                else if (string.Compare(name, "a", ignoreCase: true) == 0)
+                {
+                    ArchivesInArchiveMode? r;
+                    if (read = TryParse(value, ignoreCase: true, result: out r)) result.ArchivesInArchiveMode = r;
+                }
+                else if (string.Compare(name, "h", ignoreCase: true) == 0)
+                {
+                    bool? r;
+                    if (read = TryParse(value, ignoreCase: true, result: out r)) result.AlwaysHideUI = r;
+                }
+                else if (string.Compare(name, "d", ignoreCase: true) == 0)
+                {
+                    BindingMode? r;
+                    if (read = TryParse(value, ignoreCase: true, result: out r)) result.DefaultBindingMode = r;
+                }
+                else if (string.Compare(name, "w", ignoreCase: true) == 0)
+                {
+                    if (read = TryParse(value, ignoreCase: true, result: out ReadOnMemoryMode? r)) result.ReadOnMemoryMode = r;
+                }
+                else read = false;
+                if (read) lastRead = position;
+            }
+
+            // Path の解釈
+            var p = lastRead + 1;
+            if (p < args.Length)
+            {
+                result.Path = args[p];
+            }
+
+            return result;
+        }
     }
 }

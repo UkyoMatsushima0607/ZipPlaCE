@@ -625,5 +625,447 @@ namespace ZipPla
         private string requestedFilterStringWithoutAlias;
 
         private bool ExitAfterCoverSetting = false;
+
+        private int NextPage
+        {
+            get
+            {
+                if (ResizedImageArray == null)
+                {
+                    return 0;
+                }
+
+                var totalWidth = 0;
+                var stopPage = currentPage;
+                var MaxPageCountInWindowForNext = onePageModeForNext ? 1 : MaxPageCountInWindow;
+                var screenWidth = null as int?;
+                for (var i = currentPage; i < currentPage + MaxPageCountInWindowForNext && i < ResizedImageArray.Length; i++)
+                {
+                    var img = ResizedImageArray[i];
+                    if (img == null)
+                    {
+                        var imgSize = ResizedSizeArray[i];
+                        if (imgSize.IsEmpty)
+                        {
+                            return currentPage;
+                        }
+                        totalWidth += imgSize.Width;
+                    }
+                    else
+                    {
+                        totalWidth += img.Width;
+                    }
+                    stopPage++;
+                    var pbViewWidth = FullScreen_pseudoFullScreen ? screenWidth ?? (int)(screenWidth = Screen.FromControl(this).Bounds.Width) :
+                        PseudoMaximized ? PseudoMaximizedSize.Width : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Width; // pbView.Width;
+                    if (totalWidth >= pbViewWidth)
+                    {
+                        if (totalWidth != pbViewWidth)
+                        {
+                            stopPage--;
+                            break; // img == null でも stopPage を返す唯一のパターン
+                        }
+                        if (img == null) return currentPage;
+                        break;
+                    }
+                    if (img == null) return currentPage;
+                }
+                return stopPage;
+            }
+        }
+
+        private int PreviousPage
+        {
+            get
+            {
+                if (ResizedImageArray == null)
+                {
+                    return -1;
+                }
+                var totalWidth = 0;
+                var stopPage = currentPage;
+                var screenWidth = null as int?;
+                for (var i = currentPage - 1; i >= currentPage - MaxPageCountInWindow && i >= 0; i--)
+                {
+                    var img = ResizedImageArray[i];
+                    if (img == null)
+                    {
+                        var imgSize = ResizedSizeArray[i];
+                        if (imgSize.IsEmpty)
+                        {
+                            if (MaxPageCountInWindow > 1)
+                            {
+                                return currentPage;
+                            }
+                            else
+                            {
+                                stopPage--;
+                                break;
+                            }
+                        }
+                        totalWidth += imgSize.Width;
+                    }
+                    else
+                    {
+                        totalWidth += img.Width;
+                    }
+                    stopPage--;
+                    var pbViewWidth = FullScreen_pseudoFullScreen ? screenWidth ?? (int)(screenWidth = Screen.FromControl(this).Bounds.Width) :
+                        PseudoMaximized ? PseudoMaximizedSize.Width : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Width;
+                    if (totalWidth >= pbViewWidth)
+                    {
+                        if (totalWidth != pbViewWidth)
+                        {
+                            stopPage++;
+                            break; // img == null でも stopPage を返す唯一のパターン
+                        }
+                        if (img == null) return currentPage;
+                        break;
+                    }
+                    if (img == null) return currentPage;
+                }
+                return stopPage;
+            }
+        }
+
+        bool mtbPage_ValueChanged_SendRequestToChangeSelection_Stop = false;
+
+        private void mtbPage_ValueChanged(object sender, EventArgs e)
+        {
+            if (mtbPage.Value != currentPage)
+            {
+                currentPage = mtbPage.Value;
+                if (!mtbPage_ValueChanged_SendRequestToChangeSelection_Stop) showCurrentPage();
+            }
+
+            if (!mtbPage_ValueChanged_SendRequestToChangeSelection_Stop)
+            {
+                if (SeekBarDragging) mtbPage_DragDeferred = true; // カタログへの選択の依頼はドラッグを終えたときに 1 回だけ（V24）
+                else SendRequestToChangeSelectionForCurrentPage();
+            }
+            
+            //ShowCurrentPageToStatusBar();
+            if (ipcLookAheadInfo == null) SetCurrentImageLongPath(); // ページ番号の描画よりも後で呼び出す
+        }
+
+        private void SendRequestToChangeSelectionForCurrentPage()
+        {
+            {
+                var elp = EntryLongPathArray;
+                var ld = loader;
+                if (elp != null && currentPage >= 0 && currentPage < elp.Length && ld != null)
+                {
+                    var path = elp[currentPage];
+                    if (ld.Type == PackedImageLoader.PackType.Directory)
+                    {
+                        path = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    }
+
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        SendRequestToChangeSelection(path);
+                    }
+                }
+            }
+        }
+
+        // シークバーをドラッグしている間は、1 ページ変わるたびの先読みの組み直し・原寸の読み直しと破棄・
+        // カタログへの選択の依頼をやめ、離したときに 1 回だけ行う（V24）。ドラッグ中の先読みは、トラックバーの上のカーソルに合わせる
+        // 処理（mtbPage_MouseMove、50ms に 1 回まで）が組み直す
+        private bool mtbPage_Dragging = false;
+
+        private bool mtbPage_DragDeferred = false;
+
+        // マウスを捕まえている間だけドラッグ中とみなす。離したことが届かなかった場合も、後回しにした処理を必ず行う
+        private bool SeekBarDragging
+        {
+            get
+            {
+                if (!mtbPage_Dragging) return false;
+                if (mtbPage.Capture) return true;
+                BeginInvoke((MethodInvoker)EndSeekBarDrag);
+                return false;
+            }
+        }
+
+        private void EndSeekBarDrag()
+        {
+            if (!mtbPage_Dragging) return;
+            mtbPage_Dragging = false;
+            if (!mtbPage_DragDeferred) return;
+            mtbPage_DragDeferred = false;
+            if (ResizedImageArray == null) return;
+            prefetchOrderPage = int.MinValue; // 先読みの範囲を必ず作り直させる
+            showCurrentPage();
+            if (!mtbPage_ValueChanged_SendRequestToChangeSelection_Stop) SendRequestToChangeSelectionForCurrentPage();
+        }
+
+        private void ChangePageDirection(BindingMode binding)
+        {
+            if(BindingMode != binding)
+            {
+                var sizeChanged = getNeedToResizeImage(binding, bindingModeField);
+                //BindingMode = binding;
+                ChangeBindingModeCore(binding, redraw: !sizeChanged);
+                if (sizeChanged) Reload(force: true);
+                ShowViewSettingHint();
+            }
+            
+            //PageLeftToRight = pageLeftToRight;
+        }
+
+        private bool getNeedToResizeImage(BindingMode a, BindingMode b)
+        {
+            var aIsSpread = a == BindingMode.LeftToRight || a == BindingMode.RightToLeft;
+            var bIsSpread = b == BindingMode.LeftToRight || b == BindingMode.RightToLeft;
+            if (aIsSpread && bIsSpread) return false;
+            if (MaxDivision > 1 || MinPageCountInWindow > 1) return true;
+            return !((aIsSpread || a == BindingMode.SinglePage) && (bIsSpread || b == BindingMode.SinglePage));
+        }
+
+        private void rightToLeftToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangePageDirection(BindingMode.RightToLeft);
+        }
+
+        private void leftToRightToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangePageDirection(BindingMode.LeftToRight);
+        }
+
+        private void singlePageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangePageDirection(BindingMode.SinglePage);
+        }
+
+        private void singlePageWithoutScalingUpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangePageDirection(BindingMode.SinglePageWithoutScalingUp);
+        }
+
+        private void forceTwoPageSpreadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToggleMinPageCountInWindow();
+        }
+
+        private void ToggleMinPageCountInWindow()
+        {
+            MinPageCountInWindow = 3 - MinPageCountInWindow;
+            //if (MinPageCountInWindow > 1) MaxDivision = 1; // 強制見開きページの場合必要、見開き優先なら不要
+            if (BindingMode == BindingMode.SinglePage || BindingMode == BindingMode.SinglePageWithoutScalingUp)
+            {
+                showCurrentPage();
+            }
+            else
+            {
+                Reload(force: true);
+            }
+        }
+
+        private void allowPageDivisionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToggleMaxDivision();
+        }
+
+        private void ToggleMaxDivision()
+        {
+            MaxDivision = 3 - MaxDivision;
+            //if (MaxDivision > 1) MinPageCountInWindow = 1; // 強制見開きページの場合必要、見開き優先なら不要
+            if (BindingMode == BindingMode.SinglePage || BindingMode == BindingMode.SinglePageWithoutScalingUp)
+            {
+                showCurrentPage();
+            }
+            else
+            {
+                Reload(force: true);
+            }
+        }
+
+        private void nextPageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            moveToNextPage();
+        }
+
+        private void moveToNextPage()
+        {
+            if (ResizedImageArray == null) return;
+            var count = ResizedImageArray.Length;
+            if (count == 0) return;
+            var nextPage = NextPage;
+            if (nextPage < count && (nextPage > currentPage || currentPage == nextPage && CurrentDividedPosition >= 0 && MaxDivision > 1))
+            {
+                movePageNatural(1);
+            }
+            else if (nextPage == count && CurrentDividedPosition + 1 == getCurrentPageDivison())
+            {
+                ksViewForm?.InvokeCommand(ExtendedKeys.NextPageAtLastPage);
+            }
+        }
+
+        private void previousPageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MoveToPreviousPage();
+        }
+
+        private void MoveToPreviousPage()
+        {
+            if (ResizedImageArray == null) return;
+            var count = ResizedImageArray.Length;
+            if (count == 0) return;
+            if (currentPage > 0 || currentPage == 0 && CurrentDividedPosition > 0 && MaxDivision > 1)
+            {
+                movePageNatural(-1);
+            }
+            else if (currentPage == 0 && CurrentDividedPosition == 0)
+            {
+                ksViewForm?.InvokeCommand(ExtendedKeys.PreviousPageAtFirstPage);
+            }
+        }
+
+        private void rightPageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            moveToRightPage();
+        }
+
+        private void moveToRightPage()
+        {
+            if (BindingMode != BindingMode.RightToLeft)
+            {
+                moveToNextPage();
+            }
+            else
+            {
+                MoveToPreviousPage();
+            }
+        }
+
+        private void leftPageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            moveToLeftPage();
+        }
+
+        private void moveToLeftPage()
+        {
+            if(BindingMode != BindingMode.RightToLeft)
+            {
+                MoveToPreviousPage();
+            }
+            else
+            {
+                moveToNextPage();
+            }
+            
+        }
+
+        private void moveForward1PageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            movePageToMinimulForward();
+            //movePage(1);
+        }
+
+        private void moveBack1PageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            movePageToMinimulBack();
+            //movePage(-1);
+        }
+
+        private void moveRight1PageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            movePageToMinimulRight();
+        }
+
+        private void movePageToMinimulRight()
+        {
+            if (BindingMode != BindingMode.RightToLeft) movePageToMinimulForward(); else movePageToMinimulBack();
+        }
+
+        private void moveLeft1PageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            movePageToMinimulLeft();
+        }
+
+        private void movePageToMinimulLeft()
+        {
+            if (BindingMode != BindingMode.RightToLeft) movePageToMinimulBack(); else movePageToMinimulForward();
+        }
+
+        private void percentage000YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.0); }
+
+        private void percentage010YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.1); }
+
+        private void percentage020YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.2); }
+
+        private void percentage030YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.3); }
+
+        private void percentage040YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.4); }
+
+        private void percentage050YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.5); }
+
+        private void percentage060YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.6); }
+
+        private void percentage070YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.7); }
+
+        private void percentage080YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.8); }
+
+        private void percentage090YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.9); }
+
+        private void percentage100YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(1.0); }
+
+        private double getRatioByPage(int p = -1)
+        {
+            if (p < 0) p = currentPage;
+            if (ResizedImageArray == null) return 0;
+            var pageCount = ResizedImageArray.Length;
+            return Math.Max(0, Math.Min(1, (double)p / pageCount));
+        }
+
+        private int getPageByRatio(double r)
+        {
+            if (ResizedImageArray == null) return -1;
+            var pageCount = ResizedImageArray.Length;
+            return Math.Max(0, Math.Min(pageCount - 1, (int)(r * pageCount)));
+        }
+
+        private void movePageByRatio000() { movePageByRatio(0.0); }
+
+        private void movePageByRatio010() { movePageByRatio(0.1); }
+
+        private void movePageByRatio020() { movePageByRatio(0.2); }
+
+        private void movePageByRatio030() { movePageByRatio(0.3); }
+
+        private void movePageByRatio040() { movePageByRatio(0.4); }
+
+        private void movePageByRatio050() { movePageByRatio(0.5); }
+
+        private void movePageByRatio060() { movePageByRatio(0.6); }
+
+        private void movePageByRatio070() { movePageByRatio(0.7); }
+
+        private void movePageByRatio080() { movePageByRatio(0.8); }
+
+        private void movePageByRatio090() { movePageByRatio(0.9); }
+
+        private void movePageByRatio100() { movePageByRatio(1.0); }
+
+        private void movePageByRatio(double r)
+        {
+            var nextPage = getPageByRatio(r);
+            if (nextPage < 0) return;
+            currentPage = nextPage;
+            if (nextPage == 0)
+            {
+                // seemToBook は廃止
+                onePageModeForNext = CoverBindingMode == CoverBindingMode.ForceSingle;
+            }
+            showCurrentPage();
+            mtbPage.Value = currentPage;
+        }
+
+        private bool isMovablePageByRatio(double r)
+        {
+            var nextPage = getPageByRatio(r);
+            return nextPage >= 0 && nextPage != currentPage;
+        }
     }
 }

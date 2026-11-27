@@ -1547,5 +1547,77 @@ namespace ZipPla
             }
         }
 
+
+        const int DragEventKeyState_LeftButton = 1;
+
+        private void ViewerForm_DragEnter(object sender, DragEventArgs e)
+        {
+            if (ExitAfterCoverSetting)
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+            try
+            {
+                if (e.KeyState == DragEventKeyState_LeftButton && e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    string[] Files = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+                    if (Files.Length == 1)
+                    {
+                        var path = ShortcutResolver.Exec(Files[0]);
+                        if (Directory.Exists(path))
+                        {
+                            e.Effect = DragDropEffects.Copy;
+                        }
+                        else if (File.Exists(path))
+                        {
+                            if (PackedImageLoader.Supports(path) || ImageLoader.IndividualSupportFullReading(path))
+                            {
+                                e.Effect = DragDropEffects.Copy;
+                            }
+                            else
+                            {
+                                var ffmpegExists = null as bool?;
+                                ImageLoader.SusieReset();
+                                if (ImageLoader.SupportsFullReading(path, ref ffmpegExists))
+                                {
+                                    e.Effect = DragDropEffects.Copy;
+                                }
+                                else
+                                {
+                                    e.Effect = DragDropEffects.None;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            e.Effect = DragDropEffects.None;
+                        }
+                    }
+                    else
+                    {
+                        e.Effect = DragDropEffects.None;
+                    }
+                }
+            }
+            catch (Exception error)
+            {
+                Program.AlertError(error);
+            }
+        }
+
+        private void ViewerForm_DragDrop(object sender, DragEventArgs e)
+        {
+            try
+            {
+                var path = ShortcutResolver.Exec(((string[])e.Data.GetData(DataFormats.FileDrop, false))[0]);
+                removeHiddenConfigFromCatalogForm();
+                OpenFile(path);
+            }
+            catch (Exception error)
+            {
+                Program.AlertError(error);
+            }
+        }
     }
 }

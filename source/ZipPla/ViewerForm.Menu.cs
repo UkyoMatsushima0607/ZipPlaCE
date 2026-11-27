@@ -832,5 +832,219 @@ namespace ZipPla
         // トラックバーの上でカーソルを動かすたびに SetBackgroundMode（全ページの走査・ソート・離れたページの破棄）を呼んでいた（V8）。
         // カーソルの下のページが変わらず、ほかで SetBackgroundMode も呼ばれていなければ何もしない。呼ぶのは 50ms に 1 回まで（最後の位置は必ず反映する）
         private const int mtbPage_MouseMove_Interval = 50;
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (
+                KeyboardShortcut.GetKeyState((int)Keys.D) < 0 &&
+                KeyboardShortcut.GetKeyState((int)Keys.E) < 0 &&
+                KeyboardShortcut.GetKeyState((int)Keys.B) < 0 &&
+                KeyboardShortcut.GetKeyState((int)Keys.U) < 0 &&
+                KeyboardShortcut.GetKeyState((int)Keys.G) < 0)
+            {
+                var i = bmwLoadEachPage_DoWork_DEBUG_WorkNumber;
+                var index = i >= 0 ? (i + 1).ToString() : "<EMPTY>";
+                Program.ShowCursor();
+                MessageBox.Show(this,
+                    $"This is \"Debug information\" for the developer.\n" +
+                    $"Loading index = {index}\n" +
+                    $"Phase number = {bmwLoadEachPage_DoWork_DEBUG_Phase}\n" +
+                    $"\n" +
+                    $"Hold down '7' key and 'Z' key, and click \"OK\" to prioritize 7z.dll."
+                    ,
+                    "Debug information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                if (
+                KeyboardShortcut.GetKeyState((int)Keys.D7) < 0 &&
+                KeyboardShortcut.GetKeyState((int)Keys.Z) < 0)
+                {
+                    var sevenZipPath = PackedImageLoader.GetSevenZipPath();
+                    if (sevenZipPath != null)
+                    {
+                        PackedImageLoader.PrioritizeSevenZip = true;
+                        Program.ShowCursor();
+                        MessageBox.Show(this,
+                            $"Following dll will be preferentially used until the window is closed.\n" +
+                            $"\n" +
+                            $"{sevenZipPath}."
+                            ,
+                            "Debug information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        var prevArchiveFilePath = getCurrentRenameTarget();
+                        DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
+
+                        OpenFile(prevArchiveFilePath, currentPage, currentSortModeDetails);
+                    }
+                    else
+                    {
+                        Program.ShowCursor();
+                        MessageBox.Show(this,
+                            $"7z.dll is not found."
+                            ,
+                            "Debug information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            else
+            {
+                Program.ShowAbout(this);
+            }
+        }
+
+        private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            openFileWithDialog();
+        }
+
+        private void openFileWithDialog()
+        {
+            if (ExitAfterCoverSetting) return;
+            var path = Program.ItsSelfOrExistingParentDirectory(currentArchiveFilePath);
+            if (!string.IsNullOrEmpty(path))
+            {
+                openFileDialog.InitialDirectory = path;
+            }
+            openFileDialog.FileName = "";
+            var supportedImageFileFilter = ImageLoader.GetSupportedFileFilter();
+            PackedImageLoader.CheckSevenZipExistence(this);
+            var supportedArchiveFileFilter = PackedImageLoader.GetSupportedArchiveFileFilter();
+            openFileDialog.Filter = Message.AllSupportedFiles + "|" + supportedArchiveFileFilter + ";" + supportedImageFileFilter + "|"
+                + Message.ArchiveFilesPdfFiles + "|" + supportedArchiveFileFilter + "|"
+                + Message.ImageFiles + "|" + supportedImageFileFilter;
+
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                removeHiddenConfigFromCatalogForm();
+                OpenFile(openFileDialog.FileName);
+            }
+        }
+
+        private void openNewThumbnailWindowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            openThumbnailWindow();
+        }
+
+        private void switchToThumbnailWindowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            switchToThumbnailWindow();
+        }
+
+        private void switchToThumbnailWindow()
+        {
+            SaveSettings();
+            openThumbnailWindow(cancelFullscreen: false);
+            CloseWithoutSave();
+        }
+
+        private void openThumbnailWindow() { openThumbnailWindow(cancelFullscreen: true); }
+
+        private void openThumbnailWindow(bool cancelFullscreen)
+        {
+            if (ExitAfterCoverSetting) return;
+            try
+            {
+                var c = currentPage;
+                var ea = EntryLongPathArray;
+                if (ea != null && c >= 0 && c < ea.Length)
+                {
+                    if (currentSortModeDetails != null)
+                    {
+                        var sort = currentSortModeDetails.SortMode;
+                        if (sort == SortMode.NameInAsc || sort == SortMode.NameInDesc)
+                        {
+                            System.Diagnostics.Process.Start(Application.ExecutablePath, $"-c \"{ea[c]}\" -{sort}");
+                        }
+                        else if(sort == SortMode.Random && !string.IsNullOrEmpty(currentSortModeDetails.RandomSeed))
+                        {
+                            System.Diagnostics.Process.Start(Application.ExecutablePath, $"-c \"{ea[c]}\" -{sort} \"{currentSortModeDetails.RandomSeed}\"");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Process.Start(Application.ExecutablePath, $"-c \"{ea[c]}\" -{currentSortModeDetails.PreSortMode} -{sort}");
+                        }
+                    }
+                    else
+                    {
+                        System.Diagnostics.Process.Start(Application.ExecutablePath, $"-c \"{ea[c]}\"");
+                    }
+                }
+                else if (string.IsNullOrEmpty(currentArchiveFilePath))
+                {
+                    System.Diagnostics.Process.Start(Application.ExecutablePath, "-c");
+                }
+                else
+                {
+                    System.Diagnostics.Process.Start(Application.ExecutablePath, "-c \"" + currentArchiveFilePath + "\"");
+                }
+                if (cancelFullscreen && FullScreen)
+                {
+                    fullScreenModeChange(false);
+                }
+            }
+            catch (Exception error)
+            {
+                Program.AlertError(error);
+            }
+        }
+
+        private void cloneTheWindowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            cloneWindow();
+        }
+
+        private void cloneWindow()
+        {
+            if (ExitAfterCoverSetting) return;
+            try
+            {
+                var longPath = null as string;
+                var value = mtbPage.Value;
+                if (value >= 0)
+                {
+                    var elpa = EntryLongPathArray;
+                    if (elpa != null && value < elpa.Length)
+                    {
+                        longPath = elpa[value];
+                        if (longPath == "") longPath = null;
+                    }
+                }
+
+                var info = CreateCommandLineOptionInfo();
+                info.OpenInPreviousImageFilterSetting = true;
+                info.InitialFullscreenMode = InitialFullscreenMode.Default;
+                var option = GetCommandLineOption(info, minimize: true);
+                if (longPath != null) option += $" \"{longPath}\"";
+
+                SaveSettings();
+
+                Process.Start(Application.ExecutablePath, option);
+            }
+            catch (Exception error)
+            {
+                Program.AlertError(error);
+            }
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void mouseGestureToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Program.OpenMouseGestureSetting(Icon, mgView, getMouseGestureSettingTemplate(CommandSender.MouseGesture), this, widthZoom: 1.4);
+        }
+
+        private void keyboardShortcutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if(Program.OpenKeyboardShortcutSetting(Icon, ksViewForm, getMouseGestureSettingTemplate(CommandSender.KeyboardShortcut), ContinuousExecutionCommands.Select(enm => (int)enm).ToArray(),
+                ViewerFormConfig.DefaultKeyboardShortcutCommands.Select(d => Tuple.Create(d.GetShortcut().Select(s => new HashSet<Keys>(s)).ToArray(), (int)d.Command)).ToArray(),
+                useLButton: true, useMButton: true, useRButton: true, useX1Button: true, useX2Button:true,
+                useLButtonWarningMessage: Message.WhenClickOnAndClickConflictTheFormerTakesPrecedence,
+                useMButtonWarningMessage: null, useRButtonWarningMessage: null, owner: this))
+            {
+                setShortcutKeyDisplayStrings(setKeyNames: false);
+            }
+        }
     }
 }

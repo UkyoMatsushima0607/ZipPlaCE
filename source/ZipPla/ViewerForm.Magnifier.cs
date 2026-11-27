@@ -945,5 +945,249 @@ namespace ZipPla
 
             public static readonly VectorD Zero = new VectorD(0, 0);
         }
+
+        private void magnifierToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToggleMagnifierWithoutScreenEffects();
+        }
+
+        private void ToggleMagnifierWithoutScreenEffects()
+        {
+            // if は省略できないので注意
+            if (ViewerMode == ViewerModeEnum.Normal)
+            {
+                enableMagnifier();
+            }
+            else if (ViewerMode == ViewerModeEnum.Magnifier)
+            {
+                disableMagnifier();
+            }
+        }
+
+        private void enableMagnifier()
+        {
+            if (ViewerMode == ViewerModeEnum.Normal)
+            {
+                MagnifierPhase1(null);
+                MagnifierPhase2();
+            }
+        }
+
+        private void disableMagnifier()
+        {
+            if (ViewerMode == ViewerModeEnum.Magnifier)
+            {
+                MagnifierPhase3(toPhase4: true);
+                MagnifierPhase4(toPhase1: false);
+            }
+        }
+
+        private void toggleMagnifierForKeyboardWithOperatingGuide() => toggleMagnifierForKeyboard(withOperatingGuide: true);
+
+        private void toggleMagnifierForKeyboard() => toggleMagnifierForKeyboard(withOperatingGuide: false);
+
+        private void toggleMagnifierForKeyboard(bool withOperatingGuide)
+        {
+            // if は省略できないので注意
+            if (ViewerMode == ViewerModeEnum.Normal)
+            {
+                enableMagnifierForKeyboard(withOperatingGuide);
+            }
+            else if (ViewerMode == ViewerModeEnum.Magnifier)
+            {
+                disableMagnifierForKeyboard(withOperatingGuide);
+            }
+        }
+
+        private void toggleMagnifierForKeyboardWithMinimalScreenEffects()
+        {
+            // if は省略できないので注意
+            if (ViewerMode == ViewerModeEnum.Normal)
+            {
+                enableMagnifierForKeyboard();
+            }
+            else if (ViewerMode == ViewerModeEnum.Magnifier)
+            {
+                disableMagnifier();
+                //disableMagnifierForKeyboard();
+            }
+        }
+
+        bool userMagnifierOpeningOrClosing = false;
+
+        bool UserMagnifierOpeningOrClosing
+        {
+            get { return userMagnifierOpeningOrClosing; }
+            set
+            {
+                if (value != userMagnifierOpeningOrClosing)
+                {
+                    if (value)
+                    {
+                        userMagnifierOpeningOrClosing = true;
+                        ksViewForm.WheelAcceptControls = new Control[0];
+                    }
+                    else
+                    {
+                        userMagnifierOpeningOrClosing = false;
+                        ksViewForm.WheelAcceptControls = new Control[1] { pbView };
+                    }
+                }
+            }
+        }
+
+        private void enableMagnifierForKeyboardWithOperatingGuide() => enableMagnifierForKeyboard(withOperatingGuide: true);
+
+        private void enableMagnifierForKeyboard() => enableMagnifierForKeyboard(withOperatingGuide: false);
+
+        private void enableMagnifierForKeyboard(bool withOperatingGuide)
+        {
+            var vm = ViewerMode;
+            if (vm == ViewerModeEnum.Normal)
+            {
+                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
+                UserMagnifierOpeningOrClosing = true;
+                if (withOperatingGuide) pbView_Paint_RectangleMessage = Message.MagnifierOperatingGuide.Replace("\\n", "\n");
+                MagnifierPhase1(null);
+                KeyUp += MagnifierPhase2_KeyUpEventHandler;
+                MouseUp += MagnifierPhase2_KeyUpEventHandler;
+                pbView.SizeChanged += MagnifierPhase2_KeyUpEventHandler;
+                foreach (Control control in Controls)
+                {
+                    control.MouseUp += MagnifierPhase2_KeyUpEventHandler;
+                }
+            }
+            else if(vm == ViewerModeEnum.Magnifier)
+            {
+                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
+                UserMagnifierOpeningOrClosing = true;
+                MagnifierPhase3(toPhase4: true);
+                MagnifierPhase4(toPhase1: true);
+                if (withOperatingGuide) pbView_Paint_RectangleMessage = Message.MagnifierOperatingGuide.Replace("\\n", "\n");
+                MagnifierPhase1(null);
+                KeyUp += MagnifierPhase2_KeyUpEventHandler;
+                pbView.MouseUp += MagnifierPhase2_KeyUpEventHandler;
+                pbView.SizeChanged += MagnifierPhase2_KeyUpEventHandler;
+                foreach (Control control in Controls)
+                {
+                    control.MouseUp += MagnifierPhase2_KeyUpEventHandler;
+                }
+            }
+        }
+
+        private void MagnifierPhase2_KeyUpEventHandler(object sender, MouseEventArgs e)
+        {
+            var key = ksViewForm.MouseButtonsToKeys(e.Button);
+            if (key != Keys.None)
+            {
+                MagnifierPhase2_KeyUpEventHandler(sender, new KeyEventArgs(key));
+            }
+        }
+
+        private void MagnifierPhase2_KeyUpEventHandler(object sender, KeyEventArgs e)
+        {
+           // UserMagnifierOpeningOrClosing = false;
+            var actions = ksViewForm.Actions;
+            if (actions == null || actions.Any(action =>
+                IsEnableMagnifierCommand((Command)action.Key) && action.Shortcut.LastOrDefault()?.Contains(e.KeyCode) == true))
+            {
+                MagnifierPhase2_KeyUpEventHandler(sender, e as EventArgs);
+            }
+        }
+
+        private static bool IsEnableMagnifierCommand(Command command)
+        {
+            return command == Command.ToggleMagnifier || command == Command.ToggleMagnifierWithoutOperatingGuide || command == Command.ToggleMagnifierWithMinimalScreenEffects ||
+                command == Command.EnableMagnifier || command == Command.EnableMagnifierWithoutOperatingGuide;
+        }
+
+        private void MagnifierPhase2_KeyUpEventHandler(object sender, EventArgs e)
+        {
+            UserMagnifierOpeningOrClosing = false;
+            MagnifierPhase2();
+            KeyUp -= MagnifierPhase2_KeyUpEventHandler;
+            pbView.MouseUp -= MagnifierPhase2_KeyUpEventHandler;
+            pbView.SizeChanged -= MagnifierPhase2_KeyUpEventHandler;
+            foreach (Control control in Controls)
+            {
+                control.MouseUp -= MagnifierPhase2_KeyUpEventHandler;
+            }
+        }
+
+        private void disableMagnifierForKeyboardWithOperatingGuide() => disableMagnifierForKeyboard(withOperatingGuide: true);
+
+        private void disableMagnifierForKeyboard() => disableMagnifierForKeyboard(withOperatingGuide: false);
+
+        private void disableMagnifierForKeyboard(bool withOperatingGuide)
+        {
+            var vm = ViewerMode;
+            if (vm == ViewerModeEnum.Magnifier)
+            {
+                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
+                UserMagnifierOpeningOrClosing = true;
+                if (withOperatingGuide) pbView_Paint_RectangleMessage = Message.MagnifierOperatingGuide.Replace("\\n", "\n");
+                MagnifierPhase3(toPhase4: false);
+                KeyUp += MagnifierPhase4_KeyUpEventHandler;
+                MouseUp += MagnifierPhase4_KeyUpEventHandler;
+                pbView.SizeChanged += MagnifierPhase4_KeyUpEventHandler;
+                foreach (Control control in Controls)
+                {
+                    control.MouseUp += MagnifierPhase4_KeyUpEventHandler;
+                }
+            }
+            else if(vm == ViewerModeEnum.Normal)
+            {
+                //if (ksViewForm.KeyboardShortcutExcutingWithKeyOrMouseDown()) UserMagnifierOpeningOrClosing = true;
+                UserMagnifierOpeningOrClosing = true;
+                MagnifierPhase1(null);
+                MagnifierPhase2();
+                if (withOperatingGuide) pbView_Paint_RectangleMessage = Message.MagnifierOperatingGuide.Replace("\\n", "\n");
+                MagnifierPhase3(toPhase4: false);
+                KeyUp += MagnifierPhase4_KeyUpEventHandler;
+                MouseUp += MagnifierPhase4_KeyUpEventHandler;
+                pbView.SizeChanged += MagnifierPhase4_KeyUpEventHandler;
+                foreach (Control control in Controls)
+                {
+                    control.MouseUp += MagnifierPhase4_KeyUpEventHandler;
+                }
+            }
+        }
+
+        private void MagnifierPhase4_KeyUpEventHandler(object sender, MouseEventArgs e)
+        {
+            var key = ksViewForm.MouseButtonsToKeys(e.Button);
+            if (key != Keys.None)
+            {
+                MagnifierPhase4_KeyUpEventHandler(sender, new KeyEventArgs(key));
+            }
+        }
+
+        private void MagnifierPhase4_KeyUpEventHandler(object sender, KeyEventArgs e)
+        {
+            var actions = ksViewForm.Actions;
+            if (actions == null || actions.Any(action => IsDisableMagnifierWithEffectCommand((Command)action.Key) && action.Shortcut.LastOrDefault()?.Contains(e.KeyCode) == true))
+            {
+                MagnifierPhase4_KeyUpEventHandler(sender, e as EventArgs);
+            }
+        }
+
+        private static bool IsDisableMagnifierWithEffectCommand(Command command)
+        {
+            return command == Command.ToggleMagnifier || command == Command.DisableMagnifier || command == Command.DisableMagnifierWithoutOperatingGuide
+                || command == Command.ToggleMagnifierWithoutOperatingGuide;
+        }
+
+        private void MagnifierPhase4_KeyUpEventHandler(object sender, EventArgs e)
+        {
+            UserMagnifierOpeningOrClosing = false;
+            MagnifierPhase4(toPhase1: false);
+            KeyUp -= MagnifierPhase4_KeyUpEventHandler;
+            MouseUp -= MagnifierPhase4_KeyUpEventHandler;
+            pbView.SizeChanged -= MagnifierPhase4_KeyUpEventHandler;
+            foreach (Control control in Controls)
+            {
+                control.MouseUp -= MagnifierPhase4_KeyUpEventHandler;
+            }
+        }
     }
 }
