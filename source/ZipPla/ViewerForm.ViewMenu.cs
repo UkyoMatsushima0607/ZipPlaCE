@@ -704,11 +704,7 @@ namespace ZipPla
 
         private void ResetAndShowHintForChangeReadingMode()
         {
-            if (loader != null)
-            {
-                lock (loaderLock) loader.Dispose();
-                loader = null;
-            }
+            DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
             if (!string.IsNullOrEmpty(currentArchiveFilePath))
             {
                 var ea = EntryArray;

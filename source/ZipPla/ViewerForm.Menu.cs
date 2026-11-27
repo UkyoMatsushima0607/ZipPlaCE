@@ -565,11 +565,7 @@ namespace ZipPla
                 return;
             }
 
-            if (loader != null)
-            {
-                lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
-                loader = null;
-            }
+            DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
             try
             {
                 Program.FileOrDirectoryMove(prevArchiveFilePath, newArchiveFilePath, retryOwner: this);
@@ -668,11 +664,7 @@ namespace ZipPla
                 return;
             }
 
-            if (loader != null)
-            {
-                lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
-                loader = null;
-            }
+            DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
             try
             {
                 Program.FileOrDirectoryMove(prevArchiveFilePath, newArchiveFilePath, retryOwner: this);

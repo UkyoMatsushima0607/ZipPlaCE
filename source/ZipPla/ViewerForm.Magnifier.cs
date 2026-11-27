@@ -134,11 +134,13 @@ namespace ZipPla
             var originalBitmapExArray = new BitmapEx[nextPage - currentPage];
             //var canvasIndex = 0;
             var nextPage1 = nextPage - 1;
+            var preFiltered = PreFilteredImageArray;
+            if (preFiltered == null || nextPage1 >= preFiltered.Length) return; // 本が切り替わった
             for (var i = nextPage1; i >= currentPage; i--)
             {
                 var canvasIndex = nextPage1 - i;
                 arrangedZoomedSizeArray[canvasIndex] = zoomedSizeArray[i - currentPage];
-                originalBitmapExArray[canvasIndex] = PreFilteredImageArray[i];
+                lock (preFiltered) originalBitmapExArray[canvasIndex] = preFiltered[i]; // LockManager.ForIReadOnlyList と同じ手順
                 canvasIndex++;
             }
 
@@ -167,6 +169,13 @@ namespace ZipPla
                     {
                         lock (imgEx)
                         {
+                            // ロックを待っている間に、原寸が破棄された（DiscardLoadedPage）か本が切り替わった。
+                            // 破棄済みの画像は使えないので、拡大画像を作らずに抜ける（結果なし。必要になれば作り直される）
+                            if (!ReferenceEquals(preFiltered, PreFilteredImageArray) || !ReferenceEquals(preFiltered[i], imgEx))
+                            {
+                                canvas.Dispose();
+                                return;
+                            }
                             var isEntity = imgEx.FrameCount == 1/* && BitmapEx.GetDataSizeInBytes(imgEx, zoomedSize) < GetUserMemoryUBound() / 2*/;
                             if (isEntity)
                             {

@@ -1924,11 +1924,7 @@ namespace ZipPla
                             "Debug information", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                         var prevArchiveFilePath = getCurrentRenameTarget();
-                        if (loader != null)
-                        {
-                            lock (loaderLock) loader.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
-                            loader = null;
-                        }
+                        DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
 
                         OpenFile(prevArchiveFilePath, currentPage, currentSortModeDetails);
                     }

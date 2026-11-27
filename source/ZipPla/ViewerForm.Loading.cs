@@ -719,7 +719,7 @@ namespace ZipPla
                 updatedLoader = loader != next.Loader;
                 if (updatedLoader)
                 {
-                    lock (loaderLock) loader?.Dispose(); // 読み込みジョブが取り出し中でないときに（V1）
+                    DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
                     if (TryUpdateLastAccessTimeAfterLoaderDisposed != null)
                     {
                         Program.TryUpdateLastAccessTime(TryUpdateLastAccessTimeAfterLoaderDisposed);
@@ -1032,6 +1032,27 @@ namespace ZipPla
                 ext.Length > 1 && ImageLoader.Jpeg2000DecodesWithFfmpeg(ext.Substring(1)); // ffmpeg は別のプロセス（D6）
         }
 
+        // loader を破棄して null にする。どちらも loaderLock の中で行うので、読み込みジョブはロックの中で
+        // 「手元のローダーがまだ loader か」を確かめれば、破棄されたローダーに触らずに済む（OpenPageImage）
+        private void DisposeLoader()
+        {
+            lock (loaderLock)
+            {
+                var l = loader;
+                loader = null;
+                l?.Dispose();
+            }
+        }
+
+        // ロックの中で呼ぶ。読み込みジョブが手元に持っているローダーが、破棄・差し替えされていたら止める
+        private void ThrowIfLoaderReplaced(PackedImageLoader l)
+        {
+            if (!ReferenceEquals(l, loader)) throw new LoaderReplacedException();
+        }
+
+        // 読み込みジョブのローダーが破棄・差し替えされた。ジョブはキャンセルされていなくても結果なしで抜ける（DoWorkCore）
+        private sealed class LoaderReplacedException : OperationCanceledException { }
+
         // ページの画像を読む（V1）。並列にデコードできる形式は、書庫からの取り出しだけをロックの中で行い、デコードはロックの外で行う
         private Bitmap OpenPageImage(PackedImageLoader.PackedImageEntry entry)
         {
@@ -1058,6 +1079,7 @@ namespace ZipPla
                     perfLockWaitTicks = perfLockTaken - perfLockRequest;
 #endif
                     ThrowIfLoadCanceled(); // ロックを待っている間にキャンセルされたら取り出さない（Y9）
+                    ThrowIfLoaderReplaced(l); // ロックを待っている間に名前の変更などで破棄された
                     extracted = l.TryExtractEntry(entry, out stream, out name, out length);
 #if PERFLOG
                     perfExtractTicks = System.Diagnostics.Stopwatch.GetTimestamp() - perfLockTaken;
@@ -1074,6 +1096,7 @@ namespace ZipPla
             lock (loaderLock)
             {
                 ThrowIfLoadCanceled(); // Y9
+                ThrowIfLoaderReplaced(l);
                 return l.OpenImageStream(entry);
             }
         }
@@ -1498,9 +1521,9 @@ namespace ZipPla
                     }
                 });
             }
-            catch (OperationCanceledException) when (bmwLoadEachPage.CancellationPending)
+            catch (OperationCanceledException oce) when (bmwLoadEachPage.CancellationPending || oce is LoaderReplacedException)
             {
-                // キャンセルされたので、エラー画像も作らずに抜ける（Y9）
+                // キャンセルされた・読んでいた書庫が閉じられたので、エラー画像も作らずに抜ける（Y9）
             }
 #if DEBUG || PERFLOG
             catch (Exception ee)

@@ -254,7 +254,9 @@ namespace GenerarClasses
         /// </summary>
         public event EachRunWorkerCompletedEventHandler InconclusiveWorkerDisposing;
 
-        public bool CancellationPending { get; private set; }
+        // 読み込みスレッド（最大 4 本）がループの中で読むので volatile にする（自動プロパティでは JIT がループの外に出しうる）
+        private volatile bool cancellationPending;
+        public bool CancellationPending { get => cancellationPending; private set => cancellationPending = value; }
         
         public BackgroundMultiWorker() { }
         
