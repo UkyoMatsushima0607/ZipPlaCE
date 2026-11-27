@@ -324,7 +324,7 @@ namespace ZipPla
                             var srcData = bmp2.LockBits(rect, ImageLockMode.ReadOnly, newPixelFormat);
                             try
                             {
-                                ViewerForm.CopyMemory(dstData.Scan0, srcData.Scan0, dstData.Stride * dstData.Height);
+                                NativeMethods.CopyMemory(dstData.Scan0, srcData.Scan0, dstData.Stride * dstData.Height);
                             }
                             finally
                             {
@@ -472,7 +472,7 @@ namespace ZipPla
                                     //Marshal.Copy(buff, 0, data.Scan0, 8193);
                                     fixed (short* buffAdr = buff)
                                     {
-                                        ViewerForm.CopyMemory(data.Scan0, (IntPtr)buffAdr, 8193 * sizeof(short));
+                                        NativeMethods.CopyMemory(data.Scan0, (IntPtr)buffAdr, 8193 * sizeof(short));
                                     }
                                 }
                                 finally
@@ -486,7 +486,7 @@ namespace ZipPla
                                     //Marshal.Copy(data.Scan0, ToBitmap24_RGBLookUp, 0, 8193);
                                     fixed (byte* ToBitmap24_RGBLookUpAdr = ToBitmap24_RGBLookUp)
                                     {
-                                        ViewerForm.CopyMemory((IntPtr)ToBitmap24_RGBLookUpAdr, data.Scan0, 8193 * sizeof(byte));
+                                        NativeMethods.CopyMemory((IntPtr)ToBitmap24_RGBLookUpAdr, data.Scan0, 8193 * sizeof(byte));
                                     }
                                 }
                                 finally

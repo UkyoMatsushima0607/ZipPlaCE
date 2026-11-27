@@ -2790,9 +2790,6 @@ namespace ZipPla
             //if (!currentImageLongPathToolStripTextBox.Focused) control.Focus();
         }
         
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
-
         private void fixDropDownLocation(object toolStripMenuItem)
         {
             if (!FullScreen) return;
@@ -2809,7 +2806,7 @@ namespace ZipPla
 
             if (point.X + dropDown.Width <= screenSize.Width && point.Y + dropDown.Height <= screenSize.Height)
             {
-                MoveWindow(dropDown.Handle, point.X, point.Y, dropDown.Width, dropDown.Height, true);
+                NativeMethods.MoveWindow(dropDown.Handle, point.X, point.Y, dropDown.Width, dropDown.Height, true);
             }
         }
         

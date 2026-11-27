@@ -1571,7 +1571,7 @@ namespace ZipPla
                         var rowBytes = Math.Min(Math.Abs(src.Stride), Math.Abs(dst.Stride));
                         for (var y = 0; y < rect.Height; y++)
                         {
-                            CopyMemory(dst.Scan0 + y * dst.Stride, src.Scan0 + y * src.Stride, rowBytes);
+                            NativeMethods.CopyMemory(dst.Scan0 + y * dst.Stride, src.Scan0 + y * src.Stride, rowBytes);
                         }
                     }
                     finally
@@ -1627,8 +1627,5 @@ namespace ZipPla
             }
         }
 
-        // kernel32.dll が公開しているのは RtlMoveMemory で、CopyMemory はヘッダのマクロの名前。.NET（Core）では見つからず描画が失敗したので、実体を指定する
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        public static extern void CopyMemory(IntPtr dst, IntPtr src, int size);
     }
 }

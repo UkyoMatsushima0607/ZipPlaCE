@@ -989,7 +989,7 @@ namespace ZipPla
             {
                 //System.Runtime.InteropServices.Marshal.Copy(srcLeft, buff, 0, buffSize);
                 //System.Runtime.InteropServices.Marshal.Copy(buff, 0, dstLeft, buffSize);
-                CopyMemory(dstLeft, srcLeft, buffSize);
+                NativeMethods.CopyMemory(dstLeft, srcLeft, buffSize);
                 dstLeft += dstStride;
                 srcLeft += srcStride;
             }
@@ -1072,7 +1072,7 @@ namespace ZipPla
                 {
                     var currentDstLeft = dstLeft + (j * dstStride);
                     //System.Runtime.InteropServices.Marshal.Copy(buff, 0, currentDstLeft, buffSize);
-                    CopyMemory(currentDstLeft, buffAdr, buffSize);
+                    NativeMethods.CopyMemory(currentDstLeft, buffAdr, buffSize);
                 });
             }
         }

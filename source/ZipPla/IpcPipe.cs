@@ -519,9 +519,6 @@ namespace ZipPla
         [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
         private static extern bool WaitNamedPipe(string name, int timeout);
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool AllowSetForegroundWindow(int processId);
-
         /// <summary>
         /// 起動しているカタログに本を開かせる。受け付けられたら true（呼び出し側はそのまま終了する）。
         /// カタログがない・応答しない・断られたら false（呼び出し側は従来どおり自分で開く）
@@ -538,7 +535,7 @@ namespace ZipPla
                 {
                     client.Connect(1000);
                     // 起動元（エクスプローラー）から受け継いだ前面に出る権利を、カタログが開くビューアに渡せるようにする
-                    AllowSetForegroundWindow(-1);
+                    NativeMethods.AllowSetForegroundWindow(-1);
                     var body = Encoding.UTF8.GetBytes(path);
                     var header = BitConverter.GetBytes(body.Length);
                     client.Write(header, 0, 4);

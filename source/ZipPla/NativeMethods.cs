@@ -31,6 +31,16 @@ namespace ZipPla
 {
     public static class NativeMethods
     {
+        // kernel32.dll が公開しているのは RtlMoveMemory で、CopyMemory はヘッダのマクロの名前。.NET（Core）では見つからず描画が失敗したので、実体を指定する
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        public static extern void CopyMemory(IntPtr dst, IntPtr src, int size);
+
+        [DllImport("user32.dll")]
+        public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+
+        [DllImport("user32.dll")]
+        public static extern bool AllowSetForegroundWindow(int dwProcessId);
+
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         public static extern IntPtr GlobalAlloc(int uFlags, int dwBytes);
 

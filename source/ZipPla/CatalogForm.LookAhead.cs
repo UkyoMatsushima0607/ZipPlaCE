@@ -188,9 +188,6 @@ namespace ZipPla
             }
         }
 
-        [DllImport("user32.dll")]
-        private static extern bool AllowSetForegroundWindow(int dwProcessId);
-
         //private static readonly TimeSpan DoubleClickTimeSpan = TimeSpan.FromMilliseconds(SystemInformation.DoubleClickTime);
         int OpenWaitingProcess_LastOpenningTime;
 
@@ -275,7 +272,7 @@ namespace ZipPla
                     lookAheadInfo.FilterStringWithoutAlias = null;
                 }
                 lookAheadInfo.Message = coverSettingMode ? IpcLookAheadInfo.MessageEnum.CoverSetting : IpcLookAheadInfo.MessageEnum.Show;
-                if (waitingProcess != null) AllowSetForegroundWindow(waitingProcess.Id);
+                if (waitingProcess != null) NativeMethods.AllowSetForegroundWindow(waitingProcess.Id);
                 lookAheadInfo.Accept = false;
                 var existingProcessAndFirstRequest = existingProcess || SetLookAheadArchive_PrevPath != path;
                 var waitTime = 0;

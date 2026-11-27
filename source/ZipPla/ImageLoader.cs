@@ -1676,7 +1676,7 @@ namespace ZipPla
                     var dp = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, pixelFormat);
                     try
                     {
-                        ViewerForm.CopyMemory(d.Scan0, dp.Scan0, d.Height * d.Stride);
+                        NativeMethods.CopyMemory(d.Scan0, dp.Scan0, d.Height * d.Stride);
                     }
                     finally
                     {

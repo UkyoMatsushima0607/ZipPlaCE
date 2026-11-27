@@ -40,9 +40,6 @@ namespace ZipPla
             toolStripMenuItem = new ExtendedToolStripMenuItem(toolStripMenuItem);
         }
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool MoveWindow( IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
-
         protected override void OnDropDownOpened(EventArgs e)
         {
             var bounds = Bounds;
@@ -53,7 +50,7 @@ namespace ZipPla
             {
                 var dropDown = DropDown;
                 
-                MoveWindow(DropDown.Handle, point.X, point.Y, dropDown.Width, dropDown.Height, true);
+                NativeMethods.MoveWindow(DropDown.Handle, point.X, point.Y, dropDown.Width, dropDown.Height, true);
             }
             
             base.OnDropDownOpened(e);

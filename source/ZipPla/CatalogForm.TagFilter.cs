@@ -923,9 +923,6 @@ namespace ZipPla
             ratingFilterToolStripMenuItemDropDown.AutoClose = false;
         }
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
-
         private void setFilterDropDownLocation(ToolStripDropDown dropDown)
         {
             if (dropDown == null || !dropDown.Visible) return;
@@ -970,7 +967,7 @@ namespace ZipPla
             if (y < wa.Top) y = wa.Top;
             else if (y + height > wa.Bottom) y = wa.Bottom - height;
 
-            MoveWindow(dropDown.Handle, x, y, width, height, false);
+            NativeMethods.MoveWindow(dropDown.Handle, x, y, width, height, false);
         }
 
         private void ratingFilterToolStripMenuItem_DropDownOpened(object sender, EventArgs e)

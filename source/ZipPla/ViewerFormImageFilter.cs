@@ -606,9 +606,9 @@ namespace ZipPla
             {
                 var a = scan0 + y * stride;
                 var b = scan0 + (height1 - y) * stride;
-                ViewerForm.CopyMemory(pointer, a, stride);
-                ViewerForm.CopyMemory(a, b, stride);
-                ViewerForm.CopyMemory(b, pointer, stride);
+                NativeMethods.CopyMemory(pointer, a, stride);
+                NativeMethods.CopyMemory(a, b, stride);
+                NativeMethods.CopyMemory(b, pointer, stride);
                 return pointer;
             }, pointer => Marshal.FreeCoTaskMem(pointer));
 
