@@ -10,8 +10,6 @@ namespace ZipPla
 {
     class ZipPlaInfo
     {
-        public bool CoverInfoForArchive = true;
-
         // Length >= 1 であること
         private static readonly ZipPlaInfoParam[] zipPlaInfoParamsPrototype = new ZipPlaInfoParam[]
         {

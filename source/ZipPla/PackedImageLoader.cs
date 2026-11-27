@@ -31,8 +31,6 @@ namespace ZipPla
         public enum PackType { Directory, Zip, ZipM, Rar, Rar5, Cab, Tar, Pdf, SevenZip, Lha, Unknown, Gz } // Gz はアーカイブ機能がないので対応させない
         public PackType Type { get; private set; }
         public readonly bool IsSupportedSingleFile;
-        public PackedImageLoaderOnMemoryMode OnMemoryMode => stream is ReleasableStream releasableStream ?
-            releasableStream.IsReleased ? PackedImageLoaderOnMemoryMode.OnMemory : PackedImageLoaderOnMemoryMode.Releasable : PackedImageLoaderOnMemoryMode.None;
         public void Release()
         {
             if (stream is ReleasableStream releasableStream && !releasableStream.IsReleased)

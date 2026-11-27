@@ -229,8 +229,6 @@ namespace ZipPla
 
         string pbView_Paint_RectangleMessage = null;
 
-        readonly static Brush pbView_Paint_Brush = new SolidBrush(Color.FromArgb(160, 128, 128, 128));
-
         //readonly static Brush pbView_Paint_Brush_WithoutAlpha = new SolidBrush(Color.FromArgb(255, 128, 128, 128));
         private static Color HalfGrayBrusher(Color c) { return Color.FromArgb(
             ((160 * 128 + (255 - 160) * c.R + 127) / 255), ((160 * 128 + (255 - 160) * c.G + 127) / 255), ((160 * 128 + (255 - 160) * c.B + 127) / 255)); }

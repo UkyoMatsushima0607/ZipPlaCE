@@ -49,11 +49,6 @@ namespace ZipPla
             return getIconBitmap(fileName, useFileAttrinutes, isSmall: false);
         }
 
-        public static Tuple<string, Bitmap> GetTypeNameAndSmallIconBitmap(string fileName, bool useFileAttrinutes)
-        {
-            return getTypeNameAndIconBitmap(fileName, useFileAttrinutes, isSmall: true);
-        }
-
         private static Bitmap getIconBitmap(string fileName, bool useFileAttrinutes, bool isSmall)
         {
             SHFILEINFOW shinfo = new SHFILEINFOW();
@@ -73,35 +68,6 @@ namespace ZipPla
                     var unm = Icon.FromHandle(shinfo.hIcon);
                     return (Bitmap)unm.ToBitmap();
                 }
-            }
-            finally
-            {
-                if (shinfo.hIcon != IntPtr.Zero)
-                    DestroyIcon(shinfo.hIcon); // DestroyIcon が必要なものは返さない
-            }
-        }
-
-        private static Tuple<string, Bitmap> getTypeNameAndIconBitmap(string fileName, bool useFileAttrinutes, bool isSmall)
-        {
-            SHFILEINFOW shinfo = new SHFILEINFOW();
-            try
-            {
-                var flag = ShellFileInfoFlags.SHGFI_TYPENAME | ShellFileInfoFlags.SHGFI_ICON;
-                if (useFileAttrinutes) flag |= ShellFileInfoFlags.SHGFI_USEFILEATTRIBUTES;
-                if (isSmall) flag |= ShellFileInfoFlags.SHGFI_SMALLICON;
-                Win32.SHGetFileInfoW(fileName, FileAttributesFlags.FILE_ATTRIBUTE_NORMAL,
-                    ref shinfo, (uint)Marshal.SizeOf(shinfo), flag);
-                Bitmap iconBitmap;
-                if (shinfo.hIcon == IntPtr.Zero)
-                {
-                    iconBitmap = null;
-                }
-                else
-                {
-                    var unm = Icon.FromHandle(shinfo.hIcon);
-                    iconBitmap = (Bitmap)unm.ToBitmap();
-                }
-                return Tuple.Create(shinfo.szTypeName, iconBitmap);
             }
             finally
             {

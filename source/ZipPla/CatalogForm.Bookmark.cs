@@ -984,11 +984,6 @@ namespace ZipPla
             catch { return false; }
         }
 
-        private IEnumerable<DataGridViewRow> getDirectoryListSelectedRows()
-        {
-            foreach (DataGridViewRow row in dgvDirectoryList.SelectedRows) yield return row;
-        }
-
         private async void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var selectedRows = (from DataGridViewRow row in dgvDirectoryList.SelectedRows orderby row.Index select row).ToArray();

@@ -17,11 +17,6 @@ namespace ZipPla
 
         private bool activatorReady = false;
         MouseEventArgs mouseEventCanceler = null;
-        public bool GetActivatorReady()
-        {
-            return activatorReady;
-        }
-
         public void CancelAcrivatorReady(MouseEventArgs e)
         {
             activatorReady = false;

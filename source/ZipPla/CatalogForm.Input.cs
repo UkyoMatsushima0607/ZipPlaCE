@@ -186,29 +186,6 @@ namespace ZipPla
             return true;
         }
 
-        private void OpenSelectedArchiveInBuiltInViewer()
-        {
-            OpenInBuiltInViewer(tvCatalog.SelectedIndex);
-        }
-
-        private void checkFileOrDirectoryExists(string path, bool isDirectory)
-        {
-            if (isDirectory)
-            {
-                if (!Directory.Exists(path))
-                {
-                    throw new DirectoryNotFoundException();
-                }
-            }
-            else
-            {
-                if (!File.Exists(path))
-                {
-                    throw new FileNotFoundException(null, path);
-                }
-            }
-        }
-
         private bool setDropDownList()
         {
             if (CloseVisibleContextMenuStrips_ContextMenuStripCollection == null)
@@ -764,11 +741,6 @@ namespace ZipPla
         private void middleClickContextMenuPrepareAndShow(Point point)
         {
             contextMenuPrepareAndShow(point, MiddleClickContextMenu);
-        }
-
-        private void ctrlRightClickContextMenuPrepareAndShow(Point point)
-        {
-            contextMenuPrepareAndShow(point, ControlRightClickContextMenu);
         }
 
         private void contextMenuPrepareAndShow(Point point, CatalogFormConetxtMenu menu)

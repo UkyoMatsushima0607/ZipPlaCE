@@ -945,45 +945,5 @@ namespace ZipPla
 
             public static readonly VectorD Zero = new VectorD(0, 0);
         }
-
-        private static double sharpness(VectorD delta, VectorD preDelta)
-        {
-            try
-            {
-                if (delta.IsZero)
-                {
-                    return preDelta.IsZero ? 0 : double.PositiveInfinity;
-                }
-                else if (preDelta.IsZero)
-                {
-                    return double.PositiveInfinity;
-                }
-
-                var del2 = delta.Length2;
-                var pre2 = preDelta.Length2;
-                if (del2 < pre2)
-                {
-                    var temp = delta;
-                    delta = preDelta;
-                    preDelta = temp;
-                    pre2 = del2;
-                }
-
-                var r = (delta.X * preDelta.X + delta.Y * preDelta.Y) / pre2;
-                var i = (delta.X * preDelta.Y - delta.Y * preDelta.X) / pre2;
-
-                //var logR = Math.Log(r * r + i * i) / 2;
-                //var logI = Math.Atan2(r, i);
-
-                var logR = r - 1;
-                var logI = i;
-
-                return logR * logR + logI * logI;
-            }
-            catch
-            {
-                return double.PositiveInfinity;
-            }
-        }
     }
 }

@@ -236,12 +236,10 @@ namespace ZipPla
 #endif
 
 
-            //MessageBox.Show($"{ViewerFormImageFilter.ParallelBreakTestCode()}"); return;
 
             //string[] cmds = Environment.GetCommandLineArgs();
             //string[] cmds = (from rawPath in Environment.GetCommandLineArgs() select GetTargetIfItIsLink(rawPath)).ToArray();
 
-            //LongVectorImageResizer.fastSinErrorTest(); return;
 
             var rawCommands = Environment.GetCommandLineArgs();
             StartMulticoreJit(rawCommands);

@@ -479,20 +479,6 @@ namespace ZipPla
             var a0 = a[0];
             return a0 != null && a0.Count == 1 && a0.First() == b;
         }
-        
-        public static bool competesShortcut(HashSet<Keys>[] a, HashSet<Keys>[] b)
-        {
-            if (equalsShortcut(a, b)) return true;
-
-            if (equalsShortcut(a, Keys.LButton))
-            {
-                a = b;
-            }
-            else if (!equalsShortcut(b, Keys.LButton)) return false;
-            if (a == null || a.Length != 1) return false;
-            var a0 = a[0];
-            return a0 != null && a0.Count == 1 && ExtendedKeys.IsLButton((System.Windows.Forms.Keys)a0.First());
-        }
 
         public static bool WeaklyCompetesShortcut(HashSet<Keys>[] a, HashSet<Keys>[] b)
         {

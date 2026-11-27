@@ -75,13 +75,5 @@ namespace ZipPla
             
             // <extra>\command が見つからなければ次の候補に移る
         }
-
-        private static bool TryGetCommandFromType(string type, string extra, out string result)
-        {
-            result = null;
-            return type != null &&
-                TryGetCommandFromTypeRoot(ToUserTypeRoot(type), extra, out result) ||
-                TryGetCommandFromTypeRoot(ToDefaultTypeRoot(type), extra, out result);
-        }
     }
 }

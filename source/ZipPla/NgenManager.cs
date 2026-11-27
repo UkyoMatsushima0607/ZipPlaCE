@@ -111,15 +111,6 @@ namespace ZipPla
             Display(ngen, target, out var ngenRoots, out var ngenRootsThatDependOnTarget, out var nativeImages);
             return ngenRootsThatDependOnTarget.Any(path => ignoreFiles.Contains(path) || !File.Exists(path));
         }
-        
-        private static async Task<bool> ExecNgenForEditAsync(string ngen, string action, string target)
-        {
-            using (var p = Process.Start(GetNgenStartInfo(ngen, action, target, runas: true)))
-            {
-                await Task.Run(() => p.WaitForExit());
-                return p.ExitCode == 0;
-            }
-        }
 
         private static ProcessStartInfo GetNgenStartInfo(string ngen, string action, string target, bool runas)
         {

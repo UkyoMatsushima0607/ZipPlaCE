@@ -46,11 +46,6 @@ namespace ZipPla
         {
             return (key & (Keys)0x00ffffff) == Keys.LButton;
         }
-
-        public static bool IsLButtonOnSpecifiedPosition(Keys key)
-        {
-            return key != Keys.LButton && key != LButtonDouble && IsLButton(key);
-        }
     }
 
     public class DoubleClickChecker
@@ -631,11 +626,6 @@ namespace ZipPla
         }
 
         bool keyboardShortcutExcutingWithKeyOrMouseDown = false;
-        public bool KeyboardShortcutExcutingWithKeyOrMouseDown()
-        {
-            return keyboardShortcutExcutingWithKeyOrMouseDown;
-        }
-
 
         private bool doneAction = false;
         private void checkState(bool isUp, bool programKeyUp)
@@ -882,16 +872,6 @@ namespace ZipPla
         
 
 #if DEBUG
-        public static string GetKeysString()
-        {
-            var result = new StringBuilder();
-            var t = typeof(System.Windows.Forms.Keys);
-            foreach (var name in Enum.GetNames(t)) // 別名を取得するため GetValues は使わない
-            {
-                result.AppendLine($"{name} = {(int)Enum.Parse(t, name)},");
-            }
-            return result.ToString();
-        }
 #endif
 
     }

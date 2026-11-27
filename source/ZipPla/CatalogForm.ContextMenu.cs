@@ -1107,48 +1107,6 @@ namespace ZipPla
             }
         }
 
-        private void SetSelectedArchiveRating(int? rating)
-        {
-            if (tvCatalog.SelectedIndicesCount == 0) return;
-
-            var indices = new List<int>();
-            var oldNames = new List<string>();
-            var newNames = new List<string>();
-
-            lock (ZipPathArrayLocker)
-            {
-                if (ZipPathArray != null && ZipNameArray != null)
-                {
-                    var count = ZipPathArray.Length;
-                    if (ZipNameArray.Length != count) return;
-
-                    foreach (var selectedIndex in tvCatalog.SelectedIndices)
-                    {
-                        if (selectedIndex >= 0 && selectedIndex < count) // 耐仕様変更
-                        {
-                            var path = ZipPathArray[selectedIndex];
-                            var name = ZipNameArray[selectedIndex];
-                            if (!string.IsNullOrEmpty(path) && !string.IsNullOrEmpty(name))
-                            {
-                                var zipPlaInfo = new ZipPlaInfo(path);
-                                zipPlaInfo.Rating = rating;
-                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
-
-                                if (path != newPath)
-                                {
-                                    indices.Add(selectedIndex);
-                                    oldNames.Add(path);
-                                    newNames.Add(newPath);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (indices.Count > 0) RenameShownArchive(indices.ToArray(), oldNames.ToArray(), newNames.ToArray(), atFirstArrayChange: true);
-        }
-
         private void SetRating(int? rating, int index)
         {
             if (index < 0) return;
@@ -1168,90 +1126,6 @@ namespace ZipPla
             var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
 
             RenameShownArchive(index, path, newPath);
-        }
-
-        private void SetSelectedArchivePageSequence(BindingMode? bindingMode)
-        {
-            if (tvCatalog.SelectedIndicesCount == 0) return;
-
-            var indices = new List<int>();
-            var oldNames = new List<string>();
-            var newNames = new List<string>();
-
-            lock (ZipPathArrayLocker)
-            {
-                if (ZipPathArray != null && ZipNameArray != null)
-                {
-                    var count = ZipPathArray.Length;
-                    if (ZipNameArray.Length != count) return;
-
-                    foreach (var selectedIndex in tvCatalog.SelectedIndices)
-                    {
-                        if (selectedIndex >= 0 && selectedIndex < count) // 耐仕様変更
-                        {
-                            var path = ZipPathArray[selectedIndex];
-                            var name = ZipNameArray[selectedIndex];
-                            if (!string.IsNullOrEmpty(path) && !string.IsNullOrEmpty(name))
-                            {
-                                var zipPlaInfo = new ZipPlaInfo(path);
-                                zipPlaInfo.BindingModeForSet = bindingMode;
-                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
-
-                                if (path != newPath)
-                                {
-                                    indices.Add(selectedIndex);
-                                    oldNames.Add(path);
-                                    newNames.Add(newPath);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (indices.Count > 0) RenameShownArchive(indices.ToArray(), oldNames.ToArray(), newNames.ToArray(), atFirstArrayChange: true);
-        }
-
-        private void ClearSelectedArchiveThumbnailSetting()
-        {
-
-            if (tvCatalog.SelectedIndicesCount == 0) return;
-
-            var indices = new List<int>();
-            var oldNames = new List<string>();
-            var newNames = new List<string>();
-
-            lock (ZipPathArrayLocker)
-            {
-                if (ZipPathArray != null && ZipNameArray != null)
-                {
-                    var count = ZipPathArray.Length;
-                    if (ZipNameArray.Length != count) return;
-                    foreach (var selectedIndex in tvCatalog.SelectedIndices)
-                    {
-                        if (selectedIndex >= 0 && selectedIndex < count) // 耐仕様変更
-                        {
-                            var path = ZipPathArray[selectedIndex];
-                            var name = ZipNameArray[selectedIndex];
-                            if (!string.IsNullOrEmpty(path) && !string.IsNullOrEmpty(name))
-                            {
-                                var zipPlaInfo = new ZipPlaInfo(path);
-                                zipPlaInfo.ThumbnailInfo = null;
-                                var newPath = zipPlaInfo.GetPathOfCurrentInfo(name[name.Length - 1] == Path.DirectorySeparatorChar);
-
-                                if (path != newPath)
-                                {
-                                    indices.Add(selectedIndex);
-                                    oldNames.Add(path);
-                                    newNames.Add(newPath);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (indices.Count > 0) RenameShownArchive(indices.ToArray(), oldNames.ToArray(), newNames.ToArray(), atFirstArrayChange: true);
         }
 
         enum PageSequence { NotClicked, Cleared, LeftToRight, RightToLeft, SinglePage }
@@ -1662,12 +1536,6 @@ namespace ZipPla
                     yield return coloredProfile; // yield は try の外
                 }
             }
-        }
-
-        private bool CanReloadSelectedItem()
-        {
-            var selectedIndex = tvCatalog.SelectedIndex;
-            return selectedIndex >= 0 && FileCountArray != null && selectedIndex < FileCountArray.Length;
         }
     }
 }

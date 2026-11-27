@@ -132,7 +132,6 @@ namespace ZipPla
         };
         private RectangleF KnobBound = new RectangleF(-0.15f, 0.25f, 0.3f, 0.55f);
         //private Region KnobRegion = new Region(new RectangleF(-0.15f, 0.25f, 0.3f, 0.55f));
-        private Color centerLineColor = Color.Black;
         private Pen centerLinePen = SystemPens.ActiveBorder;
         private Pen scaleMarkPen = SystemPens.ControlDarkDark;
         private Brush scaleMarkBrush = SystemBrushes.ControlDark;

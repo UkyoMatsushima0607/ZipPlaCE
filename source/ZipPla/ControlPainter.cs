@@ -34,19 +34,10 @@ namespace ZipPla
         {
             FullScaledFillPolygon(sender as Control, e, LeftArrow);
         }
-        public static void FillLeftArrow(Control control, PaintEventArgs e)
-        {
-            FullScaledFillPolygon(control, e, LeftArrow);
-        }
         public static void FillRightArrowControlHandler(object sender, PaintEventArgs e)
         {
             FullScaledFillPolygon(sender as Control, e, RightArrow);
         }
-        public static void FillRightArrow(Control control, PaintEventArgs e)
-        {
-            FullScaledFillPolygon(control, e, RightArrow);
-        }
-        
         public static void FillLeftTriangle(Control control, PaintEventArgs e)
         {
             FullScaledFillPolygon(control, e, LeftTriangle);
@@ -126,12 +117,5 @@ namespace ZipPla
         }
 
         private enum ButtonState { Disabled, Normal, Entered, Pushed}
-        private static ButtonState GetButtonState(Button button)
-        {
-            if (!button.Enabled) return ButtonState.Disabled;
-            if (!button.Bounds.Contains(button.PointToClient(Cursor.Position))) return ButtonState.Normal;
-            if (Control.MouseButtons != MouseButtons.Left) return ButtonState.Entered;
-            return ButtonState.Pushed;
-        }
     }
 }

@@ -421,9 +421,6 @@ namespace ZipPla
 
     public class MoveLocationProvider : ApplicationProvider
     {
-        private static readonly Regex virtualOrSmartRegex =
-            new Regex($"\\.(?:sor|{SmartFolder.ExtensionWithoutPeriodInLower})$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
         public static readonly Image Icon = Properties.Resources.light.ToBitmap();
         protected override Image GetMenuIcon(string[] path, out bool iconIsStatic)
         {

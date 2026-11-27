@@ -98,19 +98,6 @@ namespace ZipPla
             }
         }
 
-        public static PixelFormat FlattenFormat(PixelFormat pixelFormat)
-        {
-            if((pixelFormat & PixelFormat.Indexed) == PixelFormat.Indexed)
-            {
-                return PixelFormat.Format24bppRgb;
-            }
-            else
-            {
-                return pixelFormat;
-            }
-            
-        }
-
         private static void DrawBitmap(Bitmap dstBitmap, Rectangle dstRectangle, Bitmap srcBitmap, bool parallel, BackgroundWorker backgroundWorker)
         {
             var srcWidth = srcBitmap.Width;

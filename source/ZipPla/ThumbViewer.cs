@@ -262,14 +262,6 @@ namespace ZipPla
         Brush frameBrush; // 選択用のブラシ
         Brush backBrush;
 
-        public void SetBackAndForeColor(Color backColor)
-        {
-            BackColor = backColor;
-            backBrush?.Dispose();
-            backBrush = new SolidBrush(backColor);
-            ForeColor = ZipTag.GetForeColor(backColor);
-        }
-
         /// <summary>
         /// 必要なデザイナ変数です。
         /// </summary>
@@ -420,24 +412,6 @@ namespace ZipPla
             //OnPaint_VerticalScrollVal = val;
         }
 
-        // 使用する場合 s2d 等の更新が必要
-
-        public void SilentAdd(ThumbViewerItem item)
-        {
-            if (item != null)
-            {
-                item.owner = this;
-                item.index = items.Count;
-
-            }
-            items.Add(item);
-            itemsVersion++;
-            var newD2S = new int[dataIndexToShowIndex.Length + 1];
-            Array.Copy(dataIndexToShowIndex, newD2S, dataIndexToShowIndex.Length);
-            newD2S[dataIndexToShowIndex.Length] = -1;
-            return;
-        }
-
         public void ItemBuffSizeChange(int newLength)
         {
             items.AddRange(new ThumbViewerItem[newLength - items.Count]);
@@ -565,16 +539,6 @@ namespace ZipPla
             var frameWidthPrimary = getFrameWidthPrimary();
             int x = gridOffsetH + col * gridSizeH + frameWidthPrimary.Item1;
             int y = row * gridSizeV + frameWidthPrimary.Item2 + AutoScrollPositionY;
-            int w = thumbWidthCurrent;
-            int h = thumbHeight;
-            return new Rectangle(x, y, w, h);
-        }
-
-        private Rectangle getLocalThumbnailRectangle()
-        {
-            var frameWidthPrimary = getFrameWidthPrimary();
-            int x = frameWidthPrimary.Item1;
-            int y = frameWidthPrimary.Item2;
             int w = thumbWidthCurrent;
             int h = thumbHeight;
             return new Rectangle(x, y, w, h);
@@ -1023,26 +987,6 @@ namespace ZipPla
             return a;
         }
 
-        private int widthToStringLength2(string text, Font font, int width)
-        {
-            var a = 0;
-            var b = text.Length + 1;
-            while (a < b - 1)
-            {
-                var c = (a + b) / 2;
-                if (TextRenderer.MeasureText(text.Substring(0, c), font, new Size(int.MaxValue, int.MinValue),
-                    TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix).Width <= width)
-                {
-                    a = c;
-                }
-                else
-                {
-                    b = c;
-                }
-            }
-            return a;
-        }
-
         // グリッドの列数と行数を計算
         private int thumbWidthCurrent;
         public bool StopUpdateRowsCols = false;
@@ -1273,48 +1217,6 @@ namespace ZipPla
 
                     SelectedIndexChanged?.Invoke(this, se);
                 }
-            }
-        }
-
-        public int FirstSelectedIndex
-        {
-            get
-            {
-                if (selectedIndices.Count == 0) return -1;
-                var result = -1;
-                var topShowIndex = showIndexToDataIndex.Length;
-                foreach (var index in selectedIndices)
-                {
-                    var showIndex = dataIndexToShowIndex[index];
-                    if (showIndex < topShowIndex)
-                    {
-                        topShowIndex = showIndex;
-                        result = index;
-                    }
-                }
-                return result;
-            }
-        }
-
-        public int FirstDisplayedSelectedIndex
-        {
-            get
-            {
-                if (selectedIndices.Count == 0) return -1;
-                var result = -1;
-                var topShowIndex = showIndexToDataIndex.Length;
-                var displayedStartShowIndex = DisplayedStartShowIndex;
-                var displayedStopShowIndex = DisplayedStopShowIndex;
-                foreach (var index in selectedIndices)
-                {
-                    var showIndex = dataIndexToShowIndex[index];
-                    if (showIndex < topShowIndex && displayedStartShowIndex <= showIndex && showIndex < displayedStopShowIndex)
-                    {
-                        topShowIndex = showIndex;
-                        result = index;
-                    }
-                }
-                return result;
             }
         }
 

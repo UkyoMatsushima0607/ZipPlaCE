@@ -2572,7 +2572,6 @@
     <Compile Include="Susie\Susie.cs" />
     <Compile Include="Susie\SusiePlugin.cs" />
     <Compile Include="Susie\Win32.cs" />
-    <Compile Include="SystemInfoManager.cs" />
     <Compile Include="TagEditForm.cs">
       <SubType>Form</SubType>
     </Compile>

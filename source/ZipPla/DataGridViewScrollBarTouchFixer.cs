@@ -131,15 +131,5 @@ namespace ZipPla
         private static ScrollBar GetVerticalScrollBar(DataGridView dataGridView) { return (ScrollBar)VerticalScrollBarInfo.GetValue(dataGridView); }
         private static ScrollBar GetHorizontalScrollBar(DataGridView dataGridView) { return (ScrollBar)HorizontalScrollBarInfo.GetValue(dataGridView); }
 
-        public static Rectangle GetClientRectangleWithoutScrollBars(DataGridView dataGridView)
-        {
-            var verticalScrollBar = GetVerticalScrollBar(dataGridView);
-            var horizontalScrollBar = GetHorizontalScrollBar(dataGridView);
-            var clientRectangle = dataGridView.ClientRectangle;
-            if (verticalScrollBar.Visible) clientRectangle.Width -= verticalScrollBar.Width;
-            if (horizontalScrollBar.Visible) clientRectangle.Height -= horizontalScrollBar.Height;
-            return clientRectangle;
-        }
-
     }
 }

@@ -98,36 +98,11 @@ namespace ZipPla
             return NearToWhite(backColor) ? Color.Black : Color.White;
         }
 
-        private static double getGrayScale(Color color)
-        {
-            return 0.299 * color.R + 0.587 * color.G + 0.114 * color.B;
-        }
-
-        private static double getLInfinityGrayScale(Color color)
-        {
-            return Math.Max(Math.Max(0.299 * color.R, 0.587 * color.G), 0.114 * color.B) / 0.587;
-        }
-
-        private static double getGeometricGrayScale(Color color)
-        {
-            return (0.299*0.299) * color.R* color.R + (0.587* 0.587) * color.G * color.G + (0.114* 0.114) * color.B * color.B;
-        }
-
-        private static double getConsideringGammaGrayScale(Color color)
-        {
-            return Math.Pow(0.299 * color.R, 2.2) + Math.Pow(0.587 * color.G, 2.2) + Math.Pow(0.114 * color.B, 2.2);
-        }
-
         private static double getLInfinityConsideringGammaGrayScale(Color color)
         {
             return Math.Max(Math.Max((0.299 / 0.587) * Math.Pow(color.R / 255.0, 2.2),
                (0.587 / 0.587) * Math.Pow(color.G / 255.0, 2.2)), (0.114 / 0.587) * Math.Pow(color.B / 255.0, 2.2));
 
-        }
-
-        private static double getConsideringGammaGeometricGrayScale(Color color)
-        {
-            return Math.Pow(0.299 * color.R, 2.2 * 2) + Math.Pow(0.587 * color.G, 2.2 * 2) + Math.Pow(0.114 * color.B, 2.2 * 2);
         }
 
         public static bool NearToWhite(Color color)

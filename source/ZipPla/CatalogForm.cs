@@ -4162,12 +4162,6 @@ namespace ZipPla
             Close();
         }
 
-        private void reloadAllThumbnailsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            //MakePreview(tvCatalog.ScrollBarPercentage, tvCatalog.SelectedIndex);
-            UpdatePreview();
-        }
-
 
         private void editLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {

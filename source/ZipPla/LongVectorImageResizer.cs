@@ -50,23 +50,6 @@ namespace ZipPla
             }
         }
 
-#if DEBUG
-        public static void fastSinErrorTest()
-        {
-            var ae = 0.0;
-            var re = 0.0;
-            for (var x = 0.0; x <  100; x += 0.0001)
-            {
-                var st = Math.Sin(x);
-                var sa = fastSin(x);
-                var e = Math.Abs(st - sa);
-                if (e > ae) ae = e;
-                e = e / Math.Abs(st);
-                if (e > re) re = e;
-            }
-            System.Windows.Forms.MessageBox.Show($"log2 ae = {Math.Log(ae, 2)}, log2 re = {Math.Log(re, 2)}"); // おおよそ -18, -17 と表示される 
-        }
-#endif
         // sin をテーブルを基準に 3 次のテイラー展開で近似
         // 誤差の主要項の係数が sin になるため相対誤差が保証される
         // 係数を全て直書きして switch で分岐すると逆に遅くなった
@@ -1165,54 +1148,6 @@ namespace ZipPla
         }
 
 #if DEBUG
-        public static void gammaTableTest()
-        {
-            byte po18 = 0, po13 = 0, po14 = 0;
-            for (var i = 0; i < 256; i++)
-            {
-               var o18 = fromLinearIn18Out31_gamma2_2((ulong)(toLinear18_gamma2_2(i) + (1UL << 17) + 0.5) << (31 - 18));
-                if (o18 != i)
-                {
-                    System.Windows.Forms.MessageBox.Show($"18: {o18} != {i}");
-                    break;
-                }
-                var o13 = fromLinearIn13Out20_gamma2_2((ulong)(toLinear13_gamma2_2(i) + (1UL << 12) + 0.5) << (20 - 13));
-                if (o13 != i)
-                {
-                    System.Windows.Forms.MessageBox.Show($"13: {o13} != {i}");
-                    break;
-                }
-                var o14 = fromLinearIn14Out21_gamma2_2((ulong)(toLinear14_gamma2_2(i) + (1UL << 13) + 0.5) << (21 - 14));
-                if (o14 != i)
-                {
-                    System.Windows.Forms.MessageBox.Show($"14: {o14} != {i}");
-                    break;
-                }
-                
-                if (i > 0)
-                {
-                    if (o18 <= po18)
-                    {
-                        System.Windows.Forms.MessageBox.Show($"18p: {o18} <= {po18}");
-                        break;
-                    }
-                    if (o13 <= po13)
-                    {
-                        System.Windows.Forms.MessageBox.Show($"13p: {o13} <= {po13}");
-                        break;
-                    }
-                    if (o14 <= po14)
-                    {
-                        System.Windows.Forms.MessageBox.Show($"14p: {o14} <= {po14}");
-                        break;
-                    }
-
-                }
-                po18 = o18; po13 = o13; po14 = o14;
-            }
-            System.Windows.Forms.MessageBox.Show("finish");
-        }
-
         const string returnCode = "\r\n"; 
         public static string CreateFromLinear(int bitsDiff, string name, Func<double,double> toLinear, ulong offset)
         {

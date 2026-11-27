@@ -276,15 +276,6 @@ namespace ZipPla
                 InvokeKeyDown();
             }
         }
-
-        private static Keys GetKeyCode(MouseButtons button)
-        {
-            switch(button)
-            {
-                case MouseButtons.Left: return Keys.LButton;
-                default: return Keys.None;
-            }
-        }
     }
 
     public class SimplifiedKeyToHold : SimplifiedKey

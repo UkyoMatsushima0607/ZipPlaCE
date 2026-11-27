@@ -1004,26 +1004,6 @@ namespace ZipPla
             filterAdd("+r>=" + ratingReferenceValue, weak: true);
         }
 
-        private void setColors()
-        {
-            BackColor = Color.Black;
-
-            dgvDirectoryList.BackgroundColor = Color.Black;
-            dgvDirectoryList.DefaultCellStyle.BackColor = dgvDirectoryList.BackgroundColor;
-            dgvDirectoryList.DefaultCellStyle.ForeColor = ZipTag.GetForeColor(dgvDirectoryList.BackgroundColor);
-
-
-            tvCatalog.SetBackAndForeColor(Color.Black);
-            MaskBrush = new SolidBrush(Color.FromArgb(MaskAlpha, tvCatalog.BackColor));
-
-            dgvFileList.BackgroundColor = Color.Black;
-            dgvFileList.DefaultCellStyle.BackColor = dgvFileList.BackgroundColor;
-            dgvFileList.DefaultCellStyle.ForeColor = ZipTag.GetForeColor(dgvFileList.BackgroundColor);
-
-
-            //ratingFilterToolStripMenuItem.BackColor = Color.Black;
-        }
-
         private void editDropdownOfFiltersToolStripMenuItem_Click(object sender, EventArgs e)
         {
             openFilterEditForm();

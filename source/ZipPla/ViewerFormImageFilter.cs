@@ -145,11 +145,6 @@ namespace ZipPla
         }
 
 
-        public bool NeedToCheckWhetherColorOrNot()
-        {
-            return ToneCurveEnabled;// || MoireRemoverEnabled;
-        }
-
         public void Set(ViewerFormImageFilter other)
         {
             if (other == null)
@@ -744,43 +739,6 @@ namespace ZipPla
 
         const int GrayScaleThreshold = 2;
 
-#if DEBUG
-        // これは真を返す
-        public static bool ParallelBreakTestCode()
-        {
-            var success = false;
-            Parallel.For(0, 1, () => false,
-            (y, state, subResult) =>
-            {
-                state.Break();
-                return true;
-            },
-            subResult =>
-            {
-                success = subResult;
-            });
-            return success;
-        }
-        // よって GetMaxColorDiffProperly でこの様な実装は不要
-        public static bool ParallelBreakTestCode2()
-        {
-            var success = false;
-            var successForOnlySuccess = false;
-            Parallel.For(0, 1, () => false,
-            (y, state, subResult) =>
-            {
-                successForOnlySuccess = true;
-                state.Break();
-                return true;
-            },
-            subResult =>
-            {
-                success = subResult;
-            });
-            return success || successForOnlySuccess;
-        }
-#endif
-
         // 正確に見る実装
         // 入力がカラーならすぐに終了する
         // bw があればキャンセルを見る（キャンセルされたら null）
@@ -913,99 +871,6 @@ namespace ZipPla
                     return g - r;
                 }
             }
-        }
-
-        private static void Binarization(BitmapData data)
-        {
-            unsafe
-            {
-                var scan0 = (byte*)data.Scan0;
-                var stride = data.Stride;
-                var hist = new ulong[256];
-                var w3 = data.Width * 3;
-                var h = data.Height;
-                Parallel.For(0, h, () =>
-                {
-                    // 一番内側のループで配列の境界チェックを行わないようにする
-                    var handle = GCHandle.Alloc(new ulong[256], GCHandleType.Pinned);
-                    var pointer = handle.AddrOfPinnedObject().ToPointer();
-                    return Tuple.Create((IntPtr)pointer, handle);
-                }
-                , (y, state, resource) =>
-                {
-                    var localHist = (ulong*)resource.Item1;
-                    var scan = scan0 + y * stride;
-                    for (var x3 = 0; x3 < w3; x3 += 3)
-                    {
-                        var p = scan + x3;
-                        var g = ToGrayScale(p);
-                        p[0] = g;
-                        localHist[g]++;
-                    }
-                    return resource;
-                },
-                resource =>
-                {
-                    // ZipPla CE: 確保したのは ulong[256] なので ulong* で数える（byte* では 256 で一周していた）。
-                    // localFinally は複数のスレッドから同時に呼ばれるので、足し込みはロックの中で行う
-                    var localHist = (ulong*)resource.Item1;
-                    lock (hist) for (var i = 0; i < 256; i++) hist[i] += localHist[i];
-                    resource.Item2.Free();
-                });
-
-                var t = DiscriminantAnalysisMethod(hist);
-
-                Parallel.For(0, h, y =>
-                {
-                    var scan = scan0 + y * stride;
-                    for (var x3 = 0; x3 < w3; x3 += 3)
-                    {
-                        var p = scan + x3;
-                        var g = p[0];
-                        var b = g < t ? (byte)0 : (byte)255;
-                        p[0] = p[1] = p[2] = b;
-                    }
-                });
-            }
-        }
-
-        private static unsafe byte ToGrayScale(byte* p)
-        {
-            return (byte)((114 * p[0] + 587 * p[1] + 299 * p[2] + 500) / 1000);
-        }
-
-        private static int DiscriminantAnalysisMethod(ulong[] hist)
-        {
-
-            double s0 = 0;
-            ulong w0 = 0;
-            double s0s1 = 0;
-            ulong w0w1 = 0;
-            for (int i = 0; i < hist.Length; i++)
-            {
-                var c = hist[i];
-                s0s1 += ToLinear[i] * c;
-                w0w1 += c;
-            }
-            double hMax = 0;
-            int tMax = 0;
-            for (var t = 1; t < 255; t++) // t == 0 と t == 255 の評価値は同じなので tMax == 255 にはならない
-            {
-                var t1 = t - 1;
-                var c = hist[t1];
-                w0 += c; if (w0 == 0) continue;
-                var w1 = w0w1 - w0; if (w1 == 0) break;
-                s0 += ToLinear[t1] * c;
-                var s1 = s0s1 - s0;
-                var m0m1 = s0 / w0 - s1 / w1;
-                var h = (double)w0 * w1 * m0m1 * m0m1;
-                if (h > hMax)
-                {
-                    hMax = h;
-                    tMax = t;
-                }
-            }
-            return tMax;
         }
 
         const double standardGamma = 2.2;
