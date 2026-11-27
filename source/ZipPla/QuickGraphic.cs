@@ -183,99 +183,63 @@ namespace ZipPla
                 {
                     if (srcWidth < (dstSize.Width << 1) || srcHeight < (dstSize.Height << 1))
                     {
-                        if (backgroundWorker != null)
-                        {
-                            Bilinear(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
-                        }
-                        else
-                        {
-                            Bilinear(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel);
-                        }
+                        Bilinear(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
                     }
                     else
                     {
-                        if (backgroundWorker != null)
-                        {
-                            AntiAliasing2x(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
-                        }
-                        else
-                        {
-                            AntiAliasing2x(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel);
-                        }
+                        AntiAliasing2x(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
                     }
                 }
                 else
                 {
                     if (srcWidth < (dstSize.Width << 1) || srcHeight < (dstSize.Height << 1))
                     {
-                        if (backgroundWorker != null)
-                        {
-                            BilinearForAlpha(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
-                        }
-                        else
-                        {
-                            BilinearForAlpha(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel);
-                        }
+                        BilinearForAlpha(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
                     }
                     else
                     {
-                        if (backgroundWorker != null)
-                        {
-                            AntiAliasing2xForAlpha(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
-                        }
-                        else
-                        {
-                            AntiAliasing2xForAlpha(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel);
-                        }
+                        AntiAliasing2xForAlpha(dstAddress, dstSize.Width, dstSize.Height, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, parallel, backgroundWorker);
                     }
                 }
             }
         }
 
 
-        private unsafe static void BilinearForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
+        /// <summary>
+        /// 行ごとの処理 row を 0〜height-1 について呼ぶ。parallel なら並列に。backgroundWorker があれば、キャンセルされたら残りの行を処理しない
+        /// </summary>
+        private static void ForEachRow(int height, bool parallel, BackgroundWorker backgroundWorker, Action<int> row)
         {
-            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
             if (!parallel)
             {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
+                for (var y = 0; y < height; y++)
                 {
-                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
+                    if (backgroundWorker != null && backgroundWorker.CancellationPending) return;
+                    row(y);
                 }
+            }
+            else if (backgroundWorker == null)
+            {
+                Parallel.For(0, height, row);
             }
             else
             {
-                Parallel.For(0, dstHeight, yDst =>
+                Parallel.For(0, height, (y, state) =>
                 {
-                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
+                    if (backgroundWorker.CancellationPending)
+                    {
+                        state.Break();
+                        return;
+                    }
+                    row(y);
                 });
             }
         }
 
-        private unsafe static void BilinearForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
-            {
-            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
-            if (!parallel)
-            {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
-                {
-                    if (backgroundWorker.CancellationPending) return;
-                    Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                }
-            }
-            else
-            {
-
-                Parallel.For(0, dstHeight, (yDst, state) =>
+        private unsafe static void BilinearForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker = null)
         {
-            if (backgroundWorker.CancellationPending)
-            {
-                state.Break();
-                return;
-            }
-            Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-        });
-            }
+            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
+            ForEachRow(dstHeight, parallel, backgroundWorker, yDst => Bilinear1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt));
         }
 
         private unsafe static void Bilinear1DForAlpha(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, BilinearXTable xt)
@@ -324,51 +288,12 @@ namespace ZipPla
             }
         }
 
-        private unsafe static void Bilinear(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
+        private unsafe static void Bilinear(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker = null)
         {
             var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
-            if (!parallel)
-            {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
-                {
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                }
-            }
-            else
-            {
-
-                Parallel.For(0, dstHeight, yDst =>
-                {
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                });
-            }
+            ForEachRow(dstHeight, parallel, backgroundWorker, yDst => Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt));
         }
 
-        private unsafe static void Bilinear(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
-        {
-            var xt = new BilinearXTable(srcWidth, dstWidth); // 列ごとの位置と重みは行によらないので 1 回だけ求める
-            if (!parallel)
-            {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
-                {
-                    if (backgroundWorker.CancellationPending) return;
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                }
-            }
-            else
-            {
-                Parallel.For(0, dstHeight, (yDst, state) =>
-                {
-                    if (backgroundWorker.CancellationPending)
-                    {
-                        state.Break();
-                        return;
-                    }
-                    Bilinear1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                });
-            }
-        }
-        
         private unsafe static void Bilinear1D(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, BilinearXTable xt)
         {
             var ySrc = (yDst + 0.5) * srcHeight / dstHeight - 0.5;
@@ -517,51 +442,10 @@ namespace ZipPla
             }
         }
 
-        private unsafe static void AntiAliasing2xForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
+        private unsafe static void AntiAliasing2xForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker = null)
         {
             var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
-            if (!parallel)
-            {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
-                {
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                }
-            }
-            else
-            {
-
-                Parallel.For(0, dstHeight, yDst =>
-                {
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                });
-            }
-        }
-
-        private unsafe static void AntiAliasing2xForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
-        {
-            var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
-            if (!parallel)
-            {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
-                {
-                    if (backgroundWorker.CancellationPending) return;
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                }
-            }
-            else
-            {
-
-                Parallel.For(0, dstHeight, (yDst, state) =>
-                {
-                    if (backgroundWorker.CancellationPending)
-                    {
-                        state.Break();
-                        return;
-                    }
-                    AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                });
-            }
-
+            ForEachRow(dstHeight, parallel, backgroundWorker, yDst => AntiAliasing2x1DForAlpha(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt));
         }
 
         private unsafe static void AntiAliasing2x1DForAlpha(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, AntiAliasing2xXTable xt)
@@ -597,49 +481,10 @@ namespace ZipPla
             }
         }
 
-        private unsafe static void AntiAliasing2x(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
+        private unsafe static void AntiAliasing2x(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker = null)
         {
             var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
-            if (!parallel)
-            {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
-                {
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                }
-            }
-            else
-            {
-                Parallel.For(0, dstHeight, yDst =>
-                {
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                });
-            }
-        }
-
-        private unsafe static void AntiAliasing2x(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel, BackgroundWorker backgroundWorker)
-        {
-            var xt = new AntiAliasing2xXTable(srcWidth, dstWidth); // 列ごとの位置は行によらないので 1 回だけ求める
-            if (!parallel)
-            {
-                for (var yDst = 0; yDst < dstHeight; yDst++)
-                {
-                    if (backgroundWorker.CancellationPending) return;
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                }
-            }
-            else
-            {
-
-                Parallel.For(0, dstHeight, (yDst, state) =>
-                {
-                    if (backgroundWorker.CancellationPending)
-                    {
-                        state.Break();
-                        return;
-                    }
-                    AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt);
-                });
-            }
+            ForEachRow(dstHeight, parallel, backgroundWorker, yDst => AntiAliasing2x1D(dstAddress, yDst, dstWidth, dstHeight, dstStride, dstBytesPerPixel, srcAddress, srcWidth, srcHeight, srcStride, srcBytesPerPixel, xt));
         }
 
         private unsafe static void AntiAliasing2x1D(byte* dstAddress, int yDst, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, AntiAliasing2xXTable xt)
