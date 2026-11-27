@@ -250,28 +250,18 @@ namespace ZipPla
             switch (localSortMode)
             {
                 case SortMode.TypeInAsc:
-                    {
-                        var typeArray = GetTypeNameArray(ZipNameArray);
-                        result = order.OrderBy(x => typeArray[x], GetSortArray_FilePathComparator).ToArray();
-                        break;
-                    }
                 case SortMode.TypeInDesc:
                     {
                         var typeArray = GetTypeNameArray(ZipNameArray);
-                        result = order.OrderByDescending(x => typeArray[x], GetSortArray_FilePathComparator).ToArray();
+                        result = SortBy(order, typeArray, localSortMode == SortMode.TypeInAsc, GetSortArray_FilePathComparator);
                         break;
                     }
                 case SortMode.NameInAsc:
-                    {
-                        var replaced = GetSeparatorReplacedArray(ZipNameArray);
-                        // ZipPathArray でソートすると明らかに表示との不整合が生じる
-                        result = order.OrderBy(x => replaced[x], GetSortArray_NaturalSort).ToArray();
-                        break;
-                    }
                 case SortMode.NameInDesc:
                     {
+                        // ZipPathArray でソートすると明らかに表示との不整合が生じる
                         var replaced = GetSeparatorReplacedArray(ZipNameArray);
-                        result = order.OrderByDescending(x => replaced[x], GetSortArray_NaturalSort).ToArray();
+                        result = SortBy(order, replaced, localSortMode == SortMode.NameInAsc, GetSortArray_NaturalSort);
                         break;
                     }
                 case SortMode.RatingInAsc:
@@ -284,378 +274,77 @@ namespace ZipPla
                         {
                             if (ratingArray[i] < 0) ratingArray[i] = int.MaxValue;
                         }
-                        result = order.OrderBy(x => ratingArray[x]).ToArray();
-                        break;
                     }
-                    else
-                    {
-                        result = order.OrderByDescending(x => ratingArray[x]).ToArray();
-                        break;
-                    }
-                case SortMode.CreatedInAsc:
-                    result = order.OrderBy(x => CreateTimeArray[x]).ToArray();
+                    result = SortBy(order, ratingArray, localSortMode == SortMode.RatingInAsc);
                     break;
+                case SortMode.CreatedInAsc:
                 case SortMode.CreatedInDesc:
-                    result = order.OrderByDescending(x => CreateTimeArray[x]).ToArray();
+                    result = SortBy(order, CreateTimeArray, localSortMode == SortMode.CreatedInAsc);
                     break;
                 case SortMode.AccessedInAsc:
-                    result = order.OrderBy(x => LastAccessTimeArray[x]).ToArray();
-                    break;
                 case SortMode.AccessedInDesc:
-                    result = order.OrderByDescending(x => LastAccessTimeArray[x]).ToArray();
+                    result = SortBy(order, LastAccessTimeArray, localSortMode == SortMode.AccessedInAsc);
                     break;
                 case SortMode.ModifiedInAsc:
-                    result = order.OrderBy(x => ModifiedTimeArray[x]).ToArray();
-                    break;
                 case SortMode.ModifiedInDesc:
-                    result = order.OrderByDescending(x => ModifiedTimeArray[x]).ToArray();
+                    result = SortBy(order, ModifiedTimeArray, localSortMode == SortMode.ModifiedInAsc);
                     break;
                 case SortMode.SizeInAsc:
-                    {
-                        var sizeArray = new long[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            var s = ZipSizeArray[i];
-                            if (s >= 0)
-                            {
-                                var name = ZipNameArray[i];
-                                if (!string.IsNullOrEmpty(name))
-                                {
-                                    var c = name[name.Length - 1];
-                                    if (c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar)
-                                    {
-                                        sizeArray[i] = s;
-                                    }
-                                    else
-                                    {
-                                        sizeArray[i] = long.MaxValue;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                sizeArray[i] = long.MaxValue;
-                            }
-                        }
-                        result = order.OrderBy(x => sizeArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.SizeInDesc:
                     {
-                        var sizeArray = new long[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            var s = ZipSizeArray[i];
-                            if (s >= 0)
-                            {
-                                var name = ZipNameArray[i];
-                                if (!string.IsNullOrEmpty(name))
-                                {
-                                    var c = name[name.Length - 1];
-                                    if (c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar)
-                                    {
-                                        sizeArray[i] = s;
-                                    }
-                                    else
-                                    {
-                                        sizeArray[i] = -1;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                sizeArray[i] = -1; // サイズ不明は昇順と同じくフォルダと一緒に末尾へ
-                            }
-                        }
-                        result = order.OrderByDescending(x => sizeArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.SizeInAsc;
+                        result = SortBy(order, GetFileSizeSortKeys(ZipSizeArray, ZipNameArray, count, asc), asc);
                         break;
                     }
                 case SortMode.VPageInAsc:
-                    {
-                        var pageArray = new int[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            var p = FileCountArray[i];
-                            if (p >= 0)
-                            {
-                                pageArray[i] = p;
-                            }
-                            else
-                            {
-                                pageArray[i] = int.MaxValue - 100 - p;
-                            }
-                        }
-                        result = order.OrderBy(x => pageArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.VPageInDesc:
                     {
-                        var pageArray = new int[count];
-                        Array.Copy(FileCountArray, pageArray, count);
-                        result = order.OrderByDescending(x => pageArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.VPageInAsc;
+                        result = SortBy(order, GetPageCountSortKeys(FileCountArray, count, asc), asc);
                         break;
                     }
                 case SortMode.VResolutionInAsc:
-                    {
-                        var resoArray = new int[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    resoArray[i] = unchecked(size.Width * size.Height); continue;
-                                case 1: resoArray[i] = int.MaxValue - 1; continue;
-                                case 2: resoArray[i] = int.MaxValue; continue;
-                            }
-
-                        }
-                        result = order.OrderBy(x => resoArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.VResolutionInDesc:
                     {
-                        var resoArray = new int[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    resoArray[i] = unchecked(size.Width * size.Height); continue;
-                                case 1: resoArray[i] = -1; continue;
-                                case 2: resoArray[i] = -2; continue;
-                            }
-                        }
-                        result = order.OrderByDescending(x => resoArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.VResolutionInAsc;
+                        result = SortBy(order, GetImageSizeSortKeys(count, getSizeInLock, size => unchecked(size.Width * size.Height), UnknownIntSortKey(asc, 1), UnknownIntSortKey(asc, 2)), asc);
                         break;
                     }
                 case SortMode.VRatioInAsc:
-                    {
-                        var ratioArray = new double[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    ratioArray[i] = size.Height > 0 ? (double)size.Width / size.Height : double.MaxValue * 0.998; continue;
-                                case 1: ratioArray[i] = double.MaxValue * 0.999; continue;
-                                case 2: ratioArray[i] = double.MaxValue; continue;
-                            }
-
-                        }
-                        result = order.OrderBy(x => ratioArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.VRatioInDesc:
                     {
-                        var ratioArray = new double[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    ratioArray[i] = size.Height > 0 ? (double)size.Width / size.Height : double.MaxValue * 0.998; continue;
-                                case 1: ratioArray[i] = -1; continue;
-                                case 2: ratioArray[i] = -2; continue;
-                            }
-
-                        }
-                        result = order.OrderByDescending(x => ratioArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.VRatioInAsc;
+                        // 高さ 0 の比率は向きによらず最大値の手前（昇順では不明の前、降順では先頭）
+                        result = SortBy(order, GetImageSizeSortKeys(count, getSizeInLock, size => size.Height > 0 ? (double)size.Width / size.Height : double.MaxValue * 0.998,
+                            UnknownDoubleSortKey(asc, 1), UnknownDoubleSortKey(asc, 2)), asc);
                         break;
                     }
                 case SortMode.VWidthInAsc:
-                    {
-                        var widthArray = new int[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    widthArray[i] = size.Width; continue;
-                                case 1: widthArray[i] = int.MaxValue - 1; continue;
-                                case 2: widthArray[i] = int.MaxValue; continue;
-                            }
-                        }
-                        result = order.OrderBy(x => widthArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.VWidthInDesc:
                     {
-                        var widthArray = new int[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    widthArray[i] = size.Width; continue;
-                                case 1: widthArray[i] = -1; continue;
-                                case 2: widthArray[i] = -2; continue;
-                            }
-                        }
-                        result = order.OrderByDescending(x => widthArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.VWidthInAsc;
+                        result = SortBy(order, GetImageSizeSortKeys(count, getSizeInLock, size => size.Width, UnknownIntSortKey(asc, 1), UnknownIntSortKey(asc, 2)), asc);
                         break;
                     }
                 case SortMode.VHeightInAsc:
-                    {
-                        var heightArray = new int[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    heightArray[i] = size.Height; continue;
-                                case 1: heightArray[i] = int.MaxValue - 1; continue;
-                                case 2: heightArray[i] = int.MaxValue; continue;
-                            }
-                        }
-                        result = order.OrderBy(x => heightArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.VHeightInDesc:
                     {
-                        var heightArray = new int[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            Size size;
-                            switch (getSizeInLock(i, out size))
-                            {
-                                case 0:
-                                    heightArray[i] = size.Height; continue;
-                                case 1: heightArray[i] = -1; continue;
-                                case 2: heightArray[i] = -2; continue;
-                            }
-                        }
-                        result = order.OrderByDescending(x => heightArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.VHeightInAsc;
+                        result = SortBy(order, GetImageSizeSortKeys(count, getSizeInLock, size => size.Height, UnknownIntSortKey(asc, 1), UnknownIntSortKey(asc, 2)), asc);
                         break;
                     }
                 case SortMode.VLengthInAsc:
-                    {
-                        var timeArray = new double[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            var m = MovieInfoArray[i];
-                            if (m != null)
-                            {
-                                var t = m.Duration;
-                                if (t != default(TimeSpan))
-                                {
-                                    timeArray[i] = t.TotalSeconds;
-                                }
-                                else
-                                {
-                                    timeArray[i] = double.MaxValue * 0.999;
-                                }
-                            }
-                            else if (MovieThumbnailLoader.Supports(ZipNameArray[i]))
-                            {
-                                timeArray[i] = double.MaxValue * 0.999;
-                            }
-                            else
-                            {
-                                timeArray[i] = double.MaxValue;
-                            }
-                        }
-                        result = order.OrderBy(x => timeArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.VLengthInDesc:
                     {
-                        var timeArray = new double[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            var m = MovieInfoArray[i];
-                            if (m != null)
-                            {
-                                var t = m.Duration;
-                                if (t != default(TimeSpan))
-                                {
-                                    timeArray[i] = t.TotalSeconds;
-                                }
-                                else
-                                {
-                                    timeArray[i] = -1;
-                                }
-                            }
-                            else if (MovieThumbnailLoader.Supports(ZipNameArray[i]))
-                            {
-                                timeArray[i] = -1;
-                            }
-                            else
-                            {
-                                timeArray[i] = -2;
-                            }
-                        }
-                        result = order.OrderByDescending(x => timeArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.VLengthInAsc;
+                        result = SortBy(order, GetMovieSortKeys(MovieInfoArray, ZipNameArray, count, m => m.Duration != default(TimeSpan) ? m.Duration.TotalSeconds : (double?)null, asc), asc);
                         break;
                     }
                 case SortMode.VFPSInAsc:
-                    {
-                        var fpsArray = new double[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            var m = MovieInfoArray[i];
-                            if (m != null)
-                            {
-                                var t = m.FPS;
-                                if (t >= 0)
-                                {
-                                    fpsArray[i] = t;
-                                }
-                                else
-                                {
-                                    fpsArray[i] = double.MaxValue * 0.999;
-                                }
-                            }
-                            else if (MovieThumbnailLoader.Supports(ZipNameArray[i]))
-                            {
-                                fpsArray[i] = double.MaxValue * 0.999;
-                            }
-                            else
-                            {
-                                fpsArray[i] = double.MaxValue;
-                            }
-                        }
-                        result = order.OrderBy(x => fpsArray[x]).ToArray();
-                        break;
-                    }
                 case SortMode.VFPSInDesc:
                     {
-                        var fpsArray = new double[count];
-                        for (var i = 0; i < count; i++)
-                        {
-                            var m = MovieInfoArray[i];
-                            if (m != null)
-                            {
-                                var t = m.FPS;
-                                if (t >= 0)
-                                {
-                                    fpsArray[i] = t;
-                                }
-                                else
-                                {
-                                    fpsArray[i] = -1;
-                                }
-                            }
-                            else
-                            {
-                                var name = ZipNameArray[i];
-                                if (!string.IsNullOrEmpty(name) && MovieThumbnailLoader.Supports(name))
-                                {
-                                    fpsArray[i] = -1;
-                                }
-                                else
-                                {
-                                    fpsArray[i] = -2;
-                                }
-                            }
-                        }
-                        result = order.OrderByDescending(x => fpsArray[x]).ToArray();
+                        var asc = localSortMode == SortMode.VFPSInAsc;
+                        result = SortBy(order, GetMovieSortKeys(MovieInfoArray, ZipNameArray, count, m => m.FPS >= 0 ? m.FPS : (double?)null, asc), asc);
                         break;
                     }
                 default:
@@ -721,6 +410,97 @@ namespace ZipPla
             }
 
             return result;
+        }
+
+        // ---- GetSortArray の並べ替えのキー ----
+        // 値が分からない項目（読み込み前など）と対象外の項目は、昇順・降順のどちらでも末尾に来るよう、昇順では最大値側、降順では負の値にする。
+        // rank は 1 が「まだ分からない」、2 が「対象外（画像・動画でないなど）」で、どちらの向きでも 1 が先に来る
+
+        private static int[] SortBy<T>(int[] order, IReadOnlyList<T> keys, bool asc, IComparer<T> comparer = null)
+        {
+            return asc ? order.OrderBy(x => keys[x], comparer).ToArray() : order.OrderByDescending(x => keys[x], comparer).ToArray();
+        }
+
+        internal static int UnknownIntSortKey(bool asc, int rank) => asc ? int.MaxValue - 2 + rank : -rank;
+
+        internal static double UnknownDoubleSortKey(bool asc, int rank) => asc ? (rank == 1 ? double.MaxValue * 0.999 : double.MaxValue) : -rank;
+
+        /// <summary>ファイルサイズ。サイズ不明とフォルダはフォルダと一緒に末尾へ（名前がない項目は 0）</summary>
+        internal static long[] GetFileSizeSortKeys(IReadOnlyList<long> sizes, IReadOnlyList<string> names, int count, bool asc)
+        {
+            var unknown = asc ? long.MaxValue : -1;
+            var keys = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                var s = sizes[i];
+                if (s < 0)
+                {
+                    keys[i] = unknown;
+                    continue;
+                }
+                var name = names[i];
+                if (string.IsNullOrEmpty(name)) continue;
+                var c = name[name.Length - 1];
+                keys[i] = c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar ? s : unknown;
+            }
+            return keys;
+        }
+
+        /// <summary>ページ数。負の値（数えていない・数えられない）は昇順では末尾へ（値ごとの順を保つ）。降順ではそのまま（負なので末尾）</summary>
+        internal static int[] GetPageCountSortKeys(int[] pageCounts, int count, bool asc)
+        {
+            var keys = new int[count];
+            if (!asc)
+            {
+                Array.Copy(pageCounts, keys, count);
+                return keys;
+            }
+            for (var i = 0; i < count; i++)
+            {
+                var p = pageCounts[i];
+                keys[i] = p >= 0 ? p : int.MaxValue - 100 - p;
+            }
+            return keys;
+        }
+
+        internal delegate int ImageSizeGetter(int index, out Size size);
+
+        /// <summary>
+        /// 画像・動画の大きさから作るキー。getSize の戻り値が 0 なら value(size)、1（まだ分からない）なら unknown1、
+        /// 2（対象外）なら unknown2、それ以外（名前がないなど）は既定値
+        /// </summary>
+        internal static T[] GetImageSizeSortKeys<T>(int count, ImageSizeGetter getSize, Func<Size, T> value, T unknown1, T unknown2)
+        {
+            var keys = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                switch (getSize(i, out var size))
+                {
+                    case 0: keys[i] = value(size); break;
+                    case 1: keys[i] = unknown1; break;
+                    case 2: keys[i] = unknown2; break;
+                }
+            }
+            return keys;
+        }
+
+        /// <summary>動画の長さ・FPS。value が null（値がない）か、動画情報がまだない動画は「まだ分からない」、動画でなければ「対象外」</summary>
+        internal static double[] GetMovieSortKeys(IReadOnlyList<MovieInfo> movieInfos, IReadOnlyList<string> names, int count, Func<MovieInfo, double?> value, bool asc)
+        {
+            var keys = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                var m = movieInfos[i];
+                if (m != null)
+                {
+                    keys[i] = value(m) ?? UnknownDoubleSortKey(asc, 1);
+                }
+                else
+                {
+                    keys[i] = UnknownDoubleSortKey(asc, MovieThumbnailLoader.Supports(names[i]) ? 1 : 2);
+                }
+            }
+            return keys;
         }
 
         public static string[] GetTypeNameArray(IReadOnlyList<string> names)
