@@ -2124,7 +2124,6 @@ namespace ZipPla
         NextData nextData; 
         private bool DoNotSaveSetting = false;
         private OpenResult OpenFile(string path) { return OpenFile(path, -1); }
-        private string OpenTriedArchiveFilePath = null;
         private bool OpenFile_UserOpen = false;
         //private bool OpenFileFinishedButStartingIsNotCalled = false;
         private static readonly SortMode[] OpenFile_SuportedSortModes = new SortMode[] {
@@ -2137,7 +2136,6 @@ namespace ZipPla
         {
             ImageLoader.SusieReset();
             path = Program.GetFullPath(path);
-            OpenTriedArchiveFilePath = path;
             if (bmwLoadEachPage.IsBusy)
             {
                 bmwLoadEachPage.CancelAsync();
@@ -3707,78 +3705,6 @@ namespace ZipPla
             }
         }
 
-#if DEBUG
-        private Bitmap ToBitmap24_Standard(Bitmap bmp, PixelFormat pixelFormat)
-        {
-            var result = new Bitmap(bmp.Width, bmp.Height, pixelFormat);
-            try
-            {
-                var rect = new Rectangle(Point.Empty, bmp.Size);
-                var data = bmp.LockBits(rect, ImageLockMode.ReadOnly, pixelFormat);
-                try
-                {
-                    var resultData = result.LockBits(rect, ImageLockMode.WriteOnly, pixelFormat);
-                    try
-                    {
-                        var buff = new byte[data.Height * data.Stride];
-                        Marshal.Copy(data.Scan0, buff, 0, buff.Length);
-                        Marshal.Copy(buff, 0, resultData.Scan0, buff.Length);
-                    }
-                    finally
-                    {
-                        result.UnlockBits(resultData);
-                    }
-                }
-                finally
-                {
-                    bmp.UnlockBits(data);
-                }
-                bmp.Dispose();
-                return result;
-            }
-            catch
-            {
-                result.Dispose();
-                throw;
-            }
-        }
-
-
-        private int[] ColorConverter(int b, int g, int r, int a, PixelFormat pixelFormat)
-        {
-            return ColorConverter(Color.FromArgb(a, r, g, b), pixelFormat);
-        }
-
-        private int[] ColorConverter(Color color, PixelFormat pixelFormat)
-        {
-            using (var bmp = new Bitmap(1, 1))
-            {
-                bmp.SetPixel(0, 0, color);
-                var data = bmp.LockBits(new Rectangle(0, 0, 1, 1), ImageLockMode.ReadOnly, pixelFormat);
-                try
-                {
-                    var pixelFormatSize = Image.GetPixelFormatSize(pixelFormat);
-                    if (pixelFormatSize <= 32)
-                    {
-                        var buff = new byte[4];
-                        System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buff, 0, Math.Min(4, pixelFormatSize / 8));
-                        return new int[4] { buff[0], buff[1], buff[2], buff[3] };
-                    }
-                    else if (pixelFormatSize <= 64)
-                    {
-                        var buff = new short[4];
-                        System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buff, 0, Math.Min(4, pixelFormatSize / 16));
-                        return new int[4] { (ushort)buff[0], (ushort)buff[1], (ushort)buff[2], (ushort)buff[3] };
-                    }
-                    else return new int[4];
-                }
-                finally
-                {
-                    bmp.UnlockBits(data);
-                }
-            }
-        }
-#endif
 
         
         // kernel32.dll が公開しているのは RtlMoveMemory で、CopyMemory はヘッダのマクロの名前。.NET（Core）では見つからず描画が失敗したので、実体を指定する
@@ -6432,7 +6358,6 @@ namespace ZipPla
         private static readonly byte[] HalfGrayTable = Enumerable.Range(0, 256).Select(v => (byte)((160 * 128 + (255 - 160) * v + 127) / 255)).ToArray();
         
 
-        const bool parallelInPaint = false;
         bool pbView_Paint_Rectangle_FillAround = true;
         BitmapEx pbView_Paint_Canvas;
         bool drawLoading_ShowingMessage = false;
@@ -8877,7 +8802,6 @@ namespace ZipPla
             return null;
         }
 
-        private const double FourthRootOf2 = 1.1892071150027210667174999705604759152929720924638;
         private const double SquareRootOf2 = 1.4142135623730950488016887242096980785696718753769;
         private void pbView_MouseWheel(object sender, MouseEventArgs e)
         {
@@ -11909,42 +11833,6 @@ namespace ZipPla
         }
 
 
-        private enum Position { Left, Right, Center, Out }
-        private Position GetPositionOnView(Point? clientPoint = null)
-        {
-            Point exactClientPoint;
-            if(clientPoint == null || clientPoint == Point.Empty)
-            {
-                exactClientPoint = pbView.PointToClient(Cursor.Position);
-            }
-            else
-            {
-                exactClientPoint = (Point)clientPoint;
-            }
-            var Width = pbView.Width;
-            var Height = pbView.Height;
-            var rectangle0 = new Rectangle(0, 0, Width, Height);
-
-            if (rectangle0.Contains(exactClientPoint))
-            {
-                if (5 * exactClientPoint.X < 2 * Width)
-                {
-                    return Position.Left;
-                }
-                else if (5 * exactClientPoint.X >= 3 * Width)
-                {
-                    return Position.Right;
-                }
-                else
-                {
-                    return Position.Center;  
-                }
-            }
-            else
-            {
-                return Position.Out;
-            }
-        }
 
         private void ViewerForm_Activated(object sender, EventArgs e)
         {

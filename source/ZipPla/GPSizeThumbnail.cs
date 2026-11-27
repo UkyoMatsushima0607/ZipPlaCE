@@ -775,33 +775,6 @@ namespace ZipPla
                 return new Size((int)Math.Round(Width), (int)Math.Round(Height));
             }
 
-            public bool LessThanOrEqualTo(Size providedSize, bool letterBox)
-            {
-                if(letterBox)
-                {
-                    return Width <= providedSize.Width || Height <= providedSize.Height;
-                }
-                else
-                {
-                    return Width <= providedSize.Width && Height <= providedSize.Height;
-                }
-            }
-        }
-
-        private static SizeD getEffectiveSize(Size size, Fraction pixelRatio)
-        {
-            double effectiveWidth, effectiveHeight;
-            if (pixelRatio > 1)
-            {
-                effectiveWidth = size.Width;
-                effectiveHeight = size.Height / (double)pixelRatio;
-            }
-            else
-            {
-                effectiveWidth = size.Width * (double)pixelRatio;
-                effectiveHeight = size.Height;
-            }
-            return new SizeD(effectiveWidth, effectiveHeight);
         }
 
         private static readonly char DirectorySeparatorChar = Path.DirectorySeparatorChar;

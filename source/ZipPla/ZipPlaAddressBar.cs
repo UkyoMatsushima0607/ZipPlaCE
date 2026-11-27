@@ -1127,38 +1127,6 @@ namespace ZipPla
         }
 
 
-        private enum Direction { Right, Down };
-        private static Bitmap getTriangle(Size size, Direction direction)
-        {
-            const int a = 3;
-            var w = a * size.Width;
-            var h = a * size.Height;
-            PointF[] vertices;
-            switch(direction)
-            {
-                case Direction.Right:
-                    vertices = new PointF[] { new PointF(3 / 5f * w - 1 + 1f / 12, 1 / 2f * h - 1), new PointF(2 / 5f * w - 1 + 1f / 12, 1 / 3f * h - 1), new PointF(2 / 5f * w - 1 + 1f / 12, 2 / 3f * h - 1) };
-                    break;
-                case Direction.Down:
-                    vertices = new PointF[] { new PointF(1 / 2f * w - 1, 3 / 5f * h - 1 + 1f / 12), new PointF(1 / 3f * w - 1, 2 / 5f * h - 1 + 1f / 12), new PointF(2 / 3f * w - 1, 2 / 5f * h - 1 + 1f / 12) };
-                    break;
-                default: throw new NotImplementedException();
-            }
-            using (var aresult = new Bitmap(w, h))
-            {
-                using (var g = Graphics.FromImage(aresult))
-                {
-                    g.FillPolygon(Brushes.Black, vertices);
-                }
-                var result = new Bitmap(w / a, h / a);
-                using (var g = Graphics.FromImage(result))
-                {
-                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
-                    g.DrawImage(aresult, new RectangleF(-1.5f + 1f/(a), -1.5f + 1f / (a), w / a, w / a));
-                }
-                return result;
-            }
-        }
 
         private object Button_MouseRButtonDownInfo = null;
         private void Button_MouseDown(object sender, MouseEventArgs e)

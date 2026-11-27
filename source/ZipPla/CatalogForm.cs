@@ -2499,11 +2499,6 @@ namespace ZipPla
             AllowFullpower = false; // これは cms 自体のものなので必要
         }
 
-        private static bool isNetworkRoot(string path)
-        {
-            return path != null && path.Length > 2 && path.StartsWith(@"\\") && path.IndexOf(Path.DirectorySeparatorChar, 2) < 0;
-        }
-
 
         private void zabLocation_DirectoryButtonContextMenuStripOpening_EditSmartFolder_Click(object sender, EventArgs e)
         {
@@ -2776,7 +2771,6 @@ namespace ZipPla
                         var w = size.Width;
                         var h = size.Height;
                         var rect = new Rectangle(p.X - w / 2, p.Y - h / 2, w | 1, h | 1);
-                        var tes = new Rectangle(0, 0, 4, 4).Contains(4, 4);
                         if (rect.Contains(xPos, yPos))
                         {
                             var delta = Environment.TickCount - lastDoubleClickTime; // オーバーフローで剰余算を実現
@@ -20485,7 +20479,6 @@ namespace ZipPla
 
         //● ロッカージェスチャ
         //● private readonly System.Windows.Forms.ContextMenuStrip cbFilter_MouseDown_DummyCMS = new System.Windows.Forms.ContextMenuStrip();
-        private int cbFilter_MouseDown_LastClickTime = Environment.TickCount - SystemInformation.DoubleClickTime;
         private void cbFilter_MouseDown(object sender, MouseEventArgs e)
         {
             //● var leftRight = false;

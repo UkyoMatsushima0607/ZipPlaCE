@@ -81,32 +81,6 @@ namespace ZipPla
             Size = size;
         }
 
-        public static ImageInfo FromImageInfo(ImageInfo info, ImageInfo respectedInfo)
-        {
-            if (info == null) return respectedInfo;
-            if (respectedInfo != null)
-            {
-                var changed = false;
-                var size = respectedInfo.Size;
-                if (size.IsEmpty)
-                {
-                    changed = true;
-                    size = info.Size;
-                }
-                var bpp = respectedInfo.BitPerPixel;
-                if (bpp <= 0)
-                {
-                    changed = true;
-                    bpp = info.BitPerPixel;
-                }
-                if (changed)
-                {
-                    return new ImageInfo(size, bpp);
-                }
-            }
-            return info;
-        }
-
         
         public ImageInfo (string path) : this(new FileStream(path, FileMode.Open, FileAccess.Read), disposeStream: true)
         {

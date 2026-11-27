@@ -33,25 +33,6 @@ namespace ZipPla
         }
 
         /// <summary>
-        /// 展開した生の画素から Bitmap を直接作る（D4）。以前は PngWriter で PNG（圧縮レベル 5）に作り直し、それを GDI+ が展開し直していた。
-        /// グレー（1・8 ビット）、RGB（8 ビット）、インデックス（1・4・8 ビット）だけ。それ以外（JPEG・JPX・JBIG2・CMYK・16 ビットなど）は null を返すので、
-        /// 従来どおり Decode を使う。ICC プロファイルは従来どおり使わない（GDI+ は PNG の iCCP を既定で無視していた）。
-        /// /Decode は従来どおり 1 ビットの反転だけを扱う
-        /// </summary>
-        public static Bitmap TryDecodeToBitmap(PRStream stream)
-        {
-            try
-            {
-                var image = new PdfImageObject(stream, directBitmap: true, continueIfNoBitmap: false);
-                return image.DirectBitmap;
-            }
-            catch
-            {
-                return null; // 従来の Decode で読み直す（例外も従来どおりそちらで出る）
-            }
-        }
-
-        /// <summary>
         /// TryDecodeToBitmap と同じく Bitmap を直接作り、作れなければ Decode と同じ結果（PNG・TIFF などのバイト列）を bytes に返す（Y12）。
         /// 以前は Bitmap を作れなかった画像（CMYK・16 ビットなど）で、TryDecodeToBitmap が展開した結果を捨てて Decode が最初から展開し直していた
         /// </summary>

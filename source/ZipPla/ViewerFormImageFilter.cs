@@ -749,18 +749,6 @@ namespace ZipPla
         }
         
 
-        private unsafe static void MoireRemover2(byte* scan0, int stride, int y, int w13)
-        {
-            var left0 = scan0 + y * stride;
-            for (var x3 = 3; x3 < w13; x3 += 3)
-            {
-                var a = left0 + x3;
-                var v = a[1];
-                a[0] = v;
-                a[2] = v;
-            }
-        }
-
         const int GrayScaleThreshold = 2;
 
 #if DEBUG

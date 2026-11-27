@@ -1558,28 +1558,6 @@ namespace ZipPla
             }
         }
         
-        public static void LinkFileCanceler(object sender, CancelEventArgs e)
-        {
-            if (e == null) return;
-            var dialog = sender as FileDialog;
-            if (dialog != null) return;
-            var fileName = dialog.FileName;
-            if (string.IsNullOrEmpty(fileName)) return;
-            fileName = fileName.ToLower();
-            var strFilter = dialog.Filter;
-            if (string.IsNullOrEmpty(strFilter)) return;
-            var filters = strFilter.Split('|');
-            var index = 2 * dialog.FilterIndex + 1;
-            if (index < 1 || index >= filters.Length) return;
-            var strExtensions = filters[index];
-            if (string.IsNullOrEmpty(strExtensions)) return;
-            var extensions = strExtensions.Split(';');
-            if (!extensions.Any(ex => ex != null && ex.StartsWith("*.") && fileName.EndsWith(ex.Substring(1).ToLower())))
-            {
-                e.Cancel = true;
-            }
-        }
-
         public static bool OpenMouseGestureSetting(Icon icon, MouseGesture mouseGesture, MouseGestureSettingTemplate[] mouseGestureSettingTemplates, IWin32Window owner, double widthZoom = 1)
         {
             using (var mouseGestureSettingForm = new MouseGestureSettingForm(mouseGesture, mouseGestureSettingTemplates, allowTouchGesture: true, allowVStartTouchGesture: owner is ViewerForm))

@@ -2007,18 +2007,6 @@ namespace ZipPla
             return ImageFromStream(stream, fileNameForType, animation, length);
         }
 
-        private Bitmap GetImageAndDisposeOriginal(Stream stream, string fileNameForType, long streamLength = -1)
-        {
-            try
-            {
-                return ImageFromStream(stream, fileNameForType, animation, streamLength);
-            }
-            finally
-            {
-                stream.Dispose();
-            }
-        }
-
         private Stream GetInnerImageStream(int physicalIndex)
         {
             try

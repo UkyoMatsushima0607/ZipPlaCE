@@ -12,45 +12,11 @@ namespace ZipPla
 {
     public static class VirtualFolder
     {
-        public static bool IsExistingBookmarkPath(string path)
-        {
-            try
-            {
-                return IsBookmarkPath(path) && File.Exists(path);
-            }
-            catch
-            {
-                return false;
-            }
-        }
 
         public static bool DirectoryOrBookmarkExists(string path)
         {
             // エラー OK とする
             return Path.GetExtension(path).ToUpper() == ".SOR" && File.Exists(path) || Directory.Exists(path);
-        }
-
-        public static string[] GetDirectoriesAndBookmarks(string path)
-        {
-            var result1 = Directory.GetFiles(path, "*.sor");
-            var result2 = Directory.GetDirectories(path);
-            var result1Length = result1.Length;
-            var count1 = 0;
-            for(var i = 0; i < result1Length; i++)
-            {
-                var subPath = result1[i];
-                if (Path.GetExtension(subPath).ToUpper() == ".SOR")
-                {
-                    result1[count1++] = subPath;
-                }
-            }
-            var count2 = result2.Length;
-            var result = new string[count1 + count2];
-            Array.Copy(result1, 0, result, 0, count1);
-            result1 = null;
-            Array.Copy(result2, 0, result, count1, count2);
-            result2 = null;
-            return result;
         }
 
         public static bool IsBookmarkPath(string path)

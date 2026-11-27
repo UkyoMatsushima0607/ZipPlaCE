@@ -113,45 +113,6 @@ namespace ZipPla
 
 #if !AUTOBUILD
         
-        private static readonly double[] tryGetSincHalfCutWeight_Halfs = new double[] {
-            0.613207 / 1, 1.55776 / 2, 2.53778 / 3, 3.52784 / 4, 4.52197 / 5, 5.51811 / 6,
-            6.5154 / 7, 7.51338 / 8, 8.51183 / 9, 9.5106 / 10, 10.5096 / 11, 11.5088 / 12};
-        private static bool tryGetSincHalfCutWeight(double distance, out double weight, int n)
-        {
-            if (distance < 0) distance = -distance;
-            if (distance < tryGetLanczosNWeight_ZeroThreshold)
-            {
-                weight = 1.0;
-                return true;
-            }
-            else if (distance < n)
-            {
-                distance *= tryGetSincHalfCutWeight_Halfs[n - 1];
-                var pi_x = Math.PI * distance;
-                var pi_x_n = pi_x / n;
-                weight = (fastSin(pi_x) * fastSin(pi_x_n)) / (pi_x * pi_x_n);
-
-                return true;
-            }
-            else
-            {
-                weight = 0;
-                return false;
-            }
-        }
-
-        public static Bitmap SincHalfCut(int n, Bitmap src, int pixelsPerPixelToBeLeft, GammaConversion gamma, Size size, bool parallel, Func<bool> cancel = null)
-        {
-            return CreateNew(src, pixelsPerPixelToBeLeft, gamma, size, (double distance, out double weight) =>
-                tryGetSincHalfCutWeight(distance, out weight, n), parallel, cancel);
-        }
-
-        public static void SincHalfCut(int n, Bitmap src, int pixelsPerPixelToBeLeft, GammaConversion gamma, Bitmap dst, Rectangle dstRect, bool parallel, BackgroundWorker backgroundWorker = null)
-        {
-            Draw(dst, dstRect, src, pixelsPerPixelToBeLeft, gamma, (double distance, out double weight) => tryGetSincHalfCutWeight(distance, out weight, n),
-                parallel, backgroundWorker);
-        }
-
         private static bool tryGetFewAliasingLanczosNWeight(double distanceAsSrc, double power, out double weight, int n)
         {
             double distance;
