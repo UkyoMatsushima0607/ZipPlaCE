@@ -1981,6 +1981,25 @@ namespace ZipPla
 
         readonly object loadingPackedImageLoaderLocker = new object();
 
+        // 12 本の配列をまとめて取る・差し替える（CatalogItemArrays）。呼び出し側が ZipPathArrayLocker を持つこと
+        private CatalogItemArrays GetItemArrays() => new CatalogItemArrays { Path = ZipPathArray, Name = ZipNameArray, Page = ZipPageArray, CreateTime = CreateTimeArray, LastAccessTime = LastAccessTimeArray, ModifiedTime = ModifiedTimeArray, FileCount = FileCountArray, ImageInfo = ImageInfoArray, MovieInfo = MovieInfoArray, LoadResult = LoadResultArray, Size = ZipSizeArray, Mask = ZipMaskArray };
+
+        private void SetItemArrays(CatalogItemArrays items)
+        {
+            ZipPathArray = items.Path;
+            ZipNameArray = items.Name;
+            ZipPageArray = items.Page;
+            CreateTimeArray = items.CreateTime;
+            LastAccessTimeArray = items.LastAccessTime;
+            ModifiedTimeArray = items.ModifiedTime;
+            FileCountArray = items.FileCount;
+            ImageInfoArray = items.ImageInfo;
+            MovieInfoArray = items.MovieInfo;
+            LoadResultArray = items.LoadResult;
+            ZipSizeArray = items.Size;
+            ZipMaskArray = items.Mask;
+        }
+
         bool CreatingZipPathArray = false;
 
         string[] ZipPathArray;

@@ -176,6 +176,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CatalogItemArrays.cs" />
     <Compile Include="PrefetchScheduler.cs" />
     <Compile Include="LongVectorImageResizer.Generated.cs">
       <DependentUpon>LongVectorImageResizer.cs</DependentUpon>

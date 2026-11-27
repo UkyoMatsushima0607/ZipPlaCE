@@ -560,54 +560,13 @@ namespace ZipPla
                 Monitor.Enter(ZipPathArrayLocker);
                 try
                 {
-                var zipPathArray = zpa;
-                var zipNameArray = ZipNameArray; if (zipNameArray == null || zipNameArray.Length != count) return;
-                var zipPageArray = ZipPageArray; if (zipPageArray == null || zipPageArray.Length != count) return;
-                var createTimeArray = CreateTimeArray; if (createTimeArray == null || createTimeArray.Length != count) return;
-                var lastAccessTimeArray = LastAccessTimeArray; if (lastAccessTimeArray == null || lastAccessTimeArray.Length != count) return;
-                var modifiedTimeArray = ModifiedTimeArray; if (modifiedTimeArray == null || modifiedTimeArray.Length != count) return;
-                var fileCountArray = FileCountArray; if (fileCountArray == null || fileCountArray.Length != count) return;
-                var imageInfoArray = ImageInfoArray; if (imageInfoArray == null || imageInfoArray.Length != count) return;
-                var movieInfoArray = MovieInfoArray; if (movieInfoArray == null || movieInfoArray.Length != count) return;
-                var loadResultArray = LoadResultArray; if (loadResultArray == null || loadResultArray.Length != count) return;
-                var zipSizeArray = ZipSizeArray; if (zipSizeArray == null || zipSizeArray.Length != count) return;
-                var zipMaskArray = zma;
+                var current = GetItemArrays();
+                current.Path = zpa; // 呼び出し元が取った配列（長さ count を確かめ済み）
+                current.Mask = zma;
+                if (!current.HasLength(count)) return;
 
                 var count21 = Math.Max(count * 2 + 1, count + (addOrReloadItem_UserAddFileInLower?.Count ?? 0));
-                //var count21 = count * 2 + 1;
-
-                var zipPathArray2 = new string[count21]; Array.Copy(zipPathArray, zipPathArray2, count);
-                var zipNameArray2 = new string[count21]; Array.Copy(zipNameArray, zipNameArray2, count);
-                var zipPageArray2 = new int[count21]; Array.Copy(zipPageArray, zipPageArray2, count);
-                var createTimeArray2 = new DateTime[count21]; Array.Copy(createTimeArray, createTimeArray2, count);
-                var lastAccessTimeArray2 = new DateTime[count21]; Array.Copy(lastAccessTimeArray, lastAccessTimeArray2, count);
-                var modifiedTimeArray2 = new DateTime[count21]; Array.Copy(modifiedTimeArray, modifiedTimeArray2, count);
-                var fileCountArray2 = new int[count21]; Array.Copy(fileCountArray, fileCountArray2, count);
-                var imageInfoArray2 = new ImageInfo[count21]; Array.Copy(imageInfoArray, imageInfoArray2, count);
-                var movieInfoArray2 = new MovieInfo[count21]; Array.Copy(movieInfoArray, movieInfoArray2, count);
-                var loadResultArray2 = new LoadResult[count21]; Array.Copy(loadResultArray, loadResultArray2, count);
-                var zipSizeArray2 = new long[count21]; Array.Copy(zipSizeArray, zipSizeArray2, count);
-                var zipMaskArray2 = new bool[count21]; Array.Copy(zipMaskArray, zipMaskArray2, count);
-
-                for (var i = count; i < count21; i++)
-                {
-                    zipPageArray2[i] = -1;
-                }
-
-                {
-                    ZipPathArray = zipPathArray2;
-                    ZipNameArray = zipNameArray2;
-                    ZipPageArray = zipPageArray2;
-                    CreateTimeArray = createTimeArray2;
-                    LastAccessTimeArray = lastAccessTimeArray2;
-                    ModifiedTimeArray = modifiedTimeArray2;
-                    FileCountArray = fileCountArray2;
-                    ImageInfoArray = imageInfoArray2;
-                    MovieInfoArray = movieInfoArray2;
-                    LoadResultArray = loadResultArray2;
-                    ZipSizeArray = zipSizeArray2;
-                    ZipMaskArray = zipMaskArray2;
-                }
+                SetItemArrays(current.Grow(count, count21)); // 増えた部分のページは -1
                 ZipMaskArray[count] = true;
                 ZipPathArray[count] = path;
                 //MessageBox.Show($"{ZipPathArray.Length}");

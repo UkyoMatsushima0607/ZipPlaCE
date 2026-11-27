@@ -489,18 +489,7 @@ namespace ZipPla
 
         private void getDirectoryItemsInfo(
             //out string[] zipPathArrayDup,
-            out string[] zipPathArray,
-            out string[] zipNameArray,
-            out int[] zipPageArray,
-            out DateTime[] createTimeArray,
-            out DateTime[] lastAccessTimeArray,
-            out DateTime[] modifiedTimeArray,
-            out int[] fileCountArray,
-            out ImageInfo[] imageInfoArray,
-            out MovieInfo[] movieInfoArray,
-            out LoadResult[] loadResultArray,
-            out long[] zipSizeArray,
-            out bool[] zipMaskArray,
+            out CatalogItemArrays items,
             bool archiveSkip,
             bool imageSkip,
             bool videoSkip,
@@ -568,18 +557,19 @@ namespace ZipPla
 
             var isNotDirectory = !isDirectory; //filePages != null && folderPages != null;
 
-            zipPathArray = new string[MatchCountFolderPathsLength]; //ShowStatusBar();
-            zipNameArray = new string[MatchCountFolderPathsLength];
-            zipPageArray = new int[MatchCountFolderPathsLength];
-            createTimeArray = new DateTime[MatchCountFolderPathsLength];
-            lastAccessTimeArray = new DateTime[MatchCountFolderPathsLength];
-            modifiedTimeArray = new DateTime[MatchCountFolderPathsLength];
-            fileCountArray = new int[MatchCountFolderPathsLength];
-            imageInfoArray = new ImageInfo[MatchCountFolderPathsLength];
-            movieInfoArray = new MovieInfo[MatchCountFolderPathsLength];
-            loadResultArray = new LoadResult[MatchCountFolderPathsLength];
-            zipSizeArray = new long[MatchCountFolderPathsLength];
-            zipMaskArray = new bool[MatchCountFolderPathsLength];
+            items = CatalogItemArrays.Allocate(MatchCountFolderPathsLength);
+            var zipPathArray = items.Path;
+            var zipNameArray = items.Name;
+            var zipPageArray = items.Page;
+            var createTimeArray = items.CreateTime;
+            var lastAccessTimeArray = items.LastAccessTime;
+            var modifiedTimeArray = items.ModifiedTime;
+            var fileCountArray = items.FileCount;
+            var imageInfoArray = items.ImageInfo;
+            var movieInfoArray = items.MovieInfo;
+            var loadResultArray = items.LoadResult;
+            var zipSizeArray = items.Size;
+            var zipMaskArray = items.Mask;
 
             var filePagesExists = filePages != null;
             var folderPagesExists = folderPages != null;
@@ -956,18 +946,7 @@ namespace ZipPla
                         loadingPackedImageLoader = loader;
                     }
 
-                    ZipPathArray = new string[fileCount];
-                    ZipNameArray = new string[fileCount];
-                    ZipPageArray = new int[fileCount];
-                    CreateTimeArray = new DateTime[fileCount];
-                    LastAccessTimeArray = new DateTime[fileCount];
-                    ModifiedTimeArray = new DateTime[fileCount];
-                    FileCountArray = new int[fileCount];
-                    ImageInfoArray = new ImageInfo[fileCount];
-                    MovieInfoArray = new MovieInfo[fileCount];
-                    LoadResultArray = new LoadResult[fileCount];
-                    ZipSizeArray = new long[fileCount];
-                    ZipMaskArray = new bool[fileCount];
+                    SetItemArrays(CatalogItemArrays.Allocate(fileCount));
 
                     for (var i = 0; i < fileCount; i++)
                     {
@@ -1091,18 +1070,7 @@ namespace ZipPla
                         }
                     }
 
-                    ZipPathArray = new string[thumbnailCount];
-                    ZipNameArray = new string[thumbnailCount];
-                    ZipPageArray = new int[thumbnailCount];
-                    CreateTimeArray = new DateTime[thumbnailCount];
-                    LastAccessTimeArray = new DateTime[thumbnailCount];
-                    ModifiedTimeArray = new DateTime[thumbnailCount];
-                    FileCountArray = new int[thumbnailCount];
-                    ImageInfoArray = new ImageInfo[thumbnailCount];
-                    MovieInfoArray = new MovieInfo[thumbnailCount];
-                    LoadResultArray = new LoadResult[thumbnailCount];
-                    ZipSizeArray = new long[thumbnailCount];
-                    ZipMaskArray = new bool[thumbnailCount];
+                    SetItemArrays(CatalogItemArrays.Allocate(thumbnailCount));
 
 
                     for (var i = 0; i < thumbnailCount; i++)
@@ -1159,36 +1127,14 @@ namespace ZipPla
                     VirtualFolder.GetPageFromBookmark(out filePages, out folderPages, filePaths, folderPaths, Program.HistorySorPath);
                 }
 
-                string[] zipPathArray;
-                string[] zipNameArray;
-                int[] zipPageArray;
-                DateTime[] createTimeArray;
-                DateTime[] lastAccessTimeArray;
-                DateTime[] modifiedTimeArray;
-                int[] fileCountArray;
-                ImageInfo[] imageInfoArray;
-                MovieInfo[] movieInfoArray;
-                LoadResult[] loadResultArray;
-                long[] zipSizeArray;
-                bool[] zipMaskArray;
+                CatalogItemArrays items;
 
                 try
                 {
                     //sw.Start();
                     getDirectoryItemsInfo(
                         //out ZipPathArrayDup,
-                        out zipPathArray,
-                        out zipNameArray,
-                        out zipPageArray,
-                        out createTimeArray,
-                        out lastAccessTimeArray,
-                        out modifiedTimeArray,
-                        out fileCountArray,
-                        out imageInfoArray,
-                        out movieInfoArray,
-                        out loadResultArray,
-                        out zipSizeArray,
-                        out zipMaskArray,
+                        out items,
                         archiveSkip,
                         imageSkip,
                         videoSkip,
@@ -1247,18 +1193,7 @@ namespace ZipPla
                         }
                     }
 
-                    ZipPathArray = zipPathArray; //ShowStatusBar();
-                    ZipNameArray = zipNameArray;
-                    ZipPageArray = zipPageArray;
-                    CreateTimeArray = createTimeArray;
-                    LastAccessTimeArray = lastAccessTimeArray;
-                    ModifiedTimeArray = modifiedTimeArray;
-                    FileCountArray = fileCountArray;
-                    ImageInfoArray = imageInfoArray;
-                    MovieInfoArray = movieInfoArray;
-                    LoadResultArray = loadResultArray;
-                    ZipSizeArray = zipSizeArray;
-                    ZipMaskArray = zipMaskArray;
+                    SetItemArrays(items);
                 }
 
 
