@@ -500,31 +500,7 @@ namespace ZipPla
 
                         using (var fo = new MsdnMag.FileOperation(callbackSink: null, owner: this))
                         {
-                            var moveOrCopy = move ? (Action<string, string, string>)fo.MoveItem : fo.CopyItem;
-                            var movedFiles = new List<string>();
-                            foreach (var file in files)
-                            {
-                                string name = Path.GetFileName(file);
-                                var path = Path.Combine(cl, name);
-                                if (!move && file == path)
-                                {
-                                    if (File.Exists(path) || Directory.Exists(path))
-                                    {
-                                        var ext = Path.GetExtension(path);
-                                        name = Path.GetFileNameWithoutExtension(file) + " - " + Message.Copy + ext;
-                                        path = Path.Combine(cl, name);
-                                        var digit = 2;
-                                        while (File.Exists(path) || Directory.Exists(path))
-                                        {
-                                            name = Path.GetFileNameWithoutExtension(file) + " - " + Message.Copy + " (" + digit++ + ")" + ext;
-                                            path = Path.Combine(cl, name);
-                                        }
-                                    }
-                                }
-                                movedFiles.Add(path);
-
-                                moveOrCopy(file, cl, name);
-                            }
+                            var movedFiles = queueFileDropOperations(fo, files, cl, move);
 
                             //if (!alertInvisibleItemsOnPaste(movedFiles, checkAttribute: true)) // 誤り
 
@@ -610,21 +586,7 @@ namespace ZipPla
                             var desc = fileDescriptors[i];
 
                             var name = desc.cFileName;
-                            var path = Path.Combine(cl, name);
-
-                            if (File.Exists(path) || Directory.Exists(path))
-                            {
-                                var baseName = Path.GetFileNameWithoutExtension(name);
-                                var ext = Path.GetExtension(name);
-                                name = baseName + " - " + Message.Copy + ext;
-                                path = Path.Combine(cl, name);
-                                var digit = 2;
-                                while (File.Exists(path) || Directory.Exists(path))
-                                {
-                                    name = baseName + " - " + Message.Copy + " (" + digit++ + ")" + ext;
-                                    path = Path.Combine(cl, name);
-                                }
-                            }
+                            var path = MakeCopyNameIfExists(cl, ref name);
                             dstPaths[i] = path;
                         }
 
@@ -713,6 +675,46 @@ namespace ZipPla
 
         // bool alertInvisibleItemsOnPaste(IEnumerable<string> dsts, bool checkPath, bool checkAttribute)
 
+        /// <summary>
+        /// 貼り付け先 directory に name がすでにあれば、「名前 - コピー.拡張子」「名前 - コピー (2).拡張子」… と空いている名前に変える。
+        /// 貼り付け先のパスを返す
+        /// </summary>
+        private static string MakeCopyNameIfExists(string directory, ref string name)
+        {
+            var path = Path.Combine(directory, name);
+            if (!File.Exists(path) && !Directory.Exists(path)) return path;
+            var baseName = Path.GetFileNameWithoutExtension(name);
+            var ext = Path.GetExtension(name);
+            name = baseName + " - " + Message.Copy + ext;
+            path = Path.Combine(directory, name);
+            var digit = 2;
+            while (File.Exists(path) || Directory.Exists(path))
+            {
+                name = baseName + " - " + Message.Copy + " (" + digit++ + ")" + ext;
+                path = Path.Combine(directory, name);
+            }
+            return path;
+        }
+
+        /// <summary>
+        /// FileDrop の項目を target へ移動・コピーする操作を fo に積む（実行は呼び出し側の PerformOperations）。
+        /// 同じ場所へのコピーは名前を変える。移動・コピー先のパスを返す
+        /// </summary>
+        private static List<string> queueFileDropOperations(MsdnMag.FileOperation fo, string[] files, string target, bool move)
+        {
+            var moveOrCopy = move ? (Action<string, string, string>)fo.MoveItem : fo.CopyItem;
+            var movedFiles = new List<string>();
+            foreach (var file in files)
+            {
+                var name = Path.GetFileName(file);
+                var path = Path.Combine(target, name);
+                if (!move && file == path) path = MakeCopyNameIfExists(target, ref name);
+                movedFiles.Add(path);
+                moveOrCopy(file, target, name);
+            }
+            return movedFiles;
+        }
+
         public static void pasteToTarget(CatalogForm owner, string target, System.Windows.Forms.IDataObject data, DragDropEffects? dragDropEffects = null)
         {
             try
@@ -730,31 +732,7 @@ namespace ZipPla
 
                     using (var fo = new MsdnMag.FileOperation(callbackSink: null, owner: owner))
                     {
-                        var moveOrCopy = move ? (Action<string, string, string>)fo.MoveItem : fo.CopyItem;
-                        var movedFiles = new List<string>();
-                        foreach (var file in files)
-                        {
-                            string name = Path.GetFileName(file);
-                            var path = Path.Combine(target, name);
-                            if (!move && file == path)
-                            {
-                                if (File.Exists(path) || Directory.Exists(path))
-                                {
-                                    var ext = Path.GetExtension(path);
-                                    name = Path.GetFileNameWithoutExtension(file) + " - " + Message.Copy + ext;
-                                    path = Path.Combine(target, name);
-                                    var digit = 2;
-                                    while (File.Exists(path) || Directory.Exists(path))
-                                    {
-                                        name = Path.GetFileNameWithoutExtension(file) + " - " + Message.Copy + " (" + digit++ + ")" + ext;
-                                        path = Path.Combine(target, name);
-                                    }
-                                }
-                            }
-                            movedFiles.Add(path);
-
-                            moveOrCopy(file, target, name);
-                        }
+                        var movedFiles = queueFileDropOperations(fo, files, target, move);
                         fo.PerformOperations();
                     }
                 }
@@ -789,21 +767,7 @@ namespace ZipPla
                             var desc = fileDescriptors[i];
 
                             var name = desc.cFileName;
-                            var path = Path.Combine(target, name);
-
-                            if (File.Exists(path) || Directory.Exists(path))
-                            {
-                                var baseName = Path.GetFileNameWithoutExtension(name);
-                                var ext = Path.GetExtension(name);
-                                name = baseName + " - " + Message.Copy + ext;
-                                path = Path.Combine(target, name);
-                                var digit = 2;
-                                while (File.Exists(path) || Directory.Exists(path))
-                                {
-                                    name = baseName + " - " + Message.Copy + " (" + digit++ + ")" + ext;
-                                    path = Path.Combine(target, name);
-                                }
-                            }
+                            var path = MakeCopyNameIfExists(target, ref name);
                             dstPaths[i] = path;
                         }
 
