@@ -107,43 +107,7 @@ namespace ZipPla
 
             propertiesToolStripMenuItem.Enabled = singleSelected;
 
-            var vfBookmarks = getVirtualFoldersInBookmarks().ToArray();
-            var spPos = listFileToolStripMenuItem.DropDownItems.IndexOf(tmsSeparatorForVirtualFolder);
-
-            // 新規作成が下（デザイナで移動すること）
-            while (spPos > 0)
-            {
-                listFileToolStripMenuItem.DropDownItems[--spPos].Dispose();
-            }
-            if (vfBookmarks.Length == 0)
-            {
-                tmsSeparatorForVirtualFolder.Visible = false;
-            }
-            else
-            {
-                tmsSeparatorForVirtualFolder.Visible = true;
-                var tsmiList = new List<ToolStripMenuItem>();
-                foreach (var bookmark in vfBookmarks)
-                {
-                    var tsmi = new ToolStripMenuItem();
-                    tsmi.Text = Message.AddTo1.Replace("$1", bookmark.ToString());
-                    var simpleBookmark = bookmark.SimpleBookmark;
-                    tsmi.Enabled = simpleBookmark?.Location != currentLocation;
-                    var vfPath = simpleBookmark?.Location;
-                    tsmi.Click += (sender, e) => addSelectedToList(true, sorPath: vfPath);
-                    tsmiList.Add(tsmi);
-                }
-                var ddi = listFileToolStripMenuItem.DropDownItems;
-                ddi.Clear();
-                if (string.Compare(currentLocation, Program.HistorySorPath, ignoreCase: true) == 0)
-                {
-                    ddi.AddRange(tsmiList.Concat(new ToolStripItem[2] { tmsSeparatorForVirtualFolder, addToNewListToolStripMenuItem }).ToArray());
-                }
-                else
-                {
-                    ddi.AddRange(tsmiList.Concat(new ToolStripItem[3] { tmsSeparatorForVirtualFolder, addToNewListToolStripMenuItem, removeFromHistoryToolStripMenuItem }).ToArray());
-                }
-            }
+            rebuildAddToVirtualFolderMenuItems();
 
             // 新規作成が上（デザイナで移動すること、履歴から削除は未実装）
 
@@ -353,7 +317,7 @@ namespace ZipPla
             var thumbnailCanBeSet = false;
 
             var renamable = false;
-            var renamableByCmsTextBox = false; // イベント呼び出し前に書き換えられる
+            cmsRightClick_RenamableByTextBox = false; // タグのメニューのイベントより前に下で書き換える
             if (zipPlaInfos != null)
             //if (zipPlaInfos != null && (allSelectionLoaded))
             //if(zipPlaInfos != null && (singleSelected || allSelectionLoaded)) // ユーザーが有効になるパターンを理解できない恐れ
@@ -392,62 +356,7 @@ namespace ZipPla
                     renameToolStripMenuItem.Enabled = singleSelected && renamable;
                 }
 
-                var ratingHistogram = new int[6];
-                var pageSequenceHistogram = new int[4];
-                var thumbnailHistogram = 0;
-                if (zipPlaInfos != null && selectedNameArray != null && selectedPathArray != null &&
-                    zipPlaInfos.Length == selectedNameArray.Length && zipPlaInfos.Length == selectedPathArray.Length)
-                {
-                    for (var i = 0; i < selectedNameArray.Length; i++)
-                    {
-                        var name = selectedNameArray[i];
-                        if (string.IsNullOrEmpty(name)) continue;
-                        if (name[name.Length - 1] == Path.DirectorySeparatorChar)
-                        {
-                            // thumbnailHistogram は 0 より大きいかしか使わないので、1 つ見つかったら残りのフォルダは調べない（K30）
-                            if (thumbnailHistogram > 0) continue;
-                            try
-                            {
-                                if (File.Exists(Path.Combine(selectedPathArray[i], ZipPlaCoverImageFileWithExtension)))
-                                {
-                                    thumbnailHistogram++;
-                                }
-                            }
-                            catch { }
-                        }
-                        else
-                        {
-                            var info = zipPlaInfos[i];
-                            var r = info.Rating;
-                            if (r == null) ratingHistogram[0]++;
-                            else if (0 < r && r <= 5) ratingHistogram[(int)r]++;
-
-                            var p = info.BindingModeForSet;
-                            if (p == null) pageSequenceHistogram[0]++;
-                            else if (p == BindingMode.LeftToRight) pageSequenceHistogram[1]++;
-                            else if (p == BindingMode.RightToLeft) pageSequenceHistogram[2]++;
-                            else pageSequenceHistogram[3]++;
-
-                            var t = info.ThumbnailInfo;
-                            if (t != null) thumbnailHistogram++;
-                        }
-                    }
-                }
-
-                var zipPlaInfosCount = zipPlaInfos.Length;
-
-                noneToolStripMenuItem.CheckState = ratingHistogram[0] == 0 ? CheckState.Unchecked : ratingHistogram[0] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                star1toolStripMenuItem.CheckState = ratingHistogram[1] == 0 ? CheckState.Unchecked : ratingHistogram[1] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                star2toolStripMenuItem.CheckState = ratingHistogram[2] == 0 ? CheckState.Unchecked : ratingHistogram[2] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                star3toolStripMenuItem.CheckState = ratingHistogram[3] == 0 ? CheckState.Unchecked : ratingHistogram[3] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                star4toolStripMenuItem.CheckState = ratingHistogram[4] == 0 ? CheckState.Unchecked : ratingHistogram[4] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                star5toolStripMenuItem.CheckState = ratingHistogram[5] == 0 ? CheckState.Unchecked : ratingHistogram[5] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-
-                defaultToolStripMenuItem.CheckState = pageSequenceHistogram[0] == 0 ? CheckState.Unchecked : pageSequenceHistogram[0] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                leftToRightToolStripMenuItem.CheckState = pageSequenceHistogram[1] == 0 ? CheckState.Unchecked : pageSequenceHistogram[1] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                rightToLeftToolStripMenuItem.CheckState = pageSequenceHistogram[2] == 0 ? CheckState.Unchecked : pageSequenceHistogram[2] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-                singlePageToolStripMenuItem.CheckState = pageSequenceHistogram[3] == 0 ? CheckState.Unchecked : pageSequenceHistogram[3] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
-
+                var thumbnailHistogram = setRatingAndPageSequenceCheckStates(zipPlaInfos, selectedNameArray, selectedPathArray);
 
                 if (singleDir)
                 {
@@ -482,132 +391,7 @@ namespace ZipPla
                     }
                 }
 
-                //tagToolStripMenuItem.Enabled = true;
-                Program.ClearAndDisposeItems(tagToolStripMenuItem.DropDownItems); // 開くたびに作り直す（X19）
-
-
-                ToolStripMenuItem[] items;
-                CheckState[] initialCheckStates;
-                var tags = Tags;
-                if (tags == null) tags = new ZipTag[0];
-                Program.SetTagsToToolStripMenuItems(tagToolStripMenuItem, out items, out initialCheckStates, 0, tags, zipPlaInfos);
-
-                cmsRightClickPrepareAndShow_TagInitialCheckState = initialCheckStates;
-                //cmsRightClickPrepareAndShow_TagNames = (from tag in tags select tag.Name).ToArray();
-
-                if (items.Length > 0)
-                {
-                    tagToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
-                    items[0].ShortcutKeyDisplayString = Message.RightClickNotToClose;
-                    if (items.Length > 1)
-                    {
-                        items[1].ShortcutKeyDisplayString = Message.RightFlickIsAlsoOk;
-                        if (items.Length > 2)
-                        {
-                            items[2].ShortcutKeyDisplayString = Message.SameAsAbove;
-                        }
-                    }
-
-                }
-
-                var uncheckAll = new ToolStripMenuItem(Message.UncheckAll);
-                uncheckAll.Enabled = initialCheckStates.Any(item => item != CheckState.Unchecked);
-                //uncheckAll.ShortcutKeyDisplayString = Message.RightClickNotToClose;
-                var checkedChangedByUncheckAll = false;
-                foreach (var item in items)
-                {
-                    item.CheckStateChanged += (sender2, e2) =>
-                    {
-                        if (checkedChangedByUncheckAll) return;
-                        uncheckAll.Enabled = items.Any(i => i.CheckState != CheckState.Unchecked);
-                        //if (renamableByCmsTextBox)
-                        {
-                            for (var i = 0; i < initialCheckStates.Length; i++)
-                            {
-                                if (items[i].CheckState != initialCheckStates[i])
-                                {
-                                    rightClickFileNameToolStripTextBox.ReadOnly = true;
-                                    SetAppInContextMenuEnabled(false);
-                                    return;
-                                }
-                            }
-                            if (renamableByCmsTextBox) rightClickFileNameToolStripTextBox.ReadOnly = false;
-                            SetAppInContextMenuEnabled(true);
-                        }
-                    };
-                }
-                uncheckAll.MouseDown += (sender2, e2) =>
-                {
-                    if (e2.Button == MouseButtons.Right)
-                    {
-                        cmsRightClick.AutoClose = false;
-                        tagToolStripMenuItem.DropDown.AutoClose = false;
-                        //uncheckAll.Enabled = false; // ここで無効化すると MouseUp や MouseLeave が発生しない
-                    }
-
-                    if (e2.Button == MouseButtons.Right || e2.Button == MouseButtons.Left)
-                    {
-                        checkedChangedByUncheckAll = true;
-                        foreach (var item in items)
-                        {
-                            item.Checked = false;
-                        }
-                        checkedChangedByUncheckAll = false;
-                        //if (renamableByCmsTextBox)
-                        {
-                            for (var i = 0; i < initialCheckStates.Length; i++)
-                            {
-                                if (items[i].CheckState != initialCheckStates[i])
-                                {
-                                    rightClickFileNameToolStripTextBox.ReadOnly = true;
-                                    SetAppInContextMenuEnabled(false);
-                                    return;
-                                }
-                            }
-                            if (renamableByCmsTextBox) rightClickFileNameToolStripTextBox.ReadOnly = false;
-                            SetAppInContextMenuEnabled(true);
-                        }
-                    }
-                };
-                uncheckAll.MouseUp += (sender2, e2) =>
-                {
-                    if (e2.Button == MouseButtons.Right)
-                    {
-                        cmsRightClick.AutoClose = true;
-                        tagToolStripMenuItem.DropDown.AutoClose = true;
-                        if (uncheckAll.Enabled && !items.Any(i => i.CheckState != CheckState.Unchecked)) uncheckAll.Enabled = false;
-                    }
-                };
-                uncheckAll.MouseLeave += (sender2, e2) =>
-                {
-                    cmsRightClick.AutoClose = true;
-                    tagToolStripMenuItem.DropDown.AutoClose = true;
-                    if (uncheckAll.Enabled && !items.Any(i => i.CheckState != CheckState.Unchecked)) uncheckAll.Enabled = false;
-                };
-                tagToolStripMenuItem.DropDownItems.Insert(0, uncheckAll);
-                tagToolStripMenuItem.DropDownItems.Insert(1, new ToolStripSeparator());
-
-                var tagEditor = new ToolStripMenuItem(Message.EditTags + "...");
-                tagEditor.Click += tagEditorToolStripMenuItem_Click;
-                tagToolStripMenuItem.DropDownItems.Add(tagEditor);
-
-                var addTagsFromFileName = new ToolStripMenuItem(Message.AddTagsFromName + "...");
-                var newTagsSet = new HashSet<string>();
-                var tagNames = (from tag in tags select tag.Name).ToArray();
-                foreach (var info in zipPlaInfos) if (info.TagArray != null) foreach (var tag in info.TagArray) if (!tagNames.Contains(tag)) newTagsSet.Add(tag);
-                if (newTagsSet.Count > 0)
-                {
-                    var newTags = newTagsSet.ToArray();
-                    addTagsFromFileName.Click += (sender2, e2) =>
-                    {
-                        showTagEditor(newTags);
-                    };
-                }
-                else
-                {
-                    addTagsFromFileName.Enabled = false;
-                }
-                tagToolStripMenuItem.DropDownItems.Add(addTagsFromFileName);
+                buildTagMenuItems(zipPlaInfos);
             }
             else
             {
@@ -635,29 +419,10 @@ namespace ZipPla
             RightClickFileNameToolStripTextBox_TextChanged_SetDefaultValues = false;
 
             rightClickFileNameToolStripTextBox_SelectedText = "";
-            renamableByCmsTextBox = allowRenameByCmsRightClick && singleSelected && renamable;
+            var renamableByCmsTextBox = cmsRightClick_RenamableByTextBox = allowRenameByCmsRightClick && singleSelected && renamable;
             //selectionToFilterToolStripMenuItem.Enabled = false;
             //selectionToFilterToolStripMenuItem.Text = Message.FilterWithSelectedText;
-            {
-                //rightClickFileNameToolStripTextBox.Visible = true;
-                var text = renamableByCmsTextBox ? getBaseName(singleName) : TextAnalyzer.TextToWildcard(selectedNameArray);
-                cmsRightClickPrepareAndShow_InitialTextBoxText = text;
-                SizeF sizeF;
-                using (var g = CreateGraphics())
-                {
-                    sizeF = g.MeasureString(text, rightClickFileNameToolStripTextBox.Font);
-                }
-                var size = rightClickFileNameToolStripTextBox.Size;
-                size.Width = (int)Math.Ceiling(sizeF.Width);
-                rightClickFileNameToolStripTextBox.Size = size;
-                RightClickFileNameToolStripTextBox_TextChanged_CheckFileNameChar = false;
-                rightClickFileNameToolStripTextBox.Text = text;
-                RightClickFileNameToolStripTextBox_TextChanged_CheckFileNameChar = true;
-                var selected = TextAnalyzer.GetImportantRange(text);
-                rightClickFileNameToolStripTextBox.Select(selected.Index, selected.Length);
-                rightClickFileNameToolStripTextBox_SelectedText = selected.Value;
-                foreach (var dss in getCurrentDynamicStringSelectionToolStripMenuItems()) dss.SelectedText = rightClickFileNameToolStripTextBox_SelectedText;
-            }
+            setRightClickFileNameTextBox(renamableByCmsTextBox ? getBaseName(singleName) : TextAnalyzer.TextToWildcard(selectedNameArray));
             rightClickFileNameToolStripTextBox.ReadOnly = !renamableByCmsTextBox;
 
             setRightClickMenuShortcutKeys(true);
@@ -702,6 +467,269 @@ namespace ZipPla
             AllowFullpower = false;
             cmsRightClick.Show(point);
 
+        }
+
+        // 「リストに追加」のドロップダウンを、ブックマークにある仮想フォルダから作り直す
+        private void rebuildAddToVirtualFolderMenuItems()
+        {
+            var vfBookmarks = getVirtualFoldersInBookmarks().ToArray();
+            var spPos = listFileToolStripMenuItem.DropDownItems.IndexOf(tmsSeparatorForVirtualFolder);
+
+            // 新規作成が下（デザイナで移動すること）
+            while (spPos > 0)
+            {
+                listFileToolStripMenuItem.DropDownItems[--spPos].Dispose();
+            }
+            if (vfBookmarks.Length == 0)
+            {
+                tmsSeparatorForVirtualFolder.Visible = false;
+            }
+            else
+            {
+                tmsSeparatorForVirtualFolder.Visible = true;
+                var tsmiList = new List<ToolStripMenuItem>();
+                foreach (var bookmark in vfBookmarks)
+                {
+                    var tsmi = new ToolStripMenuItem();
+                    tsmi.Text = Message.AddTo1.Replace("$1", bookmark.ToString());
+                    var simpleBookmark = bookmark.SimpleBookmark;
+                    tsmi.Enabled = simpleBookmark?.Location != currentLocation;
+                    var vfPath = simpleBookmark?.Location;
+                    tsmi.Click += (sender, e) => addSelectedToList(true, sorPath: vfPath);
+                    tsmiList.Add(tsmi);
+                }
+                var ddi = listFileToolStripMenuItem.DropDownItems;
+                ddi.Clear();
+                if (string.Compare(currentLocation, Program.HistorySorPath, ignoreCase: true) == 0)
+                {
+                    ddi.AddRange(tsmiList.Concat(new ToolStripItem[2] { tmsSeparatorForVirtualFolder, addToNewListToolStripMenuItem }).ToArray());
+                }
+                else
+                {
+                    ddi.AddRange(tsmiList.Concat(new ToolStripItem[3] { tmsSeparatorForVirtualFolder, addToNewListToolStripMenuItem, removeFromHistoryToolStripMenuItem }).ToArray());
+                }
+            }
+        }
+
+        /// <summary>
+        /// 選択中の項目の評価・綴じ方向を集計して、右クリックメニューのチェック（全部・一部・なし）を付ける。
+        /// フォルダの表紙ファイルを含め、表紙が設定されている項目があれば正の値を返す（数は 1 で打ち切ることがある）
+        /// </summary>
+        private int setRatingAndPageSequenceCheckStates(ZipPlaInfo[] zipPlaInfos, string[] selectedNameArray, string[] selectedPathArray)
+        {
+            var ratingHistogram = new int[6];
+            var pageSequenceHistogram = new int[4];
+            var thumbnailHistogram = 0;
+            if (zipPlaInfos != null && selectedNameArray != null && selectedPathArray != null &&
+                zipPlaInfos.Length == selectedNameArray.Length && zipPlaInfos.Length == selectedPathArray.Length)
+            {
+                for (var i = 0; i < selectedNameArray.Length; i++)
+                {
+                    var name = selectedNameArray[i];
+                    if (string.IsNullOrEmpty(name)) continue;
+                    if (name[name.Length - 1] == Path.DirectorySeparatorChar)
+                    {
+                        // thumbnailHistogram は 0 より大きいかしか使わないので、1 つ見つかったら残りのフォルダは調べない（K30）
+                        if (thumbnailHistogram > 0) continue;
+                        try
+                        {
+                            if (File.Exists(Path.Combine(selectedPathArray[i], ZipPlaCoverImageFileWithExtension)))
+                            {
+                                thumbnailHistogram++;
+                            }
+                        }
+                        catch { }
+                    }
+                    else
+                    {
+                        var info = zipPlaInfos[i];
+                        var r = info.Rating;
+                        if (r == null) ratingHistogram[0]++;
+                        else if (0 < r && r <= 5) ratingHistogram[(int)r]++;
+
+                        var p = info.BindingModeForSet;
+                        if (p == null) pageSequenceHistogram[0]++;
+                        else if (p == BindingMode.LeftToRight) pageSequenceHistogram[1]++;
+                        else if (p == BindingMode.RightToLeft) pageSequenceHistogram[2]++;
+                        else pageSequenceHistogram[3]++;
+
+                        var t = info.ThumbnailInfo;
+                        if (t != null) thumbnailHistogram++;
+                    }
+                }
+            }
+
+            var zipPlaInfosCount = zipPlaInfos.Length;
+            CheckState checkState(int count) => count == 0 ? CheckState.Unchecked : count < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
+
+            noneToolStripMenuItem.CheckState = checkState(ratingHistogram[0]);
+            star1toolStripMenuItem.CheckState = checkState(ratingHistogram[1]);
+            star2toolStripMenuItem.CheckState = checkState(ratingHistogram[2]);
+            star3toolStripMenuItem.CheckState = checkState(ratingHistogram[3]);
+            star4toolStripMenuItem.CheckState = checkState(ratingHistogram[4]);
+            star5toolStripMenuItem.CheckState = checkState(ratingHistogram[5]);
+
+            defaultToolStripMenuItem.CheckState = checkState(pageSequenceHistogram[0]);
+            leftToRightToolStripMenuItem.CheckState = checkState(pageSequenceHistogram[1]);
+            rightToLeftToolStripMenuItem.CheckState = checkState(pageSequenceHistogram[2]);
+            singlePageToolStripMenuItem.CheckState = checkState(pageSequenceHistogram[3]);
+
+            return thumbnailHistogram;
+        }
+
+        // 右クリックメニューの名前の欄で名前を変えられるか。タグのチェックを変えたときのイベントが、メニューを開いたあとの値を読む
+        private bool cmsRightClick_RenamableByTextBox;
+
+        /// <summary>右クリックメニューの「タグ」のドロップダウンを、選択中の項目のタグから作り直す（開くたびに作り直す。X19）</summary>
+        private void buildTagMenuItems(ZipPlaInfo[] zipPlaInfos)
+        {
+            //tagToolStripMenuItem.Enabled = true;
+            Program.ClearAndDisposeItems(tagToolStripMenuItem.DropDownItems); // 開くたびに作り直す（X19）
+
+
+            ToolStripMenuItem[] items;
+            CheckState[] initialCheckStates;
+            var tags = Tags;
+            if (tags == null) tags = new ZipTag[0];
+            Program.SetTagsToToolStripMenuItems(tagToolStripMenuItem, out items, out initialCheckStates, 0, tags, zipPlaInfos);
+
+            cmsRightClickPrepareAndShow_TagInitialCheckState = initialCheckStates;
+            //cmsRightClickPrepareAndShow_TagNames = (from tag in tags select tag.Name).ToArray();
+
+            if (items.Length > 0)
+            {
+                tagToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
+                items[0].ShortcutKeyDisplayString = Message.RightClickNotToClose;
+                if (items.Length > 1)
+                {
+                    items[1].ShortcutKeyDisplayString = Message.RightFlickIsAlsoOk;
+                    if (items.Length > 2)
+                    {
+                        items[2].ShortcutKeyDisplayString = Message.SameAsAbove;
+                    }
+                }
+
+            }
+
+            var uncheckAll = new ToolStripMenuItem(Message.UncheckAll);
+            uncheckAll.Enabled = initialCheckStates.Any(item => item != CheckState.Unchecked);
+            //uncheckAll.ShortcutKeyDisplayString = Message.RightClickNotToClose;
+            var checkedChangedByUncheckAll = false;
+            foreach (var item in items)
+            {
+                item.CheckStateChanged += (sender2, e2) =>
+                {
+                    if (checkedChangedByUncheckAll) return;
+                    uncheckAll.Enabled = items.Any(i => i.CheckState != CheckState.Unchecked);
+                    //if (cmsRightClick_RenamableByTextBox)
+                    {
+                        for (var i = 0; i < initialCheckStates.Length; i++)
+                        {
+                            if (items[i].CheckState != initialCheckStates[i])
+                            {
+                                rightClickFileNameToolStripTextBox.ReadOnly = true;
+                                SetAppInContextMenuEnabled(false);
+                                return;
+                            }
+                        }
+                        if (cmsRightClick_RenamableByTextBox) rightClickFileNameToolStripTextBox.ReadOnly = false;
+                        SetAppInContextMenuEnabled(true);
+                    }
+                };
+            }
+            uncheckAll.MouseDown += (sender2, e2) =>
+            {
+                if (e2.Button == MouseButtons.Right)
+                {
+                    cmsRightClick.AutoClose = false;
+                    tagToolStripMenuItem.DropDown.AutoClose = false;
+                    //uncheckAll.Enabled = false; // ここで無効化すると MouseUp や MouseLeave が発生しない
+                }
+
+                if (e2.Button == MouseButtons.Right || e2.Button == MouseButtons.Left)
+                {
+                    checkedChangedByUncheckAll = true;
+                    foreach (var item in items)
+                    {
+                        item.Checked = false;
+                    }
+                    checkedChangedByUncheckAll = false;
+                    //if (cmsRightClick_RenamableByTextBox)
+                    {
+                        for (var i = 0; i < initialCheckStates.Length; i++)
+                        {
+                            if (items[i].CheckState != initialCheckStates[i])
+                            {
+                                rightClickFileNameToolStripTextBox.ReadOnly = true;
+                                SetAppInContextMenuEnabled(false);
+                                return;
+                            }
+                        }
+                        if (cmsRightClick_RenamableByTextBox) rightClickFileNameToolStripTextBox.ReadOnly = false;
+                        SetAppInContextMenuEnabled(true);
+                    }
+                }
+            };
+            uncheckAll.MouseUp += (sender2, e2) =>
+            {
+                if (e2.Button == MouseButtons.Right)
+                {
+                    cmsRightClick.AutoClose = true;
+                    tagToolStripMenuItem.DropDown.AutoClose = true;
+                    if (uncheckAll.Enabled && !items.Any(i => i.CheckState != CheckState.Unchecked)) uncheckAll.Enabled = false;
+                }
+            };
+            uncheckAll.MouseLeave += (sender2, e2) =>
+            {
+                cmsRightClick.AutoClose = true;
+                tagToolStripMenuItem.DropDown.AutoClose = true;
+                if (uncheckAll.Enabled && !items.Any(i => i.CheckState != CheckState.Unchecked)) uncheckAll.Enabled = false;
+            };
+            tagToolStripMenuItem.DropDownItems.Insert(0, uncheckAll);
+            tagToolStripMenuItem.DropDownItems.Insert(1, new ToolStripSeparator());
+
+            var tagEditor = new ToolStripMenuItem(Message.EditTags + "...");
+            tagEditor.Click += tagEditorToolStripMenuItem_Click;
+            tagToolStripMenuItem.DropDownItems.Add(tagEditor);
+
+            var addTagsFromFileName = new ToolStripMenuItem(Message.AddTagsFromName + "...");
+            var newTagsSet = new HashSet<string>();
+            var tagNames = (from tag in tags select tag.Name).ToArray();
+            foreach (var info in zipPlaInfos) if (info.TagArray != null) foreach (var tag in info.TagArray) if (!tagNames.Contains(tag)) newTagsSet.Add(tag);
+            if (newTagsSet.Count > 0)
+            {
+                var newTags = newTagsSet.ToArray();
+                addTagsFromFileName.Click += (sender2, e2) =>
+                {
+                    showTagEditor(newTags);
+                };
+            }
+            else
+            {
+                addTagsFromFileName.Enabled = false;
+            }
+            tagToolStripMenuItem.DropDownItems.Add(addTagsFromFileName);
+        }
+
+        // 右クリックメニューの名前の欄に text を入れ、幅を合わせ、大事な部分（TextAnalyzer.GetImportantRange）を選ぶ
+        private void setRightClickFileNameTextBox(string text)
+        {
+            cmsRightClickPrepareAndShow_InitialTextBoxText = text;
+            SizeF sizeF;
+            using (var g = CreateGraphics())
+            {
+                sizeF = g.MeasureString(text, rightClickFileNameToolStripTextBox.Font);
+            }
+            var size = rightClickFileNameToolStripTextBox.Size;
+            size.Width = (int)Math.Ceiling(sizeF.Width);
+            rightClickFileNameToolStripTextBox.Size = size;
+            RightClickFileNameToolStripTextBox_TextChanged_CheckFileNameChar = false;
+            rightClickFileNameToolStripTextBox.Text = text;
+            RightClickFileNameToolStripTextBox_TextChanged_CheckFileNameChar = true;
+            var selected = TextAnalyzer.GetImportantRange(text);
+            rightClickFileNameToolStripTextBox.Select(selected.Index, selected.Length);
+            rightClickFileNameToolStripTextBox_SelectedText = selected.Value;
+            foreach (var dss in getCurrentDynamicStringSelectionToolStripMenuItems()) dss.SelectedText = rightClickFileNameToolStripTextBox_SelectedText;
         }
 
         public void mctgCatalogForm_TouchGestureStarting(object sender, MiniControlTouchGestureStartingEventArgs e)
