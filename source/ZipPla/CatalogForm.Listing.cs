@@ -1609,7 +1609,7 @@ namespace ZipPla
 
         private async Task loadDeferredHeaderAsync(int dataIndex, string path, Guid guid)
         {
-            Tuple<string, Bitmap, bool, int, LoadResult, long, ImageInfo, Tuple<MovieInfo>> result = null;
+            HeaderResult result = null;
             try
             {
                 result = await Task.Run(() =>
@@ -1618,7 +1618,7 @@ namespace ZipPla
                     var stat = FileStat.TryGet(path); // フォルダか・大きさ・更新日時を 1 回の問い合わせで取る
                     var isDir = stat != null && stat.IsDirectory;
                     var done = GetHeader(path, isDir, stat, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
-                    return done ? Tuple.Create(path, null as Bitmap, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
+                    return done ? new HeaderResult(path, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
                 });
             }
             catch { }

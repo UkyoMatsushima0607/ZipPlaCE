@@ -76,7 +76,7 @@ namespace ZipPla
                 try
                 {
                     var done = GetHeader(zipPath, isDir, stat, out var plainFile, out var filecount, out var loadResult, out var fileSize, out var imageInfo, out var movieInfo);
-                    e.Result = done ? Tuple.Create(zipPath, null as Bitmap, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
+                    e.Result = done ? new HeaderResult(zipPath, plainFile, filecount, loadResult, fileSize, imageInfo, movieInfo) : null;
                 }
                 catch { }
             });
@@ -98,8 +98,7 @@ namespace ZipPla
 
         private void bmwMakePreview_InconclusiveWorkerDisposing(object sender, BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
         {
-            var ResultTuple = e.Result as Tuple<string, Image, bool, int, LoadResult, long, ImageInfo, Tuple<MovieInfo>>;
-            ResultTuple?.Item2?.Dispose();
+            // ヘッダの結果（HeaderResult）は破棄の要るものを持たない
         }
 
 #if PERFLOG
@@ -168,20 +167,15 @@ namespace ZipPla
         private void bmwMakePreview_EachRunWorkerCompletedCore(BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
         {
             Program.AlertError(e.Error);
-            var ResultTuple = e.Result as Tuple<string, Bitmap, bool, int, LoadResult, long, ImageInfo, Tuple<MovieInfo>>; // Tuple.Create は要素が 8 以上の時こういう挙動になる
+            var headerResult = e.Result as HeaderResult;
             // 結果が来るのはヘッダ取得のジョブだけ（サムネイルのジョブは WorkSkipper で実行されない）
-            var show = ResultTuple != null && !e.Cancelled && e.WorkSetGuid == loadingGuid;
+            var show = headerResult != null && !e.Cancelled && e.WorkSetGuid == loadingGuid;
 #if PERFLOG
-            if (show) MakePreviewPerfLog.AddHeaderResult(ResultTuple.Item4, ResultTuple.Item7 != null);
+            if (show) MakePreviewPerfLog.AddHeaderResult(headerResult.FileCount, headerResult.ImageInfo != null);
 #endif
-            if (!show && ResultTuple != null)
-            {
-                var image = ResultTuple.Item2;
-                if (image != null) image.Dispose();
-            }
             if (show)
             {
-                applyHeaderResult(e.WorkNumber / 2, ResultTuple);
+                applyHeaderResult(e.WorkNumber / 2, headerResult);
             }
 
             // 実行順の並べ替え（全件 O(N)）はマウスが動いたときだけ、かつ 100ms に1回までにする。
@@ -207,14 +201,30 @@ namespace ZipPla
             }
         }
 
+        /// <summary>ヘッダ取得（GetHeader）の結果。ワーカーから完了イベントと、後回しにしたヘッダの読み込み（K33）へ渡す</summary>
+        private sealed class HeaderResult
+        {
+            public readonly string Path;
+            public readonly bool PlainFile;
+            public readonly int FileCount;
+            public readonly LoadResult LoadResult;
+            public readonly long FileSize;
+            public readonly ImageInfo ImageInfo;
+            public readonly MovieInfo MovieInfo;
+            public HeaderResult(string path, bool plainFile, int fileCount, LoadResult loadResult, long fileSize, ImageInfo imageInfo, MovieInfo movieInfo)
+            {
+                Path = path; PlainFile = plainFile; FileCount = fileCount; LoadResult = loadResult; FileSize = fileSize; ImageInfo = imageInfo; MovieInfo = movieInfo;
+            }
+        }
+
         /// <summary>
         /// ヘッダ取得（GetHeader）の結果を配列・ファイル一覧・ステータスバーに反映する（UI スレッドで呼ぶ）。
         /// bmwMakePreview のジョブと、後回しにしたヘッダの読み込み（K33）の両方から使う
         /// </summary>
-        private void applyHeaderResult(int index, Tuple<string, Bitmap, bool, int, LoadResult, long, ImageInfo, Tuple<MovieInfo>> ResultTuple)
+        private void applyHeaderResult(int index, HeaderResult headerResult)
         {
             {
-                var plainFile = ResultTuple.Item3;
+                var plainFile = headerResult.PlainFile;
                 //var singlePath = "";
                 try
                 {
@@ -228,28 +238,26 @@ namespace ZipPla
                         // リロードによって FileCountArray 等が変更されることがある。
                         // 一度消えて同じパスが再設定された場合ここでは判定できないが、
                         // その場合このまま続ければ良い
-                        if (index >= FileCountArray.Length || index >= LoadResultArray.Length || ResultTuple.Item1 != ZipPathArray[index])
+                        if (index >= FileCountArray.Length || index >= LoadResultArray.Length || headerResult.Path != ZipPathArray[index])
                         {
-                            ResultTuple.Item2?.Dispose();
                             return;
                         }
 
                         // マスクされていたら何もしない
                         if (!ZipMaskArray[index])
                         {
-                            ResultTuple.Item2?.Dispose();
                             return;
                         }
 
-                        FileCountArray[index] = ResultTuple.Item4;
+                        FileCountArray[index] = headerResult.FileCount;
                         // ヘッダの結果（通常は NotYet）で、サムネイル側が先に設定した Success などを上書きしない（A11）
-                        if (ResultTuple.Item5 != LoadResult.NotYet || LoadResultArray[index] == LoadResult.NotYet)
+                        if (headerResult.LoadResult != LoadResult.NotYet || LoadResultArray[index] == LoadResult.NotYet)
                         {
-                            LoadResultArray[index] = ResultTuple.Item5;
+                            LoadResultArray[index] = headerResult.LoadResult;
                         }
-                        if (ResultTuple.Item6 >= 0) ZipSizeArray[index] = ResultTuple.Item6;
-                        if (ResultTuple.Item7 != null) ImageInfoArray[index] = ResultTuple.Item7;
-                        if (ResultTuple.Rest.Item1 != null) MovieInfoArray[index] = ResultTuple.Rest.Item1;
+                        if (headerResult.FileSize >= 0) ZipSizeArray[index] = headerResult.FileSize;
+                        if (headerResult.ImageInfo != null) ImageInfoArray[index] = headerResult.ImageInfo;
+                        if (headerResult.MovieInfo != null) MovieInfoArray[index] = headerResult.MovieInfo;
                         //page = ZipPageArray[index];
                         path = ZipPathArray[index];
                         name = ZipNameArray[index];
@@ -294,7 +302,7 @@ namespace ZipPla
                             item.Text = name;
                             tvCatalog[index] = item;
                         }
-                        item.FilePath = ResultTuple.Item1;
+                        item.FilePath = headerResult.Path;
                     }
 
                     // setFileListRowInLock 内部で行う
