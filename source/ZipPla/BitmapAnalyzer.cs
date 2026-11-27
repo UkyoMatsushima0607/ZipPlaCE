@@ -69,17 +69,6 @@ namespace ZipPla
             return new FocusCell { WorkingWidth = workingWidth, WorkingHeight = workingHeight, X = result % workingWidth, Y = result / workingWidth };
         }
 
-        public static Bitmap GetIntensiveLines(Bitmap bmp, Fraction pixelRatio)
-        {
-            const int mag = 4;
-            var rectangle = new Rectangle(0, 0, bmp.Width, bmp.Height);
-            var wokingSize0 = GetWorkignSize(bmp.Size, pixelRatio);
-            var workingWidth = mag * wokingSize0.Width;
-            var workingHeight = mag * wokingSize0.Height;
-
-            return LinearToBitmap(GetLinearArrayForFocus(bmp, rectangle, workingWidth, workingHeight), workingWidth);
-        }
-
         private static Size GetWorkignSize(Size targetSize, Fraction pixelRatio)
         {
             return GetWorkignSize((Fraction)targetSize * pixelRatio);
@@ -220,49 +209,6 @@ namespace ZipPla
             }
 
             return pointsLinearArray;
-        }
-
-        private static Bitmap LinearToBitmap(int[] linear, int width)
-        {
-            var widthHeight = linear.Length;
-            var max = (ulong)linear.Max();
-            var height = widthHeight / width;
-            var output = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            try
-            {
-                var image = output.LockBits(new Rectangle(new Point(), output.Size), System.Drawing.Imaging.ImageLockMode.WriteOnly, output.PixelFormat);
-                try
-                {
-                    var stride = image.Stride;
-                    unsafe
-                    {
-                        var adr = (byte*)image.Scan0;
-                        for (var y = 0; y < height; y++)
-                        {
-                            var adrYStride = adr + y * stride;
-                            var yWidth = y * width;
-                            for(var x = 0; x < width; x++)
-                            {
-                                var x3 = x * 3;
-                                var v = (byte)(((ulong)linear[yWidth + x] * byte.MaxValue) / max);
-                                adrYStride[x3] = v;
-                                adrYStride[x3 + 1] = v;
-                                adrYStride[x3 + 2] = v;
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    output.UnlockBits(image);
-                }
-                return output;
-            }
-            catch
-            {
-                output.Dispose();
-                throw;
-            }
         }
 
         private static int Round(int p, int q)

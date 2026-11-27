@@ -189,13 +189,6 @@ namespace ZipPla
             return DragDropEffects.None;
         }
 
-        private void explorerTreeView_TreeWndMouseLeave(object sender, EventArgs e)
-        {
-            // ドラッグに MouseMove を使わない限り不要
-            //explorerTreeView_TreeWndDragEnter_Files = null;
-            //explorerTreeView_TreeWndDragEnter_FileType = DragDropFileType.None;
-        }
-
         private void explorerTreeView_TreeWndDragOver(object sender, DragEventArgs e)
         {
             if (explorerTreeView_TreeWndItemDrag_DragOuting)

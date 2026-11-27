@@ -588,8 +588,6 @@ namespace ZipPla
                 selectedFileNameToolStripTextBox.Font = MenuTextFont;
             }
             statusStrip.Items.Insert(1, selectedFileNameToolStripTextBox);
-            selectedFileNameToolStripTextBox.MouseEnter += SelectedFileNameToolStripTextBox_MouseEnter;
-            selectedFileNameToolStripTextBox.MouseLeave += SelectedFileNameToolStripTextBox_MouseLeave;
             selectedFileNameToolStripTextBox.TextChanged += selectedFileNameToolStripTextBox_ShowRight;
 
 

@@ -406,8 +406,6 @@
             this.menuStrip.Size = new System.Drawing.Size(684, 24);
             this.menuStrip.TabIndex = 3;
             this.menuStrip.Text = "menuStrip1";
-            this.menuStrip.MouseEnter += new System.EventHandler(this.menuStrip_MouseEnter);
-            this.menuStrip.MouseLeave += new System.EventHandler(this.menuStrip_MouseLeave);
             // 
             // startToolStripMenuItem
             // 
@@ -433,8 +431,6 @@
             this.startToolStripMenuItem.Text = "&Start";
             this.startToolStripMenuItem.DropDownClosed += new System.EventHandler(this.startToolStripMenuItem_DropDownClosed);
             this.startToolStripMenuItem.DropDownOpening += new System.EventHandler(this.startToolStripMenuItem_DropDownOpening);
-            this.startToolStripMenuItem.MouseEnter += new System.EventHandler(this.startToolStripMenuItem_MouseEnter);
-            this.startToolStripMenuItem.MouseLeave += new System.EventHandler(this.startToolStripMenuItem_MouseLeave);
             // 
             // openHistoryToolStripMenuItem
             // 
@@ -584,8 +580,6 @@
             this.viewToolStripMenuItem.Text = "&View";
             this.viewToolStripMenuItem.DropDownClosed += new System.EventHandler(this.menu_DropDownClosedAllowFullpower);
             this.viewToolStripMenuItem.DropDownOpening += new System.EventHandler(this.menu_DropDownOpeningDisallowFullpower);
-            this.viewToolStripMenuItem.MouseEnter += new System.EventHandler(this.viewToolStripMenuItem_MouseEnter);
-            this.viewToolStripMenuItem.MouseLeave += new System.EventHandler(this.viewToolStripMenuItem_MouseLeave);
             // 
             // dummyForDummyImageToolStripMenuItem1
             // 
@@ -1456,8 +1450,6 @@
             this.thumbnailSizeToolStripMenuItem.Text = "&Thumbnail";
             this.thumbnailSizeToolStripMenuItem.DropDownClosed += new System.EventHandler(this.menu_DropDownClosedAllowFullpower);
             this.thumbnailSizeToolStripMenuItem.DropDownOpening += new System.EventHandler(this.menu_DropDownOpeningDisallowFullpower);
-            this.thumbnailSizeToolStripMenuItem.MouseEnter += new System.EventHandler(this.thumbnailSizeToolStripMenuItem_MouseEnter);
-            this.thumbnailSizeToolStripMenuItem.MouseLeave += new System.EventHandler(this.thumbnailSizeToolStripMenuItem_MouseLeave);
             // 
             // dummyForDummyImageToolStripMenuItem
             // 
@@ -1868,8 +1860,6 @@
             this.optionToolStripMenuItem.Text = "&Options";
             this.optionToolStripMenuItem.DropDownClosed += new System.EventHandler(this.menu_DropDownClosedAllowFullpower);
             this.optionToolStripMenuItem.DropDownOpening += new System.EventHandler(this.menu_DropDownOpeningDisallowFullpower);
-            this.optionToolStripMenuItem.MouseEnter += new System.EventHandler(this.optionToolStripMenuItem1_MouseEnter);
-            this.optionToolStripMenuItem.MouseLeave += new System.EventHandler(this.optionToolStripMenuItem1_MouseLeave);
             // 
             // changeCurrentProfileColorToolStripMenuItem
             // 
@@ -1943,8 +1933,6 @@
             this.cmsRightClick.Closing += new System.Windows.Forms.ToolStripDropDownClosingEventHandler(this.cmsRightClick_Closing);
             this.cmsRightClick.Opening += new System.ComponentModel.CancelEventHandler(this.cmsRightClick_Opening);
             this.cmsRightClick.MouseDown += new System.Windows.Forms.MouseEventHandler(this.cmsRightClick_MouseDown);
-            this.cmsRightClick.MouseEnter += new System.EventHandler(this.cmsRightClick_MouseEnter);
-            this.cmsRightClick.MouseLeave += new System.EventHandler(this.cmsRightClick_MouseLeave);
             // 
             // appStartSeparator
             // 
@@ -2232,8 +2220,6 @@
             this.cbSortBy.TabIndex = 4;
             this.cbSortBy.SelectedIndexChanged += new System.EventHandler(this.cbSortBy_SelectedValueChanged);
             this.cbSortBy.KeyDown += new System.Windows.Forms.KeyEventHandler(this.cbSortBy_KeyDown);
-            this.cbSortBy.MouseEnter += new System.EventHandler(this.cbSortBy_MouseEnter);
-            this.cbSortBy.MouseLeave += new System.EventHandler(this.cbSortBy_MouseLeave);
             // 
             // cbLocation
             // 
@@ -2253,8 +2239,6 @@
             this.cbLocation.KeyDown += new System.Windows.Forms.KeyEventHandler(this.cbLocation_KeyDown);
             this.cbLocation.Leave += new System.EventHandler(this.cbLocation_Leave);
             this.cbLocation.MouseDown += new System.Windows.Forms.MouseEventHandler(this.cbLocation_MouseDown);
-            this.cbLocation.MouseEnter += new System.EventHandler(this.cbLocation_MouseEnter);
-            this.cbLocation.MouseLeave += new System.EventHandler(this.cbLocation_MouseLeave);
             // 
             // bwMakePreviewPrepare
             // 
@@ -2282,7 +2266,6 @@
             this.cbFilter.MouseDown += new System.Windows.Forms.MouseEventHandler(this.cbFilter_MouseDown);
             this.cbFilter.MouseEnter += new System.EventHandler(this.cbFilter_MouseEnter);
             this.cbFilter.MouseLeave += new System.EventHandler(this.cbFilter_MouseLeave);
-            this.cbFilter.MouseUp += new System.Windows.Forms.MouseEventHandler(this.cbFilter_MouseUp);
             // 
             // btnLocationCommands
             // 
@@ -2295,8 +2278,6 @@
             this.btnLocationCommands.UseVisualStyleBackColor = true;
             this.btnLocationCommands.Click += new System.EventHandler(this.btnLocationCommands_Click);
             this.btnLocationCommands.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnLocationCommands_MouseDown);
-            this.btnLocationCommands.MouseEnter += new System.EventHandler(this.btnLocationCommands_MouseEnter);
-            this.btnLocationCommands.MouseLeave += new System.EventHandler(this.btnLocationCommands_MouseLeave);
             // 
             // cmsLocationCommands
             // 
@@ -2333,8 +2314,6 @@
             this.btnFilterCommands.UseVisualStyleBackColor = true;
             this.btnFilterCommands.Click += new System.EventHandler(this.btnFilterCommands_Click);
             this.btnFilterCommands.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnFilterCommands_MouseDown);
-            this.btnFilterCommands.MouseEnter += new System.EventHandler(this.btnFilterCommands_MouseEnter);
-            this.btnFilterCommands.MouseLeave += new System.EventHandler(this.btnFilterCommands_MouseLeave);
             // 
             // cmsFilterCommands
             // 
@@ -2486,7 +2465,6 @@
             this.tvCatalog.Paint += new System.Windows.Forms.PaintEventHandler(this.tvCatalog_Paint);
             this.tvCatalog.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tvCatalog_KeyDown);
             this.tvCatalog.MouseDown += new System.Windows.Forms.MouseEventHandler(this.tvCatalog_MouseDown);
-            this.tvCatalog.MouseEnter += new System.EventHandler(this.tvCatalog_MouseEnter);
             this.tvCatalog.MouseLeave += new System.EventHandler(this.tvCatalog_MouseLeave);
             this.tvCatalog.MouseMove += new System.Windows.Forms.MouseEventHandler(this.tvCatalog_MouseMove);
             // 
@@ -2500,8 +2478,6 @@
             this.splRight.Size = new System.Drawing.Size(556, 8);
             this.splRight.TabIndex = 4;
             this.splRight.TabStop = false;
-            this.splRight.MouseEnter += new System.EventHandler(this.splRight_MouseEnter);
-            this.splRight.MouseLeave += new System.EventHandler(this.splRight_MouseLeave);
             // 
             // pnlRight
             // 
@@ -2580,8 +2556,6 @@
             this.dgvFileList.Scroll += new System.Windows.Forms.ScrollEventHandler(this.dgvFileList_Scroll);
             this.dgvFileList.SelectionChanged += new System.EventHandler(this.dgvFileList_SelectionChanged);
             this.dgvFileList.KeyDown += new System.Windows.Forms.KeyEventHandler(this.dgvFileList_KeyDown);
-            this.dgvFileList.MouseEnter += new System.EventHandler(this.dgvFileList_MouseEnter);
-            this.dgvFileList.MouseLeave += new System.EventHandler(this.dgvFileList_MouseLeave);
             this.dgvFileList.MouseMove += new System.Windows.Forms.MouseEventHandler(this.dgvFileList_MouseMove);
             // 
             // tbcIcon
@@ -2722,8 +2696,6 @@
             this.splLeft.Size = new System.Drawing.Size(8, 489);
             this.splLeft.TabIndex = 5;
             this.splLeft.TabStop = false;
-            this.splLeft.MouseEnter += new System.EventHandler(this.splLeft_MouseEnter);
-            this.splLeft.MouseLeave += new System.EventHandler(this.splLeft_MouseLeave);
             // 
             // pnlLeft
             // 
@@ -2766,7 +2738,6 @@
             this.explorerTreeView.TreeWndDragOver += new System.Windows.Forms.DragEventHandler(this.explorerTreeView_TreeWndDragOver);
             this.explorerTreeView.TreeWndItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.explorerTreeView_TreeWndItemDrag);
             this.explorerTreeView.TreeWndMouseDown += new System.Windows.Forms.MouseEventHandler(this.explorerTreeView_TreeWndMouseDown);
-            this.explorerTreeView.TreeWndMouseLeave += new System.EventHandler(this.explorerTreeView_TreeWndMouseLeave);
             this.explorerTreeView.TreeWndKeyDown += new System.Windows.Forms.KeyEventHandler(this.explorerTreeView_TreeWndKeyDown);
             this.explorerTreeView.TreeWndQueryContinueDrag += new System.Windows.Forms.QueryContinueDragEventHandler(this.explorerTreeView_TreeWndQueryContinueDrag);
             this.explorerTreeView.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.explorerTreeView_NodeMouseClick);
@@ -2836,7 +2807,6 @@
             this.dgvDirectoryList.QueryContinueDrag += new System.Windows.Forms.QueryContinueDragEventHandler(this.dgvDirectoryList_QueryContinueDrag);
             this.dgvDirectoryList.KeyDown += new System.Windows.Forms.KeyEventHandler(this.dgvDirectoryList_KeyDown);
             this.dgvDirectoryList.MouseEnter += new System.EventHandler(this.dgvDirectoryList_MouseEnter);
-            this.dgvDirectoryList.MouseLeave += new System.EventHandler(this.dgvDirectoryList_MouseLeave);
             this.dgvDirectoryList.MouseMove += new System.Windows.Forms.MouseEventHandler(this.dgvDirectoryList_MouseMove);
             this.dgvDirectoryList.MouseUp += new System.Windows.Forms.MouseEventHandler(this.dgvDirectoryList_MouseUp);
             // 
@@ -2857,8 +2827,6 @@
             this.menuStripLeft.Size = new System.Drawing.Size(120, 24);
             this.menuStripLeft.TabIndex = 0;
             this.menuStripLeft.Text = "menuStrip1";
-            this.menuStripLeft.MouseEnter += new System.EventHandler(this.menuStripLeft_MouseEnter);
-            this.menuStripLeft.MouseLeave += new System.EventHandler(this.menuStripLeft_MouseLeave);
             // 
             // addToolStripMenuItem
             // 
@@ -2877,8 +2845,6 @@
             this.addToolStripMenuItem.DropDownOpening += new System.EventHandler(this.addToolStripMenuItem_DropDownOpening);
             this.addToolStripMenuItem.Click += new System.EventHandler(this.addToolStripMenuItem_Click);
             this.addToolStripMenuItem.MouseDown += new System.Windows.Forms.MouseEventHandler(this.addToolStripMenuItem_MouseDown);
-            this.addToolStripMenuItem.MouseEnter += new System.EventHandler(this.addToolStripMenuItem_MouseEnter);
-            this.addToolStripMenuItem.MouseLeave += new System.EventHandler(this.addToolStripMenuItem_MouseLeave);
             // 
             // currentLocationToolStripMenuItem
             // 
@@ -3060,8 +3026,6 @@
             this.btnGoToBack.UseVisualStyleBackColor = true;
             this.btnGoToBack.Click += new System.EventHandler(this.btnGoToBack_Click);
             this.btnGoToBack.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnGoToBack_MouseDown);
-            this.btnGoToBack.MouseEnter += new System.EventHandler(this.btnGoToBack_MouseEnter);
-            this.btnGoToBack.MouseLeave += new System.EventHandler(this.btnGoToBack_MouseLeave);
             // 
             // btnGoToForward
             // 
@@ -3074,8 +3038,6 @@
             this.btnGoToForward.UseVisualStyleBackColor = true;
             this.btnGoToForward.Click += new System.EventHandler(this.btnGoToForward_Click);
             this.btnGoToForward.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnGoToForward_MouseDown);
-            this.btnGoToForward.MouseEnter += new System.EventHandler(this.btnGoToForward_MouseEnter);
-            this.btnGoToForward.MouseLeave += new System.EventHandler(this.btnGoToForward_MouseLeave);
             // 
             // cmsDirectoryList
             // 
@@ -3091,8 +3053,6 @@
             this.cmsDirectoryList.Size = new System.Drawing.Size(194, 158);
             this.cmsDirectoryList.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.cmsDirectoryList_Closed);
             this.cmsDirectoryList.Opening += new System.ComponentModel.CancelEventHandler(this.cmsDirectoryList_Opening);
-            this.cmsDirectoryList.MouseEnter += new System.EventHandler(this.cmsDirectoryList_MouseEnter);
-            this.cmsDirectoryList.MouseLeave += new System.EventHandler(this.cmsDirectoryList_MouseLeave);
             // 
             // loadOnlyProfileColorToolStripMenuItem
             // 
@@ -3181,8 +3141,6 @@
             this.ratingFilterToolStripMenuItem.DropDownOpened += new System.EventHandler(this.ratingFilterToolStripMenuItem_DropDownOpened);
             this.ratingFilterToolStripMenuItem.Click += new System.EventHandler(this.ratingFilterToolStripMenuItem_Click);
             this.ratingFilterToolStripMenuItem.MouseDown += new System.Windows.Forms.MouseEventHandler(this.ratingFilterToolStripMenuItem_MouseDown);
-            this.ratingFilterToolStripMenuItem.MouseEnter += new System.EventHandler(this.ratingFilterToolStripMenuItem_MouseEnter);
-            this.ratingFilterToolStripMenuItem.MouseLeave += new System.EventHandler(this.ratingFilterToolStripMenuItem_MouseLeave);
             this.ratingFilterToolStripMenuItem.MouseMove += new System.Windows.Forms.MouseEventHandler(this.ratingFilterToolStripMenuItem_MouseMove);
             this.ratingFilterToolStripMenuItem.Paint += new System.Windows.Forms.PaintEventHandler(this.ratingFilterToolStripMenuItem_Paint);
             // 
@@ -3270,8 +3228,6 @@
             this.cmsRightClickOnBackground.Size = new System.Drawing.Size(143, 26);
             this.cmsRightClickOnBackground.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.cmsRightClickOnBackground_Closed);
             this.cmsRightClickOnBackground.Opening += new System.ComponentModel.CancelEventHandler(this.cmsRightClickOnBackground_Opening);
-            this.cmsRightClickOnBackground.MouseEnter += new System.EventHandler(this.cmsRightClickOnBackground_MouseEnter);
-            this.cmsRightClickOnBackground.MouseLeave += new System.EventHandler(this.cmsRightClickOnBackground_MouseLeave);
             // 
             // pasteOnBackGroundToolStripMenuItem
             // 
@@ -3447,7 +3403,6 @@
             this.bmwMakePreview.RunWorkerStarting += new GenerarClasses.BackgroundMultiWorker.RunWorkerStartingEventHandler(this.bmwMakePreview_RunWorkerStarting);
             this.bmwMakePreview.AllRunWorkersCompleted += new GenerarClasses.BackgroundMultiWorker.AllRunWorkerCompletedEventHandler(this.bmwMakePreview_AllRunWorkersCompleted);
             this.bmwMakePreview.EachRunWorkerCompleted += new GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventHandler(this.bmwMakePreview_EachRunWorkerCompleted);
-            this.bmwMakePreview.InconclusiveWorkerDisposing += new GenerarClasses.BackgroundMultiWorker.EachRunWorkerCompletedEventHandler(this.bmwMakePreview_InconclusiveWorkerDisposing);
             // 
             // CatalogForm
             // 
@@ -3480,8 +3435,6 @@
             this.Shown += new System.EventHandler(this.CatalogForm_Shown);
             this.SizeChanged += new System.EventHandler(this.CatalogForm_SizeChanged);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.CatalogForm_KeyDown);
-            this.MouseEnter += new System.EventHandler(this.CatalogForm_MouseEnter);
-            this.MouseLeave += new System.EventHandler(this.CatalogForm_MouseLeave);
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();
             this.cmsRightClick.ResumeLayout(false);

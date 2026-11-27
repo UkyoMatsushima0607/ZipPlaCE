@@ -71,95 +71,47 @@ namespace ZipPla
             }
             Func<bool> isMovable;
             Action move;
-            if(SlideshowForward)
+            if (NextPage >= PreFilteredImageArray.Length)
             {
-                if (NextPage >= PreFilteredImageArray.Length)
+                if(SlideshowGlobal)
                 {
-                    if(SlideshowGlobal)
+                    if (SlideshowRepeat)
                     {
-                        if (SlideshowRepeat)
-                        {
-                            OpenNextWithLoop(notFoundAction: slideshowStop);
-                        }
-                        else
-                        {
-                            OpenNext(notFoundAction: slideshowStop);
-                        }
+                        OpenNextWithLoop(notFoundAction: slideshowStop);
                     }
                     else
                     {
-                        if (SlideshowRepeat)
-                        {
-                            // 読み込みの表示が出る可能性があるがシークバーを動かさないと読み込みが始まらない
-                            // 修正するなら、先読みの優先順位を決める距離の定義を変えた上で
-                            // isMovablePageNatural と movePageNatural に Loop のオーバーロードを加えて状況に応じてそれを呼び出し
-                            // （ただし単純に先読みの優先順位を変えると初めから開いたときに無駄に後ろの方を読み込むことになるので
-                            // 　スライドショーが動いているときのみスライドショーの方向に合わせて最小限の変更をするべき）
-                            mtbPage.Value = 0;
-                        }
-                        else
-                        {
-                            //setSlideshow(0);
-                            slideshowStop();
-                        }
+                        OpenNext(notFoundAction: slideshowStop);
                     }
-                    return;
-                }
-                if (SlideshowMove1Page)
-                {
-                    isMovable = () => isMovablePageToMinimalForward(checkLoaded: true);
-                    move = movePageToMinimalForward;
                 }
                 else
                 {
-                    isMovable = () => isMovablePageNatural(1, checkLoaded: true);
-                    move = () => movePageNatural(1);
+                    if (SlideshowRepeat)
+                    {
+                        // 読み込みの表示が出る可能性があるがシークバーを動かさないと読み込みが始まらない
+                        // 修正するなら、先読みの優先順位を決める距離の定義を変えた上で
+                        // isMovablePageNatural と movePageNatural に Loop のオーバーロードを加えて状況に応じてそれを呼び出し
+                        // （ただし単純に先読みの優先順位を変えると初めから開いたときに無駄に後ろの方を読み込むことになるので
+                        // 　スライドショーが動いているときのみスライドショーの方向に合わせて最小限の変更をするべき）
+                        mtbPage.Value = 0;
+                    }
+                    else
+                    {
+                        //setSlideshow(0);
+                        slideshowStop();
+                    }
                 }
+                return;
+            }
+            if (SlideshowMove1Page)
+            {
+                isMovable = () => isMovablePageToMinimalForward(checkLoaded: true);
+                move = movePageToMinimalForward;
             }
             else
             {
-                if (currentPage <= 0)
-                {
-                    if (SlideshowGlobal)
-                    {
-                        if (SlideshowRepeat)
-                        {
-                            OpenPreviousWithLoop(notFoundAction: slideshowStop);
-                        }
-                        else
-                        {
-                            OpenPrevious(notFoundAction: slideshowStop);
-                        }
-                    }
-                    else
-                    {
-                        if (SlideshowRepeat)
-                        {
-                            // 読み込みの表示が出る可能性があるがシークバーを動かさないと読み込みが始まらない
-                            // 修正するなら、先読みの優先順位を決める距離の定義を変えた上で
-                            // isMovablePageNatural と movePageNatural に Loop のオーバーロードを加えて状況に応じてそれを呼び出し
-                            // （ただし単純に先読みの優先順位を変えると初めから開いたときに無駄に後ろの方を読み込むことになるので
-                            // 　スライドショーが動いているときのみスライドショーの方向に合わせて最小限の変更をするべき）
-                            mtbPage.Value = PreFilteredImageArray.Length - 1;
-                        }
-                        else
-                        {
-                            //setSlideshow(0);
-                            slideshowStop();
-                        }
-                    }
-                    return;
-                }
-                if (SlideshowMove1Page)
-                {
-                    isMovable = () => isMovablePageToMinimalBack(checkLoaded: true);
-                    move = movePageToMinimalBack;
-                }
-                else
-                {
-                    isMovable = () => isMovablePageNatural(-1, checkLoaded: true);
-                    move = () => movePageNatural(-1);
-                }
+                isMovable = () => isMovablePageNatural(1, checkLoaded: true);
+                move = () => movePageNatural(1);
             }
 
             if (isMovable())

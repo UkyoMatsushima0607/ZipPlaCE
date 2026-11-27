@@ -81,11 +81,6 @@ namespace ZipPla
 
         }
 
-        private void cbFilter_MouseUp(object sender, MouseEventArgs e)
-        {
-            //● if (e.Button == MouseButtons.Right) cbFilter.ContextMenuStrip = null;
-        }
-
         private static string GetClipBoardShortString()
         {
             try
@@ -368,8 +363,6 @@ namespace ZipPla
                 tsmi.ToolTipText = Message.RightClickDownFlickToOpenContextMenu;
 
                 tsmi.DropDownClosed += Tsmi_DropDownClosed;
-                tsmi.MouseEnter += Tsmi_MouseEnter;
-                tsmi.MouseLeave += Tsmi_MouseLeave;
 
                 var normalColor = tag.ForeColor;
                 if (ColorEquals(normalColor, Color.White))
@@ -542,16 +535,6 @@ namespace ZipPla
                 result = owner.Text.Replace("&&", "&");
             }
             return result;
-        }
-
-        private void Tsmi_MouseLeave(object sender, EventArgs e)
-        {
-            GeneralMouseLeave(sender);
-        }
-
-        private void Tsmi_MouseEnter(object sender, EventArgs e)
-        {
-            GeneralMouseEnter(sender);
         }
 
         private void Tsmi_DropDownOpened(object sender, EventArgs e)

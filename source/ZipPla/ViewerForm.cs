@@ -294,7 +294,6 @@ namespace ZipPla
         ScalingAlgorithmPair StandardScalingAlgorithm;
         ScalingAlgorithmPair MagnifierScalingAlgorithm;
 
-        private bool SlideshowForward = true;
         private bool SlideshowMove1Page = false;
         private bool SlideshowRepeat = true;
         private bool SlideshowGlobal = false;
@@ -800,22 +799,6 @@ namespace ZipPla
         }
         
 
-        private void mtbPage_MouseEnter(object sender, EventArgs e)
-        {
-            //mtbPage.Focus();
-            focusIfRightness(mtbPage);
-        }
-
-        private void statusStrip_MouseEnter(object sender, EventArgs e)
-        {
-            focusIfRightness(mtbPage); // 自身ではなく mtbPage へフォーカス
-        }
-
-        private void focusIfRightness(Control control)
-        {
-            //if (!currentImageLongPathToolStripTextBox.Focused) control.Focus();
-        }
-        
         private void fixDropDownLocation(object toolStripMenuItem)
         {
             if (!FullScreen) return;

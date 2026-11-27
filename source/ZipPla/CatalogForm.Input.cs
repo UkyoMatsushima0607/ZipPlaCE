@@ -941,93 +941,23 @@ namespace ZipPla
         #region ポインタ位置処理
 
         bool CursorIsOnControlField = false;
-        private void GeneralMouseLeave(object something)
-        {
-        }
-        private void GeneralMouseEnter(object something)
-        {
-#if !AUTOBUILD
-            //if (something == null) throw new ArgumentNullException();
-#endif
 
-            //CursorIsOnControlField = true;
-
-        }
-
-        private void tvCatalog_MouseEnter(object sender, EventArgs e) { focusIfRightness(sender as Control); GeneralMouseEnter(tvCatalog); }
-        private void tvCatalog_MouseLeave(object sender, EventArgs e) { tvCatalog_MouseMove_RatingChangePart(); GeneralMouseLeave(tvCatalog); }
-        private void cbLocation_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cbLocation); }
-        private void cbLocation_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cbLocation); }
-        private void btnLocationCommands_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnLocationCommands); }
-        private void btnLocationCommands_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnLocationCommands); }
-        private void cbSortBy_MouseEnter(object sender, EventArgs e) { focusIfRightness(sender as Control); GeneralMouseEnter(cbSortBy); }
-        private void cbSortBy_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cbSortBy); }
-        private void cbFilter_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cbFilter);
+        private void tvCatalog_MouseLeave(object sender, EventArgs e) { tvCatalog_MouseMove_RatingChangePart(); }
+        private void cbFilter_MouseEnter(object sender, EventArgs e) {
             showToolTip_MouseEnter(sender as Control, Message.MiddleClickToClearPaste + "\n" + Message.LeftFlickToClear + "\n" + Message.RightFlickToPaste,
                 avoidCursorIcon: false, avoidTarget: true); }
-        private void cbFilter_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cbFilter); showToolTip_MouseLeave(sender as Control); }
-        private void btnFilterCommands_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnFilterCommands); }
-        private void btnFilterCommands_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnFilterCommands); }
-        private void menuStrip_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(menuStrip); }
-        private void menuStrip_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(menuStrip); }
-        private void CatalogForm_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(this); }
-        private void CatalogForm_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(this); }
-        private void dgvFileList_MouseEnter(object sender, EventArgs e) { focusIfRightness(sender as Control); GeneralMouseEnter(dgvFileList); }
-        private void dgvFileList_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(dgvFileList); }
-        private void splRight_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(splRight); }
-        private void splRight_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(splRight); }
-        private void zabLocation_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(zabLocation); }
-        private void zabLocation_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(zabLocation); }
-        private void btnGoToBack_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnGoToBack); }
-        private void btnGoToBack_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnGoToBack); }
-        private void btnGoToForward_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnGoToForward); }
-        private void btnGoToForward_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnGoToForward); }
+        private void cbFilter_MouseLeave(object sender, EventArgs e) { showToolTip_MouseLeave(sender as Control); }
 
-        private void menuStripLeft_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
-        private void menuStripLeft_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
-        private void addToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
-        private void addToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
         private void dgvDirectoryList_MouseEnter(object sender, EventArgs e)
         {
-            focusIfRightness(sender as Control); GeneralMouseEnter(sender);
             dgvDirectoryList.ShowCellToolTips = true; // ドラッグアウト時に false になるため
         }
-        private void dgvDirectoryList_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
-        private void splLeft_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
-        private void splLeft_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
-        private void cmsDirectoryList_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
-        private void cmsDirectoryList_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
-
-        private void SelectedFileNameToolStripTextBox_MouseEnter(object sender, EventArgs e)
-        {
-            //SelectedFileNameToolStripTextBox_MouseEnter_UnselectedItemMaskPart();
-            GeneralMouseEnter(selectedFileNameToolStripTextBox);
-        }
-        private void SelectedFileNameToolStripTextBox_MouseLeave(object sender, EventArgs e)
-        {
-            //SelectedFileNameToolStripTextBox_MouseLeave_UnselectedItemMaskPart();
-            GeneralMouseLeave(selectedFileNameToolStripTextBox);
-        }
-
-        private void startToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(startToolStripMenuItem); }
-        private void startToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(startToolStripMenuItem); }
-        private void viewToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(viewToolStripMenuItem); }
-        private void viewToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(viewToolStripMenuItem); }
-        private void thumbnailSizeToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(thumbnailSizeToolStripMenuItem); }
-        private void thumbnailSizeToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(thumbnailSizeToolStripMenuItem); }
-        private void optionToolStripMenuItem1_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(optionToolStripMenuItem); }
-        private void optionToolStripMenuItem1_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(optionToolStripMenuItem); }
-
-        private void cmsRightClick_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cmsRightClick); }
-        private void cmsRightClick_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cmsRightClick); }
 
 
-        private void cmsRightClickOnBackground_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cmsRightClickOnBackground); }
 
-        private void cmsRightClickOnBackground_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cmsRightClickOnBackground); }
 
-        private void ratingFilterToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(ratingFilterToolStripMenuItem); }
-        private void ratingFilterToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(ratingFilterToolStripMenuItem); }
+
+
 
         #endregion
 
@@ -1122,11 +1052,6 @@ namespace ZipPla
         private bool NotInEditiongAnything()
         {
             return dgvFileList.ReadOnly && dgvDirectoryList.ReadOnly && !cbLocation.Focused && !cbFilter.Focused && !selectedFileNameToolStripTextBox.Focused;
-        }
-
-        private void focusIfRightness(Control control)
-        {
-            //if (NotInEditiongAnything()) control.Focus();
         }
 
         private void tvCatalog_KeyDown(object sender, KeyEventArgs e)

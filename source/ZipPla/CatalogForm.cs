@@ -1613,8 +1613,6 @@ namespace ZipPla
             // 安全のため（v1.5.3.3 の不具合修正とともに）
             zabLocation.Text = "";
 
-            zabLocation.MouseEnter += zabLocation_MouseEnter;
-            zabLocation.MouseLeave += zabLocation_MouseLeave;
             zabLocation.DirectoryExistsOverrider = s => Directory.Exists(s) || IsSupportedByCatalogFormExceptFolder(s); // VirtualFolder.DirectoryOrBookmarkExists;
             //zabLocation.GetDirectoriesOverrider = VirtualFolder.GetDirectoriesAndBookmarks;
 

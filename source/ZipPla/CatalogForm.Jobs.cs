@@ -96,11 +96,6 @@ namespace ZipPla
             return i >= 0 ? i.ToString() : "?";
         }
 
-        private void bmwMakePreview_InconclusiveWorkerDisposing(object sender, BackgroundMultiWorker.EachRunWorkerCompletedEventArgs e)
-        {
-            // ヘッダの結果（HeaderResult）は破棄の要るものを持たない
-        }
-
 #if PERFLOG
         // 計測用（PERFLOG 定数を付けたビルドのみ）。bmwMakePreview の1回の実行（フォルダを開く→全ジョブ完了）ごとに
         // exe と同じフォルダの perf.log へ1行追記する。

@@ -149,7 +149,6 @@
             this.cbLanguage.TabIndex = 0;
             this.cbLanguage.DropDown += new System.EventHandler(this.cbLanguage_DropDown);
             this.cbLanguage.SelectedValueChanged += new System.EventHandler(this.cbLanguage_SelectedValueChanged);
-            this.cbLanguage.MouseEnter += new System.EventHandler(this.cbLanguage_MouseEnter);
             // 
             // gbApplications
             // 
@@ -346,7 +345,6 @@
             this.cbHistory.Name = "cbHistory";
             this.cbHistory.Size = new System.Drawing.Size(102, 20);
             this.cbHistory.TabIndex = 0;
-            this.cbHistory.MouseEnter += new System.EventHandler(this.cbHistory_MouseEnter);
             // 
             // cmsLanguageEdit
             // 
@@ -752,7 +750,6 @@
             this.cbViewerMemoryUsage.Name = "cbViewerMemoryUsage";
             this.cbViewerMemoryUsage.Size = new System.Drawing.Size(122, 20);
             this.cbViewerMemoryUsage.TabIndex = 0;
-            this.cbViewerMemoryUsage.MouseEnter += new System.EventHandler(this.cbViewerMemoryUsage_MouseEnter);
             // 
             // gbSusiePlugins
             // 

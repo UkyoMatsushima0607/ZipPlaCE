@@ -513,11 +513,6 @@ namespace ZipPla
             setEssentialButtonEnabled();
         }
 
-        private void dataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-
-        }
-
         private void dataGridView_CellMouseUp(object sender, DataGridViewCellMouseEventArgs e)
         {
             if(e.RowIndex >= 0 && e.ColumnIndex == cbcEssential.Index && (e.Button & MouseButtons.Left) == MouseButtons.Left)

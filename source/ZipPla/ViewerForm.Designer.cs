@@ -1475,7 +1475,6 @@
             this.statusStrip.TabIndex = 6;
             this.statusStrip.Text = "statusStrip1";
             this.statusStrip.VisibleChanged += new System.EventHandler(this.statusStrip_VisibleChanged);
-            this.statusStrip.MouseEnter += new System.EventHandler(this.statusStrip_MouseEnter);
             this.statusStrip.MouseLeave += new System.EventHandler(this.hideUnderUIForMouseLeave);
             // 
             // pageToolStripStatusLabel
@@ -1543,7 +1542,6 @@
             this.mtbPage.ValueChanged += new System.EventHandler(this.mtbPage_ValueChanged);
             this.mtbPage.VisibleChanged += new System.EventHandler(this.mtbPage_VisibleChanged);
             this.mtbPage.MouseDown += new System.Windows.Forms.MouseEventHandler(this.mtbPage_MouseDown);
-            this.mtbPage.MouseEnter += new System.EventHandler(this.mtbPage_MouseEnter);
             this.mtbPage.MouseLeave += new System.EventHandler(this.hideUnderUIForMouseLeave);
             this.mtbPage.MouseMove += new System.Windows.Forms.MouseEventHandler(this.mtbPage_MouseMove);
             // 

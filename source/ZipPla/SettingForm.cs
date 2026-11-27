@@ -1016,11 +1016,6 @@ namespace ZipPla
             Close();
         }
 
-        private void cbLanguage_MouseEnter(object sender, EventArgs e)
-        {
-            //cbLanguage.Focus();
-        }
-        
 
         private void cbLanguage_DropDown(object sender, EventArgs e)
         {
@@ -1636,16 +1631,6 @@ namespace ZipPla
             setDataGridViewHeight();
         }
 
-        private void cbHistory_MouseEnter(object sender, EventArgs e)
-        {
-            //cbHistory.Focus();
-        }
-
-        private void cbViewerMemoryUsage_MouseEnter(object sender, EventArgs e)
-        {
-            //cbViewerMemoryUsage.Focus();
-        }
-        
         private void btnViewerMemoryUsageHelp_Click(object sender, EventArgs e)
         {
             //MessageBox.Show(this, Message.BuiltInViewerMemoryUsageDescription.Replace("\\n", "\n"), Message.BuiltInViewerMemoryUsage, MessageBoxButtons.OK, MessageBoxIcon.Information);

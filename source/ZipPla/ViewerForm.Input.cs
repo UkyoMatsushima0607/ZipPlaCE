@@ -679,7 +679,6 @@ namespace ZipPla
             MouseInPbView = true;
             hideUnderUI(null, null);
             //pbView.Focus();
-            focusIfRightness(pbView);
 
             if (ViewerMode == ViewerModeEnum.MagnifierOpening || ViewerMode == ViewerModeEnum.Magnifier || ViewerMode == ViewerModeEnum.MagnifierClosing)
             {

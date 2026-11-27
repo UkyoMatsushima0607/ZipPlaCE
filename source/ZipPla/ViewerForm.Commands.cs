@@ -899,8 +899,6 @@ namespace ZipPla
 
         private OpenResult OpenPrevious(Action notFoundAction = null) { return OpenNextOrPrevious(next: false, loop: false, notFoundAction: notFoundAction); }
 
-        private OpenResult OpenPreviousWithLoop(Action notFoundAction = null) { return OpenNextOrPrevious(next: false, loop: true, notFoundAction: notFoundAction); }
-
         class OpenNextOrPrevious_Comparer : IComparer<FileSortInfo>
         {
             private static readonly LogicalStringComparer LogicalStringComparer = new LogicalStringComparer();
