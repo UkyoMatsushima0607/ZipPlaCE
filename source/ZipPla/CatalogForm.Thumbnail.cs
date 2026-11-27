@@ -765,12 +765,18 @@ namespace ZipPla
         private Bitmap OpenArchiveImageForThumbnail(PackedImageLoader loader, PackedImageLoader.PackedImageEntry entry, ReducedJpegDecodeRequest request)
         {
             ReducedJpegDecodeRequest.Current = request;
+#if PERFLOG
+            var perfDecode = PerfTrace.Now();
+#endif
             try
             {
                 return loader.OpenImageStream(entry);
             }
             finally
             {
+#if PERFLOG
+                PerfTrace.AddStage("archiveDecode", PerfTrace.Now() - perfDecode); // 取り出しとデコード（表紙を選ぶまでに読んだページの数だけ）
+#endif
                 ReducedJpegDecodeRequest.Current = null;
             }
         }
@@ -1097,11 +1103,17 @@ namespace ZipPla
                 if (!fromCache)
                 {
                     List<PackedImageLoader.PackedImageEntry> entries;
+#if PERFLOG
+                    var perfArchiveOpen = PerfTrace.Now();
+#endif
                     using (var loader = CreatePackedImageLoader(zipPath))
                     {
                         // http://www.weblio.jp/content/DllImport+Attribute LogicalStringComparer インスタンスはスレッドセーフのため新たに作成する
                         //var entries = loader.GetPackedImageEntries().OrderBy(entry => entry.Path, new LogicalStringComparer());
                         entries = loader.GetPackedImageEntries();
+#if PERFLOG
+                        PerfTrace.AddStage("archiveOpenList", PerfTrace.Now() - perfArchiveOpen); // 書庫を開いて一覧を作る
+#endif
                         filecount = entries.Count;
                         if (loader.Type != PackedImageLoader.PackType.Directory) rememberArchiveEntryCount(zipPath, filecount);
 
@@ -1784,6 +1796,15 @@ namespace ZipPla
         // point はゼロ以下
         private void GetImagePointAndEtc(out double point, out RectangleF clip, Bitmap image, bool leftToRight)
         {
+#if PERFLOG
+            var perfPoint = PerfTrace.Now();
+            GetImagePointAndEtcCore(out point, out clip, image, leftToRight);
+            PerfTrace.AddStage("archivePoint", PerfTrace.Now() - perfPoint); // 表紙らしさの点数（余白の検出）
+        }
+
+        private void GetImagePointAndEtcCore(out double point, out RectangleF clip, Bitmap image, bool leftToRight)
+        {
+#endif
             var thumbWidth = tvCatalog.ThumbnailWidth;
             var thumbHeight = tvCatalog.ThumbnailHeight;
 
