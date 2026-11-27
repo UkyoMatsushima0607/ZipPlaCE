@@ -369,6 +369,8 @@ namespace ZipPla
 
 
             // bmwLoadEachPage が動き出す前に Paint が動いて古い ResizedImage が使われることの無いように
+            // 片付ける前に、動いている読み込みジョブにキャンセルを伝える（TD-7）
+            if (bmwLoadEachPage.IsBusy) bmwLoadEachPage.CancelAsync();
             clearResizedImageArray();
 
             // リロードでは不要、オープンでのみ使用
@@ -448,6 +450,9 @@ namespace ZipPla
                 //bmwLoadEachPage.RunWorkerAsyncWithInterrupt(EntryNumberArray.Length, true); // OriginalImageArray の問題があるからキャンセルを待たないわけにはいかない
 
                 // ウィンドウの大きさだけが変わった場合は、縮小後の大きさが変わらないページの縮小画像を残す（V4）
+                // 配列を片付ける前に、動いている読み込みジョブにキャンセルを伝える（ジョブはロックや枠の前後で抜ける。TD-7）
+                if (bmwLoadEachPage.IsBusy) bmwLoadEachPage.CancelAsync();
+
                 if (keepSameSizePages && !updateOriginal) StashPagesWithSameResizedSize();
 
                 // bmwLoadEachPage が動き出す前に Paint が動いて古い ResizedImage が使われることの無いように
@@ -884,7 +889,15 @@ namespace ZipPla
                 // 原寸でデコードするページ（表示の近く。3000x4300 のカラーで 1 枚 38MB）は同時に読む数を絞る。
                 // 4 本とも原寸を読むと最大メモリが 1.6〜1.8 倍になった。縮小デコードのページ（小さい）は制限しない。
                 // 原寸から縮小するだけのジョブも枠を取る（縮小は原寸の一時的なコピーを作るので、枠の外で並列にすると最大メモリが増えた。Y10 は見送り）
-                var full = !CanDecodeReduced(e.WorkNumber);
+                bool full;
+                try
+                {
+                    full = !CanDecodeReduced(e.WorkNumber);
+                }
+                catch
+                {
+                    full = true; // Reload の配列の片付けと重なった（TD-7）。多めに見積もって原寸の枠を取る
+                }
                 // 表示中のページは専用の枠（見開きの枚数ぶん）で読み、表示外のページ（前後の見開き）とは枠を取り合わない。
                 // 開いた直後や遠くへ飛んだ直後に、見開きの 2 ページが直列になったり、表示外のページの後ろで待ったりしないようにする（V23）
                 var usesDisplayedSlot = full && IsDisplayedPage(e.WorkNumber);

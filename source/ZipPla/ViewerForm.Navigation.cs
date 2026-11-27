@@ -616,24 +616,30 @@ namespace ZipPla
         {
             get
             {
-                if (ResizedImageArray == null)
+                // 読み込みジョブ（ワーカースレッド）からも呼ばれる（CanDecodeReduced）。Reload の配列のクリアと重なっても
+                // 例外にならないよう、配列と currentPage は一度だけ読む（TD-7）
+                var resizedImages = ResizedImageArray;
+                var resizedSizes = ResizedSizeArray;
+                var cPage = currentPage;
+                if (resizedImages == null || resizedSizes == null)
                 {
                     return 0;
                 }
+                if (cPage < 0) return cPage;
 
                 var totalWidth = 0;
-                var stopPage = currentPage;
+                var stopPage = cPage;
                 var MaxPageCountInWindowForNext = onePageModeForNext ? 1 : MaxPageCountInWindow;
                 var screenWidth = null as int?;
-                for (var i = currentPage; i < currentPage + MaxPageCountInWindowForNext && i < ResizedImageArray.Length; i++)
+                for (var i = cPage; i < cPage + MaxPageCountInWindowForNext && i < resizedImages.Length && i < resizedSizes.Length; i++)
                 {
-                    var img = ResizedImageArray[i];
+                    var img = resizedImages[i];
                     if (img == null)
                     {
-                        var imgSize = ResizedSizeArray[i];
+                        var imgSize = resizedSizes[i];
                         if (imgSize.IsEmpty)
                         {
-                            return currentPage;
+                            return cPage;
                         }
                         totalWidth += imgSize.Width;
                     }
@@ -642,7 +648,7 @@ namespace ZipPla
                         totalWidth += img.Width;
                     }
                     stopPage++;
-                    var pbViewWidth = FullScreen_pseudoFullScreen ? screenWidth ?? (int)(screenWidth = Screen.FromControl(this).Bounds.Width) :
+                    var pbViewWidth = FullScreen_pseudoFullScreen ? screenWidth ?? (int)(screenWidth = GetScreenBoundsThreadSafe().Width) :
                         PseudoMaximized ? PseudoMaximizedSize.Width : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Width; // pbView.Width;
                     if (totalWidth >= pbViewWidth)
                     {
@@ -651,13 +657,19 @@ namespace ZipPla
                             stopPage--;
                             break; // img == null でも stopPage を返す唯一のパターン
                         }
-                        if (img == null) return currentPage;
+                        if (img == null) return cPage;
                         break;
                     }
-                    if (img == null) return currentPage;
+                    if (img == null) return cPage;
                 }
                 return stopPage;
             }
+        }
+
+        // ワーカースレッドからはウィンドウハンドルに触らない（Screen.FromControl は Handle を使う。TD-7）。Bounds はフィールドの読み取りだけ
+        private Rectangle GetScreenBoundsThreadSafe()
+        {
+            return (InvokeRequired ? Screen.FromRectangle(Bounds) : Screen.FromControl(this)).Bounds;
         }
 
         private int PreviousPage
