@@ -927,44 +927,90 @@ namespace ZipPla
         // ZipArchive に渡す名前の文字コード。null なら UTF-8 フラグのない名前をシステムの既定のコードページで読む
         private Encoding ZipArchiveEntryNameEncoding = null;
 
-        public bool HasAnyEntry()
+        // ---- どの実装で書庫を読むか ----
+        private enum ArchiveBackend { Unsupported, Directory, Pdf, SevenZip, ZipArchive, SharpCompress }
+
+        /// <summary>
+        /// 一覧を作るときに使う実装を決める。7z.dll を使うなら format と sevenZipPath も返す（それ以外は sevenZipPath が null）。
+        /// RAR4 を 7z.dll で読むときは、読めなければ SharpCompress に切り替える（rar4Fallback、withRar4SevenZipFallback）
+        /// </summary>
+        private ArchiveBackend ResolveListingBackend(out KnownSevenZipFormat format, out string sevenZipPath, out bool rar4Fallback)
+        {
+            format = default(KnownSevenZipFormat);
+            sevenZipPath = null;
+            rar4Fallback = false;
+            switch (Type)
+            {
+                case PackType.Directory: return ArchiveBackend.Directory;
+                case PackType.Pdf: return ArchiveBackend.Pdf;
+                case PackType.ZipM: format = KnownSevenZipFormat.Zip; sevenZipPath = GetSevenZipPath(); return ArchiveBackend.SevenZip;
+                case PackType.Rar5: format = KnownSevenZipFormat.Rar5; sevenZipPath = GetSevenZipPath(); return ArchiveBackend.SevenZip;
+                case PackType.Lha: format = KnownSevenZipFormat.Lzh; sevenZipPath = GetSevenZipPath(); return ArchiveBackend.SevenZip;
+            }
+            var path7 = stream == null || !(PrioritizeSevenZip || PreferSevenZipDll(Type)) ? null : GetSevenZipPath();
+            if (path7 == null)
+            {
+                switch (Type)
+                {
+                    case PackType.Zip: return UseZipArchiveClass ? ArchiveBackend.ZipArchive : ArchiveBackend.SharpCompress;
+                    case PackType.Rar:
+                    case PackType.Tar:
+                    case PackType.SevenZip: return ArchiveBackend.SharpCompress;
+                    case PackType.Cab: throw new NotSupportedException(); // 7z.dll が要る（B7）
+                    default: return ArchiveBackend.Unsupported;
+                }
+            }
+            sevenZipPath = path7; // 知らない形式でも設定する（HasAnyEntry が SharpCompress で試さずに例外にする目印）
+            switch (Type)
+            {
+                case PackType.Zip: format = KnownSevenZipFormat.Zip; break;
+                case PackType.Rar: format = KnownSevenZipFormat.Rar; rar4Fallback = true; break;
+                case PackType.Tar: format = KnownSevenZipFormat.Tar; break;
+                case PackType.SevenZip: format = KnownSevenZipFormat.SevenZip; break;
+                case PackType.Cab: format = KnownSevenZipFormat.Cab; break;
+                default: return ArchiveBackend.Unsupported;
+            }
+            return ArchiveBackend.SevenZip;
+        }
+
+        /// <summary>
+        /// エントリを取り出すときに使う実装を決める。一覧を 7z.dll で作った（sevenZipArchive がある）なら 7z.dll、
+        /// ZIP は ZipArchive を開いていればそれ、ほかは SharpCompress
+        /// </summary>
+        private ArchiveBackend ResolveExtractionBackend()
         {
             switch (Type)
             {
-                case PackType.Directory:
-                    return hasAnyDirEntry();
+                case PackType.Directory: return ArchiveBackend.Directory;
+                case PackType.Pdf: return ArchiveBackend.Pdf;
                 case PackType.ZipM:
-                    return hasAnySevenZipArchiveEntry(KnownSevenZipFormat.Zip, GetSevenZipPath());
                 case PackType.Rar5:
-                    return hasAnySevenZipArchiveEntry(KnownSevenZipFormat.Rar5, GetSevenZipPath());
-                case PackType.Lha:
-                    return hasAnySevenZipArchiveEntry(KnownSevenZipFormat.Lzh, GetSevenZipPath());
-                case PackType.Pdf:
-                    return hasAnyPdfEntry();
+                case PackType.Lha: return ArchiveBackend.SevenZip;
+            }
+            if (sevenZipArchive != null) return ArchiveBackend.SevenZip;
+            switch (Type)
+            {
+                case PackType.Zip: return zipArchive != null ? ArchiveBackend.ZipArchive : ArchiveBackend.SharpCompress;
+                case PackType.Rar:
+                case PackType.Tar:
+                case PackType.SevenZip: return ArchiveBackend.SharpCompress;
+                default: return ArchiveBackend.Unsupported;
+            }
+        }
+
+        public bool HasAnyEntry()
+        {
+            switch (ResolveListingBackend(out var format, out var sevenZipPath, out var rar4Fallback))
+            {
+                case ArchiveBackend.Directory: return hasAnyDirEntry();
+                case ArchiveBackend.Pdf: return hasAnyPdfEntry();
+                case ArchiveBackend.SevenZip:
+                    return rar4Fallback ? withRar4SevenZipFallback(() => hasAnySevenZipArchiveEntry(format, sevenZipPath), hasAnyIArchiveEntry) :
+                        hasAnySevenZipArchiveEntry(format, sevenZipPath);
+                case ArchiveBackend.ZipArchive: return hasAnyZipArchiveEntry();
+                case ArchiveBackend.SharpCompress: return hasAnyIArchiveEntry();
                 default:
-                    var sevenZipPath = stream == null || !(PrioritizeSevenZip || PreferSevenZipDll(Type)) ? null : GetSevenZipPath();
-
-                    if (sevenZipPath == null)
-                    {
-                        switch (Type)
-                        {
-                            case PackType.Zip: return UseZipArchiveClass ? hasAnyZipArchiveEntry() : hasAnyIArchiveEntry();
-                            case PackType.Cab: throw new NotSupportedException(); // 7z.dll が要る（B7）
-                            default: return hasAnyIArchiveEntry();
-                        }
-                    }
-                    else
-                    {
-                        switch (Type)
-                        {
-                            case PackType.Zip: return hasAnySevenZipArchiveEntry(KnownSevenZipFormat.Zip, sevenZipPath);
-                            case PackType.Rar: return withRar4SevenZipFallback(() => hasAnySevenZipArchiveEntry(KnownSevenZipFormat.Rar, sevenZipPath), hasAnyIArchiveEntry);
-                            case PackType.Tar: return hasAnySevenZipArchiveEntry(KnownSevenZipFormat.Tar, sevenZipPath);
-                            case PackType.SevenZip: return hasAnySevenZipArchiveEntry(KnownSevenZipFormat.SevenZip, sevenZipPath);
-                            case PackType.Cab: return hasAnySevenZipArchiveEntry(KnownSevenZipFormat.Cab, sevenZipPath);
-                        }
-                    }
-
+                    if (sevenZipPath == null) return hasAnyIArchiveEntry(); // 7z.dll を使わない場合は、知らない形式も SharpCompress で試す（従来どおり）
                     throw new NotSupportedException();
             }
         }
@@ -972,59 +1018,22 @@ namespace ZipPla
         /// <summary>
         /// これをメインスレッドで呼び出し画像の取得をサブスレッドで呼び出す場合 needToExecOnTask = true とすること
         /// </summary>
-        /// <param name="neededFileInfos"></param>
-        /// <param name="needToExecOnTask"></param>
-        /// <returns></returns>
         public List<PackedImageEntry> GetPackedImageFullEntries(PackedImageLoaderFileInfo neededFileInfos = 0, bool needToExecOnTask = false)
         {
-            switch (Type)
+            switch (ResolveListingBackend(out var format, out var sevenZipPath, out var rar4Fallback))
             {
-                case PackType.Directory:
-                    return getDirEntries(neededFileInfos, needToExecOnTask);
-                case PackType.ZipM:
-                    return getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.Zip, GetSevenZipPath(), needToExecOnTask);
-                case PackType.Rar5:
-                    return getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.Rar5, GetSevenZipPath(), needToExecOnTask);
-                case PackType.Lha:
-                    return getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.Lzh, GetSevenZipPath(), needToExecOnTask);
-                case PackType.Pdf:
-                    return getPdfEntries();
-                default:
-                    var sevenZipPath = stream == null || !(PrioritizeSevenZip || PreferSevenZipDll(Type)) ? null : GetSevenZipPath();
-
-                    if (sevenZipPath == null)
-                    {
-                        switch (Type)
-                        {
-                            case PackType.Zip:
-                                return UseZipArchiveClass ? getZipArchiveEntries(neededFileInfos, needToExecOnTask) : getIArchiveEntries(neededFileInfos, needToExecOnTask);
-                            case PackType.Rar:
-                            case PackType.Tar:
-                            case PackType.SevenZip:
-                                return getIArchiveEntries(neededFileInfos, needToExecOnTask);
-                            case PackType.Cab: throw new NotSupportedException(); // 7z.dll が要る（B7）
-                        }
-                    }
-                    else
-                    {
-                        switch (Type)
-                        {
-                            case PackType.Zip:
-                                return getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.Zip, sevenZipPath, needToExecOnTask);
-                            case PackType.Rar:
-                                return withRar4SevenZipFallback(() => getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.Rar, sevenZipPath, needToExecOnTask),
-                                    () => getIArchiveEntries(neededFileInfos, needToExecOnTask));
-                            case PackType.Tar:
-                                return getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.Tar, sevenZipPath, needToExecOnTask);
-                            case PackType.SevenZip:
-                                return getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.SevenZip, sevenZipPath, needToExecOnTask);
-                            case PackType.Cab: return getSevenZipArchiveEntry(neededFileInfos, KnownSevenZipFormat.Cab, sevenZipPath, needToExecOnTask);
-                        }
-                    }
-                    throw new NotSupportedException();
+                case ArchiveBackend.Directory: return getDirEntries(neededFileInfos, needToExecOnTask);
+                case ArchiveBackend.Pdf: return getPdfEntries();
+                case ArchiveBackend.SevenZip:
+                    return rar4Fallback ? withRar4SevenZipFallback(() => getSevenZipArchiveEntry(neededFileInfos, format, sevenZipPath, needToExecOnTask),
+                            () => getIArchiveEntries(neededFileInfos, needToExecOnTask)) :
+                        getSevenZipArchiveEntry(neededFileInfos, format, sevenZipPath, needToExecOnTask);
+                case ArchiveBackend.ZipArchive: return getZipArchiveEntries(neededFileInfos, needToExecOnTask);
+                case ArchiveBackend.SharpCompress: return getIArchiveEntries(neededFileInfos, needToExecOnTask);
+                default: throw new NotSupportedException();
             }
         }
-        
+
         private bool hasAnyDirEntry()
         {
             var ffmpegEixsts = MovieThumbnailLoader.ffmpegExists();
@@ -1709,44 +1718,20 @@ namespace ZipPla
         private Stream GetStream(int physicalIndex, out string extensionWithPeriodForPDF, bool callback)
         {
             extensionWithPeriodForPDF = null;
-            switch (Type)
+            switch (ResolveExtractionBackend())
             {
-                case PackType.ZipM:
-                case PackType.Rar5:
-                case PackType.Lha:
+                case ArchiveBackend.SevenZip:
                     return GetInnerImageStreamSevenZip(physicalIndex, seekToBegin: true, callback: callback);
-                case PackType.Pdf:
-                    Bitmap dummy;
+                case ArchiveBackend.Pdf:
                     pdfImageMustBeConvert = true; // コンバートが不要な場合得られるバイナリに違いはないので GetStream の場合は常に true に
-                    return GetInnerImageStreamPdf(physicalIndex, getImage: false, extensionWithPeriodForPDF: out extensionWithPeriodForPDF, image: out dummy);
-                default:
-                    if (sevenZipArchive != null)
-                    {
-                        return GetInnerImageStreamSevenZip(physicalIndex, seekToBegin: true, callback: callback);
-                    }
-                    else
-                    {
-                        switch (Type)
-                        {
-                            case PackType.Zip:
-                                if (zipArchive != null)
-                                {
-                                    return GetInnerImageStream(physicalIndex);
-                                }
-                                else
-                                {
-                                    return GetInnerImageStreamSharpCompress(physicalIndex);
-                                }
-                            case PackType.Rar:
-                            case PackType.Tar:
-                            case PackType.SevenZip:
-                                //case PackType.Gz:
-                                return GetInnerImageStreamSharpCompress(physicalIndex);
-                        }
-                    }
+                    return GetInnerImageStreamPdf(physicalIndex, getImage: false, extensionWithPeriodForPDF: out extensionWithPeriodForPDF, image: out _);
+                case ArchiveBackend.ZipArchive:
+                    return GetInnerImageStream(physicalIndex);
+                case ArchiveBackend.SharpCompress:
+                    return GetInnerImageStreamSharpCompress(physicalIndex);
+                default: // フォルダ、7z.dll なしの CAB など
                     throw new NotSupportedException();
             }
-
         }
 
         /// <summary>
@@ -1777,48 +1762,26 @@ namespace ZipPla
 
         private Bitmap OpenImageStream(int physicalIndex)
         {
-            switch (Type)
+            switch (ResolveExtractionBackend())
             {
-                case PackType.Directory:
-                    var path = dirEntries[physicalIndex];
-                    return ImageLoader.GetFullBitmap(path, animation);
-                case PackType.ZipM:
-                case PackType.Rar5:
-                case PackType.Lha:
+                case ArchiveBackend.Directory:
+                    return ImageLoader.GetFullBitmap(dirEntries[physicalIndex], animation);
+                case ArchiveBackend.SevenZip:
                     return OpenInnerImageStreamSevenZip(physicalIndex);
-                case PackType.Pdf:
+                case ArchiveBackend.Pdf:
                     return OpenInnerImageStreamPdf(physicalIndex);
-                default:
-                    if (sevenZipArchive != null)
+                case ArchiveBackend.ZipArchive:
+                case ArchiveBackend.SharpCompress:
                     {
-                        return OpenInnerImageStreamSevenZip(physicalIndex);
-                    }
-                    else
-                    {
-                        switch (Type)
+                        // 展開のストリームはシークできず長さも伝わらないので、デコード側で倍々に伸びる MemoryStream に写されていた。
+                        // 長さぴったりのメモリに取り出してからデコードする（D7。ビューアの V1 と同じ経路）
+                        TryExtractEntry(physicalIndex, out var extracted, out var fileNameForType, out var length);
+                        using (extracted)
                         {
-                            case PackType.Zip:
-                            case PackType.Rar:
-                            case PackType.Tar:
-                            case PackType.SevenZip:
-                                //case PackType.Gz:
-                                {
-                                    // 展開のストリームはシークできず長さも伝わらないので、デコード側で倍々に伸びる MemoryStream に写されていた。
-                                    // 長さぴったりのメモリに取り出してからデコードする（D7。ビューアの V1 と同じ経路）
-                                    MemoryStream extracted;
-                                    string fileNameForType;
-                                    long length;
-                                    if (Type == PackType.Zip && zipArchive != null) ExtractZip(physicalIndex, out extracted, out fileNameForType, out length);
-                                    else ExtractSharpCompress(physicalIndex, out extracted, out fileNameForType, out length);
-                                    using (extracted)
-                                    {
-                                        return DecodeExtracted(extracted, fileNameForType, animation, length);
-                                    }
-                                }
+                            return DecodeExtracted(extracted, fileNameForType, animation, length);
                         }
                     }
-
-
+                default:
                     throw new NotSupportedException();
             }
         }
@@ -1850,9 +1813,9 @@ namespace ZipPla
             stream = null;
             fileNameForType = null;
             length = -1;
-            switch (Type)
+            switch (ResolveExtractionBackend())
             {
-                case PackType.Pdf:
+                case ArchiveBackend.Pdf:
                     {
                         // そのまま JPEG（D2）・JPEG 2000（D6）として読めるページだけ、バイト列を取り出す（デコードは呼び出し側がロックの外で並列に行う）
                         var bytes = TryGetPdfPlainJpegBytes(physicalIndex, allowJpx: true, out var isJpx);
@@ -1862,37 +1825,16 @@ namespace ZipPla
                         length = bytes.Length;
                         return true;
                     }
-                case PackType.Directory:
-                    return false;
-                case PackType.ZipM:
-                case PackType.Rar5:
-                case PackType.Lha:
+                case ArchiveBackend.SevenZip:
                     ExtractSevenZip(physicalIndex, out stream, out fileNameForType, out length);
                     return true;
-                default:
-                    if (sevenZipArchive != null)
-                    {
-                        ExtractSevenZip(physicalIndex, out stream, out fileNameForType, out length);
-                        return true;
-                    }
-                    switch (Type)
-                    {
-                        case PackType.Zip:
-                            if (zipArchive != null)
-                            {
-                                ExtractZip(physicalIndex, out stream, out fileNameForType, out length);
-                            }
-                            else
-                            {
-                                ExtractSharpCompress(physicalIndex, out stream, out fileNameForType, out length);
-                            }
-                            return true;
-                        case PackType.Rar:
-                        case PackType.Tar:
-                        case PackType.SevenZip:
-                            ExtractSharpCompress(physicalIndex, out stream, out fileNameForType, out length);
-                            return true;
-                    }
+                case ArchiveBackend.ZipArchive:
+                    ExtractZip(physicalIndex, out stream, out fileNameForType, out length);
+                    return true;
+                case ArchiveBackend.SharpCompress:
+                    ExtractSharpCompress(physicalIndex, out stream, out fileNameForType, out length);
+                    return true;
+                default: // フォルダ（呼び出し側が OpenImageStream を使う）、7z.dll なしの CAB など
                     return false;
             }
         }
