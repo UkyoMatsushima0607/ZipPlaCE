@@ -2865,27 +2865,8 @@ namespace ZipPla
             return result > 0 ? result : dataGridView.RowTemplate.Height;
         }
 
-        private void tinyToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ThumbnailSize_Click((ToolStripMenuItem)sender);
-        }
-
-        private void smallToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ThumbnailSize_Click((ToolStripMenuItem)sender);
-        }
-
-        private void normalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ThumbnailSize_Click((ToolStripMenuItem)sender);
-        }
-
-        private void largeToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ThumbnailSize_Click((ToolStripMenuItem)sender);
-        }
-
-        private void hugeToolStripMenuItem_Click(object sender, EventArgs e)
+        // サムネイルの大きさのメニュー項目
+        private void thumbnailSizeMenuItem_Click(object sender, EventArgs e)
         {
             ThumbnailSize_Click((ToolStripMenuItem)sender);
         }
@@ -4058,35 +4039,17 @@ namespace ZipPla
         }
 
 
-        private void thumbnailSizeToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+        // メニューを開いている間は全力の処理を控える
+        private void menu_DropDownOpeningDisallowFullpower(object sender, EventArgs e)
         {
             AllowFullpower = false;
         }
 
 
-        private void thumbnailSizeToolStripMenuItem_DropDownClosed(object sender, EventArgs e)
+        // メニューを閉じたら全力の処理を許す
+        private void menu_DropDownClosedAllowFullpower(object sender, EventArgs e)
         {
             AllowFullpower = true;
-        }
-
-        private void viewToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
-        {
-            AllowFullpower = false;
-        }
-
-        private void viewToolStripMenuItem_DropDownClosed(object sender, EventArgs e)
-        {
-            AllowFullpower = true;
-        }
-
-        private void optionToolStripMenuItem_DropDownClosed(object sender, EventArgs e)
-        {
-            AllowFullpower = true;
-        }
-
-        private void optionToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
-        {
-            AllowFullpower = false;
         }
 
         private void cmsRightClick_Opening(object sender, CancelEventArgs e)
@@ -4105,34 +4068,10 @@ namespace ZipPla
             //AllowFullpower = true; // 直後の Opening と逆転することがあるので Closing で
         }
 
-        private void cmsLocationCommands_Opening(object sender, CancelEventArgs e)
+        // コンテキストメニューを開いている間は全力の処理を控える
+        private void contextMenu_OpeningDisallowFullpower(object sender, CancelEventArgs e)
         {
             AllowFullpower = false;
-        }
-
-        private void cmsLocationCommands_Closed(object sender, ToolStripDropDownClosedEventArgs e)
-        {
-            AllowFullpower = true;
-        }
-
-        private void cmsFilterCommands_Opening(object sender, CancelEventArgs e)
-        {
-            AllowFullpower = false;
-        }
-
-        private void cmsFilterCommands_Closed(object sender, ToolStripDropDownClosedEventArgs e)
-        {
-            AllowFullpower = true;
-        }
-
-        private void cmsFileListHeader_Opening(object sender, CancelEventArgs e)
-        {
-            AllowFullpower = false;
-        }
-
-        private void cmsFileListHeader_Closed(object sender, ToolStripDropDownClosedEventArgs e)
-        {
-            AllowFullpower = true;
         }
 
         private void cmsDirectoryList_Opening(object sender, CancelEventArgs e)
@@ -4751,11 +4690,6 @@ namespace ZipPla
                 ChangeThumbnailSize(null);
                 UpdatePreview();
             }
-        }
-
-        private void statusStrip_SizeChanged(object sender, EventArgs e)
-        {
-            Program.TextBoxShowRight(selectedFileNameToolStripTextBox);
         }
 
         // private string cbFilter_DropDown_Text = null;

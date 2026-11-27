@@ -913,12 +913,8 @@ namespace ZipPla
             }
         }
 
-        private void increaseReferenceValueToolStripMenuItem_MouseDown(object sender, MouseEventArgs e)
-        {
-            ratingFilterToolStripMenuItemDropDown.AutoClose = false;
-        }
-
-        private void decreaseReferenceValueToolStripMenuItem_MouseDown(object sender, MouseEventArgs e)
+        // 評価の基準値の増減ではドロップダウンを閉じない
+        private void ratingReferenceValueMenuItem_MouseDown(object sender, MouseEventArgs e)
         {
             ratingFilterToolStripMenuItemDropDown.AutoClose = false;
         }

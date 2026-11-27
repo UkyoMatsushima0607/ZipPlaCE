@@ -121,7 +121,7 @@ namespace ZipPla
             {
                 zabLocation_DirectoryButtonContextMenuStripOpening_first = false;
 
-                e.ContextMenuStrip.Closed += ZipPlaAddressBarDirectoryButtonContextMenuStrip_Closed;
+                e.ContextMenuStrip.Closed += contextMenu_ClosedAllowFullpower;
                 var items = e.ContextMenuStrip.Items;
                 items[0].Image = ExplorerIcon;// ExplorerProvider.Icon;
                 items[1].Image = SelectionToClipBoardToolStripMenuItem.Icon;
@@ -184,7 +184,8 @@ namespace ZipPla
             }
         }
 
-        private void ZipPlaAddressBarDirectoryButtonContextMenuStrip_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        // コンテキストメニューを閉じたら全力の処理を許す
+        private void contextMenu_ClosedAllowFullpower(object sender, ToolStripDropDownClosedEventArgs e)
         {
             AllowFullpower = true;
         }
@@ -592,7 +593,7 @@ namespace ZipPla
             statusStrip.Items.Insert(1, selectedFileNameToolStripTextBox);
             selectedFileNameToolStripTextBox.MouseEnter += SelectedFileNameToolStripTextBox_MouseEnter;
             selectedFileNameToolStripTextBox.MouseLeave += SelectedFileNameToolStripTextBox_MouseLeave;
-            selectedFileNameToolStripTextBox.TextChanged += SelectedFileNameToolStripTextBox_TextChanged;
+            selectedFileNameToolStripTextBox.TextChanged += selectedFileNameToolStripTextBox_ShowRight;
 
 #if RUNTIME
             Program.RunTimeMeasure?.Block("PrepareMessageForwarder");
@@ -858,7 +859,8 @@ namespace ZipPla
 
         }
 
-        private void SelectedFileNameToolStripTextBox_TextChanged(object sender, EventArgs e)
+        // 選択中のファイル名の欄は右端（ファイル名）が見えるようにする
+        private void selectedFileNameToolStripTextBox_ShowRight(object sender, EventArgs e)
         {
             Program.TextBoxShowRight(selectedFileNameToolStripTextBox);
         }

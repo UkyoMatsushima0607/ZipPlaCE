@@ -171,32 +171,8 @@ namespace ZipPla
             }
         }
 
-        private void zeroToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setCurrentMinimumFrameThickness(sender as ToolStripMenuItem);
-        }
-
-        private void veryThinToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setCurrentMinimumFrameThickness(sender as ToolStripMenuItem);
-        }
-
-        private void thinToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setCurrentMinimumFrameThickness(sender as ToolStripMenuItem);
-        }
-
-        private void normalThicknessToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setCurrentMinimumFrameThickness(sender as ToolStripMenuItem);
-        }
-
-        private void thickToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setCurrentMinimumFrameThickness(sender as ToolStripMenuItem);
-        }
-
-        private void veryThickToolStripMenuItem_Click(object sender, EventArgs e)
+        // 枠の太さのメニュー項目
+        private void frameThicknessMenuItem_Click(object sender, EventArgs e)
         {
             setCurrentMinimumFrameThickness(sender as ToolStripMenuItem);
         }
@@ -599,11 +575,6 @@ namespace ZipPla
         }
 
         private bool dragOuting = false;
-
-        private void tvCatalog_DragReady(object sender, MouseEventArgs e)
-        {
-            DragReady(sender, e);
-        }
 
         private void DragReady(object sender, MouseEventArgs e)
         {

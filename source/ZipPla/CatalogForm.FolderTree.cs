@@ -529,11 +529,6 @@ namespace ZipPla
             MoveLocation(ApplicationProviderUser.DragAndDrop, path);
         }
 
-        private void cmsRightClickDrop_Opening(object sender, CancelEventArgs e)
-        {
-            AllowFullpower = false;
-        }
-
         private void newFolderToolStripMenuItem_Click(object sender, EventArgs e)
         {
             createNewFolderToCurrentLocation();

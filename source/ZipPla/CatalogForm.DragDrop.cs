@@ -561,11 +561,6 @@ namespace ZipPla
             }
         }
 
-        private void cmsDirectoryListRightClickDrop_Opening(object sender, CancelEventArgs e)
-        {
-            AllowFullpower = false;
-        }
-
         private void cmsDirectoryListRightClickDrop_Closed(object sender, ToolStripDropDownClosedEventArgs e)
         {
             if (e.CloseReason != ToolStripDropDownCloseReason.ItemClicked)

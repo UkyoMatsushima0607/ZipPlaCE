@@ -1149,7 +1149,7 @@ namespace ZipPla
             return result;
         }
 
-        private void dgvFileList_DragReady(object sender, MouseEventArgs e)
+        private void list_DragReady(object sender, MouseEventArgs e)
         {
             DragReady(sender, e);
         }
