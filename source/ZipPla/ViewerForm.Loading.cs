@@ -607,8 +607,7 @@ namespace ZipPla
                 var keptCount = keep == null ? 0 : keep.Images.Count(x => x != null);
                 var reasons = string.Join(",", Enumerable.Range(0, length).Where(i => images[i] != null || keep?.Images[i] != null)
                     .Select(i => keep?.Images[i] != null ? "K" : states[i] == OriginalState_Trimmed ? "t" : states[i] == OriginalState_Reloading ? "r" : sources[i].IsEmpty ? "e" : images[i].Size != sizes[i] ? "s" : "z"));
-                File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
-                    $"resizeKeep={keptCount}\tview={ViewSize.Width}x{ViewSize.Height}\tpages={reasons}" + Environment.NewLine);
+                PerfLog.Append("viewer-load.log", $"resizeKeep={keptCount}\tview={ViewSize.Width}x{ViewSize.Height}\tpages={reasons}");
             }
             catch { }
 #endif
@@ -650,7 +649,7 @@ namespace ZipPla
                 usedMemory += keep.Accounted[i];
             }
 #if PERFLOG
-            try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"), $"resizeRestore={keep.Images.Count(x => x != null)}" + Environment.NewLine); } catch { }
+            PerfLog.Append("viewer-load.log", $"resizeRestore={keep.Images.Count(x => x != null)}");
 #endif
             // 残したページは読み込みの完了イベントが来ないので、表示中のページを残した場合はここで表示する（読み込み開始の処理が終わってから）
             var shown = currentPage;
@@ -940,7 +939,6 @@ namespace ZipPla
         [ThreadStatic] private static long perfLoadStart, perfDecodeEnd, perfJobStart; // 読み込みは並列（V1）なのでスレッドごと
         // ジョブの開始・終了と完了イベントの時刻（ms、Stopwatch のタイムスタンプから）。ジョブのあいだの空き時間を調べる（V1）
         private static double PerfMs(long timestamp) => timestamp * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
-        private static readonly object perfLoadLogLock = new object();
 #endif
 
         private int bmwLoadEachPage_DoWork_DEBUG_WorkNumber = -1;
@@ -1129,7 +1127,7 @@ namespace ZipPla
             {
                 keptAfterResize[e.WorkNumber] = false;
 #if PERFLOG
-                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"), $"resizeSkip={e.WorkNumber}" + Environment.NewLine); } catch { }
+                PerfLog.Append("viewer-load.log", $"resizeSkip={e.WorkNumber}");
 #endif
                 return;
             }
@@ -1485,14 +1483,7 @@ namespace ZipPla
                         try { lock (bmp) { perfSize = bmp.Size; body(); } } finally { if (reducedDecoded) bmp.Dispose(); } // bmp は登録済みなのでロックの中で触る
                         double f = System.Diagnostics.Stopwatch.Frequency;
                         var end = System.Diagnostics.Stopwatch.GetTimestamp();
-                        try
-                        {
-                            // 並列に読むと同時に書いて片方が失敗し、行が抜けるのでロックする（V23 の計測で判明）
-                            lock (perfLoadLogLock)
-                            File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-load.log"),
-                                $"page={e.WorkNumber}\tlockWait={perfLockWaitTicks * 1000 / f:F1}ms\textract={perfExtractTicks * 1000 / f:F1}ms\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms\tjobStart={PerfMs(perfJobStart):F2}\tjobEnd={PerfMs(end):F2}" + Environment.NewLine);
-                        }
-                        catch { }
+                        PerfLog.Append("viewer-load.log", $"page={e.WorkNumber}\tlockWait={perfLockWaitTicks * 1000 / f:F1}ms\textract={perfExtractTicks * 1000 / f:F1}ms\treduced={reducedDecoded}\tdecoded={perfSize.Width}x{perfSize.Height}\tresized={rsa[e.WorkNumber].Width}x{rsa[e.WorkNumber].Height}\tdecode={(perfDecodeEnd - perfLoadStart) * 1000 / f:F1}ms\trest={(end - perfDecodeEnd) * 1000 / f:F1}ms\tjobStart={PerfMs(perfJobStart):F2}\tjobEnd={PerfMs(end):F2}");
                         return;
                     }
 #endif
@@ -1535,7 +1526,7 @@ namespace ZipPla
                 var errorMessage = ee.ToString();
 #endif
 #if PERFLOG
-                try { lock (perfLoadLogLock) File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "viewer-error.log"), $"page={e.WorkNumber}	{ee}" + Environment.NewLine); } catch { }
+                PerfLog.Append("viewer-error.log", $"page={e.WorkNumber}	{ee}");
 #endif
                 var errorSize = new Size(-210, -297);
                 var resizedSize = GetResizedSize(errorSize);

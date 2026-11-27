@@ -2195,7 +2195,7 @@ namespace ZipPla
                 targets.Add(i);
             }
 #if PERFLOG
-            try { System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "solid.log"), $"req={physicalIndex}	targets={targets.Count}	min={(targets.Count > 0 ? targets.Min() : -1)}	max={(targets.Count > 0 ? targets.Max() : -1)}	cached={solidImageCache?.Count ?? 0}" + Environment.NewLine); } catch { }
+            PerfLog.Append("solid.log", $"req={physicalIndex}	targets={targets.Count}	min={(targets.Count > 0 ? targets.Min() : -1)}	max={(targets.Count > 0 ? targets.Max() : -1)}	cached={solidImageCache?.Count ?? 0}");
 #endif
             var streams = new MemoryStream[targets.Count];
             Action extract = () => Entry.ExtractMany(targets.Select(i => sevenZipArchiveEntries[i]).ToList(), k =>

@@ -176,6 +176,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PerfLog.cs" />
     <Compile Include="StreamUtil.cs" />
     <Compile Include="CatalogItemArrays.cs" />
     <Compile Include="PrefetchScheduler.cs" />

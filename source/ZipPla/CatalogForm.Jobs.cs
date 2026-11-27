@@ -127,7 +127,7 @@ namespace ZipPla
             }
             private static void Write(string line)
             {
-                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "perf-detail.log"), line + Environment.NewLine); } catch { }
+                PerfLog.Append("perf-detail.log", line);
             }
             public static void AddSetBackgroundMode(bool checkOrder, long ticks)
             {
@@ -141,7 +141,7 @@ namespace ZipPla
                     $"\teachCompleted={eachCount}\teachHandlerMs={ToMs(eachTicks):F1}" +
                     $"\tsetBackgroundMode={sbmCalls}\t(withOrder={sbmOrderCalls})\tsetBackgroundModeMs={ToMs(sbmTicks):F1}" +
                     $"\theaderResults={headerResults}\twithPageCount={withPageCount}\twithImageInfo={withImageInfo}";
-                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "perf.log"), line + Environment.NewLine); } catch { }
+                PerfLog.Append("perf.log", line);
             }
         }
 #endif

@@ -317,7 +317,7 @@ namespace ZipPla
 #if PERFLOG
                 var perfT2 = System.Diagnostics.Stopwatch.GetTimestamp();
                 double perfF = System.Diagnostics.Stopwatch.Frequency;
-                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "quick-reload.log"), $"sort={(perfT1 - perfT0) * 1000 / perfF:F1}ms\tfileList={(perfT2 - perfT1) * 1000 / perfF:F1}ms" + Environment.NewLine); } catch { }
+                PerfLog.Append("quick-reload.log", $"sort={(perfT1 - perfT0) * 1000 / perfF:F1}ms\tfileList={(perfT2 - perfT1) * 1000 / perfF:F1}ms");
 #endif
             }
             exitQuickReload_LastSortTick = Environment.TickCount; // 並べ替えが終わった時刻から数える

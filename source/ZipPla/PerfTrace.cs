@@ -41,7 +41,7 @@ namespace ZipPla
         {
             lock (fileLock)
             {
-                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "perf-trace.log"), $"{clock.ElapsedMilliseconds,7}\t{line}" + Environment.NewLine); } catch { }
+                PerfLog.Append("perf-trace.log", $"{clock.ElapsedMilliseconds,7}\t{line}");
             }
         }
         private static long rangeChangedAt;
