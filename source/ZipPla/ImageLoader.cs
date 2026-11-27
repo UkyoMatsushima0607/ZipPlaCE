@@ -1641,11 +1641,11 @@ namespace ZipPla
                 Bitmap changed;
                 if (ViewerFormImageFilter.TryGetMaxColorDiff(myBitmap) == 0)
                 {
-                    changed = ViewerForm.ToBitmap8Unsafe(myBitmap, leaveOpenOriginal: true);
+                    changed = PixelFormatConverter.ToBitmap8Unsafe(myBitmap, leaveOpenOriginal: true);
                 }
                 else
                 {
-                    changed = ViewerForm.ToBitmap24Unsafe(myBitmap, leaveOpenOriginal: true);
+                    changed = PixelFormatConverter.ToBitmap24Unsafe(myBitmap, leaveOpenOriginal: true);
                 }
                 if (isNewBitmap)
                 {

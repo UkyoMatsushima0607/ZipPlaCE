@@ -20,10 +20,11 @@ using System.Windows.Forms;
 
 namespace ZipPla
 {
-    public partial class ViewerForm
+    /// <summary>ピクセル形式の判定と変換（グレースケール判定、8bpp / 24bpp への変換）。ビューアの読み込みと ImageLoader から使う</summary>
+    internal static class PixelFormatConverter
     {
         // 色のある画素が見つかったら loop.Stop() で残りの行を打ち切る（V11。Break は前の行をすべて処理し終えるまで止まらない）
-        private static unsafe bool IsGrayScaleBitmap(Bitmap bmp)
+        internal static unsafe bool IsGrayScaleBitmap(Bitmap bmp)
         {
             if (bmp == null) throw new ArgumentNullException("bmp");
             var pixelFormat = bmp.PixelFormat;
@@ -222,9 +223,9 @@ namespace ZipPla
             }
         }
 
-        private const PixelFormat PixelFormat_Format32bppCMYK = (PixelFormat)8207;
+        internal const PixelFormat PixelFormat_Format32bppCMYK = (PixelFormat)8207;
 
-        private static Bitmap ToBitmap24Unsafe(Bitmap bmp)
+        internal static Bitmap ToBitmap24Unsafe(Bitmap bmp)
         {
             return ToBitmap24Unsafe(bmp, leaveOpenOriginal: false);
         }
@@ -323,7 +324,7 @@ namespace ZipPla
                             var srcData = bmp2.LockBits(rect, ImageLockMode.ReadOnly, newPixelFormat);
                             try
                             {
-                                CopyMemory(dstData.Scan0, srcData.Scan0, dstData.Stride * dstData.Height);
+                                ViewerForm.CopyMemory(dstData.Scan0, srcData.Scan0, dstData.Stride * dstData.Height);
                             }
                             finally
                             {
@@ -359,7 +360,7 @@ namespace ZipPla
 
         private static byte[] ToBitmap24_RGBLookUp;
 
-        private static unsafe Bitmap ToBitmap8Unsafe(Bitmap bmp)
+        internal static unsafe Bitmap ToBitmap8Unsafe(Bitmap bmp)
         {
             return ToBitmap8Unsafe(bmp, leaveOpenOriginal: false);
         }
@@ -471,7 +472,7 @@ namespace ZipPla
                                     //Marshal.Copy(buff, 0, data.Scan0, 8193);
                                     fixed (short* buffAdr = buff)
                                     {
-                                        CopyMemory(data.Scan0, (IntPtr)buffAdr, 8193 * sizeof(short));
+                                        ViewerForm.CopyMemory(data.Scan0, (IntPtr)buffAdr, 8193 * sizeof(short));
                                     }
                                 }
                                 finally
@@ -485,7 +486,7 @@ namespace ZipPla
                                     //Marshal.Copy(data.Scan0, ToBitmap24_RGBLookUp, 0, 8193);
                                     fixed (byte* ToBitmap24_RGBLookUpAdr = ToBitmap24_RGBLookUp)
                                     {
-                                        CopyMemory((IntPtr)ToBitmap24_RGBLookUpAdr, data.Scan0, 8193 * sizeof(byte));
+                                        ViewerForm.CopyMemory((IntPtr)ToBitmap24_RGBLookUpAdr, data.Scan0, 8193 * sizeof(byte));
                                     }
                                 }
                                 finally

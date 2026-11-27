@@ -82,7 +82,7 @@ namespace ZipPla
 
         /// <summary>
         /// 8bppIndexed で、パレットが i → (i,i,i)（不透明）の恒等グレースケールかどうか
-        /// （ViewerForm.ToBitmap8Unsafe が作る形式。インデックス値をそのまま輝度として扱える）
+        /// （PixelFormatConverter.ToBitmap8Unsafe が作る形式。インデックス値をそのまま輝度として扱える）
         /// </summary>
         private static bool IsIdentityGrayscale(Bitmap bmp)
         {
@@ -120,7 +120,7 @@ namespace ZipPla
             return bitmap;
         }
         
-        const System.Drawing.Imaging.PixelFormat PixelFormat_Format32bppCMYK = (System.Drawing.Imaging.PixelFormat)8207;
+        const System.Drawing.Imaging.PixelFormat PixelFormat_Format32bppCMYK = ZipPla.PixelFormatConverter.PixelFormat_Format32bppCMYK;
         
         public static PixelFormat PixelFormatConverter(System.Drawing.Imaging.PixelFormat pixelFormat)
         {

@@ -1195,7 +1195,7 @@ namespace ZipPla
                                     // try で彩度が確定しなければカラーで決め打ち
                                     maxColorDiff = 255;
                                 }
-                                else if (IsGrayScaleBitmap(img))
+                                else if (PixelFormatConverter.IsGrayScaleBitmap(img))
                                 {
                                     maxColorDiff = 0;
                                 }
@@ -1209,14 +1209,14 @@ namespace ZipPla
                                 //if (img.PixelFormat != PixelFormat.Format8bppIndexed) // 遅延読み込みのためできるだけ ApplyToAll は使いたくない
                                 //  → ApplayToAll も遅延化したので問題ない＋白黒でもインデックスと画素値が対応しない画像がごくまれに存在する
                                 {
-                                    img.ApplyToAll(ToBitmap8Unsafe);
+                                    img.ApplyToAll(PixelFormatConverter.ToBitmap8Unsafe);
                                 }
                             }
                             else
                             {
                                 if (img.PixelFormat != PixelFormat.Format24bppRgb) // 遅延読み込みのためできるだけ ApplyToAll は使いたくない
                                 {
-                                    img.ApplyToAll(ToBitmap24Unsafe);
+                                    img.ApplyToAll(PixelFormatConverter.ToBitmap24Unsafe);
                                 }
                             }
 

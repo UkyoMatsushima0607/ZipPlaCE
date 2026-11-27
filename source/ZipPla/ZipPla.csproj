@@ -206,9 +206,7 @@
     <Compile Include="ViewerForm.Loading.cs">
       <DependentUpon>ViewerForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="ViewerForm.PixelFormat.cs">
-      <DependentUpon>ViewerForm.cs</DependentUpon>
-    </Compile>
+    <Compile Include="PixelFormatConverter.cs" />
     <Compile Include="ViewerForm.PageCache.cs">
       <DependentUpon>ViewerForm.cs</DependentUpon>
     </Compile>
