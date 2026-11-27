@@ -22,7 +22,12 @@ namespace ZipPla
 {
     public partial class ViewerForm
     {
-        private bool SaveSettings()
+        /// <param name="closing">
+        /// この保存のあとウィンドウを閉じるなら true。履歴への記録に続けて書庫のアクセス日時を更新するために、書庫を閉じる。
+        /// 閉じないとき（ウィンドウの複製）は false。書庫は開いたままにし、アクセス日時の更新は次に書庫を閉じるときまで待つ
+        /// （true のままだと書庫が閉じたままになり、まだ読んでいないページがエラー画像になった）
+        /// </param>
+        private bool SaveSettings(bool closing = true)
         {
             try
             {
@@ -105,7 +110,7 @@ namespace ZipPla
 
                 if (saveToHistory)
                 {
-                    trySaveCurrentConditionToHistory(SelfLastAccessTimeUpdateMode.Force);
+                    trySaveCurrentConditionToHistory(closing ? SelfLastAccessTimeUpdateMode.Force : SelfLastAccessTimeUpdateMode.Reserve);
                 }
 
                 return true;

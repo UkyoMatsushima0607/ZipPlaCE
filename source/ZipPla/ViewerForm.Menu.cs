@@ -953,7 +953,7 @@ namespace ZipPla
                 var option = GetCommandLineOption(info, minimize: true);
                 if (longPath != null) option += $" \"{longPath}\"";
 
-                SaveSettings();
+                SaveSettings(closing: false); // このウィンドウは開いたままなので、書庫を閉じない
 
                 Process.Start(Application.ExecutablePath, option);
             }
