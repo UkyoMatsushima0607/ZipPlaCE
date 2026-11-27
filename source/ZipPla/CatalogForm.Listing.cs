@@ -1500,7 +1500,14 @@ namespace ZipPla
 
         }
 
-        Guid loadingGuid = Guid.Empty;
+        // 今の読み込みの識別子。ヘッダの読み込みのワーカーからも読まれる。Guid は 16 バイトで 1 回の読み書きにならず、
+        // 書き換えの途中を読むと壊れた値になりうるので、箱に入れて参照（volatile）で読み書きする
+        private volatile object loadingGuidBox = Guid.Empty;
+        private Guid loadingGuid
+        {
+            get => (Guid)loadingGuidBox;
+            set => loadingGuidBox = value;
+        }
 
         // ---- 後回しにしたヘッダの読み込み（K33） ----
         // 以前はフォルダを開くと全項目のヘッダ（ページ数・解像度・動画情報など）を取っていて、表示中のサムネイルが揃ったあとも

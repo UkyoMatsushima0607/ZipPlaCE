@@ -2905,39 +2905,36 @@ namespace ZipPla
 
         private void Dispose(bool disposing)
         {
-            if (!Disposed)
+            if (Disposed) return;
+            Disposed = true;
+            // ファイナライザから（disposing == false）は何もしない。持っているのはマネージドのオブジェクトだけで、
+            // ファイル（FileStream の SafeHandle）・7z.dll（ArchiveFile）・子のローダーはそれぞれのファイナライザが解放する。
+            // ファイナライザの中で他のオブジェクトを Dispose すると、先に後始末されたものに触って例外になり、プロセスごと落ちうる
+            if (!disposing) return;
+
+            // 子のローダー（入れ子・フォルダの中の書庫）（X4）
+            var owned = ownedChildLoaders;
+            ownedChildLoaders = null;
+            if (owned != null)
             {
-                if (disposing)
+                foreach (var child in owned)
                 {
-                    // 子のローダー（入れ子・フォルダの中の書庫）と CAB はそれぞれのファイナライザがあるので、明示的に Dispose されたときだけ解放する（X4）
-                    var owned = ownedChildLoaders;
-                    ownedChildLoaders = null;
-                    if (owned != null)
-                    {
-                        foreach (var child in owned)
-                        {
-                            try { child.Dispose(); } catch { }
-                        }
-                    }
+                    try { child.Dispose(); } catch { }
                 }
+            }
 
-                if (iReader != null)
-                {
-                    try { iReader.Dispose(); } catch { }
-                }
+            // 1 つが例外を投げても残りを解放する
+            try { iReader?.Dispose(); } catch { }
+            try { zipArchive?.Dispose(); } catch { }
+            try { iArchive?.Dispose(); } catch { }
+            try { sevenZipArchive?.Dispose(); } catch { }
+            try { pdfArchive?.Dispose(); } catch { }
 
-                if (zipArchive != null) zipArchive.Dispose();
-                if (iArchive != null) iArchive.Dispose();
-                if (sevenZipArchive != null) sevenZipArchive.Dispose();
-                if (pdfArchive != null) pdfArchive.Dispose();
-
-                if (stream != null)
-                {
-                    stream.Close();
-                    stream.Dispose();
-                    stream = null;
-                }
-                Disposed = true;
+            var s = stream;
+            stream = null;
+            if (s != null)
+            {
+                try { s.Dispose(); } catch { } // Close は Dispose を呼ぶだけなので Dispose だけでよい
             }
         }
         

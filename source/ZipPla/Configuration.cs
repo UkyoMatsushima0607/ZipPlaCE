@@ -89,7 +89,12 @@ namespace Common
                             {
                                 SetXElementToThis(thisType, xElement);
                             }
-                            catch { }
+                            catch (Exception exception)
+                            {
+                                // 既定値のまま続けるが、失敗は GetLastException で分かるようにする（以前は握りつぶしていて、
+                                // ブックマークなどが空として読まれ、次の保存で元の内容を上書きすることがあった）
+                                lastException = exception;
+                            }
                             xmlNode = xElement;
                         }
                         xmlFile = root;

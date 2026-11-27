@@ -1626,7 +1626,7 @@ namespace ZipPla
 
             public void Reset()
             {
-                currentIndex = 0;
+                currentIndex = -1; // IEnumerator の決まりどおり、最初の MoveNext で 0 枚目になる位置へ（以前は 0 で 1 枚飛ばしていた）
             }
         }
 

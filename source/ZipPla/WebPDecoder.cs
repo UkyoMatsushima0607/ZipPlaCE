@@ -479,6 +479,18 @@ namespace ZipPla
 
             public void Dispose()
             {
+                Release();
+                GC.SuppressFinalize(this);
+            }
+
+            // Dispose されずに捨てられた（途中で例外が出たなど）ときも、ネイティブのデコーダと入力のコピーを解放する
+            ~WebPAnimProvider()
+            {
+                Release();
+            }
+
+            private void Release()
+            {
                 if (decoder != IntPtr.Zero)
                 {
                     WebPAnimDecoderDelete(decoder);
