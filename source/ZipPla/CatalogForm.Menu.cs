@@ -601,7 +601,7 @@ namespace ZipPla
 
                         // ドラッグは同期的なので不要
                         //dragGuid = new Guid();
-                        //OpendByExternalApplication_Dictionary[dragGuid] = files;
+                        //OpenedByExternalApplication_Dictionary[dragGuid] = files;
                     }
 
                     (sender as Control).DoDragDrop(dataObj, effects);
@@ -1185,47 +1185,47 @@ namespace ZipPla
 
         private void standardRightclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RightClickContextMenu = CatalogFormConetxtMenu.ZipPla;
+            RightClickContextMenu = CatalogFormContextMenu.ZipPla;
         }
 
         private void standardMiddleclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MiddleClickContextMenu = CatalogFormConetxtMenu.ZipPla;
+            MiddleClickContextMenu = CatalogFormContextMenu.ZipPla;
         }
 
         private void standardCtrlRightclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ControlRightClickContextMenu = CatalogFormConetxtMenu.ZipPla;
+            ControlRightClickContextMenu = CatalogFormContextMenu.ZipPla;
         }
 
         private void OnlyTagRightclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RightClickContextMenu = CatalogFormConetxtMenu.Tag;
+            RightClickContextMenu = CatalogFormContextMenu.Tag;
         }
 
         private void OnlyTagMiddleclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MiddleClickContextMenu = CatalogFormConetxtMenu.Tag;
+            MiddleClickContextMenu = CatalogFormContextMenu.Tag;
         }
 
         private void onlyTagCtrlRightclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ControlRightClickContextMenu = CatalogFormConetxtMenu.Tag;
+            ControlRightClickContextMenu = CatalogFormContextMenu.Tag;
         }
 
         private void explorerRightclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RightClickContextMenu = CatalogFormConetxtMenu.Explorer;
+            RightClickContextMenu = CatalogFormContextMenu.Explorer;
         }
 
         private void explorerMiddleclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MiddleClickContextMenu = CatalogFormConetxtMenu.Explorer;
+            MiddleClickContextMenu = CatalogFormContextMenu.Explorer;
         }
 
         private void explorerCtrlRightclickToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ControlRightClickContextMenu = CatalogFormConetxtMenu.Explorer;
+            ControlRightClickContextMenu = CatalogFormContextMenu.Explorer;
         }
 
         private void alwaysAutomaticallyHideUIToolStripMenuItem_Click(object sender, EventArgs e)

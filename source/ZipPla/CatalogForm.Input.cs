@@ -743,13 +743,13 @@ namespace ZipPla
             contextMenuPrepareAndShow(point, MiddleClickContextMenu);
         }
 
-        private void contextMenuPrepareAndShow(Point point, CatalogFormConetxtMenu menu)
+        private void contextMenuPrepareAndShow(Point point, CatalogFormContextMenu menu)
         {
-            if (menu == CatalogFormConetxtMenu.ZipPla)
+            if (menu == CatalogFormContextMenu.ZipPla)
             {
                 cmsRightClickPrepareAndShow_(point, false);
             }
-            else if (menu == CatalogFormConetxtMenu.Tag)
+            else if (menu == CatalogFormContextMenu.Tag)
             {
                 cmsRightClickPrepareAndShow_(point, true);
             }
@@ -930,9 +930,9 @@ namespace ZipPla
             AllowFullpower = true;
         }
 
-        private bool CursolIsOnControll()
+        private bool CursorIsOnControl()
         {
-            return CursorIsOnControllField;
+            return CursorIsOnControlField;
             //return UnderCursorSet.Count > 0;
         }
 
@@ -940,7 +940,7 @@ namespace ZipPla
 
         #region ポインタ位置処理
 
-        bool CursorIsOnControllField = false;
+        bool CursorIsOnControlField = false;
         private void GeneralMouseLeave(object something)
         {
         }
@@ -950,7 +950,7 @@ namespace ZipPla
             //if (something == null) throw new ArgumentNullException();
 #endif
 
-            //CursorIsOnControllField = true;
+            //CursorIsOnControlField = true;
 
         }
 
@@ -1073,7 +1073,7 @@ namespace ZipPla
         {
             unselectedItemMaskOff();
             setWaitingProcessPriority(ProcessPriorityClass.Normal);
-            CursorIsOnControllField = true;
+            CursorIsOnControlField = true;
         }
 
         private void globalMouseLeave(Point screenLocation)
@@ -1102,7 +1102,7 @@ namespace ZipPla
                 stopLookAheadOnDeactivate();
             }
 
-            CursorIsOnControllField = false;
+            CursorIsOnControlField = false;
         }
 
         //private static readonly Color unselectedItemMaskColor = Color.FromArgb(224, 255, 255, 255);
@@ -1305,7 +1305,7 @@ namespace ZipPla
                     rightClickContextMenuPrepareAndShow(p, mk);
                 }
             }
-            else if (!onlyTag && tvCatalog.Visible && (RightClickContextMenu != CatalogFormConetxtMenu.Tag))
+            else if (!onlyTag && tvCatalog.Visible && (RightClickContextMenu != CatalogFormContextMenu.Tag))
             {
                 var p = tvCatalog.PointToScreen(tvCatalog.Location);
 

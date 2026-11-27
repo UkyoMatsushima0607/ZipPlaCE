@@ -189,12 +189,12 @@ namespace ZipPla
                 var deleteFromDisk = false;
                 if (isSor)
                 {
-                    if (!await showshowConfirmationDialogDialogIfIndicesAreMany(Message.DoYouRemoveFollowing1ItemsFromVirtualFolder, deleteList)) return;
+                    if (!await showConfirmationDialogIfIndicesAreMany(Message.DoYouRemoveFollowing1ItemsFromVirtualFolder, deleteList)) return;
                 }
                 else
                 {
                     deleteFromDisk = (modifierKeys & Keys.Shift) == Keys.Shift;
-                    if (!await showshowConfirmationDialogDialogAlways(deleteFromDisk ? Message.DoYouDeleteFollowing1ItemsPermanently : Message.DoYouSendFollowing1ItemsToRecycleBin, deleteList)) return;
+                    if (!await showConfirmationDialogAlways(deleteFromDisk ? Message.DoYouDeleteFollowing1ItemsPermanently : Message.DoYouSendFollowing1ItemsToRecycleBin, deleteList)) return;
                 }
 
                 var isDirList = isSor ? null : new List<bool>();
@@ -609,12 +609,12 @@ namespace ZipPla
             RenameShownArchive(new int[] { selectedIndex }, new string[] { path }, new string[] { newPath }, atFirstArrayChange, needToReload);
         }
 
-        private async Task<bool> showshowConfirmationDialogDialogAlways(string message, IReadOnlyList<string> paths)
+        private async Task<bool> showConfirmationDialogAlways(string message, IReadOnlyList<string> paths)
         {
             return await showConfirmationDialog(message, paths, 1, getFileName: true);
         }
 
-        private async Task<bool> showshowConfirmationDialogDialogIfIndicesAreMany(string message, IReadOnlyList<string> paths)
+        private async Task<bool> showConfirmationDialogIfIndicesAreMany(string message, IReadOnlyList<string> paths)
         {
             return await showConfirmationDialog(message, paths, 10, getFileName: true);
         }
@@ -705,7 +705,7 @@ namespace ZipPla
                 else needToReloadEvenIfFileNameIsNotChanged = null;
             }
 
-            if (!await showshowConfirmationDialogDialogIfIndicesAreMany(Message.DoYouRenameFollowing1Items, paths)) return;
+            if (!await showConfirmationDialogIfIndicesAreMany(Message.DoYouRenameFollowing1Items, paths)) return;
 
             bool[] changes;
             if (needToReloadEvenIfFileNameIsNotChanged == null)

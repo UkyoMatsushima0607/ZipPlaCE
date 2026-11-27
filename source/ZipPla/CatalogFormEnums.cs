@@ -57,7 +57,7 @@ namespace ZipPla
 
     public enum FolderSortMode { None, Ahead, Behind, FitToDirectionOfSort }
 
-    public enum CatalogFormConetxtMenu { ZipPla, Tag, Explorer }
+    public enum CatalogFormContextMenu { ZipPla, Tag, Explorer }
 
     public enum ItemSelectionFeedback { None, IfSortMayBeSame, Always }
 

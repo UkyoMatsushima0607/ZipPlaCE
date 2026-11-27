@@ -1409,7 +1409,7 @@ namespace ZipPla
             loadCountToolStripMenuItem.Text = 0 + " / " + ZipPathArray.Length;
 
             // cbLocation.Enabled = false 中の変化に対応
-            //InitCursorIsOnControllField();
+            //InitCursorIsOnControlField();
 
             SetBackgroundMode(true, 0, true);
 

@@ -270,7 +270,7 @@ namespace ZipPla
                 if (process != null) // ほとんど期待できない
                 {
                     catalogForm.StopLookAheadProcess();
-                    catalogForm.SetOpendByExternalApplication(process, path, selectionMirror: true);
+                    catalogForm.SetOpenedByExternalApplication(process, path, selectionMirror: true);
                     catalogForm.PrepareLookAheadProcess();
                 }
             }
@@ -279,7 +279,7 @@ namespace ZipPla
                 catalogForm.StopLookAheadProcess();
                 // var process = Process.Start(target, arguments);
                 var process = ExternalApplicationProvider.ProcessStartAtParentDirectory(target, arguments);
-                catalogForm.SetOpendByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
+                catalogForm.SetOpenedByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
                 catalogForm.PrepareLookAheadProcess();
             }
             
@@ -570,7 +570,7 @@ namespace ZipPla
             catalogForm.StopLookAheadProcess();
             // var process = Process.Start(clipboardExecutablePath, cmd);
             var process = ExternalApplicationProvider.ProcessStartAtParentDirectory(clipboardExecutablePath, cmd);
-            catalogForm.SetOpendByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
+            catalogForm.SetOpenedByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
             catalogForm.PrepareLookAheadProcess();
         }
 
@@ -837,7 +837,7 @@ namespace ZipPla
 
             catalogForm.StopLookAheadProcess();
             var process = ProcessStartAtParentDirectory(this.path, cmd);
-            catalogForm.SetOpendByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
+            catalogForm.SetOpenedByExternalApplication(process, path, selectionMirror: true); // 辞書への追加までは同期的。辞書からの削除は非同期的
             catalogForm.PrepareLookAheadProcess();
         }
 
@@ -1104,7 +1104,7 @@ namespace ZipPla
             {
                 catalogForm.StopLookAheadProcess();
                 var key = new object();
-                catalogForm.AddToOpendByExternalApplicationDictionary(key, path);
+                catalogForm.AddToOpenedByExternalApplicationDictionary(key, path);
                 catalogForm.PrepareLookAheadProcess();
                 await Task.Run(() =>
                 {
@@ -1118,7 +1118,7 @@ namespace ZipPla
                         MessageBox.Show(catalogForm, e.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 });
-                catalogForm.RemoveFromOpendByExternalApplicationDictionary(key);
+                catalogForm.RemoveFromOpenedByExternalApplicationDictionary(key);
             }
             else
             {

@@ -278,7 +278,7 @@ namespace ZipPla
         /// <summary>
         /// 1ページ分戻る。ただし極力左右の位置関係が movePageNatural(-1) とは逆になるようにする
         /// </summary>
-        private void movePageToMinimulBack()
+        private void movePageToMinimalBack()
         {
             if (CurrentDividedPosition > 0)
             {
@@ -324,7 +324,7 @@ namespace ZipPla
             moveDividedPage(-1);
         }
 
-        private bool isMovablePageToMinimulBack(bool checkLoaded = false)
+        private bool isMovablePageToMinimalBack(bool checkLoaded = false)
         {
             //return isMovablePage(-1, checkLoaded;
             //return isMovableDividedPage(-1, checkLoaded);
@@ -343,7 +343,7 @@ namespace ZipPla
         /// <summary>
         /// 1ページ分進める。ただし極力左右の位置関係が movePageNatural(1) とは逆になるようにする
         /// </summary>
-        private void movePageToMinimulForward()
+        private void movePageToMinimalForward()
         {
             if (onePageModeForNext)
             {
@@ -362,7 +362,7 @@ namespace ZipPla
                 }
                 else
                 {
-                    movePageToMinimulForward();
+                    movePageToMinimalForward();
                 }
                 return;
             }
@@ -398,7 +398,7 @@ namespace ZipPla
             moveDividedPage(1);
         }
 
-        private bool isMovablePageToMinimulForward(bool checkLoaded = false)
+        private bool isMovablePageToMinimalForward(bool checkLoaded = false)
         {
             if (onePageModeForNext)
             {
@@ -426,7 +426,7 @@ namespace ZipPla
                 }
                 else
                 {
-                    var result = isMovablePageToMinimulForward(checkLoaded);
+                    var result = isMovablePageToMinimalForward(checkLoaded);
                     onePageModeForNext = true;
                     return result || isMovableDividedPage(1, checkLoaded);
                 }
@@ -959,57 +959,57 @@ namespace ZipPla
 
         private void moveForward1PageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            movePageToMinimulForward();
+            movePageToMinimalForward();
             //movePage(1);
         }
 
         private void moveBack1PageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            movePageToMinimulBack();
+            movePageToMinimalBack();
             //movePage(-1);
         }
 
         private void moveRight1PageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            movePageToMinimulRight();
+            movePageToMinimalRight();
         }
 
-        private void movePageToMinimulRight()
+        private void movePageToMinimalRight()
         {
-            if (BindingMode != BindingMode.RightToLeft) movePageToMinimulForward(); else movePageToMinimulBack();
+            if (BindingMode != BindingMode.RightToLeft) movePageToMinimalForward(); else movePageToMinimalBack();
         }
 
         private void moveLeft1PageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            movePageToMinimulLeft();
+            movePageToMinimalLeft();
         }
 
-        private void movePageToMinimulLeft()
+        private void movePageToMinimalLeft()
         {
-            if (BindingMode != BindingMode.RightToLeft) movePageToMinimulBack(); else movePageToMinimulForward();
+            if (BindingMode != BindingMode.RightToLeft) movePageToMinimalBack(); else movePageToMinimalForward();
         }
 
-        private void percentage000YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.0); }
+        private void percentage000ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.0); }
 
-        private void percentage010YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.1); }
+        private void percentage010ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.1); }
 
-        private void percentage020YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.2); }
+        private void percentage020ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.2); }
 
-        private void percentage030YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.3); }
+        private void percentage030ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.3); }
 
-        private void percentage040YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.4); }
+        private void percentage040ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.4); }
 
-        private void percentage050YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.5); }
+        private void percentage050ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.5); }
 
-        private void percentage060YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.6); }
+        private void percentage060ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.6); }
 
-        private void percentage070YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.7); }
+        private void percentage070ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.7); }
 
-        private void percentage080YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.8); }
+        private void percentage080ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.8); }
 
-        private void percentage090YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.9); }
+        private void percentage090ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(0.9); }
 
-        private void percentage100YoolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(1.0); }
+        private void percentage100ToolStripMenuItem_Click(object sender, EventArgs e) { movePageByRatio(1.0); }
 
         private double getRatioByPage(int p = -1)
         {

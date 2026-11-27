@@ -99,7 +99,7 @@ namespace ZipPla
             if (!AllowReadAheadProcess) return;
             if (path == null) return;
             if (!InDirectoryVirtualDirectoryOrSmartDirectory && !InArchive) return;
-            if (IsOpendByExternalApplication(path)) return;
+            if (IsOpenedByExternalApplication(path)) return;
             //if (GPSizeThumbnail.TrySet_Creating.Contains(path)) return;
             CheckAndRecoverWaitingProcess();
 
@@ -880,7 +880,7 @@ namespace ZipPla
             waitingProcess = Process.Start(psi);
             // 本を開いた直後に起動されると、CLR の起動・JIT・フォームの構築（0.3〜0.6 秒の CPU）が開いたばかりのビューアの読み込みと
             // CPU を取り合う。カーソルがカタログの上になければ低い優先度で起動しておく（S2。カタログに戻れば globalMouseEnter で通常に戻る）
-            if (!CursorIsOnControllField) setWaitingProcessPriority(ProcessPriorityClass.BelowNormal);
+            if (!CursorIsOnControlField) setWaitingProcessPriority(ProcessPriorityClass.BelowNormal);
         }
 
         private bool mouseOnWindow;

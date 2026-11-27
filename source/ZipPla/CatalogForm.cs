@@ -203,10 +203,10 @@ namespace ZipPla
             }
         }
 
-        CatalogFormConetxtMenu rightClickContextMenu = CatalogFormConetxtMenu.ZipPla;
-        CatalogFormConetxtMenu middleClickContextMenu = CatalogFormConetxtMenu.Tag;
-        CatalogFormConetxtMenu controlRightClickContextMenu = CatalogFormConetxtMenu.Explorer;
-        CatalogFormConetxtMenu RightClickContextMenu
+        CatalogFormContextMenu rightClickContextMenu = CatalogFormContextMenu.ZipPla;
+        CatalogFormContextMenu middleClickContextMenu = CatalogFormContextMenu.Tag;
+        CatalogFormContextMenu controlRightClickContextMenu = CatalogFormContextMenu.Explorer;
+        CatalogFormContextMenu RightClickContextMenu
         {
             get { return rightClickContextMenu; }
             set
@@ -221,7 +221,7 @@ namespace ZipPla
                 }
             }
         }
-        CatalogFormConetxtMenu MiddleClickContextMenu
+        CatalogFormContextMenu MiddleClickContextMenu
         {
             get { return middleClickContextMenu; }
             set
@@ -236,7 +236,7 @@ namespace ZipPla
                 }
             }
         }
-        CatalogFormConetxtMenu ControlRightClickContextMenu
+        CatalogFormContextMenu ControlRightClickContextMenu
         {
             get { return controlRightClickContextMenu; }
             set
@@ -254,17 +254,17 @@ namespace ZipPla
 
         void setContextMenuCheckMark()
         {
-            standardRightclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.ZipPla == rightClickContextMenu;
-            standardMiddleclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.ZipPla == middleClickContextMenu;
-            standardCtrlRightclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.ZipPla == controlRightClickContextMenu;
+            standardRightclickToolStripMenuItem.Checked = CatalogFormContextMenu.ZipPla == rightClickContextMenu;
+            standardMiddleclickToolStripMenuItem.Checked = CatalogFormContextMenu.ZipPla == middleClickContextMenu;
+            standardCtrlRightclickToolStripMenuItem.Checked = CatalogFormContextMenu.ZipPla == controlRightClickContextMenu;
 
-            OnlyTagRightclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.Tag == rightClickContextMenu;
-            OnlyTagMiddleclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.Tag == middleClickContextMenu;
-            onlyTagCtrlRightclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.Tag == controlRightClickContextMenu;
+            OnlyTagRightclickToolStripMenuItem.Checked = CatalogFormContextMenu.Tag == rightClickContextMenu;
+            OnlyTagMiddleclickToolStripMenuItem.Checked = CatalogFormContextMenu.Tag == middleClickContextMenu;
+            onlyTagCtrlRightclickToolStripMenuItem.Checked = CatalogFormContextMenu.Tag == controlRightClickContextMenu;
 
-            explorerRightclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.Explorer == rightClickContextMenu;
-            explorerMiddleclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.Explorer == middleClickContextMenu;
-            explorerCtrlRightclickToolStripMenuItem.Checked = CatalogFormConetxtMenu.Explorer == controlRightClickContextMenu;
+            explorerRightclickToolStripMenuItem.Checked = CatalogFormContextMenu.Explorer == rightClickContextMenu;
+            explorerMiddleclickToolStripMenuItem.Checked = CatalogFormContextMenu.Explorer == middleClickContextMenu;
+            explorerCtrlRightclickToolStripMenuItem.Checked = CatalogFormContextMenu.Explorer == controlRightClickContextMenu;
         }
 
         private bool allowReadAheadProcess = true;
@@ -932,15 +932,15 @@ namespace ZipPla
             }
         }
 
-        private readonly Dictionary<object, HashSet<string>> OpendByExternalApplication_Dictionary = new Dictionary<object, HashSet<string>>();
-        private bool IsOpendByExternalApplication(string fullPath)
+        private readonly Dictionary<object, HashSet<string>> OpenedByExternalApplication_Dictionary = new Dictionary<object, HashSet<string>>();
+        private bool IsOpenedByExternalApplication(string fullPath)
         {
             if (fullPath == null) return false;
             fullPath = fullPath.ToLower();
-            return OpendByExternalApplication_Dictionary.Any(pair => pair.Value.Contains(fullPath));
+            return OpenedByExternalApplication_Dictionary.Any(pair => pair.Value.Contains(fullPath));
         }
 
-        public async void SetOpendByExternalApplication(Process p, IEnumerable<string> fullPathSet, bool selectionMirror)
+        public async void SetOpenedByExternalApplication(Process p, IEnumerable<string> fullPathSet, bool selectionMirror)
         {
             if (p == null || p.HasExited || fullPathSet == null)
             {
@@ -953,7 +953,7 @@ namespace ZipPla
                 p.Dispose();
                 return;
             }
-            OpendByExternalApplication_Dictionary[p] = set;
+            OpenedByExternalApplication_Dictionary[p] = set;
 
             if (selectionMirror) selectionMirror = set.Count == 1;
             string fullPath = null;
@@ -1109,7 +1109,7 @@ namespace ZipPla
                     }
                 }
                 //MessageBox.Show("exit");
-                OpendByExternalApplication_Dictionary.Remove(p);
+                OpenedByExternalApplication_Dictionary.Remove(p);
                 p.Dispose();
 
                 /*
@@ -1118,20 +1118,20 @@ namespace ZipPla
             else
             {
                 await Task.Run(() => p.WaitForExit()); // エクスプローラーを読んだ場合ここには到達するがすぐに終了する
-                OpendByExternalApplication_Dictionary.Remove(p);
+                OpenedByExternalApplication_Dictionary.Remove(p);
                 p.Dispose();
             }
         }
-        public void AddToOpendByExternalApplicationDictionary(object key, IEnumerable<string> path)
+        public void AddToOpenedByExternalApplicationDictionary(object key, IEnumerable<string> path)
         {
             if (path == null) return;
             var set = new HashSet<string>(from p in path where !string.IsNullOrEmpty(p) select p.ToLower());
             if (!set.Any()) return;
-            OpendByExternalApplication_Dictionary[key] = set;
+            OpenedByExternalApplication_Dictionary[key] = set;
         }
-        public void RemoveFromOpendByExternalApplicationDictionary(object key)
+        public void RemoveFromOpenedByExternalApplicationDictionary(object key)
         {
-            OpendByExternalApplication_Dictionary.Remove(key);
+            OpenedByExternalApplication_Dictionary.Remove(key);
         }
 
         private SortMode sortMode = 0;

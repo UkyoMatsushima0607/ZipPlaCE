@@ -1753,7 +1753,7 @@ namespace ZipPla
                     rightClickContextMenuPrepareAndShow(p, mk);
                 }
             }
-            else if (!onlyTag && dgvFileList.Visible && (RightClickContextMenu != CatalogFormConetxtMenu.Tag))
+            else if (!onlyTag && dgvFileList.Visible && (RightClickContextMenu != CatalogFormContextMenu.Tag))
             {
                 var p = dgvFileList.PointToScreen(dgvFileList.Location);
                 p.Y += dgvFileList.ColumnHeadersHeight;

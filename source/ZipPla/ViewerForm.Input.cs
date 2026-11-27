@@ -168,11 +168,11 @@ namespace ZipPla
             var delta = e.Delta / 120;
             if (delta == -1)
             {
-                movePageToMinimulForward();
+                movePageToMinimalForward();
             }
             else if (delta == 1)
             {
-                movePageToMinimulBack();
+                movePageToMinimalBack();
             }
             else
             {

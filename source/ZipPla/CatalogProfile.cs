@@ -71,9 +71,9 @@ namespace ZipPla
         public FilterRemovingMode? FilterRemovingMode;
         public bool? LoadLastViewedPageFromHistory;
         public DoubleClickMode? DoubleClickFileOpenMode;
-        public CatalogFormConetxtMenu? RightClickContextMenu;
-        public CatalogFormConetxtMenu? MiddleClickContextMenu;
-        public CatalogFormConetxtMenu? ControlRightClickContextMenu;
+        public CatalogFormContextMenu? RightClickContextMenu;
+        public CatalogFormContextMenu? MiddleClickContextMenu;
+        public CatalogFormContextMenu? ControlRightClickContextMenu;
         public ItemSelectionFeedback? ItemSelectionFeedback;
         public bool? SynchroFromTreeToBar;
         public bool? SynchroFromBarToTree;
@@ -150,9 +150,9 @@ namespace ZipPla
             FilterRemovingMode filterRemovingMode,
             bool loadLastViewedPageFromHistory,
             DoubleClickMode doubleClickFileOpenMode,
-            CatalogFormConetxtMenu rightClickContextMenu,
-            CatalogFormConetxtMenu middleClickContextMenu,
-            CatalogFormConetxtMenu controlRightClickContextMenu,
+            CatalogFormContextMenu rightClickContextMenu,
+            CatalogFormContextMenu middleClickContextMenu,
+            CatalogFormContextMenu controlRightClickContextMenu,
             ItemSelectionFeedback itemSelectionFeedback,
             bool synchroFromTreeToBar,
             bool synchroFromBarToTree,

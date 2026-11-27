@@ -653,7 +653,7 @@ namespace ZipPla
 
             ToolStripOverwriter.SquarizeToolStripInClass(this);
 
-            CursorIsOnControllField = mouseOnWindow = Bounds.Contains(Cursor.Position);
+            CursorIsOnControlField = mouseOnWindow = Bounds.Contains(Cursor.Position);
 
 #if RUNTIME
             Program.RunTimeMeasure?.Block("PrepareActivateManager");

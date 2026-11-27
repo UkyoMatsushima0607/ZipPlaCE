@@ -774,7 +774,7 @@ namespace ZipPla
             {
                 if (CoverBindingMode == CoverBindingMode.ForceSingle)
                 {
-                    movePageToMinimulBack();
+                    movePageToMinimalBack();
                 }
                 else
                 {
@@ -788,7 +788,7 @@ namespace ZipPla
 
         private void virtualFoldersToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
         {
-            ContextMenuForMenuStrip_Opend = true;
+            ContextMenuForMenuStrip_Opened = true;
             fixDropDownLocation(sender);
         }
 

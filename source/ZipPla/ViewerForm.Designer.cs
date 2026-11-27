@@ -68,17 +68,17 @@
             this.moveLeft1PageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem6 = new System.Windows.Forms.ToolStripSeparator();
             this.ratioToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage000YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage010YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage020YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage030YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage040YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage050YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage060YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage070YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage080YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage090YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.percentage100YoolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage000ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage010ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage020ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage030ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage040ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage050ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage060ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage070ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage080ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage090ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.percentage100ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem11 = new System.Windows.Forms.ToolStripSeparator();
             this.openNextToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openPreviousToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -510,108 +510,108 @@
             // ratioToolStripMenuItem
             // 
             this.ratioToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.percentage000YoolStripMenuItem,
-            this.percentage010YoolStripMenuItem,
-            this.percentage020YoolStripMenuItem,
-            this.percentage030YoolStripMenuItem,
-            this.percentage040YoolStripMenuItem,
-            this.percentage050YoolStripMenuItem,
-            this.percentage060YoolStripMenuItem,
-            this.percentage070YoolStripMenuItem,
-            this.percentage080YoolStripMenuItem,
-            this.percentage090YoolStripMenuItem,
-            this.percentage100YoolStripMenuItem});
+            this.percentage000ToolStripMenuItem,
+            this.percentage010ToolStripMenuItem,
+            this.percentage020ToolStripMenuItem,
+            this.percentage030ToolStripMenuItem,
+            this.percentage040ToolStripMenuItem,
+            this.percentage050ToolStripMenuItem,
+            this.percentage060ToolStripMenuItem,
+            this.percentage070ToolStripMenuItem,
+            this.percentage080ToolStripMenuItem,
+            this.percentage090ToolStripMenuItem,
+            this.percentage100ToolStripMenuItem});
             this.ratioToolStripMenuItem.Name = "ratioToolStripMenuItem";
             this.ratioToolStripMenuItem.Size = new System.Drawing.Size(186, 22);
             this.ratioToolStripMenuItem.Text = "Ratio";
             // 
-            // percentage000YoolStripMenuItem
+            // percentage000ToolStripMenuItem
             // 
-            this.percentage000YoolStripMenuItem.Name = "percentage000YoolStripMenuItem";
-            this.percentage000YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage000YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage000YoolStripMenuItem.Text = "0 %";
-            this.percentage000YoolStripMenuItem.Click += new System.EventHandler(this.percentage000YoolStripMenuItem_Click);
+            this.percentage000ToolStripMenuItem.Name = "percentage000ToolStripMenuItem";
+            this.percentage000ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage000ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage000ToolStripMenuItem.Text = "0 %";
+            this.percentage000ToolStripMenuItem.Click += new System.EventHandler(this.percentage000ToolStripMenuItem_Click);
             // 
-            // percentage010YoolStripMenuItem
+            // percentage010ToolStripMenuItem
             // 
-            this.percentage010YoolStripMenuItem.Name = "percentage010YoolStripMenuItem";
-            this.percentage010YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage010YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage010YoolStripMenuItem.Text = "10 %";
-            this.percentage010YoolStripMenuItem.Click += new System.EventHandler(this.percentage010YoolStripMenuItem_Click);
+            this.percentage010ToolStripMenuItem.Name = "percentage010ToolStripMenuItem";
+            this.percentage010ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage010ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage010ToolStripMenuItem.Text = "10 %";
+            this.percentage010ToolStripMenuItem.Click += new System.EventHandler(this.percentage010ToolStripMenuItem_Click);
             // 
-            // percentage020YoolStripMenuItem
+            // percentage020ToolStripMenuItem
             // 
-            this.percentage020YoolStripMenuItem.Name = "percentage020YoolStripMenuItem";
-            this.percentage020YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage020YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage020YoolStripMenuItem.Text = "20 %";
-            this.percentage020YoolStripMenuItem.Click += new System.EventHandler(this.percentage020YoolStripMenuItem_Click);
+            this.percentage020ToolStripMenuItem.Name = "percentage020ToolStripMenuItem";
+            this.percentage020ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage020ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage020ToolStripMenuItem.Text = "20 %";
+            this.percentage020ToolStripMenuItem.Click += new System.EventHandler(this.percentage020ToolStripMenuItem_Click);
             // 
-            // percentage030YoolStripMenuItem
+            // percentage030ToolStripMenuItem
             // 
-            this.percentage030YoolStripMenuItem.Name = "percentage030YoolStripMenuItem";
-            this.percentage030YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage030YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage030YoolStripMenuItem.Text = "30 %";
-            this.percentage030YoolStripMenuItem.Click += new System.EventHandler(this.percentage030YoolStripMenuItem_Click);
+            this.percentage030ToolStripMenuItem.Name = "percentage030ToolStripMenuItem";
+            this.percentage030ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage030ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage030ToolStripMenuItem.Text = "30 %";
+            this.percentage030ToolStripMenuItem.Click += new System.EventHandler(this.percentage030ToolStripMenuItem_Click);
             // 
-            // percentage040YoolStripMenuItem
+            // percentage040ToolStripMenuItem
             // 
-            this.percentage040YoolStripMenuItem.Name = "percentage040YoolStripMenuItem";
-            this.percentage040YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage040YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage040YoolStripMenuItem.Text = "40 %";
-            this.percentage040YoolStripMenuItem.Click += new System.EventHandler(this.percentage040YoolStripMenuItem_Click);
+            this.percentage040ToolStripMenuItem.Name = "percentage040ToolStripMenuItem";
+            this.percentage040ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage040ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage040ToolStripMenuItem.Text = "40 %";
+            this.percentage040ToolStripMenuItem.Click += new System.EventHandler(this.percentage040ToolStripMenuItem_Click);
             // 
-            // percentage050YoolStripMenuItem
+            // percentage050ToolStripMenuItem
             // 
-            this.percentage050YoolStripMenuItem.Name = "percentage050YoolStripMenuItem";
-            this.percentage050YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage050YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage050YoolStripMenuItem.Text = "50 %";
-            this.percentage050YoolStripMenuItem.Click += new System.EventHandler(this.percentage050YoolStripMenuItem_Click);
+            this.percentage050ToolStripMenuItem.Name = "percentage050ToolStripMenuItem";
+            this.percentage050ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage050ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage050ToolStripMenuItem.Text = "50 %";
+            this.percentage050ToolStripMenuItem.Click += new System.EventHandler(this.percentage050ToolStripMenuItem_Click);
             // 
-            // percentage060YoolStripMenuItem
+            // percentage060ToolStripMenuItem
             // 
-            this.percentage060YoolStripMenuItem.Name = "percentage060YoolStripMenuItem";
-            this.percentage060YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage060YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage060YoolStripMenuItem.Text = "60 %";
-            this.percentage060YoolStripMenuItem.Click += new System.EventHandler(this.percentage060YoolStripMenuItem_Click);
+            this.percentage060ToolStripMenuItem.Name = "percentage060ToolStripMenuItem";
+            this.percentage060ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage060ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage060ToolStripMenuItem.Text = "60 %";
+            this.percentage060ToolStripMenuItem.Click += new System.EventHandler(this.percentage060ToolStripMenuItem_Click);
             // 
-            // percentage070YoolStripMenuItem
+            // percentage070ToolStripMenuItem
             // 
-            this.percentage070YoolStripMenuItem.Name = "percentage070YoolStripMenuItem";
-            this.percentage070YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage070YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage070YoolStripMenuItem.Text = "70 %";
-            this.percentage070YoolStripMenuItem.Click += new System.EventHandler(this.percentage070YoolStripMenuItem_Click);
+            this.percentage070ToolStripMenuItem.Name = "percentage070ToolStripMenuItem";
+            this.percentage070ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage070ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage070ToolStripMenuItem.Text = "70 %";
+            this.percentage070ToolStripMenuItem.Click += new System.EventHandler(this.percentage070ToolStripMenuItem_Click);
             // 
-            // percentage080YoolStripMenuItem
+            // percentage080ToolStripMenuItem
             // 
-            this.percentage080YoolStripMenuItem.Name = "percentage080YoolStripMenuItem";
-            this.percentage080YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage080YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage080YoolStripMenuItem.Text = "80 %";
-            this.percentage080YoolStripMenuItem.Click += new System.EventHandler(this.percentage080YoolStripMenuItem_Click);
+            this.percentage080ToolStripMenuItem.Name = "percentage080ToolStripMenuItem";
+            this.percentage080ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage080ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage080ToolStripMenuItem.Text = "80 %";
+            this.percentage080ToolStripMenuItem.Click += new System.EventHandler(this.percentage080ToolStripMenuItem_Click);
             // 
-            // percentage090YoolStripMenuItem
+            // percentage090ToolStripMenuItem
             // 
-            this.percentage090YoolStripMenuItem.Name = "percentage090YoolStripMenuItem";
-            this.percentage090YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage090YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage090YoolStripMenuItem.Text = "90 %";
-            this.percentage090YoolStripMenuItem.Click += new System.EventHandler(this.percentage090YoolStripMenuItem_Click);
+            this.percentage090ToolStripMenuItem.Name = "percentage090ToolStripMenuItem";
+            this.percentage090ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage090ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage090ToolStripMenuItem.Text = "90 %";
+            this.percentage090ToolStripMenuItem.Click += new System.EventHandler(this.percentage090ToolStripMenuItem_Click);
             // 
-            // percentage100YoolStripMenuItem
+            // percentage100ToolStripMenuItem
             // 
-            this.percentage100YoolStripMenuItem.Name = "percentage100YoolStripMenuItem";
-            this.percentage100YoolStripMenuItem.ShortcutKeyDisplayString = "";
-            this.percentage100YoolStripMenuItem.Size = new System.Drawing.Size(105, 22);
-            this.percentage100YoolStripMenuItem.Text = "100 %";
-            this.percentage100YoolStripMenuItem.Click += new System.EventHandler(this.percentage100YoolStripMenuItem_Click);
+            this.percentage100ToolStripMenuItem.Name = "percentage100ToolStripMenuItem";
+            this.percentage100ToolStripMenuItem.ShortcutKeyDisplayString = "";
+            this.percentage100ToolStripMenuItem.Size = new System.Drawing.Size(105, 22);
+            this.percentage100ToolStripMenuItem.Text = "100 %";
+            this.percentage100ToolStripMenuItem.Click += new System.EventHandler(this.percentage100ToolStripMenuItem_Click);
             // 
             // toolStripMenuItem11
             // 
@@ -1691,17 +1691,17 @@
         private System.Windows.Forms.ToolStripMenuItem moveBack1PageToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem6;
         private System.Windows.Forms.ToolStripMenuItem ratioToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage000YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage010YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage020YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage030YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage040YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage050YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage060YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage070YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage080YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage090YoolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem percentage100YoolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage000ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage010ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage020ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage030ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage040ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage050ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage060ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage070ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage080ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage090ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem percentage100ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem noneToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem rating1ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem rating2ToolStripMenuItem;

@@ -366,17 +366,17 @@ namespace ZipPla
                 Tuple.Create(new MouseGestureSettingTemplate( (int)Command.PreviousPage, Message.PreviousPage,
                    withHideCursor(MoveToPreviousPage, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
                 Tuple.Create(new MouseGestureSettingTemplate( (int)Command.MoveForwardOnePage, Message.MoveForwardOnePage,
-                   withHideCursor(movePageToMinimulForward, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
+                   withHideCursor(movePageToMinimalForward, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
                 Tuple.Create( new MouseGestureSettingTemplate( (int)Command.MoveBackOnePage, Message.MoveBackOnePage,
-                   withHideCursor(movePageToMinimulBack, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
+                   withHideCursor(movePageToMinimalBack, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
                 Tuple.Create(  new MouseGestureSettingTemplate( (int)Command.RightPage, Message.RightPage,
                    withHideCursor(moveToRightPage, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
                 Tuple.Create( new MouseGestureSettingTemplate( (int)Command.LeftPage, Message.LeftPage,
                    withHideCursor(moveToLeftPage, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
                 Tuple.Create(   new MouseGestureSettingTemplate( (int)Command.MoveRightOnePage, Message.MoveRightOnePage,
-                   withHideCursor(movePageToMinimulRight, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
+                   withHideCursor(movePageToMinimalRight, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
                 Tuple.Create(  new MouseGestureSettingTemplate( (int)Command.MoveLeftOnePage, Message.MoveLeftOnePage,
-                   withHideCursor(movePageToMinimulLeft, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut), // コマンド実行時点での PageLeftToRight が必要なのでデリゲート自体を PageLeftToRight で選ぶのは誤り
+                   withHideCursor(movePageToMinimalLeft, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut), // コマンド実行時点での PageLeftToRight が必要なのでデリゲート自体を PageLeftToRight で選ぶのは誤り
 
                 Tuple.Create( new MouseGestureSettingTemplate( (int)Command.MoveTo0Percent, Message.PositionRatio + " > 0 %",
                    withHideCursor(movePageByRatio000, commandSender)), CommandSender.MouseGesture | CommandSender.KeyboardShortcut),
@@ -768,17 +768,17 @@ namespace ZipPla
             leftPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss,
                 Command.LeftPage, Command.MoveLeftOrMagnifierAutoScroll, Command.MoveLeftOrMagnifierAutoScrollWithoutOverwrap);
 
-            percentage000YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo0Percent);
-            percentage010YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo10Percent);
-            percentage020YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo20Percent);
-            percentage030YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo30Percent);
-            percentage040YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo40Percent);
-            percentage050YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo50Percent);
-            percentage060YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo60Percent);
-            percentage070YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo70Percent);
-            percentage080YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo80Percent);
-            percentage090YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo90Percent);
-            percentage100YoolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo100Percent);
+            percentage000ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo0Percent);
+            percentage010ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo10Percent);
+            percentage020ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo20Percent);
+            percentage030ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo30Percent);
+            percentage040ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo40Percent);
+            percentage050ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo50Percent);
+            percentage060ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo60Percent);
+            percentage070ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo70Percent);
+            percentage080ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo80Percent);
+            percentage090ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo90Percent);
+            percentage100ToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveTo100Percent);
 
             moveForward1PageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.WheelDownOnBar, kss, Command.MoveForwardOnePage);
             //if (ksViewForm.ActionsContainsLButton)

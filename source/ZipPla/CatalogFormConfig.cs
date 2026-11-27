@@ -85,9 +85,9 @@ namespace ZipPla
         public bool LoadLastViewedPageFromHistory = false;
         //public DoubleClickMode DoubleClickFileOpenMode = DoubleClickMode.IgnoreMouseMove;
         public DoubleClickMode? DoubleClickFileOpenMode = null; // 移行用
-        public CatalogFormConetxtMenu RightClickContextMenu = CatalogFormConetxtMenu.ZipPla;
-        public CatalogFormConetxtMenu MiddleContextMenu = CatalogFormConetxtMenu.Tag;
-        public CatalogFormConetxtMenu ControlRightClickContextMenu = CatalogFormConetxtMenu.Explorer;
+        public CatalogFormContextMenu RightClickContextMenu = CatalogFormContextMenu.ZipPla;
+        public CatalogFormContextMenu MiddleContextMenu = CatalogFormContextMenu.Tag;
+        public CatalogFormContextMenu ControlRightClickContextMenu = CatalogFormContextMenu.Explorer;
         public ItemSelectionFeedback ItemSelectionFeedback = ItemSelectionFeedback.IfSortMayBeSame;
         public bool SynchroFromTreeToBar = true;
         public bool SynchroFromBarToTree = false;

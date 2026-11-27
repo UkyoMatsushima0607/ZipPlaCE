@@ -746,7 +746,7 @@ namespace ZipPla
         int mtbPageTop_As_Reference_pbViewBottom = 0;
         private void menuStrip_MouseLeave(object sender, EventArgs e)
         {
-            if (HideUI && !ContextMenuForMenuStrip_Opend && menuStrip_Bottom == 0)// && !ContextMenuForMenuStripPostProcessing_worked)
+            if (HideUI && !ContextMenuForMenuStrip_Opened && menuStrip_Bottom == 0)// && !ContextMenuForMenuStripPostProcessing_worked)
             {
                 menuStrip_Bottom = menuStrip.Bounds.Bottom;
                 menuStrip.Visible = false;

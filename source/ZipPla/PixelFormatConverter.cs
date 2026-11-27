@@ -232,10 +232,10 @@ namespace ZipPla
 
         public static Bitmap ToBitmap24Unsafe(Bitmap bmp, bool leaveOpenOriginal)
         {
-            return ToOtehrPixeoFormat(bmp, PixelFormat.Format24bppRgb, leaveOpenOriginal);
+            return ToOtherPixelFormat(bmp, PixelFormat.Format24bppRgb, leaveOpenOriginal);
         }
 
-        public static unsafe Bitmap ToOtehrPixeoFormat(Bitmap bmp, PixelFormat newPixelFormat, bool leaveOpenOriginal)
+        public static unsafe Bitmap ToOtherPixelFormat(Bitmap bmp, PixelFormat newPixelFormat, bool leaveOpenOriginal)
         {
             if (bmp == null) throw new ArgumentNullException(nameof(bmp));
             if (bmp.PixelFormat == newPixelFormat) return bmp;

@@ -107,8 +107,8 @@ namespace ZipPla
                 }
                 if (SlideshowMove1Page)
                 {
-                    isMovable = () => isMovablePageToMinimulForward(checkLoaded: true);
-                    move = movePageToMinimulForward;
+                    isMovable = () => isMovablePageToMinimalForward(checkLoaded: true);
+                    move = movePageToMinimalForward;
                 }
                 else
                 {
@@ -152,8 +152,8 @@ namespace ZipPla
                 }
                 if (SlideshowMove1Page)
                 {
-                    isMovable = () => isMovablePageToMinimulBack(checkLoaded: true);
-                    move = movePageToMinimulBack;
+                    isMovable = () => isMovablePageToMinimalBack(checkLoaded: true);
+                    move = movePageToMinimalBack;
                 }
                 else
                 {

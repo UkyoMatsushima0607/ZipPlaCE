@@ -265,15 +265,15 @@ namespace ZipPla
                 }
                 if (profile.RightClickContextMenu != null)
                 {
-                    RightClickContextMenu = (CatalogFormConetxtMenu)profile.RightClickContextMenu;
+                    RightClickContextMenu = (CatalogFormContextMenu)profile.RightClickContextMenu;
                 }
                 if (profile.MiddleClickContextMenu != null)
                 {
-                    MiddleClickContextMenu = (CatalogFormConetxtMenu)profile.MiddleClickContextMenu;
+                    MiddleClickContextMenu = (CatalogFormContextMenu)profile.MiddleClickContextMenu;
                 }
                 if (profile.ControlRightClickContextMenu != null)
                 {
-                    ControlRightClickContextMenu = (CatalogFormConetxtMenu)profile.ControlRightClickContextMenu;
+                    ControlRightClickContextMenu = (CatalogFormContextMenu)profile.ControlRightClickContextMenu;
                 }
                 if (profile.ItemSelectionFeedback != null)
                 {

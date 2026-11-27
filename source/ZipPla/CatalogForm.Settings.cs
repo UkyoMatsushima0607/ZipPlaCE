@@ -274,7 +274,7 @@ namespace ZipPla
             FilterRemovingMode? filterRemoving;
             bool loadPage;
             DoubleClickMode? doubleClick;
-            CatalogFormConetxtMenu right, middle, control;
+            CatalogFormContextMenu right, middle, control;
             ItemSelectionFeedback feedback;
             bool treeToBar, barToTree, collap;
             FolderSortMode folderSortMode;

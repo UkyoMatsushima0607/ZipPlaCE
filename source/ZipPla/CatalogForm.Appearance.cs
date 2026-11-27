@@ -459,17 +459,17 @@ namespace ZipPla
 
             string strLong;
             string strShort;
-            if (MiddleClickContextMenu == CatalogFormConetxtMenu.Tag)
+            if (MiddleClickContextMenu == CatalogFormContextMenu.Tag)
             {
                 strLong = Message.MiddleClickTwoFingerTap;
                 strShort = Message.MiddleClick;
             }
-            else if (ControlRightClickContextMenu == CatalogFormConetxtMenu.Tag)
+            else if (ControlRightClickContextMenu == CatalogFormContextMenu.Tag)
             {
                 strLong = "Ctrl+" + Message.MiddleClick;
                 strShort = null;
             }
-            else if (RightClickContextMenu == CatalogFormConetxtMenu.Tag)
+            else if (RightClickContextMenu == CatalogFormContextMenu.Tag)
             {
                 strLong = Message.RightClickPressAndTap;
                 strShort = Message.RightClick;

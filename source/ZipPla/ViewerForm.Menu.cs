@@ -22,7 +22,7 @@ namespace ZipPla
 {
     public partial class ViewerForm
     {
-        bool ContextMenuForMenuStrip_Opend = false;
+        bool ContextMenuForMenuStrip_Opened = false;
 
         private void ContextMenuForMenuStripPostProcessing2()
         {
@@ -46,7 +46,7 @@ namespace ZipPla
                     KeyboardShortcut.SendEscapeKey();
                 }
             }
-            ContextMenuForMenuStrip_Opend = false;
+            ContextMenuForMenuStrip_Opened = false;
 
             if (DrawMeasure) pbPaintDrawOnlyMeasure();
             
@@ -81,7 +81,7 @@ namespace ZipPla
 
         private void startToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
         {
-            ContextMenuForMenuStrip_Opend = true;
+            ContextMenuForMenuStrip_Opened = true;
             fixDropDownLocation(sender);
         }
 
@@ -92,7 +92,7 @@ namespace ZipPla
 
         private void viewToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
         {
-            ContextMenuForMenuStrip_Opend = true;
+            ContextMenuForMenuStrip_Opened = true;
             fixDropDownLocation(sender);
         }
 
@@ -105,17 +105,17 @@ namespace ZipPla
         {
             switch(i)
             {
-                case 0: return percentage000YoolStripMenuItem;
-                case 1: return percentage010YoolStripMenuItem;
-                case 2: return percentage020YoolStripMenuItem;
-                case 3: return percentage030YoolStripMenuItem;
-                case 4: return percentage040YoolStripMenuItem;
-                case 5: return percentage050YoolStripMenuItem;
-                case 6: return percentage060YoolStripMenuItem;
-                case 7: return percentage070YoolStripMenuItem;
-                case 8: return percentage080YoolStripMenuItem;
-                case 9: return percentage090YoolStripMenuItem;
-                case 10: return percentage100YoolStripMenuItem;
+                case 0: return percentage000ToolStripMenuItem;
+                case 1: return percentage010ToolStripMenuItem;
+                case 2: return percentage020ToolStripMenuItem;
+                case 3: return percentage030ToolStripMenuItem;
+                case 4: return percentage040ToolStripMenuItem;
+                case 5: return percentage050ToolStripMenuItem;
+                case 6: return percentage060ToolStripMenuItem;
+                case 7: return percentage070ToolStripMenuItem;
+                case 8: return percentage080ToolStripMenuItem;
+                case 9: return percentage090ToolStripMenuItem;
+                case 10: return percentage100ToolStripMenuItem;
                 default: throw new ArgumentOutOfRangeException("i");
             }
         }
@@ -131,8 +131,8 @@ namespace ZipPla
             rightPageToolStripMenuItem.Enabled = l2r ? nextEnabled : prevEnabled;
             leftPageToolStripMenuItem.Enabled = l2r ? prevEnabled : nextEnabled;
 
-            var next1Enabled = isMovablePageToMinimulForward(); // isMovablePage(1);
-            var prev1Enabled = isMovablePageToMinimulBack(); // isMovablePage(-1);
+            var next1Enabled = isMovablePageToMinimalForward(); // isMovablePage(1);
+            var prev1Enabled = isMovablePageToMinimalBack(); // isMovablePage(-1);
 
             moveForward1PageToolStripMenuItem.Enabled = next1Enabled;
             moveBack1PageToolStripMenuItem.Enabled = prev1Enabled;
@@ -177,7 +177,7 @@ namespace ZipPla
 
         private void moveToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
         {
-            ContextMenuForMenuStrip_Opend = true;
+            ContextMenuForMenuStrip_Opened = true;
             fixDropDownLocation(sender);
         }
 
@@ -193,7 +193,7 @@ namespace ZipPla
 
         private void slideshowToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
         {
-            ContextMenuForMenuStrip_Opend = true;
+            ContextMenuForMenuStrip_Opened = true;
             fixDropDownLocation(sender);
         }
 
@@ -434,7 +434,7 @@ namespace ZipPla
 
         private void optionToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
         {
-            ContextMenuForMenuStrip_Opend = true;
+            ContextMenuForMenuStrip_Opened = true;
             fixDropDownLocation(sender);
         }
 
@@ -464,7 +464,7 @@ namespace ZipPla
 
         private void editToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
         {
-            ContextMenuForMenuStrip_Opend = true;
+            ContextMenuForMenuStrip_Opened = true;
             fixDropDownLocation(sender);
         }
 

@@ -1067,7 +1067,7 @@ namespace ZipPla
                 }
             }
 
-            if (AllowFullpower && !CursolIsOnControll() && !(((MouseButtons & MouseButtons.Left) == MouseButtons.Left || cbFilter.Focused) && Form.ActiveForm == this))
+            if (AllowFullpower && !CursorIsOnControl() && !(((MouseButtons & MouseButtons.Left) == MouseButtons.Left || cbFilter.Focused) && Form.ActiveForm == this))
             {
                 bmwMakePreview.ThreadCount = Math.Max(2, Environment.ProcessorCount - 1);
                 Program.SetPriority(ProcessPriorityClass.BelowNormal);

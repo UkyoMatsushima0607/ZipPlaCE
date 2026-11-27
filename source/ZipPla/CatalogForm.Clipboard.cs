@@ -174,7 +174,7 @@ namespace ZipPla
                     {
                         ClipboardViewer_ClipboardHandler_StopLoaderForClipboardDispose = true;
                         StopLookAheadProcess();
-                        OpendByExternalApplication_Dictionary[GetSelectedDataObject_ClipboardGuid] = new HashSet<string>(from path in files where !string.IsNullOrEmpty(path) select path.ToLower());
+                        OpenedByExternalApplication_Dictionary[GetSelectedDataObject_ClipboardGuid] = new HashSet<string>(from path in files where !string.IsNullOrEmpty(path) select path.ToLower());
                         PrepareLookAheadProcess();
                     }
                 }
@@ -251,7 +251,7 @@ namespace ZipPla
             {
                 packedImageLoaderForClipboard_Dispose();
 
-                OpendByExternalApplication_Dictionary.Remove(GetSelectedDataObject_ClipboardGuid);
+                OpenedByExternalApplication_Dictionary.Remove(GetSelectedDataObject_ClipboardGuid);
             }
         }
 
@@ -869,7 +869,7 @@ namespace ZipPla
             }
         }
 
-        readonly Guid GetSelectedDataObject_ClipboardGuid = Guid.NewGuid(); // OpendByExternalApplication_Dictionary のキー（new Guid() は Guid.Empty になり、ほかのキーと重なりうる）
+        readonly Guid GetSelectedDataObject_ClipboardGuid = Guid.NewGuid(); // OpenedByExternalApplication_Dictionary のキー（new Guid() は Guid.Empty になり、ほかのキーと重なりうる）
 
         private void GetSelectedDataObject(out DataObject dataObject, out DragDropEffects effects, bool forClipboard)
         {

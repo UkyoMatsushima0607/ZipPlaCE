@@ -28,7 +28,7 @@ namespace ZipPla
             Descrollable(tsdd);
             tsdd.MouseWheel += MouseWheelEventHandler;
             tsdd.KeyUp += KeyUpEventHandler;
-            tsdd.Opened += OpendEventHander;
+            tsdd.Opened += OpenedEventHandler;
             if (enterFocus) tsdd.MouseEnter += FocusEventHandler;
         }
 
@@ -105,7 +105,7 @@ namespace ZipPla
         {
             tsdd.MouseWheel -= MouseWheelEventHandler;
             tsdd.KeyUp -= KeyUpEventHandler;
-            tsdd.Opened -= OpendEventHander;
+            tsdd.Opened -= OpenedEventHandler;
             tsdd.MouseEnter -= FocusEventHandler;
         }
 
@@ -228,7 +228,7 @@ namespace ZipPla
             }
         }
         
-        private static void OpendEventHander(object sender, EventArgs e)
+        private static void OpenedEventHandler(object sender, EventArgs e)
         {
             (sender as ToolStripDropDown).Focus();
         }
