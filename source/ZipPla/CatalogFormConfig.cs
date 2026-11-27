@@ -1,0 +1,127 @@
+﻿using Alteridem.WinTouch;
+using Common;
+using GenerarClasses;
+using SharpCompress.Common;
+//using SharpCompress.Reader;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Globalization;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Security.Permissions;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using WilsonProgramming;
+using WindowsFormUtilities;
+
+namespace ZipPla
+{
+    public class CatalogFormConfig : Configuration
+    {
+        public const string NOCACHE = "<NOCACHE>";
+
+        public SerializableRGB CurrentProfileColor = SystemColors.Menu;
+        public bool Maximized;
+        public Point? Point;
+        public Size Size;
+        public string Location;
+        public double ThumbnailScrollbar;
+        public int FileListScrollbar;
+        public string SelectedFileName;
+        public SortMode LastSortMode = SortMode.NameInAsc;
+        public SortMode SortMode = SortMode.NameInAsc;
+        public string RandomSeed = null;
+        public string Filter;
+        public int ThumbnailSize = 2;
+        public double AspectRatio = Math.Sqrt(1 / 2.0);
+        public bool ShowIcon = true;
+        public bool ShowRating = true;
+        public bool ShowTags = true;
+        public bool ShowFilename = true;
+        public ClipMode ClipMode = ClipMode.PlaClip;
+        public ThumbViewerAligningMode AligningMode = ThumbViewerAligningMode.TotallyUniformedGrid;
+        public NumberOfLinesOfName NumberOfLinesOfName = NumberOfLinesOfName.Full;
+        public double MinimumFrameThickness = 4;
+        public int ThumbnailMouseWheelScrollAmount = 120;
+        public ThumbViewerScrollUnit ThumbnailMouseWheelScrollUnit = ThumbViewerScrollUnit.AbsolutePixel;
+        public bool BookmarkVisible = true;
+        public int BookmarkWidth = -1;
+        public int BookmarkHeight = -1;
+        public bool FolderTreeVisible = false;
+        public bool ThumbnailListVisible = true;
+        public bool FileListVisible = true;
+        public DockStyle FileListDock = DockStyle.Bottom;
+        public int FileListWidth = -1;
+        public string[] FileListOrder = new string[0];
+        public bool IconInFileList = true;
+        public bool PageInFileList = false;
+        public bool RatingInFileList = true;
+        public bool DateCreatedInFileList = false;
+        public bool DateAccessedInFileList = false;
+        public bool DateModifiedInFileList = true;
+        public bool SizeInFileList = true;
+        public bool ResolutionInFileList = false;
+        public bool RatioInFileList = false;
+        public bool WidthInFileList = false;
+        public bool HeightInFileList = false;
+        public bool LengthInFileList = false;
+        public bool FpsInFileList = false;
+        public bool TinyOnScreenKeyboardVisible = false;
+        public SelectionHighlightMode SelectionHighlightMode = SelectionHighlightMode.WhenMouseLeaves;
+        public FilterRemovingMode? FilterRemovingMode;
+        public bool LoadLastViewedPageFromHistory = false;
+        //public DoubleClickMode DoubleClickFileOpenMode = DoubleClickMode.IgnoreMouseMove;
+        public DoubleClickMode? DoubleClickFileOpenMode = null; // 移行用
+        public CatalogFormConetxtMenu RightClickContextMenu = CatalogFormConetxtMenu.ZipPla;
+        public CatalogFormConetxtMenu MiddleContextMenu = CatalogFormConetxtMenu.Tag;
+        public CatalogFormConetxtMenu ControlRightClickContextMenu = CatalogFormConetxtMenu.Explorer;
+        public ItemSelectionFeedback ItemSelectionFeedback = ItemSelectionFeedback.IfSortMayBeSame;
+        public bool SynchroFromTreeToBar = true;
+        public bool SynchroFromBarToTree = false;
+        public bool CollapseOthersWhenSynchronizing = false;
+        public FolderSortMode FolderSortMode = FolderSortMode.None;
+        //public bool CheckDirectorySize = false;
+        public ArchivesInArchiveMode ArchivesInArchiveMode = ArchivesInArchiveMode.Ignore;
+        public ReadOnMemoryMode ReadOnMemoryMode = ReadOnMemoryMode.None;
+        public bool OpenInPreviousImageFilterSetting = true;
+        public BindingMode? DefaultBindingMode = null;
+        public CoverBindingMode CoverBindingMode = CoverBindingMode.Default;
+        public SortSyncMode SortSyncMode = SortSyncMode.Directory;
+        public bool AlwaysHideUI = false;
+        public bool AllowReadAheadProcess = true;
+        public SerializableRGB BackColorOfBuiltInViewer = Color.Black;
+        public SerializableRGB SelectedColorForBackColorOfBuiltInViewer = Color.LightSalmon;
+        public InitialFullscreenMode BuiltInViewerInitialFullscreenMode = InitialFullscreenMode.Default;
+        public int MaxCaptchaCountInOneVideo = 0;
+        public string DisplayArchiveFiles = nameof(ItemLoadLevel.Full);
+        public string DisplayImageFiles = nameof(ItemLoadLevel.Full);
+        public string DisplayVideoFiles = nameof(ItemLoadLevel.Full);
+        public string DisplayOtherFiles = nameof(ItemLoadLevel.Full);
+        public string ThumbnailCacheRoot = null;
+        public SubfolderMode SubfolderMode = SubfolderMode.Display;
+        public string[] LocationHistory;
+        public string[] FilterHistory;
+        public int RatingReference = 3;
+        public KeyAndValue<string, string>[] FilterAliasToString = new KeyAndValue<string, string>[0];
+        public bool InvariantFilter = false;
+
+        public bool MouseGestureEnabled = false;
+        public double MouseGestureLineWidth = 5;
+        public SerializableRGB MouseGestureLineColor = Color.Red;
+        public CatalogForm.MouseGestureCommand[] MouseGestureCommands = null;
+
+    }
+}
