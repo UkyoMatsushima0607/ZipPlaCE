@@ -16,7 +16,12 @@ namespace ZipPla
     {
         public const int FfmpegCancelCheckInterval = 10;
 
-        public static Bitmap GetThumbnail(string filePath, Func<Fraction, Size, Size> sizeProvider, Func<TimeSpan, TimeSpan> positionProvider, BackgroundWorker backgroundWorker, TimeSpan timeOut, ref MovieInfo movieInfo)
+        /// <param name="nextKeyframe">
+        /// true なら、指定した時刻ちょうどのコマではなく、その時刻以降の最初のキーフレームを返す（カタログの自動のサムネイル用）。
+        /// 目的の時刻までデコードしないので速い（1080p の長い動画を 3 本同時に読んで 1 本あたり約半分）。
+        /// 30 秒以内にキーフレームがない・読めないときは、時刻ちょうどのコマで読み直す
+        /// </param>
+        public static Bitmap GetThumbnail(string filePath, Func<Fraction, Size, Size> sizeProvider, Func<TimeSpan, TimeSpan> positionProvider, BackgroundWorker backgroundWorker, TimeSpan timeOut, ref MovieInfo movieInfo, bool nextKeyframe = false)
         {
             if(movieInfo == null) movieInfo = MovieInfo.FromFileCached(filePath);
             var size = movieInfo.SizeByPixel;
@@ -53,7 +58,61 @@ namespace ZipPla
                 if (position > duration) position = duration;
                 if (position < TimeSpan.Zero) position = TimeSpan.Zero;
             }
+            // 短い動画はキーフレームが先頭の 1 つだけのことが多く、探しても見つからずに読み直しになる（ffmpeg の起動 1 回ぶん遅くなる）ので、最初から時刻ちょうどで読む
+            if (nextKeyframe && position < TimeSpan.MaxValue && movieInfo.Duration >= TimeSpan.FromSeconds(KeyframeMinDurationSeconds))
+            {
+                var keyframe = tryGetKeyframeThumbnail(filePath, size, originalSize, position, backgroundWorker);
+                if (keyframe != null) return keyframe;
+                if (backgroundWorker != null && backgroundWorker.CancellationPending) throw new OperationCanceledException(); // 中断。従来どおり、呼び出し側の例外処理が中断として扱う
+#if PERFLOG
+                PerfTrace.AddStage("movieKeyframeFallback", 0);
+#endif
+            }
             return GetThumbnail(filePath, size, originalSize, position, backgroundWorker);
+        }
+
+        // キーフレームが見つからないとき（キーフレームの間隔が極端に長い動画など）に、ファイルの終わりまで読み続けないための上限
+        private const int KeyframeSearchSeconds = 30;
+        // これより短い動画にはキーフレーム方式を使わない
+        private const int KeyframeMinDurationSeconds = 20;
+
+        /// <summary>
+        /// position 以降の最初のキーフレームを取り出す。-skip_frame nokey でキーフレーム以外をデコードせずに捨てる。
+        /// ffmpeg は position の直前のキーフレームから読み始め、position より前のコマは出力しないので、出てくるのは position 以降のキーフレームになる
+        /// （直前のキーフレームを使う -noaccurate_seek だと、キーフレームの少ない動画でずっと前のコマになる。速さは変わらなかった）。
+        /// デコードするのは 1 枚なので -threads 1（複数の ffmpeg を同時に動かしたときに取り合わない）。
+        /// 読めない・大きさが違うときは null（呼び出し側が時刻ちょうどのコマで読み直す）。古い ffmpeg が引数を知らない場合も同じ
+        /// </summary>
+        private static Bitmap tryGetKeyframeThumbnail(string filePath, Size size, bool originalSize, TimeSpan position, BackgroundWorker backgroundWorker)
+        {
+            try
+            {
+                var cmd = $"-threads 1 -skip_frame nokey -ss {position.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)} -t {KeyframeSearchSeconds} -i \"{filePath}\"" +
+                    (originalSize ? "" : $" -s {size.Width}x{size.Height}") + " -vframes 1 -an -vcodec bmp -f image2 pipe:1";
+#if PERFLOG
+                var perfFfmpeg = PerfTrace.Now();
+#endif
+                int outputSize;
+                var buf = readStdOutBinary(ffmpegPath, cmd, backgroundWorker, size.Width * size.Height * 4 + 124, out outputSize);
+#if PERFLOG
+                PerfTrace.AddStage("movieFfmpegKeyframe", PerfTrace.Now() - perfFfmpeg);
+#endif
+                if (buf == null || outputSize < 54) return null; // 中断された、または 1 枚も出なかった
+                using (var ms = new MemoryStream(buf, 0, outputSize, writable: false, publiclyVisible: false))
+                {
+                    var result = new Bitmap(ms);
+                    if (result.Size != size)
+                    {
+                        result.Dispose();
+                        return null;
+                    }
+                    return result;
+                }
+            }
+            catch (Exception e) when (e is ArgumentException || e is IOException || e is System.Runtime.InteropServices.ExternalException || e is System.ComponentModel.Win32Exception || e is InvalidOperationException)
+            {
+                return null;
+            }
         }
 
         public static Bitmap GetImageByFfmpeg(string filePath)

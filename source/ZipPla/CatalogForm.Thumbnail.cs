@@ -466,7 +466,8 @@ namespace ZipPla
 
                     //throw new Exception();
                     var pp = index < 0 ? positionProviderForMovie : new Func<TimeSpan, TimeSpan>(t => TimeSpan.FromSeconds(index));
-                    using (var img = MovieThumbnailLoader.GetThumbnail(zipPath, /*sizeProvider*/ null, pp, backgroundWorker, TimeSpan.FromSeconds(10), ref movieInfo))
+                    // 位置を指定していない動画は、長さの 1/3 以降の最初のキーフレームで作る（速い）。位置を指定した動画は、その時刻ちょうどのコマ
+                    using (var img = MovieThumbnailLoader.GetThumbnail(zipPath, /*sizeProvider*/ null, pp, backgroundWorker, TimeSpan.FromSeconds(10), ref movieInfo, nextKeyframe: index < 0))
                     {
                         //imageInfo = new ImageInfo(img);
                         imageInfo = null;
