@@ -421,26 +421,27 @@ namespace ZipPla
             return idx < start || stop <= idx;
         }
 
-        // 原寸からデコードして縮小するページの範囲（表示中＋前後1見開き分）。この範囲では縮小デコード（C5）を使わず、
-        // 縮小デコードで読んだページが入ってきたら原寸から読み直す（表示の画質を保つ）（C1・C5）
+        // 原寸からデコードして縮小するページの範囲と、原寸を残す範囲（計算は PrefetchScheduler）。NextPage は currentPage が負でないときだけ求める
         private bool TryGetOriginalProtectedRange(out int start, out int stop)
         {
-            start = stop = 0;
             var cPage = currentPage;
-            if (cPage < 0) return false;
-            var window = Math.Max(1, MaxPageCountInWindow);
-            start = cPage - window;
-            stop = Math.Max(NextPage, cPage + window) + window;
-            return true;
+            if (cPage < 0)
+            {
+                start = stop = 0;
+                return false;
+            }
+            return PrefetchScheduler.TryGetOriginalProtectedRange(cPage, NextPage, MaxPageCountInWindow, out start, out stop);
         }
 
-        // 原寸を残すページの範囲（V2）。原寸は縮小画像を作ったあとは拡大画像（ルーペ）にしか使わないので、
-        // ルーペを一度も開いていなければ空（縮小したらすぐ捨てる）。開いたあとは従来どおり TryGetOriginalProtectedRange と同じ
         private bool TryGetOriginalKeepRange(out int start, out int stop)
         {
-            if (!TryGetOriginalProtectedRange(out start, out stop)) return false;
-            if (!magnifierWanted) stop = start;
-            return true;
+            var cPage = currentPage;
+            if (cPage < 0)
+            {
+                start = stop = 0;
+                return false;
+            }
+            return PrefetchScheduler.TryGetOriginalKeepRange(cPage, NextPage, MaxPageCountInWindow, magnifierWanted, out start, out stop);
         }
 
         /// <summary>
@@ -593,23 +594,11 @@ namespace ZipPla
             }
         }
 
-        // 先読みするのは表示中のページの前後この枚数まで。外れたページは PrefetchDiscardRange より離れたら捨てる。
-        // 以前は空き物理メモリの約 7 割まで書庫の全ページを読んでいた（1722 ページの書庫を 1080p で開くと 3.1GB・CPU 20 秒）。
-        // 1 ページの読み込みは 10ms 前後なので、遠くへ移動したときはその場で読めば足りる
-        private const int PrefetchRange = 64;
-
-        private const int PrefetchDiscardRange = 96;
-
         private int prefetchOrderPage = int.MinValue;
-
-        private bool IsInPrefetchRange(int page, int center, int range)
-        {
-            var spread = Math.Max(1, MaxPageCountInWindow);
-            return center - range <= page && page < center + spread + range;
-        }
 
         private int SetBackgroundMode_CallCount = 0;
 
+        // 読み込む順番を作り直し、表示から離れたページを捨てる（順番と捨てる範囲は PrefetchScheduler）
         private void SetBackgroundMode()
         {
             SetBackgroundMode_CallCount++;
@@ -618,68 +607,24 @@ namespace ZipPla
             var clientCursorPosition = mtbPage.PointToClient(Cursor.Position);
             var onTrackbar = mtbPage.ClientRectangle.Contains(clientCursorPosition);
             var centerValue = onTrackbar ? mtbPage.PointToValue(clientCursorPosition) : currentPage;
-            var stopPage = currentPage + MaxPageCountInWindow;
-            var current = Math.Max(0, currentPage);
-            prefetchOrderPage = currentPage;
+            var cPage = currentPage;
+            var pagesInWindow = MaxPageCountInWindow;
+            prefetchOrderPage = cPage;
 
             // 表示中のページの前後と、トラックバー上のカーソル位置の近くだけを読む
-            var hoverRange = Math.Max(1, MaxPageCountInWindow) * 2;
-            var orderList = new List<int>();
-            for (var i = 0; i < length; i++)
-            {
-                if (IsInPrefetchRange(i, current, PrefetchRange) || (onTrackbar && IsInPrefetchRange(i, centerValue, hoverRange))) orderList.Add(i);
-            }
-            var order = orderList.ToArray();
+            var order = PrefetchScheduler.GetLoadOrder(length, cPage, pagesInWindow, onTrackbar, centerValue);
 
-            // 表示から離れたページの縮小画像（と原寸）を捨てる。シークバーのドラッグ中も捨てる
-            // （離すまで待つと、通過したページの縮小画像がたまって最大メモリが 154→564MB に増えた。V24）
             for (var i = 0; i < length; i++)
             {
-                if (ResizedImageArray[i] != null && !IsInPrefetchRange(i, current, PrefetchDiscardRange) &&
-                    !(onTrackbar && IsInPrefetchRange(i, centerValue, hoverRange)))
+                if (ResizedImageArray[i] != null && PrefetchScheduler.ShouldDiscard(i, cPage, pagesInWindow, onTrackbar, centerValue))
                 {
                     DiscardLoadedPage(i);
                 }
             }
 
-            Array.Sort(order, (a, b) =>
-            {
-                var aLevel = priorityLevel(a, stopPage);
-                var bLevel = priorityLevel(b, stopPage);
-                if (aLevel == bLevel)
-                {
-                    return Math.Abs(a - centerValue) - Math.Abs(b - centerValue);
-                }
-                else
-                {
-                    return aLevel - bLevel;
-                }
-            });
             bmwLoadEachPage.SetWorksOrder(order);
             ReduceUsingMemory(usedMemoryUBound);
             bmwLoadEachPage.ThreadCount = LoadThreadCount;
-        }
-
-        private int priorityLevel(int x, int stopPage)
-        {
-            var geCurrent = currentPage <= x;
-            var lStop = x < stopPage;
-            if (geCurrent && lStop)
-            {
-                return 0;
-            }
-            else if (!lStop && x < stopPage + MaxPageCountInWindow)
-            {
-                return 1;
-            }
-            else if (currentPage - MaxPageCountInWindow <= x && !geCurrent)
-            {
-                return 2;
-            }
-            else
-            {
-                return 3;
-            }
         }
 
         private void bmwLoadEachPage_AllRunWorkersCompleted(object sender, GenerarClasses.BackgroundMultiWorker.AllRunWorkerCompletedEventArgs e)
