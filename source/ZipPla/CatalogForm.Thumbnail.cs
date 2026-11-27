@@ -143,7 +143,7 @@ namespace ZipPla
                         }
                         else
                         {
-                            var pureLoader = new PackedImageLoader(path, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode);
+                            var pureLoader = CreatePackedImageLoader(path);
                             try
                             {
                                 loader = new PackedImageLoaderWithEntries(pureLoader);
@@ -1097,7 +1097,7 @@ namespace ZipPla
                 if (!fromCache)
                 {
                     List<PackedImageLoader.PackedImageEntry> entries;
-                    using (var loader = new PackedImageLoader(zipPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode))
+                    using (var loader = CreatePackedImageLoader(zipPath))
                     {
                         // http://www.weblio.jp/content/DllImport+Attribute LogicalStringComparer インスタンスはスレッドセーフのため新たに作成する
                         //var entries = loader.GetPackedImageEntries().OrderBy(entry => entry.Path, new LogicalStringComparer());
@@ -1976,6 +1976,9 @@ namespace ZipPla
                 }
             }
         }
+
+        // カタログの設定（書庫の中の書庫をたどる深さ・探し方）で書庫を開く
+        internal PackedImageLoader CreatePackedImageLoader(string path) => new PackedImageLoader(path, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode);
 
         PackedImageLoaderWithEntries loadingPackedImageLoader = null;
 

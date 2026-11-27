@@ -924,7 +924,7 @@ namespace ZipPla
                     {
                         packedImageLoaderForClipboard?.Dispose();
                         packedImageLoaderForClipboard = null;
-                        var pureLoader = new PackedImageLoader(archivePath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode);
+                        var pureLoader = CreatePackedImageLoader(archivePath);
                         try
                         {
                             packedImageLoaderForClipboard = new PackedImageLoaderWithEntries(pureLoader, needToExecOnTask: true);

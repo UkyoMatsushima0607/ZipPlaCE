@@ -378,7 +378,7 @@ namespace ZipPla
                 {
                     if (!tryGetRememberedArchiveEntryCount(zipPath, stat ?? FileStat.TryGet(zipPath), out filecount))
                     {
-                        using (var loader = new PackedImageLoader(zipPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode))
+                        using (var loader = CreatePackedImageLoader(zipPath))
                         {
                             filecount = loader.GetPackedImageEntries().Count;
                         }

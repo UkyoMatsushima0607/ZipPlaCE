@@ -566,7 +566,8 @@ namespace ZipPla
             }
         }
 
-        public static string[] GetSeparatorReplacedArray(List<PackedImageEntry> list, PackType type)
+        // 名前で並べるとき、区切り文字が名前の文字より前に来るよう、制御文字に置き換えた名前の配列を作る
+        public static string[] GetSeparatorReplacedArray(IReadOnlyList<PackedImageEntry> list, PackType type)
         {
             var count = list.Count;
             var replaced = new string[count];
@@ -584,44 +585,7 @@ namespace ZipPla
             for (var i = 0; i < count; i++)
             {
                 var name = list[i].Path;
-                if (name.Contains(s))
-                {
-                    replaced[i] = name.Replace(s, r);
-                }
-                else
-                {
-                    replaced[i] = name;
-                }
-            }
-            return replaced;
-        }
-
-        public static string[] GetSeparatorReplacedArray(PackedImageEntry[] list, PackType type)
-        {
-            var count = list.Length;
-            var replaced = new string[count];
-            char s, r;
-            if (type == PackType.Directory)
-            {
-                s = Path.DirectorySeparatorChar;
-                r = Convert.ToChar(1);
-            }
-            else
-            {
-                s = Path.AltDirectorySeparatorChar;
-                r = Convert.ToChar(2);
-            }
-            for (var i = 0; i < count; i++)
-            {
-                var name = list[i].Path;
-                if (name.Contains(s))
-                {
-                    replaced[i] = name.Replace(s, r);
-                }
-                else
-                {
-                    replaced[i] = name;
-                }
+                replaced[i] = name.Contains(s) ? name.Replace(s, r) : name;
             }
             return replaced;
         }

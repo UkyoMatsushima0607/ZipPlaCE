@@ -310,16 +310,9 @@ namespace ZipPla
 
                         if (maxColorDiff == null)
                         {
-                            if (bw == null)
-                            {
-                                maxColorDiff = GetMaxColorDiffProperly(data);
-                            }
-                            else
-                            {
-                                var result = GetMaxColorDiffProperly(data, bw);
-                                if (result == null) return; // キャンセルがかかった場合
-                                maxColorDiff = result;
-                            }
+                            var result = GetMaxColorDiffProperly(data, bw);
+                            if (result == null) return; // キャンセルがかかった場合
+                            maxColorDiff = result;
                         }
 
                         if (maxColorDiff <= GrayScaleThreshold)
@@ -790,55 +783,8 @@ namespace ZipPla
 
         // 正確に見る実装
         // 入力がカラーならすぐに終了する
-        private static int GetMaxColorDiffProperly(BitmapData data)
-        {
-            var dMax = GetMaxColorDiff(data);
-            if (dMax > GrayScaleThreshold) return dMax;
-            var dMaxSync = new object();
-
-            var w = data.Width;
-            var h = data.Height;
-
-            unsafe
-            {
-                var scan0 = (byte*)data.Scan0;
-                var stride = data.Stride;
-                var w3 = data.Width * 3;
-                Parallel.For(0, h, () => dMax,
-                (y, state, localMax) =>
-                {
-                    var left = scan0 + y * stride;
-                    for (var x3 = 0; x3 < w3; x3 += 3)
-                    {
-                        var v = left + x3;
-                        var d = getMaxDiff(v[0], v[1], v[2]);
-                        if (d > GrayScaleThreshold)
-                        {
-                            // 呼び出し側はしきい値を超えたかだけを見るので、残りの行は調べなくてよい
-                            state.Stop();
-                            return d;
-                        }
-                        if (d > localMax)
-                        {
-                            localMax = d;
-                        }
-                    }
-                    return localMax;
-                },
-                localMax =>
-                {
-                    // localFinally は複数のスレッドから同時に呼ばれる
-                    lock (dMaxSync)
-                    {
-                        if (localMax > dMax) dMax = localMax;
-                    }
-                });
-            }
-
-            return dMax;
-        }
-
-        private static int? GetMaxColorDiffProperly(BitmapData data, BackgroundWorker bw)
+        // bw があればキャンセルを見る（キャンセルされたら null）
+        private static int? GetMaxColorDiffProperly(BitmapData data, BackgroundWorker bw = null)
         {
             var dMax = GetMaxColorDiff(data);
             if (dMax > GrayScaleThreshold) return dMax;
@@ -857,7 +803,7 @@ namespace ZipPla
                 Parallel.For(0, h, () => dMax,
                 (y, state, localMax) =>
                 {
-                    if (bw.CancellationPending)
+                    if (bw != null && bw.CancellationPending)
                     {
                         canceled = true;
                         state.Stop();

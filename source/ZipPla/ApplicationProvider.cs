@@ -1258,7 +1258,7 @@ namespace ZipPla
         private static void ExtractItems(string archive, IReadOnlyList<string> src, string dstLocation, CatalogForm catalogForm)
         {
             var keyStart = archive.Length + 1;
-            using (var loader = new PackedImageLoader(archive, catalogForm.packedImageLoaderLeftHierarchies, catalogForm.packedImageLoaderSearchMode))
+            using (var loader = catalogForm.CreatePackedImageLoader(archive))
             {
                 var entries = loader.GetPackedImageEntries(neededFileInfos: PackedImageLoaderFileInfo.All, needToExecOnTask: true);
                 var srcEntries = new PackedImageLoader.PackedImageEntry[src.Count];

@@ -900,7 +900,7 @@ namespace ZipPla
                 PackedImageLoaderWithEntries loader;
                 try
                 {
-                    var pureLoader = new PackedImageLoader(dirPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode);
+                    var pureLoader = CreatePackedImageLoader(dirPath);
                     try
                     {
                         loader = new PackedImageLoaderWithEntries(pureLoader);
