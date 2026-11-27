@@ -37,10 +37,10 @@ namespace ZipPla
         private static byte[] ReadApp1(Stream stream)
         {
             var head = new byte[4];
-            if (!readFull(stream, head, 2) || head[0] != 0xff || head[1] != 0xd8) return null;
+            if (!StreamUtil.ReadExactly(stream, head, 2) || head[0] != 0xff || head[1] != 0xd8) return null;
             for (var n = 0; n < MaxSegmentsBeforeApp1; n++)
             {
-                if (!readFull(stream, head, 4) || head[0] != 0xff) return null;
+                if (!StreamUtil.ReadExactly(stream, head, 4) || head[0] != 0xff) return null;
                 var marker = head[1];
                 var length = head[2] << 8 | head[3];
                 if (length < 2) return null;
@@ -48,7 +48,7 @@ namespace ZipPla
                 if (marker == 0xe1)
                 {
                     var data = new byte[length - 2];
-                    if (!readFull(stream, data, data.Length)) return null;
+                    if (!StreamUtil.ReadExactly(stream, data, data.Length)) return null;
                     if (data.Length >= 14 && data[0] == 'E' && data[1] == 'x' && data[2] == 'i' && data[3] == 'f' && data[4] == 0 && data[5] == 0)
                     {
                         return data;
@@ -59,7 +59,7 @@ namespace ZipPla
                 else
                 {
                     var skip = new byte[length - 2];
-                    if (!readFull(stream, skip, skip.Length)) return null;
+                    if (!StreamUtil.ReadExactly(stream, skip, skip.Length)) return null;
                 }
             }
             return null;
@@ -113,16 +113,5 @@ namespace ZipPla
                 : (uint)(d[p] | d[p + 1] << 8 | d[p + 2] << 16 | d[p + 3] << 24);
         }
 
-        private static bool readFull(Stream stream, byte[] buffer, int count)
-        {
-            var read = 0;
-            while (read < count)
-            {
-                var r = stream.Read(buffer, read, count - read);
-                if (r <= 0) return false;
-                read += r;
-            }
-            return true;
-        }
     }
 }

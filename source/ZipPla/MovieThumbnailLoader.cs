@@ -117,11 +117,8 @@ namespace ZipPla
         private static Bitmap getImageByFfmpegPipe(Stream stream, long streamLength, string arguments)
         {
             if (stream.CanSeek) return getImageByFfmpegPipeSeekable(stream, arguments);
-            using (var source = streamLength >= 0 && streamLength <= int.MaxValue ?
-                new MemoryStream((int)streamLength) : new MemoryStream())
+            using (var source = StreamUtil.CopyToMemory(stream, streamLength))
             {
-                stream.CopyTo(source);
-                source.Position = 0;
                 return getImageByFfmpegPipeSeekable(source, arguments);
             }
         }

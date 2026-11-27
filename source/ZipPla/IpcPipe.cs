@@ -69,16 +69,9 @@ namespace ZipPla
 
         private static bool readFully(Stream stream, byte[] buffer, int count)
         {
-            var read = 0;
             try
             {
-                while (read < count)
-                {
-                    var r = stream.Read(buffer, read, count - read);
-                    if (r <= 0) return false;
-                    read += r;
-                }
-                return true;
+                return StreamUtil.ReadExactly(stream, buffer, count);
             }
             catch (Exception e) when (e is IOException || e is ObjectDisposedException || e is InvalidOperationException)
             {

@@ -46,13 +46,13 @@ namespace ZipPla
             while (pos + 8 <= length)
             {
                 stream.Position = pos;
-                if (!readFully(stream, header, 8)) return null;
+                if (!StreamUtil.ReadExactly(stream, header, 8)) return null;
                 long size = readU32(header, 0);
                 var type = Encoding.ASCII.GetString(header, 4, 4);
                 var headerSize = 8;
                 if (size == 1)
                 {
-                    if (!readFully(stream, header, 8, 8)) return null;
+                    if (!StreamUtil.ReadExactly(stream, header, 8, 8)) return null;
                     size = (long)readU64(header, 8);
                     headerSize = 16;
                 }
@@ -71,7 +71,7 @@ namespace ZipPla
                     var bodySize = size - headerSize;
                     if (bodySize > MaxMoovSize) return null;
                     moov = new byte[bodySize];
-                    if (!readFully(stream, moov, (int)bodySize)) return null;
+                    if (!StreamUtil.ReadExactly(stream, moov, (int)bodySize)) return null;
                 }
                 pos += size;
             }
@@ -733,18 +733,6 @@ namespace ZipPla
                 if (j == text.Length) return true;
             }
             return false;
-        }
-
-        private static bool readFully(Stream stream, byte[] buffer, int count, int offset = 0)
-        {
-            var read = 0;
-            while (read < count)
-            {
-                var n = stream.Read(buffer, offset + read, count - read);
-                if (n <= 0) return false;
-                read += n;
-            }
-            return true;
         }
 
         private static uint readU32(byte[] b, int o) => (uint)(b[o] << 24 | b[o + 1] << 16 | b[o + 2] << 8 | b[o + 3]);

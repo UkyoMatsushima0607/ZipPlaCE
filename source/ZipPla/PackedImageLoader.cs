@@ -865,7 +865,7 @@ namespace ZipPla
             try
             {
                 var buffer = new byte[12];
-                if (!readFully(stream, buffer, buffer.Length)) return true;
+                if (!StreamUtil.ReadExactly(stream, buffer, buffer.Length)) return true;
                 if (buffer[9] != 0x73) return true;
                 return (buffer[10] & 0x80) != 0;
             }
@@ -1811,22 +1811,6 @@ namespace ZipPla
             length = entry.Size;
         }
 
-        private static MemoryStream CopyToMemory(Stream source, long length)
-        {
-            var result = length >= 0 && length <= int.MaxValue ? new MemoryStream((int)length) : new MemoryStream();
-            try
-            {
-                source.CopyTo(result);
-                result.Position = 0;
-                return result;
-            }
-            catch
-            {
-                result.Dispose();
-                throw;
-            }
-        }
-
         private void ExtractZip(int physicalIndex, out MemoryStream stream, out string fileNameForType, out long length)
         {
             var entry = zipArchiveEntries[physicalIndex];
@@ -1834,7 +1818,7 @@ namespace ZipPla
             {
                 using (var s = entry.Open())
                 {
-                    stream = CopyToMemory(s, entry.Length);
+                    stream = StreamUtil.CopyToMemory(s, entry.Length);
                 }
                 fileNameForType = entry.Name;
                 length = entry.Length;
@@ -1879,7 +1863,7 @@ namespace ZipPla
                     {
                         using (var s = entry.OpenEntryStream())
                         {
-                            stream = CopyToMemory(s, entry.Size);
+                            stream = StreamUtil.CopyToMemory(s, entry.Size);
                         }
                         return;
                     }
@@ -2631,18 +2615,6 @@ namespace ZipPla
             return result;
         }
 
-        private static bool readFully(Stream stream, byte[] buffer, int count)
-        {
-            var read = 0;
-            while (read < count)
-            {
-                var r = stream.Read(buffer, read, count - read);
-                if (r <= 0) return false;
-                read += r;
-            }
-            return true;
-        }
-
         /// <summary>
         /// zip のセントラルディレクトリを読み、すべての項目が無圧縮か Deflate か（.NET Framework の ZipArchive で読めるか）を返す。
         /// ZIP64 や、読めない・形の合わない書庫では false（従来どおり SharpCompress で読む）。stream の位置は戻さない
@@ -2657,7 +2629,7 @@ namespace ZipPla
                 var tailLength = (int)Math.Min(length, eocdSize + 0xFFFF);
                 var tail = new byte[tailLength];
                 stream.Seek(length - tailLength, SeekOrigin.Begin);
-                if (!readFully(stream, tail, tailLength)) return false;
+                if (!StreamUtil.ReadExactly(stream, tail, tailLength)) return false;
                 var eocd = -1;
                 for (var i = tailLength - eocdSize; i >= 0; i--)
                 {
@@ -2673,7 +2645,7 @@ namespace ZipPla
                 if (cdSize > 64 * 1024 * 1024 || cdOffset + cdSize > length) return false;
                 var cd = new byte[cdSize];
                 stream.Seek(cdOffset, SeekOrigin.Begin);
-                if (!readFully(stream, cd, (int)cdSize)) return false;
+                if (!StreamUtil.ReadExactly(stream, cd, (int)cdSize)) return false;
                 var pos = 0;
                 var count = 0;
                 while (pos + 46 <= cd.Length)
@@ -2719,7 +2691,7 @@ namespace ZipPla
                 for (var n = 0; n < 256; n++)
                 {
                     stream.Seek(position, SeekOrigin.Begin);
-                    if (!readFully(stream, header, header.Length)) break;
+                    if (!StreamUtil.ReadExactly(stream, header, header.Length)) break;
                     if (header[0] != 0x50 || header[1] != 0x4B || header[2] != 0x03 || header[3] != 0x04) break;
                     var flags = header[6] | header[7] << 8;
                     var compressedSize = header[18] | (uint)header[19] << 8 | (uint)header[20] << 16 | (uint)header[21] << 24;
@@ -2727,7 +2699,7 @@ namespace ZipPla
                     var fileNameLength = header[26] | header[27] << 8;
                     var extraFieldLength = header[28] | header[29] << 8;
                     var nameBuffer = new byte[fileNameLength];
-                    if (!readFully(stream, nameBuffer, fileNameLength)) break;
+                    if (!StreamUtil.ReadExactly(stream, nameBuffer, fileNameLength)) break;
                     var code = ImageLoader.GetCode(nameBuffer);
                     foundUtf8 = code == Encoding.UTF8;
 
