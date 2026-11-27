@@ -46,6 +46,7 @@ namespace ZipPla
             if (loadingGuid != e.WorkSetGuid || zpa == null || zpa.Length <= index2) return;
 
             var zipPath = zpa[index2];
+            if (zipPath == null) return; // 一覧を作ったあとで削除された項目（監視イベントが枠を空ける）
 
             // 見えていない項目のヘッダは取らずに後回しにする（K33）。見えたとき・列で並べ替えるときに requestDeferredHeader で取る。
             // 書庫・動画の中の項目は GetHeader がファイルを読まないので後回しにしない

@@ -86,7 +86,8 @@ namespace GenerarClasses
             public RunWorkerStartingEventArgs(IEnumerable arguments)
             {
                 Arguments = arguments;
-                WorkSetGuid = new Guid();
+                // 以前は new Guid() で、これは常に Guid.Empty。作業の組ごとに違う値にしないと、受け取る側の世代の確認が働かない
+                WorkSetGuid = Guid.NewGuid();
             }
             public readonly IEnumerable Arguments;
             public readonly Guid WorkSetGuid;

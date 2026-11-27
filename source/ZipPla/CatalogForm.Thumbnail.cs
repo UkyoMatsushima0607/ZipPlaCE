@@ -1202,6 +1202,10 @@ namespace ZipPla
                                                 MaxPoint = point;
                                                 MaxPointRectangleF = rect;
                                             }
+                                            else
+                                            {
+                                                image.Dispose(); // 表紙に選ばれなかったページ。捨てないと、次のページを読むたびに残り続ける
+                                            }
                                         }
                                         catch
                                         {
@@ -2117,6 +2121,14 @@ namespace ZipPla
                                     lock (ZipPathArrayLocker)
                                     {
                                         if (CreatingZipPathArray || index >= FileCountArray.Length)
+                                        {
+                                            thumbnail?.Dispose();
+                                            return;
+                                        }
+                                        // ヘッダを読んでいる間に、この枠のファイルが削除された・別のファイルに使い回された場合は書かない
+                                        // （一時ファイルを作って消してから本体を作るアプリで、別のファイルの情報が入っていた）
+                                        var zpaNow = ZipPathArray; var zmaNow = ZipMaskArray;
+                                        if (zpaNow == null || index >= zpaNow.Length || zpaNow[index] != path || zmaNow == null || index >= zmaNow.Length || !zmaNow[index])
                                         {
                                             thumbnail?.Dispose();
                                             return;

@@ -159,7 +159,7 @@ namespace ZipPla
                 BackgroundMultiWorker.RunWorkerStartingEventHandler eh = null;
                 eh = (s2, e2) =>
                 {
-                    if (!fileSystemWatcherStopper(ref e)) addOrReloadItem(fullPath, thumbnailChanged: true, startingGuid: startingGuid);
+                    if (!fileSystemWatcherStopper(ref e)) addOrReloadItem(fullPath, thumbnailChanged: true, startingGuid: e2.WorkSetGuid); // 作成が終わった一覧の世代で
                     bmwMakePreview.RunWorkerStarting -= eh;
                 };
                 bmwMakePreview.RunWorkerStarting += eh;
@@ -206,7 +206,7 @@ namespace ZipPla
                 BackgroundMultiWorker.RunWorkerStartingEventHandler eh = null;
                 eh = (s2, e2) =>
                 {
-                    if (!fileSystemWatcherStopper(ref alt)) renameItem(e.FullPath, oldFullPath, startingGuid);
+                    if (!fileSystemWatcherStopper(ref alt)) renameItem(e.FullPath, oldFullPath, e2.WorkSetGuid); // 作成が終わった一覧の世代で
                     bmwMakePreview.RunWorkerStarting -= eh;
                 };
                 bmwMakePreview.RunWorkerStarting += eh;
