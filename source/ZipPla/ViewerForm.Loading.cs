@@ -22,6 +22,49 @@ namespace ZipPla
 {
     public partial class ViewerForm
     {
+        /// <summary>
+        /// 本のページを sortMode の順に並べ替える（安定。PreSortMode と続けて呼ぶ疑似安定ソートに使う）。
+        /// 作成・アクセス日時はフォルダのときだけ（書庫の中では並べ替えない）。評価の昇順では評価なしを最後にする
+        /// </summary>
+        private PackedImageLoader.PackedImageEntry[] sortEntries(PackedImageLoader.PackedImageEntry[] entries, SortMode sortMode, PackedImageLoader.PackType type)
+        {
+            PackedImageLoader.PackedImageEntry[] sortBy<TKey>(TKey[] keys, bool asc, IComparer<TKey> comparer = null)
+            {
+                var order = Enumerable.Range(0, keys.Length);
+                return (asc ? order.OrderBy(x => keys[x], comparer) : order.OrderByDescending(x => keys[x], comparer)).Select(i => entries[i]).ToArray();
+            }
+            DateTime[] fileTimes(Func<string, DateTime> get) => (from e in entries select get(currentArchiveFilePath + Path.DirectorySeparatorChar + e.Path)).ToArray();
+            var isDirectory = type == PackedImageLoader.PackType.Directory;
+            switch (sortMode)
+            {
+                case SortMode.TypeInAsc:
+                case SortMode.TypeInDesc:
+                    return sortBy(CatalogForm.GetTypeNameArray((from e in entries select e.Path).ToArray()), sortMode == SortMode.TypeInAsc, new LogicalStringComparer());
+                case SortMode.NameInAsc:
+                    return getNameSortedEntries(entries, type, desc: false);
+                case SortMode.NameInDesc:
+                    return getNameSortedEntries(entries, type, desc: true);
+                case SortMode.RatingInAsc:
+                    return sortBy((from e in entries let r = ZipPlaInfo.GetOnlyRating(e.Path) select r > 0 ? r : int.MaxValue).ToArray(), asc: true);
+                case SortMode.RatingInDesc:
+                    return sortBy((from e in entries select ZipPlaInfo.GetOnlyRating(e.Path)).ToArray(), asc: false);
+                case SortMode.CreatedInAsc:
+                case SortMode.CreatedInDesc:
+                    return isDirectory ? sortBy(fileTimes(Program.GetCreateTimeOfFile), sortMode == SortMode.CreatedInAsc) : entries;
+                case SortMode.AccessedInAsc:
+                case SortMode.AccessedInDesc:
+                    return isDirectory ? sortBy(fileTimes(Program.GetLastAccessTimeOfFile), sortMode == SortMode.AccessedInAsc) : entries;
+                case SortMode.ModifiedInAsc:
+                case SortMode.ModifiedInDesc:
+                    return sortBy((from e in entries select e.LastWriteTime).ToArray(), sortMode == SortMode.ModifiedInAsc);
+                case SortMode.SizeInAsc:
+                case SortMode.SizeInDesc:
+                    return sortBy((from e in entries select e.Size).ToArray(), sortMode == SortMode.SizeInAsc);
+                default:
+                    return entries.OrderBy(e => e.Path, new LogicalStringComparer()).ToArray();
+            }
+        }
+
         private OpenResult OpenFile(string path, int startPage, SortModeDetails sort = null, string startName = null, bool forLookAhead = false)//, BindingMode? binding = null)
         {
             ImageLoader.SusieReset();
@@ -194,122 +237,7 @@ namespace ZipPla
                     //sw.Stop();MessageBox.Show(sw.Elapsed.ToString());
                     foreach (var sMode in modes)
                     {
-                        switch (sMode)
-                        {
-                            case SortMode.TypeInAsc:
-                                {
-                                    var typeArray = CatalogForm.GetTypeNameArray((from e in nextEntriesBase select e.Path).ToArray());
-                                    var order = new int[typeArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderBy(x => typeArray[x], new LogicalStringComparer()).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.TypeInDesc:
-                                {
-                                    var typeArray = CatalogForm.GetTypeNameArray((from e in nextEntriesBase select e.Path).ToArray());
-                                    var order = new int[typeArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderByDescending(x => typeArray[x], new LogicalStringComparer()).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.NameInAsc:
-                                //nextEntriesBase = nextEntriesBase.OrderBy(e => e.Path, new LogicalStringComparer()).ToArray();
-                                nextEntriesBase = getNameSortedEntries(nextEntriesBase, nextLoader.Type, desc: false);
-                                break;
-                            case SortMode.NameInDesc:
-                                //nextEntriesBase = nextEntriesBase.OrderByDescending(e => e.Path, new LogicalStringComparer()).ToArray();
-                                nextEntriesBase = getNameSortedEntries(nextEntriesBase, nextLoader.Type, desc: true);
-                                break;
-                            case SortMode.RatingInAsc:
-                                {
-                                    var rateArray = (from e in nextEntriesBase let r = ZipPlaInfo.GetOnlyRating(e.Path) select r > 0 ? r : int.MaxValue).ToArray();
-                                    var order = new int[rateArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderBy(x => rateArray[x]).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.RatingInDesc:
-                                {
-                                    var rateArray = (from e in nextEntriesBase let r = ZipPlaInfo.GetOnlyRating(e.Path) select r).ToArray();
-                                    var order = new int[rateArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderByDescending(x => rateArray[x]).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.CreatedInAsc:
-                                {
-                                    if (nextLoader.Type != PackedImageLoader.PackType.Directory) break;
-                                    var dateArray = (from e in nextEntriesBase
-                                                     select Program.GetCreateTimeOfFile(currentArchiveFilePath + Path.DirectorySeparatorChar + e.Path)).ToArray();
-                                    var order = new int[dateArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderBy(x => dateArray[x]).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.CreatedInDesc:
-                                {
-                                    if (nextLoader.Type != PackedImageLoader.PackType.Directory) break;
-                                    var dateArray = (from e in nextEntriesBase
-                                                     select Program.GetCreateTimeOfFile(currentArchiveFilePath + Path.DirectorySeparatorChar + e.Path)).ToArray();
-                                    var order = new int[dateArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderByDescending(x => dateArray[x]).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.AccessedInAsc:
-                                {
-                                    if (nextLoader.Type != PackedImageLoader.PackType.Directory) break;
-                                    var dateArray = (from e in nextEntriesBase
-                                                     select Program.GetLastAccessTimeOfFile(currentArchiveFilePath + Path.DirectorySeparatorChar + e.Path)).ToArray();
-                                    var order = new int[dateArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderBy(x => dateArray[x]).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.AccessedInDesc:
-                                {
-                                    if (nextLoader.Type != PackedImageLoader.PackType.Directory) break;
-                                    var dateArray = (from e in nextEntriesBase
-                                                     select Program.GetLastAccessTimeOfFile(currentArchiveFilePath + Path.DirectorySeparatorChar + e.Path)).ToArray();
-                                    var order = new int[dateArray.Length]; for (var i = 0; i < order.Length; i++) order[i] = i;
-                                    nextEntriesBase = order.
-                                        OrderByDescending(x => dateArray[x]).
-                                        Select(i => nextEntriesBase[i]).ToArray();
-                                    break;
-                                }
-                            case SortMode.ModifiedInAsc:
-                                {
-                                    nextEntriesBase = nextEntriesBase.OrderBy(e => e.LastWriteTime).ToArray();
-                                    break;
-                                }
-                            case SortMode.ModifiedInDesc:
-                                {
-                                    nextEntriesBase = nextEntriesBase.OrderByDescending(e => e.LastWriteTime).ToArray();
-                                    break;
-                                }
-                            case SortMode.SizeInAsc:
-                                {
-                                    nextEntriesBase = nextEntriesBase.OrderBy(e => e.Size).ToArray();
-                                    break;
-                                }
-                            case SortMode.SizeInDesc:
-                                {
-                                    nextEntriesBase = nextEntriesBase.OrderByDescending(e => e.Size).ToArray();
-                                    break;
-                                }
-                            default:
-                                {
-                                    nextEntriesBase = nextEntriesBase.OrderBy(e => e.Path, new LogicalStringComparer()).ToArray();
-                                    break;
-                                }
-                        }
+                        nextEntriesBase = sortEntries(nextEntriesBase, sMode, nextLoader.Type);
                     }
                 }
                 else
