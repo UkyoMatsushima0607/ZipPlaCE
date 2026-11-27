@@ -285,23 +285,48 @@ namespace ZipPla
         private volatile int viewPositionIndex = -1;
 
         /// <summary>
+        /// entry が子のローダー（入れ子の書庫・フォルダの中の書庫）のエントリなら、その子（さらに入れ子なら末端）までたどり、
+        /// 実際に持っているローダーとその中の番号を返す。子がもうない（破棄された）なら false
+        /// </summary>
+        private bool TryResolveEntry(PackedImageEntry entry, out PackedImageLoader owner, out int physicalIndex)
+        {
+            var loader = this;
+            while (true)
+            {
+                var cIndex = entry.ChildIndex;
+                if (cIndex < 0)
+                {
+                    owner = loader;
+                    physicalIndex = entry.Index;
+                    return true;
+                }
+                var c = loader.children;
+                if (c == null || cIndex >= c.Length)
+                {
+                    owner = null;
+                    physicalIndex = -1;
+                    return false;
+                }
+                var t = c[cIndex];
+                loader = t.Item1;
+                entry = t.Item2[entry.Index];
+            }
+        }
+
+        /// <summary>TryResolveEntry と同じ。たどれなければ例外</summary>
+        private PackedImageLoader ResolveEntry(PackedImageEntry entry, out int physicalIndex)
+        {
+            if (!TryResolveEntry(entry, out var owner, out physicalIndex)) throw new ObjectDisposedException(nameof(PackedImageLoader), "The child loader of the entry is not available.");
+            return owner;
+        }
+
+        /// <summary>
         /// 表示しているエントリを伝える（D9）。使用済みのエントリを捨てるときの基準にする。先読みの要求は表示から遠くへ飛ぶので、
         /// 要求されたページを基準にすると表示中のページまで捨ててしまう。書庫のロックは要らない
         /// </summary>
         public void SetViewPosition(PackedImageEntry entry)
         {
-            var cIndex = entry.ChildIndex;
-            if (cIndex < 0)
-            {
-                viewPositionIndex = entry.Index;
-            }
-            else
-            {
-                var c = children;
-                if (c == null || cIndex >= c.Length) return;
-                var t = c[cIndex];
-                t.Item1.SetViewPosition(t.Item2[entry.Index]);
-            }
+            if (TryResolveEntry(entry, out var owner, out var index)) owner.viewPositionIndex = index;
         }
 
         /// <summary>
@@ -310,18 +335,7 @@ namespace ZipPla
         /// </summary>
         public void MarkEntryConsumed(PackedImageEntry entry)
         {
-            var cIndex = entry.ChildIndex;
-            if (cIndex < 0)
-            {
-                consumedEntryQueue.Enqueue(entry.Index);
-            }
-            else
-            {
-                var c = children;
-                if (c == null || cIndex >= c.Length) return;
-                var t = c[cIndex];
-                t.Item1.MarkEntryConsumed(t.Item2[entry.Index]);
-            }
+            if (TryResolveEntry(entry, out var owner, out var index)) owner.consumedEntryQueue.Enqueue(index);
         }
 
         /// <summary>
@@ -331,18 +345,7 @@ namespace ZipPla
         /// </summary>
         public void UnmarkEntryConsumed(PackedImageEntry entry)
         {
-            var cIndex = entry.ChildIndex;
-            if (cIndex < 0)
-            {
-                consumedEntryQueue.Enqueue(~entry.Index); // 負の値は印を外す
-            }
-            else
-            {
-                var c = children;
-                if (c == null || cIndex >= c.Length) return;
-                var t = c[cIndex];
-                t.Item1.UnmarkEntryConsumed(t.Item2[entry.Index]);
-            }
+            if (TryResolveEntry(entry, out var owner, out var index)) owner.consumedEntryQueue.Enqueue(~index); // 負の値は印を外す
         }
 
         /// <summary>
@@ -1667,16 +1670,8 @@ namespace ZipPla
         
         public Stream GetStream(PackedImageEntry entry, out string extensionWithPeriodForPDF, bool callback = false)
         {
-            var cIndex = entry.ChildIndex;
-            if (cIndex < 0)
-            {
-                return GetStream(entry.Index, out extensionWithPeriodForPDF, callback);
-            }
-            else
-            {
-                var t = children[cIndex];
-                return t.Item1.GetStream(t.Item2[entry.Index], out extensionWithPeriodForPDF, callback);
-            }
+            var owner = ResolveEntry(entry, out var index);
+            return owner.GetStream(index, out extensionWithPeriodForPDF, callback);
         }
 
         private Stream GetStream(int physicalIndex, out string extensionWithPeriodForPDF, bool callback)
@@ -1704,24 +1699,13 @@ namespace ZipPla
         /// </summary>
         public bool ReadsEntryFileDirectly(PackedImageEntry entry)
         {
-            var cIndex = entry.ChildIndex;
-            if (cIndex < 0) return Type == PackType.Directory;
-            var t = children[cIndex];
-            return t.Item1.ReadsEntryFileDirectly(t.Item2[entry.Index]);
+            return ResolveEntry(entry, out _).Type == PackType.Directory;
         }
 
         public Bitmap OpenImageStream(PackedImageEntry entry)
         {
-            var cIndex = entry.ChildIndex;
-            if (cIndex < 0)
-            {
-                return OpenImageStream(entry.Index);
-            }
-            else
-            {
-                var t = children[cIndex];
-                return t.Item1.OpenImageStream(t.Item2[entry.Index]);
-            }
+            var owner = ResolveEntry(entry, out var index);
+            return owner.OpenImageStream(index);
         }
 
         private Bitmap OpenImageStream(int physicalIndex)
@@ -1760,16 +1744,8 @@ namespace ZipPla
         /// </summary>
         public bool TryExtractEntry(PackedImageEntry entry, out MemoryStream stream, out string fileNameForType, out long length)
         {
-            var cIndex = entry.ChildIndex;
-            if (cIndex < 0)
-            {
-                return TryExtractEntry(entry.Index, out stream, out fileNameForType, out length);
-            }
-            else
-            {
-                var t = children[cIndex];
-                return t.Item1.TryExtractEntry(t.Item2[entry.Index], out stream, out fileNameForType, out length);
-            }
+            var owner = ResolveEntry(entry, out var index);
+            return owner.TryExtractEntry(index, out stream, out fileNameForType, out length);
         }
 
         private bool TryExtractEntry(int physicalIndex, out MemoryStream stream, out string fileNameForType, out long length)
