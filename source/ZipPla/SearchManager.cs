@@ -11,9 +11,6 @@ namespace ZipPla
     public class SearchManager
     {
         private readonly Regex[] regexArray;
-#if USEFUZZYCOMPARE
-        private readonly FuzzyWildcard[] fuzzyWildcardArray;
-#endif
         private readonly string[] simpleMatchArray;
         private readonly int[] ratingStarsArray;
         private enum boolOperator { And, Or, Not, OrNot }
@@ -101,9 +98,6 @@ namespace ZipPla
             {
                 regexArray = new Regex[1] { GetRegex(text) };
                 simpleMatchArray = new string[1];
-#if USEFUZZYCOMPARE
-                fuzzyWildcardArray = new FuzzyWildcard[1];
-#endif
                 boolOperatorArray = new boolOperator[1] { boolOperator.And };
             }
             else
@@ -112,9 +106,6 @@ namespace ZipPla
                 var length = array.Length;
                 regexArray = new Regex[length];
                 simpleMatchArray = new string[length];
-#if USEFUZZYCOMPARE
-                fuzzyWildcardArray = new FuzzyWildcard[length];
-#endif
                 ratingStarsArray = new int[length];
                 boolOperatorArray = new boolOperator[length];
                 compareOperatorArray = new compareOperator[length];
@@ -173,11 +164,7 @@ namespace ZipPla
                         wildcard = wildcardTrim(wildcard);
                         if (wildcard.Contains("*") || wildcard.Contains("?"))
                         {
-#if USEFUZZYCOMPARE
-                            fuzzyWildcardArray[i] = new FuzzyWildcard("*" + wildcard + "*");
-#else
                             regexArray[i] = wildcardToRegex(wildcard);
-#endif
                         }
                         else
                         {
@@ -236,18 +223,9 @@ namespace ZipPla
                 // 今は IgnoreCase が必要なので OrdinalIgnoreCase を使う
                 // Ordinal から始まるものが最もパフォーマンスが高く間違いが起こりにくい
                 // http://dobon.net/vb/dotnet/string/stringindexof.html
-#if USEFUZZYCOMPARE
-                if (simple != null) r = FuzzyWildcard.IndexOf(name, simple) >= 0;
-#else
                 if (simple != null) r = name.IndexOf(simple, StringComparison.OrdinalIgnoreCase) >= 0;
-#endif
                 else
                 {
-#if USEFUZZYCOMPARE
-                    var wild = fuzzyWildcardArray[i];
-                    if (wild != null) r = wild.IsMatch(name);
-                    else
-#endif
                     {
                         var regex = regexArray[i];
                         if (regex != null) r = regex.IsMatch(name);
@@ -456,124 +434,6 @@ namespace ZipPla
                 case "*": return ".*";
                 default: return Regex.Escape(c);
             }
-        }
-    }
-
-    public class FuzzyWildcard
-    {
-        private int[] qes;
-        private bool[] ast;
-        private string[] exa;
-        private int[] lef;
-        private int atl;
-
-        public FuzzyWildcard(string wildcard)
-        {
-            var qesList = new List<int>();
-            var astList = new List<bool>();
-            var exaList = new List<string>();
-            var len = wildcard.Length;
-            var i = 0;
-            while (true)
-            {
-                var q = 0;
-                var a = false;
-                while (i < len)
-                {
-                    var c = wildcard[i];
-                    if (c == '?')
-                    {
-                        q++;
-                    }
-                    else if (c == '*')
-                    {
-                        a = true;
-                    }
-                    else break;
-                    i++;
-                }
-                qesList.Add(q);
-                if (a) atl = astList.Count;
-                astList.Add(a);
-                
-                if (i >= len) break;
-
-                var exaStart = i;
-                while (i < len)
-                {
-                    var c = wildcard[i];
-                    if(c == '?' || c == '*') break;
-                    i++;
-                }
-                exaList.Add(wildcard.Substring(exaStart, i - exaStart));
-            }
-            qes = qesList.ToArray();
-            ast = astList.ToArray();
-            exa = exaList.ToArray();
-
-            var j = exa.Length;
-            lef = new int[j];
-            if(j > 0)
-            {
-                var l = qes[j--] + exa[j].Length;
-                lef[j] = l;
-                while (j > 0)
-                {
-                    l += qes[j--] + exa[j].Length;
-                    lef[j] = l;
-                }
-            }
-        }
-        private static readonly System.Globalization.CompareInfo ci = System.Globalization.CultureInfo.CurrentCulture.CompareInfo;
-        private const System.Globalization.CompareOptions stringComparison =
-            System.Globalization.CompareOptions.IgnoreCase |
-            System.Globalization.CompareOptions.IgnoreKanaType |
-            System.Globalization.CompareOptions.IgnoreNonSpace |
-            System.Globalization.CompareOptions.IgnoreWidth;
-        public bool IsMatch(string text)
-        {
-            var count = exa.Length;
-            var len = text.Length;
-            var i = 0;
-            var j = 0;
-            while (true)
-            {
-                i += qes[j];
-
-                if (j >= count)
-                {
-                    if (ast[j]) return len - i  >= qes[j];
-                    else return len - i == qes[j];
-                }
-
-                var c = len - i - lef[j];
-                if (c < 0) return false;
-                var e = exa[j];
-                var eLen = e.Length;
-                if (ast[j])
-                {
-                    var p = ci.IndexOf(text, e, i, c + eLen, stringComparison);
-                    if (p >= 0) i = p + eLen;
-                    else return false;
-                }
-                else
-                {
-                    if (ci.IndexOf(text, e, i, eLen, stringComparison) == i) i += eLen;
-                    else return false;
-                }
-
-                j++;
-            }
-        }
-
-        public static int Compare(string string1, string string2)
-        {
-            return ci.Compare(string1, string2, stringComparison);
-        }
-
-        public static int IndexOf(string source, string value)
-        {
-            return ci.IndexOf(source, value, stringComparison);
         }
     }
 }

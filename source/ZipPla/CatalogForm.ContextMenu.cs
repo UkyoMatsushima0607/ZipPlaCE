@@ -1081,16 +1081,6 @@ namespace ZipPla
                 var index = 1;
                 foreach (var info in infos)
                 {
-#if SCREENCAPTCHA
-                    if (info.DisplayName != null && Message.CurrentLanguage.ToString() == "en-US")
-                    {
-                        var m = Regex.Match(info.DisplayName, @"^""\$1"" を (.*) で検索$");
-                        if (m.Success)
-                        {
-                            info.DisplayName = "Search \"$1\" on " + m.Groups[1].Value;
-                        }
-                    }
-#endif
                     cmsItems.Insert(index++, info.GetDynamicStringSelectionToolStripMenuItem(this));
                 }
             }

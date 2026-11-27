@@ -50,13 +50,7 @@ namespace ZipPla
         public void SetMessagesWithoutTagFilter()
         {
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("SetMessagesWithoutTagFilter_Start");
-#endif
             startToolStripMenuItem.Text = Message._Start;
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("AfterMessageClassCreated");
-#endif
             if (SetMessages_LayoutControls == null)
             {
                 SetMessages_LayoutControls = new Control[]
@@ -383,14 +377,8 @@ namespace ZipPla
 
             Text = string.IsNullOrEmpty(currentLocation) ? Program.Name : $"{SimpleBookmark.GetDisplayName(currentLocation)} - {Program.Name}";
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("ShowStatusBar");
-#endif
             ShowStatusBar();
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("DgvDirectoryListRefresh");
-#endif
             dgvDirectoryList.Refresh();
 
             var culture = Message.CurrentLanguage;
@@ -409,19 +397,10 @@ namespace ZipPla
                 tvCatalog.Refresh();
             }
 
-#if RUNTIME
-            //Program.RunTimeMeasure?.Block("SetFileListHeaderWidth");
-#endif
             // ファイルリストのヘッダの設定よりも後で
             SetFileListHeaderWidth(culture, Message.Bytes);
 
-#if RUNTIME
-            //Program.RunTimeMeasure?.Block("SetStatusBarWidth");
-#endif
             SetStatusBarWidth();
-#if RUNTIME
-            //Program.RunTimeMeasure?.Block("SetSortNames");
-#endif
 
             // 先にすると変更がその時点で描画されて見栄えが良くない
             cbSortBy_SelectedValueChanged_Stop = true;
@@ -442,9 +421,6 @@ namespace ZipPla
             cbSortBy.Items[(int)SortMode.Random] = Message.Random;
             cbSortBy_SelectedValueChanged_Stop = false;
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("PerformLayout");
-#endif
 
             for (var i = SetMessages_LayoutControls.Length - 1; i >= 0; i--)
             {
@@ -452,9 +428,6 @@ namespace ZipPla
                 control.ResumeLayout(performLayout: false);
                 control.PerformLayout();
             }
-#if RUNTIME
-            //Program.RunTimeMeasure?.Block("AfterSetMessages");
-#endif
 
         }
 

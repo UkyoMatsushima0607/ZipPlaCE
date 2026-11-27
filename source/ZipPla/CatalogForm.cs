@@ -1164,13 +1164,7 @@ namespace ZipPla
 
         public CatalogForm()
         {
-#if RUNTIME
-            Program.RunTimeMeasure.Block("StartConstructor");
-#endif
             Constructor();
-#if RUNTIME
-            Program.RunTimeMeasure.Block("StartLoadSettings");
-#endif
 
             LoadSettings(null);
         }
@@ -1231,9 +1225,6 @@ namespace ZipPla
         private void CatalogForm_Shown(object sender, EventArgs e)
         {
             if (openRequestServer == null) openRequestServer = new OpenRequestServer(this, OpenFromOtherProcess);
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("SetTagFilteringMenuItems");
-#endif
 
             IsShown = true;
             thumbnailListToolStripMenuItem_CheckedChanged(null, null);
@@ -1241,9 +1232,6 @@ namespace ZipPla
             foreach (DataGridViewRow row in dgvDirectoryList.Rows) row.Selected = false;
             setTagFilteringMenuItems(needToRepairTagsFromBookmark: true, needToSaveCurrentTag: true, loadFromIni: true);
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("SetEraserAndSearchIcon");
-#endif
 
             // 高解像度環境でコンテクストメニューの高さを正しく得るためにはここで実行する必要がある
             setEraserAndSearchIcon();
@@ -1264,9 +1252,6 @@ namespace ZipPla
                 }
             }
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("SetCheckMarks");
-#endif
             CheckMarkProvider.SetCheckMark(viewToolStripMenuItem.DropDown, DisplayCheckMark.Check);
             CheckMarkProvider.SetCheckMark(howToDoubleClickToolStripMenuItem.DropDown, DisplayCheckMark.Select);
             CheckMarkProvider.SetCheckMark(layoutToolStripMenuItem.DropDown, DisplayCheckMark.Select);
@@ -1322,9 +1307,6 @@ namespace ZipPla
                 dgvDirectoryList.Invalidate();
             }
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("StartCheckUpdate");
-#endif
 
             Configuration.ClosePrepareMode();
             
@@ -1334,10 +1316,6 @@ namespace ZipPla
             //PackedImageLoader.CheckSevenZipExistence(this); フォルダ読み込み時にチェックされるので不要
 
 
-#if RUNTIME
-            Program.RunTimeMeasure.Dispose();
-            Program.RunTimeMeasure = null;
-#endif
         }
 
         private ToolStripDropDown ratingFilterToolStripMenuItemDropDown;
@@ -1485,16 +1463,9 @@ namespace ZipPla
                 Close();
             }
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("InitializeComponent");
-#endif
             InitializeComponent();
             fileSystemWatcher.Error += fileSystemWatcher_Error; // Y16
 
-
-#if RUNTIME
-            Program.RunTimeMeasure.Block("WaitPrepareTask");
-#endif
 
             Configuration.WaitPrepareTask();
 
@@ -1515,9 +1486,6 @@ namespace ZipPla
             cmsRightClick.Items.Insert(cmsRightClick.Items.IndexOf(saveIntensiveLines) + 1, filterPerformanceTest);
 #endif
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("PrepareTouch");
-#endif
             try
             {
                 gestureListener = new GestureListener(this, new GestureConfig[] {
@@ -1564,9 +1532,6 @@ namespace ZipPla
             }
             catch { }
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("PrepareKeyMouseBinder");
-#endif
 
             //ratingToolStripMenuItem.DropDown.KeyDown += ratingToolStripMenuItem_DropDown_KeyDown;
             new KeyMouseBinder(cmsRightClick, requiredKeyMouseBindingCmsRightRootOrTag);
@@ -1580,9 +1545,6 @@ namespace ZipPla
             dgvFileList.GotFocus += dgvFileList_GotFocus;
             explorerTreeView.TreeViewWnd.GotFocus += explorerTreeView_TreeViewWnd_GotFocus;
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("Replace font etc");
-#endif
 
             if (MenuTextFontShouldBeReplaced())
             {
@@ -1635,15 +1597,9 @@ namespace ZipPla
 
             openbuiltinBookReaderToolStripMenuItem.Image = BuiltInViewerProvider.Icon;
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("Set explorer icon");
-#endif
 
             openInExplorerInDirectoryListToolStripMenuItem.Image = ExplorerIcon;// ExplorerProvider.Icon;
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("Set UndoButton etc");
-#endif
 
             setUndoButton(btnGoToBack, goBack: true);
             setUndoButton(btnGoToForward, goBack: false);
@@ -1736,9 +1692,6 @@ namespace ZipPla
             btnFilterCommands.Location = new Point(cbFilter.Right, cbFilter.Location.Y - lineWidth);
             btnFilterCommands.Size = new Size(boxWidth, boxWidth);
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("SetMessagesWithoutTagFilter");
-#endif
 
             //Text = Program.Name;
             SetMessagesWithoutTagFilter();
@@ -1746,9 +1699,6 @@ namespace ZipPla
             // 静的な Shown に移動
             //Shown += (sender, e) => setTagFilteringMenuItems();
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("SetProcessEtc");
-#endif
 
             bmwMakePreview.ThreadCount = Math.Max(1, Environment.ProcessorCount / 2);
             // ジョブ番号は 2*i がヘッダ取得、2*i+1 がサムネイル生成。サムネイルは ThumbViewerItem.LoadAsync が
@@ -1765,9 +1715,6 @@ namespace ZipPla
             menuStripForTagFilter.Top = menuStrip.Top;
             menuStripForTagFilter.Height = menuStrip.Size.Height;
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("CorrectPanelLayout");
-#endif
 
             CenterPanellMinWidth = splRight.MinExtra = Program.DpiScalingX(105) + 2 * Program.DpiScaling(2);
             Shown += (sender, e) => pnlRight_SizeChanged(null, null);
@@ -1796,23 +1743,7 @@ namespace ZipPla
 
             zabLocation.ZipPlaAddressBarMakeButtonStarting += zabLocation_ZipPlaAddressBarMakeButtonStarting;
 
-#if SCREENCAPTCHA
-            zabLocation.GetDisplayNameOverrider = path =>
-            {
-                var result = SimpleBookmark.GetDisplayName(path);
-                if (Message.CurrentLanguage.ToString() == "en-US")
-                {
-                    var m = Regex.Match(result, @"^ローカル ディスク \(([A-Z]):\)$");
-                    if (m.Success)
-                    {
-                        return $"Local Disk ({m.Groups[1].Value}:)";
-                    }
-                }
-                return result;
-            };
-#else
             zabLocation.GetDisplayNameOverrider = SimpleBookmark.GetDisplayName;
-#endif
             zabLocation.TextChangedByButton += zabLocation_TextChangedByButton;
             zabLocation.TextChangedByBaseControl += zabLocation_TextChangedByBaseControl;
             zabLocation.CurrentLocationButtonClick += zabLocation_CurrentLocationButtonClick;
@@ -1825,16 +1756,9 @@ namespace ZipPla
             cbLocationMinimumWidth = cbLocation.Width;
 
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("SetAspectRatioOption1");
-#endif
-
             //var screenSize = Screen.FromControl(this).Bounds;
             var screenSize = Screen.PrimaryScreen.Bounds;
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("SetAspectRatioOption2");
-#endif
             int w = screenSize.Width;
             int h = screenSize.Height;
             while (w > 0)
@@ -1884,9 +1808,6 @@ namespace ZipPla
 
             }.OrderBy(x => x.Item2).ToArray());
 
-#if RUNTIME
-            Program.RunTimeMeasure.Block("SetKeepOpen");
-#endif
 
             SetKeepOpen(viewToolStripMenuItem);
             //SetKeepOpen(thumbnailSizeToolStripMenuItem, thumbnailCacheToolStripMenuItem, createViewerShortcutFromCurrentSettingsToolStripMenuItem);

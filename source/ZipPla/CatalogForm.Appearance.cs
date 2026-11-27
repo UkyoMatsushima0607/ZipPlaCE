@@ -561,21 +561,6 @@ namespace ZipPla
             if (bookmark == null) return;
 
             var text = bookmark.SimpleBookmark?.GetDisplayString() ?? "";
-#if SCREENCAPTCHA // スクリーンショット作成用
-            if (Message.CurrentLanguage.ToString() == "en-US")
-            {
-                switch (text)
-                {
-                    case "スクリーンショット": text = "Screenshot(Jpn)"; break;
-                    case "動画": text = "Movie"; break;
-                    case "コメディ": text = "Comedy"; break;
-                    case "ゲーム攻略": text = "Playing guide"; break;
-                    case "参考書": text = "Textbook"; break;
-                    case "仮想フォルダ1.sor": text = "VirtualFolder1.sor"; break;
-                    case "仮想フォルダ2.sor": text = "VirtualFolder2.sor"; break;
-                }
-            }
-#endif
             var font = e.CellStyle.Font;
             //var size = TextRenderer.MeasureText(text, font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
             var size = MeasureStringSizeByTextRenderer(e.Graphics, text, font, dgvDirectoryList_CellPainting_SizeDictionary);

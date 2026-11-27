@@ -581,9 +581,6 @@ namespace ZipPla
 
         private void CatalogForm_Load(object sender, EventArgs e)
         {
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("LoadEventHandlerStarted");
-#endif
 
             selectedFileNameToolStripTextBox.ReadOnly = true;
             if (MenuTextFont != null)
@@ -595,9 +592,6 @@ namespace ZipPla
             selectedFileNameToolStripTextBox.MouseLeave += SelectedFileNameToolStripTextBox_MouseLeave;
             selectedFileNameToolStripTextBox.TextChanged += selectedFileNameToolStripTextBox_ShowRight;
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("PrepareMessageForwarder");
-#endif
 
             msDirectoryList = new MessageForwarder(dgvDirectoryList, ForwardedMessage.MouseWheel);
             new MessageForwarder(explorerTreeView.TreeViewWnd, ForwardedMessage.MouseWheel);
@@ -607,9 +601,6 @@ namespace ZipPla
             msSortBy = new MessageForwarder(cbSortBy, ForwardedMessage.MouseWheel);
             msFilter = new MessageForwarder(cbFilter, ForwardedMessage.MouseWheel);
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("PrepareSimplifiedKeyBoard");
-#endif
 
             simplifiedKeyBoard = new SimplifiedKeyBoard(statusStrip, -1);
             simplifiedKeyBoard.Add("Ctrl", Keys.ControlKey);
@@ -618,20 +609,11 @@ namespace ZipPla
             simplifiedKeyBoard.Add(Message.Tag, cmsRightClickOnlyTagPrepareAndShowForKey);
             simplifiedKeyBoard.Add("Del", Keys.Delete);
             tvCatalog.GetModifierKeys = simplifiedKeyBoard.GetModifierKeysWithoutUpHeldKeys;
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("PrepareSimplifiedKeyBoard1");
-#endif
             setTinyOnScreenKeyboardVisible(tinyOnScreenKeyboardVisible);
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("PrepareSimplifiedKeyBoard");
-#endif
 
             dgvFileList.SimplifiedKeyBoard = simplifiedKeyBoard;
             dgvDirectoryList.SimplifiedKeyBoard = simplifiedKeyBoard;
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("SetRightClickFileNameEvents");
-#endif
 
             rightClickFileNameToolStripTextBox.ReadOnly = true;
             cmsRightClick.Items.Insert(0, rightClickFileNameToolStripTextBox);
@@ -647,26 +629,17 @@ namespace ZipPla
             rightClickFileNameToolStripTextBox.GotFocus += rightClickFileNameToolStripTextBox_GotFocus;
             rightClickFileNameToolStripTextBox.LostFocus += rightClickFileNameToolStripTextBox_LostFocus;
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("SquarizeToolStripInClass");
-#endif
 
             ToolStripOverwriter.SquarizeToolStripInClass(this);
 
             CursorIsOnControlField = mouseOnWindow = Bounds.Contains(Cursor.Position);
 
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("PrepareActivateManager");
-#endif
             activateManager = new ActivateManager(this, tvCatalog, dgvFileList);
 
 #if DEBUG
             //setColors();
 #endif
             //setControlEvent(this);
-#if RUNTIME
-            Program.RunTimeMeasure?.Block("AfterLoad");
-#endif
             IsLoaded = true;
         }
 

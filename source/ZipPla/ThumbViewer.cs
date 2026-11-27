@@ -269,9 +269,6 @@ namespace ZipPla
 
         public ThumbViewer()
         {
-#if RUNTIME
-            Program.RunTimeMeasure.Block("ThumbViewer Initialize");
-#endif
 
             // この呼び出しは、Windows.Forms フォーム デザイナで必要です。
             InitializeComponent();
@@ -308,9 +305,6 @@ namespace ZipPla
                 SelectedIndexChanged?.Invoke(this, se);
             }
             updateRowsCols();
-#if RUNTIME
-            Program.RunTimeMeasure.Block("InitializeComponent");
-#endif
         }
 
         /// <summary>
@@ -1347,7 +1341,6 @@ namespace ZipPla
                         DrawItem(graphics, index, selected: false, onlyFrame: true);
                     }
                 }
-
 
 
                 removeSelectionAt(indexOnIndices);

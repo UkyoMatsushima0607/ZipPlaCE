@@ -401,11 +401,7 @@ namespace ZipPla
             }
             return buf;
         }
-#if SCREENCAPTCHA
-        public static readonly string ffmpegPath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath)), "General\\ffmpeg.exe");
-#else
         public static readonly string ffmpegPath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "ffmpeg.exe");
-#endif
         private static readonly string[] supportedExtensions = new string[] {".mp4", ".wmv", ".mov", ".avi", ".mpg", ".mpeg", ".qt", ".asf", ".3gp", ".3gpp", ".3g2", ".rmvb", ".f4v", ".ts", ".mts", ".m2ts", ".m2v", ".m4v", ".vob", ".mkv", ".ogv", ".ogm", ".flv", ".webm", ".divx" };
         public static readonly string[] SupportedImageExtensionsWithPeriodInLowerCase = new string[] { ".webp", ".jp2", ".j2k", ".jpf", ".jpx", ".jpm", ".mj2" };
         //private static readonly Regex reSupports; // = new Regex(@"\.(mp4|wmv|mov|avi|mpe?g|3gp|f4v|m2ts|m2v|m4v|mkv|ogv|ogm|flv|webm)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);

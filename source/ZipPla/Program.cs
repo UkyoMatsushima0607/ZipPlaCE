@@ -171,9 +171,6 @@ namespace ZipPla
             }
         }
 
-#if RUNTIME
-        public static TimeMeasure RunTimeMeasure;
-#endif
 
         /// <summary>
         /// マルチコア JIT: JIT したメソッドを exe と同じフォルダのプロファイルに記録し（正常終了時に保存される）、
@@ -226,15 +223,6 @@ namespace ZipPla
         [STAThread]
         static void Main()
         {
-#if LAB
-            ZipPlaLab.Start();
-            return;
-#endif
-#if RUNTIME
-            RunTimeMeasure = new TimeMeasure();
-            RunTimeMeasure.Block("Start");
-#endif
-
 
 
             //string[] cmds = Environment.GetCommandLineArgs();
@@ -258,10 +246,6 @@ namespace ZipPla
             string[] cmds = ShortcutResolver.Exec(rawCommands).ToArray();
 
 
-#if VEIWER
-            startForm = new ViewerForm(null);
-#else
-            
             bool? ffmpegExists = null;
             if (cmds.Length == 2)
             {
@@ -403,11 +387,7 @@ namespace ZipPla
             {
                 startForm = new CatalogForm();
             }
-#endif
 
-#if RUNTIME
-            RunTimeMeasure.Block("AfterFormCreated");
-#endif
 #if PERFLOG
             StartupTrace("フォーム作成後");
             StartForm.Load += (s, e) => StartupTrace("Load 開始");

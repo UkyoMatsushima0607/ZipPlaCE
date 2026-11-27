@@ -576,8 +576,6 @@ namespace ZipPla
                 }
             }
             
-#if DRAWING
-#endif// DRAWING
         }
     }
 }

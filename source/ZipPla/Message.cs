@@ -13,17 +13,11 @@ namespace ZipPla
 
         static Message()
         {
-#if RUNTIME
-           // Program.RunTimeMeasure?.Block("GetLanguageFile");
-#endif
             // 内蔵言語データが存在しなければ出力
             string path;
             path = System.IO.Path.Combine(LanguageFileFolder, "!FileNameList.txt");
             if (!System.IO.File.Exists(path)) MakeNewTextFile(path, GetFileNameList());
 
-#if RUNTIME
-           // Program.RunTimeMeasure?.Block("SetDefaultLanguages");
-#endif
 
             path = GetLanguageFilePath(new CultureInfo("ja-JP"));
 #if AUTOBUILD
@@ -43,9 +37,6 @@ namespace ZipPla
                 MakeNewTextFile(path, GetCurrentMessages());
             }
 
-#if RUNTIME
-            //Program.RunTimeMeasure?.Block("LoadLanguage");
-#endif
 
             try // 言語ファイルなどを実装すればエラーは付きものになる
             {
@@ -2357,7 +2348,6 @@ namespace ZipPla
         //public static string BackWheelUpCursorLeft { get; private set; }
 
 
-
         //public static string DefaultClickBehavior { get; private set; }
         public static string NextPage { get; private set; }
         public static string PreviousPage { get; private set; }
@@ -2617,7 +2607,6 @@ namespace ZipPla
         //public static string ShowFolderSizeOnStatusBar { get; private set; }
 
 
-
         public static string AutomaticSelectionSwitching { get; private set; }
         public static string InAppropriateCases { get; private set; }
 
@@ -2683,7 +2672,6 @@ namespace ZipPla
         public static string BuiltInViewer { get; private set; }
         //public static string TargetItemsAreSpecifiedByRegularExpression { get; private set; }
         public static string ApplicationFilterDescription { get; private set; }
-
 
 
         public static string OK { get; private set; }
