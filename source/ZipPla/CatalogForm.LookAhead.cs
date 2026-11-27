@@ -151,6 +151,7 @@ namespace ZipPla
                 SetLookAheadArchive_PrevBackColor = BackColorOfBuiltInViewer;
                 SetLookAheadArchive_PrevSortDetails = currentSortModeDetails;
                 SetLookAheadArchive_PrevOpenInPrevInitialFullscreenMode = BuiltInViewerInitialFullscreenMode;
+                SetLookAheadArchive_PrevOpenInPrevAlwaysHideUI = AlwaysHideUI;
                 SetLookAheadArchive_PrevIpcLookAheadInfo = lookAheadInfo;
                 OpenWaitingProcess_AfterCalled = false;
             }

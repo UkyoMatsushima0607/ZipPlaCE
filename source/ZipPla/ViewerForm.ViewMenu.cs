@@ -316,11 +316,7 @@ namespace ZipPla
                 if (StandardScalingAlgorithm.ScaleUp != StandardScalingAlgorithm.ScaleDown)
                 {
                     StandardScalingAlgorithm.ScaleUp = StandardScalingAlgorithm.ScaleDown;
-                    reloadForChangeFilter(forOnlyPostFilter: true);
-                    if (ViewerMode == ViewerModeEnum.Normal)
-                    {
-                        reloadForChangeFilter(forOnlyPostFilter: true);
-                    }
+                    reloadForChangeFilter(forOnlyPostFilter: true); // 以前は通常表示のときに 2 回呼んでいた
                 }
             }
             else
@@ -330,10 +326,6 @@ namespace ZipPla
                 {
                     StandardScalingAlgorithm.ScaleUp = ScalingAlgorithm.AreaAverage;
                     reloadForChangeFilter(forOnlyPostFilter: true);
-                    if (ViewerMode == ViewerModeEnum.Normal)
-                    {
-                        reloadForChangeFilter(forOnlyPostFilter: true);
-                    }
                 }
             }
         }
@@ -365,7 +357,7 @@ namespace ZipPla
             if (MagnifierScalingAlgorithm.ScaleDown != algorithm)
             {
                 MagnifierScalingAlgorithm.ScaleDown = algorithm;
-                if (!useAreaAverageWhenUpsizingNormalToolStripMenuItem.Checked)
+                if (!useAreaAverageWhenUpsizingToolStripMenuItem.Checked) // ルーペの「拡大には面積平均」を見る（以前は通常表示の項目を見ていた）
                     MagnifierScalingAlgorithm.ScaleUp = algorithm;
                 //reloadForChangeFilter(forOnlyPostFilter: true);
                 resetMagnifyingPower(magnifyingPower);

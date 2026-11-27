@@ -195,7 +195,6 @@
     <Compile Include="ViewControl.cs" />
     <Compile Include="ViewerFormEnums.cs" />
     <Compile Include="ViewerFormConfig.cs" />
-    <Compile Include="ExclusionControl.cs" />
     <Compile Include="ToolStripSpringTextBox.cs" />
     <Compile Include="ViewerForm.CommandLine.cs">
       <DependentUpon>ViewerForm.cs</DependentUpon>

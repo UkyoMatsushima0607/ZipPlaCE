@@ -22,7 +22,10 @@ namespace ZipPla
 {
     public partial class ViewerForm
     {
-        private object tmWatchIpc_Tick_Running = new object();
+        // tmWatchIpc_Tick が実行中か・実行中に呼ばれたか（UI スレッドだけで読み書きする）
+        private bool tmWatchIpc_Tick_Running;
+        private bool tmWatchIpc_Tick_Pending;
+        private EventArgs tmWatchIpc_Tick_PendingArgs;
 
         private ViewerFormImageFilter initialViewerFormImageFilter = null;
 
@@ -78,425 +81,450 @@ namespace ZipPla
             tmMemoryReducer.Interval = 100; // 表示を始めたら通常の間隔に戻す
         }
 
-        private void tmWatchIpc_Tick(object sender, EventArgs e)
+        // 依頼の処理の途中で表示を待つ（await）ので、そのあいだに次の Tick が来ても重ねて実行しない。
+        // 以前は Monitor.TryEnter で排他していたが、UI スレッドの Monitor は再入でき、await で抜けた時点でロックも外れていたので排他になっていなかった
+        private async void tmWatchIpc_Tick(object sender, EventArgs e)
         {
             if (!ViewerForm_Shown_Called) return;
 
             if (tmWatchIpc_Stopped) return; // Timer.Stop() が完全にリアルタイムには起こらない可能性を考慮
 
-            ExclusionControl.TryLock(tmWatchIpc_Tick_Running, async () =>
+            if (tmWatchIpc_Tick_Running)
             {
-                try
+                // 前の呼び出しが await で待っている間に来た。いまは飛ばし、前の呼び出しが終わったらもう一度見る
+                tmWatchIpc_Tick_Pending = true;
+                tmWatchIpc_Tick_PendingArgs = e;
+                return;
+            }
+            tmWatchIpc_Tick_Running = true;
+            try
+            {
+                await tmWatchIpc_TickCore(e);
+                while (tmWatchIpc_Tick_Pending && !tmWatchIpc_Stopped)
                 {
-                    if (!ipcLookAheadInfo.Accept)
+                    tmWatchIpc_Tick_Pending = false;
+                    await tmWatchIpc_TickCore(tmWatchIpc_Tick_PendingArgs);
+                }
+            }
+            finally
+            {
+                tmWatchIpc_Tick_Running = false;
+            }
+        }
+
+        // e が null のときは起動直後の呼び出し、null でなければタイマーかカタログからの依頼
+        private async Task tmWatchIpc_TickCore(EventArgs e)
+        {
+            try
+            {
+                if (!ipcLookAheadInfo.Accept)
+                {
+
+                    var coverSetting = ipcLookAheadInfo.Message == IpcLookAheadInfo.MessageEnum.CoverSetting;
+                    
+                    var show = ipcLookAheadInfo.Message == IpcLookAheadInfo.MessageEnum.Show || coverSetting;
+                    
+                    var path = ipcLookAheadInfo.Path;
+                    var page = ipcLookAheadInfo.Page;
+                    var asia = ipcLookAheadInfo.ArchivesInArchive;
+                    var rm = ipcLookAheadInfo.ReadOnMemoryMode;
+                    var bind = ipcLookAheadInfo.DefaultBinding;
+                    var coverBind = ipcLookAheadInfo.CoverBinding;
+                    var ignFilter = ipcLookAheadInfo.IgnoreSavedFilerSetting;
+                    var sort = ipcLookAheadInfo.SortModeDetails;
+                    var fString = ipcLookAheadInfo.FilterString;
+                    var fString2 = fString == null ? null : ipcLookAheadInfo.FilterStringWithoutAlias;
+                    var color = ipcLookAheadInfo.BackColor;
+                    var alwaysHideUI = ipcLookAheadInfo.AlwaysHideUI;
+                    var iniFull = ipcLookAheadInfo.InitialFullscreenMode;
+                    //var noFullscreen = true;
+
+                    ipcLookAheadInfo.Accept = true; // これをすると通信が切られるので先にやってはいけない
+                    if (show)
                     {
+                        tmWatchIpc_Stopped = true;
+                        tmWatchIpc.Stop();
+                        StopWatchIpcWakeEvent();
+                        //tmMemoryReducer.Enabled = false; // Stop() と同じ
+                    }
 
-                        var coverSetting = ipcLookAheadInfo.Message == IpcLookAheadInfo.MessageEnum.CoverSetting;
-                        
-                        var show = ipcLookAheadInfo.Message == IpcLookAheadInfo.MessageEnum.Show || coverSetting;
-                        
-                        var path = ipcLookAheadInfo.Path;
-                        var page = ipcLookAheadInfo.Page;
-                        var asia = ipcLookAheadInfo.ArchivesInArchive;
-                        var rm = ipcLookAheadInfo.ReadOnMemoryMode;
-                        var bind = ipcLookAheadInfo.DefaultBinding;
-                        var coverBind = ipcLookAheadInfo.CoverBinding;
-                        var ignFilter = ipcLookAheadInfo.IgnoreSavedFilerSetting;
-                        var sort = ipcLookAheadInfo.SortModeDetails;
-                        var fString = ipcLookAheadInfo.FilterString;
-                        var fString2 = fString == null ? null : ipcLookAheadInfo.FilterStringWithoutAlias;
-                        var color = ipcLookAheadInfo.BackColor;
-                        var alwaysHideUI = ipcLookAheadInfo.AlwaysHideUI;
-                        var iniFull = ipcLookAheadInfo.InitialFullscreenMode;
-                        //var noFullscreen = true;
-
-                        ipcLookAheadInfo.Accept = true; // これをすると通信が切られるので先にやってはいけない
-                        if (show)
+                    var needToReload = false;
+                    if (CommandLineOptionInfoForLookAhead != null)
+                    {
+                        var time = Configuration.GetLastWriteTime();
+                        var reloadConfig = time != LoadSettings_LoadedFileTimeStampForLookAhead;
+                        if (
+                            requestedInitialFullscreenMode != iniFull && !(iniFull == InitialFullscreenMode.ForceFullscreen && FullScreen_pseudoFullScreen || iniFull == InitialFullscreenMode.ForceWindow && !FullScreen_pseudoFullScreen) ||
+                            alwaysHideUI != requestedAlwaysHideUI || reloadConfig
+                            )
                         {
-                            tmWatchIpc_Stopped = true;
-                            tmWatchIpc.Stop();
-                            StopWatchIpcWakeEvent();
-                            //tmMemoryReducer.Enabled = false; // Stop() と同じ
-                        }
+                            LoadSettings_LoadedFileTimeStampForLookAhead_Setter = time;
 
-                        var needToReload = false;
-                        if (CommandLineOptionInfoForLookAhead != null)
-                        {
-                            var time = Configuration.GetLastWriteTime();
-                            var reloadConfig = time != LoadSettings_LoadedFileTimeStampForLookAhead;
-                            if (
-                                requestedInitialFullscreenMode != iniFull && !(iniFull == InitialFullscreenMode.ForceFullscreen && FullScreen_pseudoFullScreen || iniFull == InitialFullscreenMode.ForceWindow && !FullScreen_pseudoFullScreen) ||
-                                alwaysHideUI != requestedAlwaysHideUI || reloadConfig
-                                )
+                            //using (var m = new TimeMeasure())
                             {
-                                LoadSettings_LoadedFileTimeStampForLookAhead_Setter = time;
+                                var pSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size :
+                                    PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
 
-                                //using (var m = new TimeMeasure())
+                                CommandLineOptionInfoForLookAhead.DefaultBindingMode = requestedBindingMode;
+                                CommandLineOptionInfoForLookAhead.BackColor = pbView.BackColor;
+                                CommandLineOptionInfoForLookAhead.ArchivesInArchiveMode = ArchivesInArchiveMode;
+                                CommandLineOptionInfoForLookAhead.CoverBindingMode = CoverBindingMode;
+                                CommandLineOptionInfoForLookAhead.InitialFullscreenMode = iniFull;
+                                CommandLineOptionInfoForLookAhead.AlwaysHideUI = alwaysHideUI;
+                                
+                                LoadSettingsAndSetMessages(CommandLineOptionInfoForLookAhead, reloadConfig, reloadConfig);
+
+                                var newSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size :
+                                    PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
+
+                                if (pSize != newSize)
                                 {
-                                    var pSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size :
-                                        PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
-
-                                    CommandLineOptionInfoForLookAhead.DefaultBindingMode = requestedBindingMode;
-                                    CommandLineOptionInfoForLookAhead.BackColor = pbView.BackColor;
-                                    CommandLineOptionInfoForLookAhead.ArchivesInArchiveMode = ArchivesInArchiveMode;
-                                    CommandLineOptionInfoForLookAhead.CoverBindingMode = CoverBindingMode;
-                                    CommandLineOptionInfoForLookAhead.InitialFullscreenMode = iniFull;
-                                    CommandLineOptionInfoForLookAhead.AlwaysHideUI = alwaysHideUI;
-                                    
-                                    LoadSettingsAndSetMessages(CommandLineOptionInfoForLookAhead, reloadConfig, reloadConfig);
-
-                                    var newSize = FullScreen_pseudoFullScreen ? Screen.FromControl(this).Bounds.Size :
-                                        PseudoMaximized ? PseudoMaximizedSize : ViewerForm_SizeChanged_pbBoundsMemoryForMinimize.Size;
-
-                                    if (pSize != newSize)
-                                    {
-                                        needToReload = true;
-                                    }
+                                    needToReload = true;
                                 }
                             }
                         }
+                    }
 
-                        requestedAlwaysHideUI = alwaysHideUI;
-                        requestedInitialFullscreenMode = iniFull;
+                    requestedAlwaysHideUI = alwaysHideUI;
+                    requestedInitialFullscreenMode = iniFull;
 
-                        if (show)
+                    if (show)
+                    {
+                        //Program.SetPriority(ProcessPriorityClass.Normal);
+                        ipcLookAheadInfo = null;
+                        LoadSettings_LastLoadedConfig = null;
+                        LoadSettings_LastLoadedGeneralConfig = null;
+                    }
+
+                    bool secondTerm = false;
+
+                    do
+                    {
+                        var newOpen = false;
+                        try
                         {
-                            //Program.SetPriority(ProcessPriorityClass.Normal);
-                            ipcLookAheadInfo = null;
-                            LoadSettings_LastLoadedConfig = null;
-                            LoadSettings_LastLoadedGeneralConfig = null;
-                        }
-
-                        bool secondTerm = false;
-
-                        do
-                        {
-                            var newOpen = false;
-                            try
+                            Invoke((MethodInvoker)(() =>
                             {
-                                Invoke((MethodInvoker)(() =>
+
+                                var filterChanged = fString != requestedFilterString || fString2 != requestedFilterStringWithoutAlias;
+
+                                // 送る側が sort の変化をチェックしないので受け側でもチェックしない
+                                if (!secondTerm && (path != requestedImagePath || page != requestedImagePage || asia != ArchivesInArchiveMode ||/*requestedArchivesInArchiveMode*/
+                                    rm != ReadOnMemoryMode || bind != requestedBindingMode ||
+                                    ignFilter != requestedIgnoreSavedFilerSetting || filterChanged ||
+                                    coverBind != CoverBindingMode /*requestedCoverBindingMode*/ || color != pbView.BackColor))
                                 {
 
-                                    var filterChanged = fString != requestedFilterString || fString2 != requestedFilterStringWithoutAlias;
-
-                                    // 送る側が sort の変化をチェックしないので受け側でもチェックしない
-                                    if (!secondTerm && (path != requestedImagePath || page != requestedImagePage || asia != ArchivesInArchiveMode ||/*requestedArchivesInArchiveMode*/
-                                        rm != ReadOnMemoryMode || bind != requestedBindingMode ||
-                                        ignFilter != requestedIgnoreSavedFilerSetting || filterChanged ||
-                                        coverBind != CoverBindingMode /*requestedCoverBindingMode*/ || color != pbView.BackColor))
+                                    var prevExists = !string.IsNullOrEmpty(currentArchiveFilePath); // こっちは shownImegesPath は不適切
+                                    if (show && prevExists)
                                     {
+                                        shownImegesPath = null;
+                                    }
 
-                                        var prevExists = !string.IsNullOrEmpty(currentArchiveFilePath); // こっちは shownImegesPath は不適切
-                                        if (show && prevExists)
-                                        {
-                                            shownImegesPath = null;
-                                        }
+                                    if (ignFilter)
+                                    {
+                                        imageFilter.Set(null);
+                                    }
+                                    else if (requestedIgnoreSavedFilerSetting == true && initialViewerFormImageFilter != null)
+                                    {
+                                        imageFilter.Set(initialViewerFormImageFilter);
+                                    }
 
-                                        if (ignFilter)
+                                    if (fString2 != requestedFilterStringWithoutAlias)
+                                    {
+                                        try
                                         {
-                                            imageFilter.Set(null);
-                                        }
-                                        else if (requestedIgnoreSavedFilerSetting == true && initialViewerFormImageFilter != null)
-                                        {
-                                            imageFilter.Set(initialViewerFormImageFilter);
-                                        }
-
-                                        if (fString2 != requestedFilterStringWithoutAlias)
-                                        {
-                                            try
-                                            {
-                                                if (fString2 == null)
-                                                {
-                                                    searchManagerFromCatalogForm = null;
-                                                }
-                                                else
-                                                {
-                                                    searchManagerFromCatalogForm = new SearchManager(fString2);
-                                                }
-                                            }
-                                            catch
+                                            if (fString2 == null)
                                             {
                                                 searchManagerFromCatalogForm = null;
                                             }
-                                        }
-
-                                        var load = false;
-                                        // ページ指定でページだけが変わってるパターン
-                                        // 現状これはほぼ起こり得ないのでコメントアウト
-
-                                        var sortChanged = filterChanged ? true : null as bool?;
-
-                                        // パスが変わっているが親が変わっていないパターン
-                                        if (/*!OpenFileFinishedButStartingIsNotCalled && */!load && page < 0 && page == requestedImagePage && bind == requestedBindingMode)
-                                        {
-                                            if (sortChanged == null) sortChanged = sort as object == null ? requestedSortModeDetails as object != null : !sort.QuickEquals(requestedSortModeDetails);
-                                            if(sortChanged == false)
+                                            else
                                             {
-                                                var a = nextData?.EntriesPaths ?? EntryLongPathArray;
-                                                if (a != null)
-                                                {
-                                                    var altPos = path.IndexOf(Path.AltDirectorySeparatorChar);
-                                                    // 画像ファイルのパターン
-                                                    if (altPos < 0)
-                                                    {
-                                                        var p = path.LastIndexOf(Path.DirectorySeparatorChar);
-                                                        if (p >= 0)
-                                                        {
-                                                            var pg = Array.IndexOf(a, path.Substring(0, p) + Path.AltDirectorySeparatorChar + path.Substring(p + 1));
-                                                            if (pg >= 0 && pg <= mtbPage.Maximum)
-                                                            {
-                                                                mtbPage.Value = pg;
-                                                                currentStartingFilePath = path;
-                                                                load = true;
-                                                            }
-                                                        }
-                                                    }
+                                                searchManagerFromCatalogForm = new SearchManager(fString2);
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            searchManagerFromCatalogForm = null;
+                                        }
+                                    }
 
-                                                    // アーカイブ内のパターン
-                                                    else
+                                    var load = false;
+                                    // ページ指定でページだけが変わってるパターン
+                                    // 現状これはほぼ起こり得ないのでコメントアウト
+
+                                    var sortChanged = filterChanged ? true : null as bool?;
+
+                                    // パスが変わっているが親が変わっていないパターン
+                                    if (/*!OpenFileFinishedButStartingIsNotCalled && */!load && page < 0 && page == requestedImagePage && bind == requestedBindingMode)
+                                    {
+                                        if (sortChanged == null) sortChanged = sort as object == null ? requestedSortModeDetails as object != null : !sort.QuickEquals(requestedSortModeDetails);
+                                        if(sortChanged == false)
+                                        {
+                                            var a = nextData?.EntriesPaths ?? EntryLongPathArray;
+                                            if (a != null)
+                                            {
+                                                var altPos = path.IndexOf(Path.AltDirectorySeparatorChar);
+                                                // 画像ファイルのパターン
+                                                if (altPos < 0)
+                                                {
+                                                    var p = path.LastIndexOf(Path.DirectorySeparatorChar);
+                                                    if (p >= 0)
                                                     {
-                                                        var pg = Array.IndexOf(a, path);
+                                                        var pg = Array.IndexOf(a, path.Substring(0, p) + Path.AltDirectorySeparatorChar + path.Substring(p + 1));
                                                         if (pg >= 0 && pg <= mtbPage.Maximum)
                                                         {
                                                             mtbPage.Value = pg;
+                                                            currentStartingFilePath = path;
                                                             load = true;
                                                         }
                                                     }
                                                 }
+
+                                                // アーカイブ内のパターン
+                                                else
+                                                {
+                                                    var pg = Array.IndexOf(a, path);
+                                                    if (pg >= 0 && pg <= mtbPage.Maximum)
+                                                    {
+                                                        mtbPage.Value = pg;
+                                                        load = true;
+                                                    }
+                                                }
                                             }
                                         }
+                                    }
 
-                                        var fromCatalogFormEvent = e != null;
+                                    var fromCatalogFormEvent = e != null;
 
-                                        if (fromCatalogFormEvent && pbView.BackColor != color)
-                                        {
-                                            pbView.BackColor = color;
-                                        }
+                                    if (fromCatalogFormEvent && pbView.BackColor != color)
+                                    {
+                                        pbView.BackColor = color;
+                                    }
 
 
-                                        if (fromCatalogFormEvent)
-                                        {
-                                            requestedBindingMode = bind;
-                                            //requestedArchivesInArchiveMode = asia;
-                                            ArchivesInArchiveMode = asia;
-                                            ReadOnMemoryMode = rm;
-                                            requestedFilterString = fString;
-                                            requestedFilterStringWithoutAlias = fString2;
-                                            requestedSortModeDetails = sort;
-                                        }
+                                    if (fromCatalogFormEvent)
+                                    {
+                                        requestedBindingMode = bind;
+                                        //requestedArchivesInArchiveMode = asia;
+                                        ArchivesInArchiveMode = asia;
+                                        ReadOnMemoryMode = rm;
+                                        requestedFilterString = fString;
+                                        requestedFilterStringWithoutAlias = fString2;
+                                        requestedSortModeDetails = sort;
+                                    }
 
-                                        OpenResult openResult = default(OpenResult);
-                                        if (!load)
-                                        {
-                                            openResult = OpenFile(path, page, sort, forLookAhead: true);//, bind);
-                                            newOpen = true;
-                                            needToReload = false;
-                                        }
+                                    OpenResult openResult = default(OpenResult);
+                                    if (!load)
+                                    {
+                                        openResult = OpenFile(path, page, sort, forLookAhead: true);//, bind);
+                                        newOpen = true;
+                                        needToReload = false;
+                                    }
 
-                                        requestedImagePath = path;
-                                        requestedImagePage = page;
+                                    requestedImagePath = path;
+                                    requestedImagePage = page;
 
-                                        if (fromCatalogFormEvent)
-                                        {
-                                            onePageModeForNext = currentPage == 0 && coverBind == CoverBindingMode.ForceSingle;
+                                    if (fromCatalogFormEvent)
+                                    {
+                                        onePageModeForNext = currentPage == 0 && coverBind == CoverBindingMode.ForceSingle;
 
-                                            //coverBind
+                                        //coverBind
 
-                                            //requestedArchivesInArchiveMode = asia; // OpenFile の前に
-                                            //requestedBindingMode = bind; // OpenFile の前に
-                                            //requestedCoverBindingMode = coverBind;
-                                            CoverBindingMode = coverBind;
-                                            requestedIgnoreSavedFilerSetting = ignFilter;
-                                        }
+                                        //requestedArchivesInArchiveMode = asia; // OpenFile の前に
+                                        //requestedBindingMode = bind; // OpenFile の前に
+                                        //requestedCoverBindingMode = coverBind;
+                                        CoverBindingMode = coverBind;
+                                        requestedIgnoreSavedFilerSetting = ignFilter;
+                                    }
 
-                                        // show で無くて OpenFile に失敗した場合次回も実行するように
-                                        if (!show && !load && openResult == OpenResult.NoOperation)
-                                        {
-                                            requestedImagePath = null;
-                                        }
+                                    // show で無くて OpenFile に失敗した場合次回も実行するように
+                                    if (!show && !load && openResult == OpenResult.NoOperation)
+                                    {
+                                        requestedImagePath = null;
+                                    }
 
-                                        if (show && prevExists)
-                                        {
-                                            secondTerm = true;
-                                            return;
-                                        }
-                                        else
-                                        {
-                                            secondTerm = false;
-                                        }
+                                    if (show && prevExists)
+                                    {
+                                        secondTerm = true;
+                                        return;
                                     }
                                     else
                                     {
-                                        if (!secondTerm)
-                                        {
-                                            OpenFile_UserOpen = true;
-                                        }
-                                        else
-                                        {
-                                            secondTerm = false;
-                                        }
-                                    }
-
-                                    if (needToReload)
-                                    {
-                                        Reload();
-                                    }
-
-                                    if (show)
-                                    {
-                                        if (coverSetting)
-                                        {
-                                            pbView_Paint_RectangleMessage = null;
-                                            ViewerMode = ViewerModeEnum.CoverSetting;
-                                            ExitAfterCoverSetting = true;
-                                            //openFileContextMenuForMenuStripMenuItem.Enabled = false;
-                                            //openNewThumbnailWindowContextMenuForMenuStripMenuItem.Enabled = false;
-                                            openFileToolStripMenuItem.Enabled = false;
-                                            openNewThumbnailWindowToolStripMenuItem.Enabled = false;
-                                            switchToThumbnailWindowToolStripMenuItem.Enabled = false;
-                                            cloneTheWindowToolStripMenuItem.Enabled = false;
-                                            slideshowToolStripMenuItem.Enabled = false;
-                                            btnOpenLeft.Enabled = false;
-                                            btnOpenRight.Enabled = false;
-                                            //magnifierContextMenuForMenuStripMenuItem.Enabled = false;
-                                            //magnifierToolStripMenuItem.Enabled = false;
-                                            editToolStripMenuItem.Enabled = false;
-                                        }
-                                        
-                                        lock (loaderLock) loader?.Release();
-                                        nextData?.Loader.Release();
-
-                                        var tempPrevSize = prevSize;
-                                        BeginUpdate(pbView);
-                                        if (FullScreen_pseudoFullScreen)
-                                        {
-
-                                            var temp = pbView_SizeChanged_SizeChanging;
-                                            pbView_SizeChanged_SizeChanging = true;// WindowState = FormWindowState.Maximized;// MessageBox.Show("a");
-                                            Visible = true; //  FormBorderStyle = FormBorderStyle.None; より前に実行しないとタスクバーにボタンが現れない
-                                            FormBorderStyle = FormBorderStyle.None;
-                                            pbView_SizeChanged_SizeChanging = temp;
-                                            WindowState = FormWindowState.Maximized;
-
-
-                                            // 最初にこうすることでと表示のズレを回避。なお、それでリロードがかからないのでサイズがかわっているわけではない。
-                                            //pbView.Top = Top;
-                                            pbView.Top = 0;
-                                            pbView.Height = Height;
-                                            //pbView.Left = Left; // シングルディスプレイでは 0 が出ていたので問題がないと勘違いしていたが明らかに誤り
-                                            pbView.Left = 0;
-                                            pbView.Width = Width;
-
-                                            fullScreenToolStripMenuItem.Text = Message.Window;
-
-                                            FullScreen_pseudoFullScreen = false;
-
-                                            menuStrip_Bottom = menuStrip.Bounds.Bottom;
-                                            //mtbPage_Top = pnlSeekbar.Bounds.Top;
-                                            mtbPageTop_As_Reference_pbViewBottom = pnlSeekbar.Bounds.Top - pbView.Bottom;
-
-                                            MyActivate(finallyTopMost: true);
-
-
-                                            prevSize = tempPrevSize;
-
-                                            //ShowIconRequired = true;
-
-                                            SetCurrentImageLongPathRequired = true;
-                                        }
-                                        else
-                                        {
-
-                                            if (PseudoMaximized)
-                                            {
-                                                PseudoMaximized = false;
-                                                WindowState = FormWindowState.Maximized;
-                                                prevSize = tempPrevSize;
-                                            }
-
-                                            //if (LoadSettings_LoadedLocation != null) Location = (Point)LoadSettings_LoadedLocation;
-                                            MyActivate(finallyTopMost: false);
-                                            
-
-                                            SetCurrentImageLongPath();
-
-                                        }
-
-                                        // 表示直後からキーボードショートカットを作動させるため
-                                        // Hidden -> Visible = true の場合にのみ必要
-                                        Task focus = null;
-                                        focus = new Task(() =>
-                                        {
-                                            try
-                                            {
-                                                Invoke(((MethodInvoker)(() =>
-                                                {
-                                                    pbView.Focus();
-                                                })));
-                                            }
-                                            catch (ObjectDisposedException) { }
-                                            focus.Dispose();
-                                        });
-                                        focus.Start();
-                                        
-                                        EndUpdate(pbView);
-
-                                        try
-                                        {
-                                            AddHistoryInBackground(path, Math.Max(0, page)); // V26
-                                            SendSorMessageToCatalogForm(path, Program.HistorySorPath, Math.Max(0, page), requestToUpdateLastAccessTime: false, m: SelfLastAccessTimeUpdateMode.None);
-                                        }
-                                        catch { }
-                                        saveToHistory = true;
-                                    }
-                                }));
-                            }
-                            catch (ObjectDisposedException) { }
-                            if (secondTerm && show && newOpen)
-                            {
-                                var leftTime = 10 * 1000;
-                                do
-                                {
-                                    //await Task.Run(() => Thread.Sleep(10));
-                                    await Task.Delay(10);
-                                    leftTime -= 10;
-                                    if (leftTime <= 0)
-                                    {
-#if !AUTOBUILD
-                                        Program.ShowCursor();
-                                        MessageBox.Show(this, $"{path}\n{shownImegesPath}\n{currentPage}\n{shownImegesPage}");
-#endif
-                                        break;
+                                        secondTerm = false;
                                     }
                                 }
-                                while (path != shownImegesPath || currentPage != shownImegesPage);
-                            }
-                        }
-                        while (secondTerm);
-                    }
-                }
-#if DEBUG
-                catch (IpcDisconnectedException ex)
-                {
-                    MessageBox.Show(ex.ToString());
-#else
-                catch (IpcDisconnectedException)
-                {
-#endif
-                    tmWatchIpc_Stopped = true;
-                    tmWatchIpc.Stop();
-                    StopWatchIpcWakeEvent();
-                    try
-                    {
-                        Invoke((MethodInvoker)(() =>
-                        {
-                            Application.Exit();
-                        }));
-                    }
-                    catch (ObjectDisposedException) { }
+                                else
+                                {
+                                    if (!secondTerm)
+                                    {
+                                        OpenFile_UserOpen = true;
+                                    }
+                                    else
+                                    {
+                                        secondTerm = false;
+                                    }
+                                }
 
+                                if (needToReload)
+                                {
+                                    Reload();
+                                }
+
+                                if (show)
+                                {
+                                    if (coverSetting)
+                                    {
+                                        pbView_Paint_RectangleMessage = null;
+                                        ViewerMode = ViewerModeEnum.CoverSetting;
+                                        ExitAfterCoverSetting = true;
+                                        //openFileContextMenuForMenuStripMenuItem.Enabled = false;
+                                        //openNewThumbnailWindowContextMenuForMenuStripMenuItem.Enabled = false;
+                                        openFileToolStripMenuItem.Enabled = false;
+                                        openNewThumbnailWindowToolStripMenuItem.Enabled = false;
+                                        switchToThumbnailWindowToolStripMenuItem.Enabled = false;
+                                        cloneTheWindowToolStripMenuItem.Enabled = false;
+                                        slideshowToolStripMenuItem.Enabled = false;
+                                        btnOpenLeft.Enabled = false;
+                                        btnOpenRight.Enabled = false;
+                                        //magnifierContextMenuForMenuStripMenuItem.Enabled = false;
+                                        //magnifierToolStripMenuItem.Enabled = false;
+                                        editToolStripMenuItem.Enabled = false;
+                                    }
+                                    
+                                    lock (loaderLock) loader?.Release();
+                                    nextData?.Loader.Release();
+
+                                    var tempPrevSize = prevSize;
+                                    BeginUpdate(pbView);
+                                    if (FullScreen_pseudoFullScreen)
+                                    {
+
+                                        var temp = pbView_SizeChanged_SizeChanging;
+                                        pbView_SizeChanged_SizeChanging = true;// WindowState = FormWindowState.Maximized;// MessageBox.Show("a");
+                                        Visible = true; //  FormBorderStyle = FormBorderStyle.None; より前に実行しないとタスクバーにボタンが現れない
+                                        FormBorderStyle = FormBorderStyle.None;
+                                        pbView_SizeChanged_SizeChanging = temp;
+                                        WindowState = FormWindowState.Maximized;
+
+
+                                        // 最初にこうすることでと表示のズレを回避。なお、それでリロードがかからないのでサイズがかわっているわけではない。
+                                        //pbView.Top = Top;
+                                        pbView.Top = 0;
+                                        pbView.Height = Height;
+                                        //pbView.Left = Left; // シングルディスプレイでは 0 が出ていたので問題がないと勘違いしていたが明らかに誤り
+                                        pbView.Left = 0;
+                                        pbView.Width = Width;
+
+                                        fullScreenToolStripMenuItem.Text = Message.Window;
+
+                                        FullScreen_pseudoFullScreen = false;
+
+                                        menuStrip_Bottom = menuStrip.Bounds.Bottom;
+                                        //mtbPage_Top = pnlSeekbar.Bounds.Top;
+                                        mtbPageTop_As_Reference_pbViewBottom = pnlSeekbar.Bounds.Top - pbView.Bottom;
+
+                                        MyActivate(finallyTopMost: true);
+
+
+                                        prevSize = tempPrevSize;
+
+                                        //ShowIconRequired = true;
+
+                                        SetCurrentImageLongPathRequired = true;
+                                    }
+                                    else
+                                    {
+
+                                        if (PseudoMaximized)
+                                        {
+                                            PseudoMaximized = false;
+                                            WindowState = FormWindowState.Maximized;
+                                            prevSize = tempPrevSize;
+                                        }
+
+                                        //if (LoadSettings_LoadedLocation != null) Location = (Point)LoadSettings_LoadedLocation;
+                                        MyActivate(finallyTopMost: false);
+                                        
+
+                                        SetCurrentImageLongPath();
+
+                                    }
+
+                                    // 表示直後からキーボードショートカットを作動させるため
+                                    // Hidden -> Visible = true の場合にのみ必要
+                                    Task focus = null;
+                                    focus = new Task(() =>
+                                    {
+                                        try
+                                        {
+                                            Invoke(((MethodInvoker)(() =>
+                                            {
+                                                pbView.Focus();
+                                            })));
+                                        }
+                                        catch (ObjectDisposedException) { }
+                                        focus.Dispose();
+                                    });
+                                    focus.Start();
+                                    
+                                    EndUpdate(pbView);
+
+                                    try
+                                    {
+                                        AddHistoryInBackground(path, Math.Max(0, page)); // V26
+                                        SendSorMessageToCatalogForm(path, Program.HistorySorPath, Math.Max(0, page), requestToUpdateLastAccessTime: false, m: SelfLastAccessTimeUpdateMode.None);
+                                    }
+                                    catch { }
+                                    saveToHistory = true;
+                                }
+                            }));
+                        }
+                        catch (ObjectDisposedException) { }
+                        if (secondTerm && show && newOpen)
+                        {
+                            var leftTime = 10 * 1000;
+                            do
+                            {
+                                //await Task.Run(() => Thread.Sleep(10));
+                                await Task.Delay(10);
+                                leftTime -= 10;
+                                if (leftTime <= 0)
+                                {
+#if !AUTOBUILD
+                                    Program.ShowCursor();
+                                    MessageBox.Show(this, $"{path}\n{shownImegesPath}\n{currentPage}\n{shownImegesPage}");
+#endif
+                                    break;
+                                }
+                            }
+                            while (path != shownImegesPath || currentPage != shownImegesPage);
+                        }
+                    }
+                    while (secondTerm);
                 }
-            });
+            }
+#if DEBUG
+            catch (IpcDisconnectedException ex)
+            {
+                MessageBox.Show(ex.ToString());
+#else
+            catch (IpcDisconnectedException)
+            {
+#endif
+                tmWatchIpc_Stopped = true;
+                tmWatchIpc.Stop();
+                StopWatchIpcWakeEvent();
+                try
+                {
+                    Invoke((MethodInvoker)(() =>
+                    {
+                        Application.Exit();
+                    }));
+                }
+                catch (ObjectDisposedException) { }
+
+            }
         }
     }
 }

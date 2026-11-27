@@ -717,7 +717,8 @@ namespace ZipPla
         {
             try
             {
-                if (target != null && !target.Any() && target.Last() == ':') target += Path.DirectorySeparatorChar;
+                // "C:" のようなドライブ名だけなら、カレントディレクトリではなくドライブのルートを指すように区切りを付ける
+                if (!string.IsNullOrEmpty(target) && target[target.Length - 1] == ':') target += Path.DirectorySeparatorChar;
                 if (data.GetDataPresent(DataFormats.FileDrop))
                 {
 
@@ -904,7 +905,7 @@ namespace ZipPla
             }
         }
 
-        readonly Guid GetSelectedDataObject_ClipboardGuid = new Guid();
+        readonly Guid GetSelectedDataObject_ClipboardGuid = Guid.NewGuid(); // OpendByExternalApplication_Dictionary のキー（new Guid() は Guid.Empty になり、ほかのキーと重なりうる）
 
         private void GetSelectedDataObject(out DataObject dataObject, out DragDropEffects effects, bool forClipboard)
         {
@@ -954,6 +955,7 @@ namespace ZipPla
                 if (forClipboard)
                 {
                     locker = packedImageLoaderForClipboardLocker;
+                    PackedImageLoader.PackedImageEntry[] entries2;
                     lock (locker)
                     {
                         packedImageLoaderForClipboard?.Dispose();
@@ -968,8 +970,10 @@ namespace ZipPla
                             pureLoader.Dispose();
                             return;
                         }
+                        // 表示中の一覧（entries）と、クリップボード用に開き直した書庫の一覧を比べる。
+                        // 以前は pil.Entries（entries と同じもの）と比べていて、書庫が変わっても検出できなかった
+                        entries2 = packedImageLoaderForClipboard.Entries;
                     }
-                    var entries2 = pil.Entries;
                     var diff = false;
                     if (entries.Length != entries2.Length) diff = true;
                     if (!diff)
@@ -1044,9 +1048,10 @@ namespace ZipPla
                     if (RecalcItemsCalled) return;
                     RecalcItemsCalled = true;
 
-                    var baseLoader = forClipboard ? packedImageLoaderForClipboard : loadingPackedImageLoader;
                     lock (locker)
                     {
+                        // ロックの中で読む（外で読むと、比べる前に別のスレッドが差し替え・破棄しうる）
+                        var baseLoader = forClipboard ? packedImageLoaderForClipboard : loadingPackedImageLoader;
                         if (baseLoader == pil)
                         {
                             string digits = null;
