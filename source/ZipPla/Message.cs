@@ -20,18 +20,14 @@ namespace ZipPla
 
 
             path = GetLanguageFilePath(new CultureInfo("ja-JP"));
-#if AUTOBUILD
             if(!System.IO.File.Exists(path))
-#endif
             {
                 SetJapaneseMessages();
                 MakeNewTextFile(path, GetCurrentMessages());
             }
 
             path = GetLanguageFilePath(DefaultLanguage);
-#if AUTOBUILD
             if (!System.IO.File.Exists(path))
-#endif
             {
                 SetEnglishMessages();
                 MakeNewTextFile(path, GetCurrentMessages());
@@ -755,9 +751,6 @@ namespace ZipPla
             DefaultHighSpeed = "標準（速度重視）";
             NearestNeighbor = "最近傍法";
             AreaAverage = "面積平均法";
-#if !AUTOBUILD
-            //AntiMoire = "耐モアレ"; // 英語では AntiMoire だが意味が分かりにくいので翻訳しておく
-#endif
             LinearizeColorSpace = "色空間を線形化";
             LinearizeColorSpaceDescription = "色空間の線形化は「標準（品質重視／速度重視）」では動作しません。\\n" +
                 "また、「最近傍法」では結果に変化が表れません。";
@@ -1518,10 +1511,6 @@ namespace ZipPla
             DefaultHighSpeed = "Default (high speed)";
             NearestNeighbor = "Nearest neighbor";
             AreaAverage = "Area average";
-#if !AUTOBUILD
-            //AntiMoire = "AntiMoire"; // "ZipPla" と同様固有名扱い、古くはこちら
-            //AntiMoire = "Anti-moire"; // 一般名詞的に。分数との間に空白を入れるならこちらが妥当か
-#endif
             LinearizeColorSpace = "Linearize color space";
             LinearizeColorSpaceDescription = "Linearization of color space is ignored when using\\n" +
                 "\"Default (high quality / hight speed).\"\\n" +
@@ -2167,8 +2156,6 @@ namespace ZipPla
         public static string MagnifierOperatingGuide { get; private set; }
 
 
-
-
         public static string NextPage { get; private set; }
         public static string PreviousPage { get; private set; }
         public static string WheelDown { get; private set; }
@@ -2256,8 +2243,6 @@ namespace ZipPla
         public static string DefaultHighSpeed { get; private set; }
         public static string NearestNeighbor { get; private set; }
         public static string AreaAverage { get; private set; }
-#if !AUTOBUILD
-#endif
         public static string LinearizeColorSpace { get; private set; }
         public static string LinearizeColorSpaceDescription { get; private set; }
         public static string UseAreaAverageWhenUpsizing { get; private set; }

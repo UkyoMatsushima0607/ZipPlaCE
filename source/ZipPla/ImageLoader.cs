@@ -169,7 +169,6 @@ namespace ZipPla
             susieSignature = signature;
 
 
-            
         }
 
         public static bool IndividualSupportFullReading(string path)
@@ -823,9 +822,6 @@ namespace ZipPla
                     case ".psd":
                         {
                             needToRefresh = false;
-#if !AUTOBUILD
-                            try
-#endif
                             {
                                 var psd = new System.Drawing.PSD.PsdFile();
                                 using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
@@ -835,13 +831,6 @@ namespace ZipPla
                                     return DecodePsd(psd, out imageInfo);
                                 }
                             }
-#if !AUTOBUILD
-                            catch (Exception e)
-                            {
-                                MessageBox.Show($"psd error:\n\n{e.ToString()}");
-                                throw;
-                            }
-#endif
                         }
                     case ".dds":
                     case ".tga":

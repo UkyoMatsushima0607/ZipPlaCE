@@ -49,12 +49,6 @@ namespace ZipPla
         public static Bitmap CreateNew(Bitmap bmp, int width, int height, bool keepGrayscale = false)
         {
             var result = CreateNew(bmp, (double)width / bmp.Width, (double)height / bmp.Height, keepGrayscale);
-#if !AUTOBUILD
-            if (result.Width != width || result.Height != height)
-            {
-                System.Windows.Forms.MessageBox.Show($"{result.Width}x{result.Height} != {width}x{height}");
-            }
-#endif
             return result;
         }
 

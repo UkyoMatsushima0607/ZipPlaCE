@@ -204,11 +204,7 @@ namespace ZipPla
             }
             catch
             {
-#if !AUTOBUILD
-                throw;
-#else
                 return null;
-#endif
             }
         }
 

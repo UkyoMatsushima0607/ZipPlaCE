@@ -78,9 +78,7 @@ namespace ZipPla
         private readonly string path;
         public Tuple<int,int,string>[] GetIndexLengthTagTorios()
         {
-#if AUTOBUILD
             try
-#endif
             {
                 var tags = TagArray;
                 if (tags == null) return new Tuple<int, int, string>[0];
@@ -120,12 +118,10 @@ namespace ZipPla
                 }
                 return result;
             }
-#if AUTOBUILD
             catch
             {
                 return new Tuple<int, int, string>[0];
             }
-#endif
         }
 
         private static readonly Regex canBeTagRegex = new Regex(@"^(?:[^\s,;\\/:*?""<>{}|]|[^\s,;\\/:*?""<>{}|][^\t,;\\/:*?""<>{}|]*[^\s,;\\/:*?""<>{}|])$", RegexOptions.Compiled);

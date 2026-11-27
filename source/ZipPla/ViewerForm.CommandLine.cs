@@ -302,11 +302,7 @@ namespace ZipPla
                 try
                 {
                     shortcut.TargetPath = Application.ExecutablePath;
-#if AUTOBUILD
                     shortcut.IconLocation = Application.ExecutablePath + ",1"; // ビルド後にソース同梱の dark.ico を埋め込む
-#else
-                    shortcut.IconLocation = Application.ExecutablePath + ",0";
-#endif
                     shortcut.Arguments = GetCommandLineOption(info, minimize: false);
                     shortcut.Save();
 
@@ -384,7 +380,6 @@ namespace ZipPla
                 ViewerForm_Shown_VisibleToFalse = true;
                 WindowState = FormWindowState.Minimized;
             }
-
 
 
             Shown += (sender, e) =>

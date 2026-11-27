@@ -32,11 +32,7 @@ namespace ZipPla
     {
         bool CatalogForm_FormClosing_FormClosed = false;
 
-#if AUTOBUILD
         private async void CatalogForm_FormClosing(object sender, FormClosingEventArgs e)
-#else
-        private void CatalogForm_FormClosing(object sender, FormClosingEventArgs e)
-#endif
         {
 
             if (CatalogForm_FormClosing_FormClosed) return;
@@ -59,10 +55,8 @@ namespace ZipPla
             {
                 Visible = false;
                 e.Cancel = true;
-#if AUTOBUILD
                 await Task.Delay(10 * 1000);
                 Application.Exit();
-#endif
             }
         }
 

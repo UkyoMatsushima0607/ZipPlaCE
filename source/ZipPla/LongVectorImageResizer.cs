@@ -94,55 +94,6 @@ namespace ZipPla
                 parallel, backgroundWorker);
         }
 
-#if !AUTOBUILD
-        
-        private static bool tryGetFewAliasingLanczosNWeight(double distanceAsSrc, double power, out double weight, int n)
-        {
-            double distance;
-            if (power >= 1)
-            {
-                distance = distanceAsSrc;
-            }
-            else
-            {
-                var x = (double)n / (n + 1);
-                power *= power > x ? power : x;
-                distance = distanceAsSrc * power;
-            }
-            if (distance < 0) distance = -distance;
-            if (distance < tryGetLanczosNWeight_ZeroThreshold)
-            {
-                weight = 1.0;
-                return true;
-            }
-            else if (distance < n)
-            {
-                var pi_x = Math.PI * distance;
-                var pi_x_n = pi_x / n;
-                weight = (fastSin(pi_x) * fastSin(pi_x_n)) / (pi_x * pi_x_n);
-
-                return true;
-            }
-            else
-            {
-                weight = 0;
-                return false;
-            }
-        }
-        
-        public static Bitmap FewAliasingLanczos(int n, Bitmap src, int pixelsPerPixelToBeLeft, GammaConversion gamma, Size size, bool parallel, Func<bool> cancel = null)
-        {
-            return CreateNew(src, pixelsPerPixelToBeLeft, gamma, size, (double distanceAsSrc, double power, out double weight) =>
-                tryGetFewAliasingLanczosNWeight(distanceAsSrc, power, out weight, n), parallel, cancel);
-        }
-
-        public static void FewAliasingLanczos(int n, Bitmap src, int pixelsPerPixelToBeLeft, GammaConversion gamma, Bitmap dst, Rectangle dstRect, bool parallel, BackgroundWorker backgroundWorker = null)
-        {
-            Draw(dst, dstRect, src, pixelsPerPixelToBeLeft, gamma, (double distanceAsSrc, double power, out double weight) =>
-                tryGetFewAliasingLanczosNWeight(distanceAsSrc, power, out weight, n), parallel, backgroundWorker);
-        }
-
-#endif
 
         public static Bitmap Spline4(Bitmap src, int pixelsPerPixelToBeLeft, GammaConversion gamma, Size size, bool parallel, Func<bool> cancel = null)
         {

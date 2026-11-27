@@ -479,10 +479,6 @@ namespace ZipPla
                                 leftTime -= 10;
                                 if (leftTime <= 0)
                                 {
-#if !AUTOBUILD
-                                    Program.ShowCursor();
-                                    MessageBox.Show(this, $"{path}\n{shownImegesPath}\n{currentPage}\n{shownImegesPage}");
-#endif
                                     break;
                                 }
                             }

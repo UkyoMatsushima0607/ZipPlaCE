@@ -68,9 +68,6 @@ namespace ZipPla
 
     public enum ScalingAlgorithm { Default, HighSpeed, NearestNeighbor, AreaAverage, Lanczos1, Lanczos2, Lanczos3, Lanczos4,
         Spline4, Spline16, Spline36, Spline64
-#if !AUTOBUILD
-            //, AntiMoire1, AntiMoire2, AntiMoire3, AntiMoire4
-#endif
     }
 
     public struct ScalingAlgorithmPair
