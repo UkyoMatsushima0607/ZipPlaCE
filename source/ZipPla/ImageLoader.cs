@@ -725,7 +725,77 @@ namespace ZipPla
         {
             if (animation && extInLower == ".gif") return GetGif(stream);
             if (animation && (extInLower == ".png" || extInLower == ".apng")) return GetAPng(stream);
+            if (extInLower == ".png")
+            {
+                var gray = TryDecodeGrayPng(stream);
+                if (gray != null) return gray;
+            }
             return IsJpegPath(pathForType) ? LoadRotateBitmap(stream) : new Bitmap(stream);
+        }
+
+        /// <summary>
+        /// グレースケール 8 ビットの PNG を、グレーのまま（恒等パレットの 8bppIndexed。グレーの JPEG と同じ形）で読む。
+        /// GDI+ はグレーの PNG を 32bppArgb に広げて返すので、メモリが 4 倍になり、デコードも 2 割ほど遅い（2600 万画素のページで 104MB → 26MB）。
+        /// 対象でない（カラー・16 ビット・透過色 tRNS あり・アニメーション）、シークできない、読めないときは、位置を戻して null を返す（呼び出し側は GDI+ で読む）
+        /// </summary>
+        internal static Bitmap TryDecodeGrayPng(Stream stream)
+        {
+            if (stream == null || !stream.CanSeek) return null;
+            var start = stream.Position;
+            System.Drawing.Bitmap result = null;
+            try
+            {
+                if (!isPlainGray8Png(stream)) return rewind(stream, start);
+                stream.Position = start;
+                var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(stream,
+                    System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat | System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile,
+                    System.Windows.Media.Imaging.BitmapCacheOption.None);
+                var frame = decoder.Frames[0];
+                if (frame.Format != System.Windows.Media.PixelFormats.Gray8) return rewind(stream, start);
+                result = new System.Drawing.Bitmap(frame.PixelWidth, frame.PixelHeight, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+                var palette = result.Palette;
+                for (var i = 0; i < 256; i++) palette.Entries[i] = Color.FromArgb(i, i, i);
+                result.Palette = palette;
+                var data = result.LockBits(new Rectangle(0, 0, result.Width, result.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, result.PixelFormat);
+                try
+                {
+                    frame.CopyPixels(System.Windows.Int32Rect.Empty, data.Scan0, data.Stride * data.Height, data.Stride);
+                }
+                finally
+                {
+                    result.UnlockBits(data);
+                }
+                var bitmap = new Bitmap(result);
+                result = null; // bitmap に渡した
+                return bitmap;
+            }
+            catch
+            {
+                result?.Dispose();
+                return rewind(stream, start);
+            }
+        }
+
+        /// <summary>IHDR がグレースケール 8 ビットで、最初の IDAT より前に tRNS（透過色）・acTL（アニメーション）がない PNG か</summary>
+        private static bool isPlainGray8Png(Stream stream)
+        {
+            var head = new byte[33];
+            if (!StreamUtil.ReadExactly(stream, head, head.Length)) return false;
+            if (head[0] != 0x89 || head[1] != 'P' || head[2] != 'N' || head[3] != 'G' || head[4] != 0x0D || head[5] != 0x0A || head[6] != 0x1A || head[7] != 0x0A) return false;
+            if (head[12] != 'I' || head[13] != 'H' || head[14] != 'D' || head[15] != 'R') return false;
+            if (head[24] != 8 || head[25] != 0) return false; // ビット深度 8、カラータイプ 0（グレースケール）
+            var chunk = new byte[8];
+            for (var i = 0; i < 1000; i++)
+            {
+                if (!StreamUtil.ReadExactly(stream, chunk, 8)) return false;
+                var length = (uint)(chunk[0] << 24 | chunk[1] << 16 | chunk[2] << 8 | chunk[3]);
+                if (chunk[4] == 'I' && chunk[5] == 'D' && chunk[6] == 'A' && chunk[7] == 'T') return true;
+                if (chunk[4] == 't' && chunk[5] == 'R' && chunk[6] == 'N' && chunk[7] == 'S') return false;
+                if (chunk[4] == 'a' && chunk[5] == 'c' && chunk[6] == 'T' && chunk[7] == 'L') return false;
+                if (chunk[4] == 'I' && chunk[5] == 'E' && chunk[6] == 'N' && chunk[7] == 'D') return false;
+                stream.Seek((long)length + 4, SeekOrigin.Current); // データと CRC を飛ばす
+            }
+            return false;
         }
 
         private static Bitmap DecodePsd(System.Drawing.PSD.PsdFile loadedPsd, out ImageInfo imageInfo)

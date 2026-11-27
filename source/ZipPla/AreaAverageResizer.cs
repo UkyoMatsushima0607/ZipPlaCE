@@ -21,8 +21,10 @@ namespace ZipPla
             if (sx < 1 || sy < 1) return false; // 拡大は従来どおり GDI+ で
             var srcPf = src.PixelFormat;
             int srcBpp;
+            var gray8 = false; // 恒等パレットの 8bppIndexed（グレーの JPEG・PNG）。R = G = B = 画素の値として、カラーと同じ計算をする
             if (srcPf == PixelFormat.Format24bppRgb) srcBpp = 3;
             else if (srcPf == PixelFormat.Format32bppRgb || srcPf == PixelFormat.Format32bppArgb || srcPf == PixelFormat.Format32bppPArgb) srcBpp = 4;
+            else if (srcPf == PixelFormat.Format8bppIndexed && BitmapResizer.IsIdentityGrayscale(src)) { srcBpp = 1; gray8 = true; }
             else return false;
             if (srcBpp == 4 && srcPf != PixelFormat.Format32bppRgb && !IsOpaque(src)) return false; // 透明な画素があれば従来どおり
 
@@ -60,7 +62,8 @@ namespace ZipPla
                             if (w <= 0) continue;
                             var ci = i < 0 ? 0 : i >= sw ? sw - 1 : i;
                             var p = srow + ci * srcBpp;
-                            s0 += p[0] * w; s1 += p[1] * w; s2 += p[2] * w;
+                            if (gray8) { var v = p[0] * w; s0 += v; s1 += v; s2 += v; }
+                            else { s0 += p[0] * w; s1 += p[1] * w; s2 += p[2] * w; }
                         }
                         hBuf[o + x * 3] = s0 / sx;
                         hBuf[o + x * 3 + 1] = s1 / sx;

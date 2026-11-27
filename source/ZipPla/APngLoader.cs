@@ -68,6 +68,9 @@ namespace ZipPla
                             if (acTLChunk == null)
                             {
                                 ms.Position = p;
+                                // アニメーションではない PNG。グレースケール 8 ビットならグレーのまま読む（ImageLoader.TryDecodeGrayPng）
+                                var gray = ImageLoader.TryDecodeGrayPng(ms);
+                                if (gray != null) return gray;
                                 (ms as SeekableStream)?.StopBuffering();
                                 return new Bitmap(ms);
                             }

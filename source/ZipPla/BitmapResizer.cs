@@ -84,7 +84,7 @@ namespace ZipPla
         /// 8bppIndexed で、パレットが i → (i,i,i)（不透明）の恒等グレースケールかどうか
         /// （PixelFormatConverter.ToBitmap8Unsafe が作る形式。インデックス値をそのまま輝度として扱える）
         /// </summary>
-        private static bool IsIdentityGrayscale(Bitmap bmp)
+        internal static bool IsIdentityGrayscale(Bitmap bmp)
         {
             if (bmp.PixelFormat != System.Drawing.Imaging.PixelFormat.Format8bppIndexed) return false;
             var entries = bmp.Palette.Entries;
