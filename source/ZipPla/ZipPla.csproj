@@ -176,6 +176,56 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ViewControl.cs" />
+    <Compile Include="ViewerFormEnums.cs" />
+    <Compile Include="ViewerFormConfig.cs" />
+    <Compile Include="ExclusionControl.cs" />
+    <Compile Include="ToolStripSpringTextBox.cs" />
+    <Compile Include="ViewerForm.CommandLine.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Input.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Loading.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.PixelFormat.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.PageCache.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Settings.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Paint.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Magnifier.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Catalog.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Navigation.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Ipc.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Menu.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Commands.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.Slideshow.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewerForm.ViewMenu.cs">
+      <DependentUpon>ViewerForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="CatalogForm.Touch.cs">
       <DependentUpon>CatalogForm.cs</DependentUpon>
     </Compile>
