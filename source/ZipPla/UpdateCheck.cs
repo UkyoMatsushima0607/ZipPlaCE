@@ -235,50 +235,6 @@ namespace ZipPla
 
         }
         
-        /*
-        private static async Task<string> GetFileNameFromVectorByBrowser(string vectorUri)
-        {
-            var document = await GetDocument(vectorUri);
-            var table = document.GetElementById("download_list").Parent.GetElementsByTagName("table")[0];
-            foreach(HtmlElement tr in table.GetElementsByTagName("tr"))
-            {
-                var th = tr.GetElementsByTagName("th");
-                if (th.Count != 1 || th[0].InnerText != "ファイル：") continue;
-                var td = tr.GetElementsByTagName("td");
-                if (td.Count != 1) break;
-                var tdText = td[0].InnerText;
-                var slashPos = tdText.IndexOf(" / ");
-                if (slashPos < 0) break;
-                return tdText.Substring(0, slashPos);
-            }
-            throw new FormatException("Html");
-        }
-
-        [DllImport("urlmon.dll")]
-        [PreserveSig]
-        [return: MarshalAs(UnmanagedType.Error)]
-        internal static extern int CoInternetSetFeatureEnabled(uint FeatureEntry, [MarshalAs(UnmanagedType.U4)] uint dwFlags, bool fEnable);
-        private static async Task<HtmlDocument> GetDocument(string uri)
-        {
-            using (var webBrowser = new WebBrowser())
-            {
-                webBrowser.ScriptErrorsSuppressed = true;
-                webBrowser.Navigated += (sender, e) =>
-                {
-                    const uint FEATURE_DISABLE_NAVIGATION_SOUNDS = 21;
-                    const uint SET_FEATURE_ON_PROCESS = 0x00000002;
-                    CoInternetSetFeatureEnabled(FEATURE_DISABLE_NAVIGATION_SOUNDS, SET_FEATURE_ON_PROCESS, true);
-                };
-                var loading = true;
-                {
-                    webBrowser.DocumentCompleted += (sender, e) => loading = false;
-                    webBrowser.Url = new Uri(uri);
-                    await Task.Run(() => { while (loading) { Thread.Sleep(50); } });
-                }
-                return webBrowser.Document;
-            }
-        }
-        */
     }
 
     public enum UpdateCheckMode { Default, Never, WithDialog, Silent }

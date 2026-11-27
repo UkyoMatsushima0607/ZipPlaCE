@@ -294,12 +294,6 @@ namespace ZipPla
         ScalingAlgorithmPair StandardScalingAlgorithm;
         ScalingAlgorithmPair MagnifierScalingAlgorithm;
 
-        /*
-        enum SlideshowStepEnum { MoveNext, MovePrev, MoveForward1Page, MoveBack1Page }
-        SlideshowStepEnum SlideshowStep = SlideshowStepEnum.MoveNext;
-        enum SlideshowTerminationEnum { Stop, Repeat, Move }
-        SlideshowTerminationEnum SlideshowTermination = SlideshowTerminationEnum.Repeat;
-        */
         private bool SlideshowForward = true;
         private bool SlideshowMove1Page = false;
         private bool SlideshowRepeat = true;
@@ -382,23 +376,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        enum ScalingPattern { Normal, Divide, NoScalingUp }
-
-        private ScalingPattern GetScalingPattern(BindingMode bindingMode)
-        {
-            switch (bindingMode)
-            {
-                case BindingMode.LeftToRight:
-                case BindingMode.RightToLeft:
-                    return pbView.Height > pbView.Width ? ScalingPattern.Divide : ScalingPattern.Normal;
-                case BindingMode.SinglePageWithoutScalingUp:
-                    return ScalingPattern.NoScalingUp;
-                default:
-                    return ScalingPattern.Normal;
-            }
-        }
-        */
 
         private static bool NoScaling(BindingMode bindingMode)
         {
@@ -748,28 +725,6 @@ namespace ZipPla
         }
 
         // あまり長いコマンドラインはショートカットに登録できない
-        /*
-    private static string GetCommandLineOption(CommandLineOptionInfo info, bool minimize)
-    {
-        var result = "-v";
-        var def = minimize ? new CommandLineOptionInfo() : null;
-        if (!minimize || info.CoverBindingMode != def.CoverBindingMode) addText(ref result, $"{nameof(info.CoverBindingMode)}{commandLineEqual}{ToStringNullable(info.CoverBindingMode)}");
-        if (!minimize || info.OpenInPreviousImageFilterSetting != def.OpenInPreviousImageFilterSetting) addText(ref result, $"{nameof(info.OpenInPreviousImageFilterSetting)}{commandLineEqual}{info.OpenInPreviousImageFilterSetting}");
-        if (!minimize || info.InitialFullscreenMode != def.InitialFullscreenMode) addText(ref result, $"{nameof(info.InitialFullscreenMode)}{commandLineEqual}{info.InitialFullscreenMode}");
-        if (!minimize || info.BackColor != def.BackColor) addText(ref result, $"{nameof(info.BackColor)}{commandLineEqual}{ToStringNullable(RGBToString(info.BackColor))}");
-        if (!minimize || info.ArchivesInArchiveMode != def.ArchivesInArchiveMode) addText(ref result, $"{nameof(info.ArchivesInArchiveMode)}{commandLineEqual}{ToStringNullable(info.ArchivesInArchiveMode)}");
-        if (!minimize || info.AlwaysHideUI != def.AlwaysHideUI) addText(ref result, $"{nameof(info.AlwaysHideUI)}{commandLineEqual}{ToStringNullable(info.AlwaysHideUI)}");
-        if (!minimize || info.DefaultBindingMode != def.DefaultBindingMode) addText(ref result, $"{nameof(info.DefaultBindingMode)}{commandLineEqual}{ToStringNullable(info.DefaultBindingMode)}");
-
-        return result;
-    }
-
-    private static string ToStringNullable(object target)
-    {
-        if (target == null) return "Null";
-        else return target.ToString();
-    }
-    */
 
         private static void addText(ref string text, string text2)
         {
@@ -873,35 +828,6 @@ namespace ZipPla
         }
 
         // 従来の直接起動コンストラクタ
-        /*
-        public ViewerForm(string path, int page, CommandLineOptionInfo info)
-        {
-            Constructor(info);
-
-            Shown += (sender, e) =>
-            {
-                Program.StartCheckUpdateAndNgen(this, checkNgen);
-                PackedImageLoader.CheckSevenZipExistence(this);
-            };
-
-            saveToHistory = true;
-            ViewerForm_Shown_path = path;
-            ViewerForm_Shown_page = page;
-            Shown += ViewerForm_Shown_ForOpen;
-
-            OpenFile_UserOpen = true;
-        }
-        
-        string ViewerForm_Shown_path;
-        int ViewerForm_Shown_page;
-        private void ViewerForm_Shown_ForOpen(object sender, EventArgs e)
-        {
-            // 必ず呼び出されるわけではないので注意
-
-            OpenFile(ViewerForm_Shown_path, ViewerForm_Shown_page);
-            Shown -= ViewerForm_Shown_ForOpen;
-        }
-        */
 
         // 仮想的に先読みプロセスの動作をするコンストラクタ
         // フルスクリーン起動時のチラツキ軽減が目的
@@ -1057,14 +983,6 @@ namespace ZipPla
 
             closeWindowtoolStripMenuItem.Text = " "; // 特別な状況下で表示が乱れるのを防ぐ
 
-            /*
-#if AUTOBUILD
-            antiMoire1ToolStripMenuItem.Visible = false;
-            antiMoire2ToolStripMenuItem.Visible = false;
-            antiMoire3ToolStripMenuItem.Visible = false;
-            antiMoire4ToolStripMenuItem.Visible = false;
-#endif
-            */
 
             try
             {
@@ -1206,30 +1124,6 @@ namespace ZipPla
             mtbPage.MouseWheel += aroundSeekBar_MouseWheel;
             mtbPage.MouseUp += (sender, e) => EndSeekBarDrag(); // V24
             mtbPage.MouseCaptureChanged += (sender, e) => EndSeekBarDrag(); // ボタンを離さずにフォーカスが移った場合など（V24）
-            /*
-            pnlSeekbar.MouseWheel += aroundSeekBar_MouseWheel;
-            mtbPage.MouseWheel += (sender, e) =>
-            {
-#if AUTOBUILD
-                var delta = e.Delta / 120;
-                if (delta == -1)
-                {
-                    movePageToMinimulForward();
-                    e.Value = currentPage;
-                }
-                else if (delta == 1)
-                {
-                    movePageToMinimulBack();
-                    e.Value = currentPage;
-                }
-                else
-                {
-                    e.Value = Math.Max(mtbPage.Minimum, Math.Min(mtbPage.Maximum, mtbPage.Value - delta));
-                }
-                e.Handled = true;
-#endif
-            };
-            */
 
             //PrepareMemoryCheck();
 
@@ -1326,12 +1220,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void gestureListener_PressAndTap(object sender, PressAndTapEventArgs e)
-        {
-            optionToolStripMenuItem.Text = $"{e.Location}";
-        }
-        */
         
         private void gestureListener_TwoFingerTap(object sender, TwoFingerTapEventArgs e)
         {
@@ -1343,12 +1231,6 @@ namespace ZipPla
             }
             else if (ViewerMode == ViewerModeEnum.Normal)
             {
-                /*
-                if (MagnifyingPower <= 1)
-                {
-                    resetMagnifyingPower(2, checkChange: true, redraw: false);
-                }
-                */
                 MagnifierPhase1(pbView.PointToClient(e.Location));
                 MagnifierPhase2();
             }
@@ -1643,20 +1525,6 @@ namespace ZipPla
             }
         }
         
-        /*
-        private void mgView_EnabledChanged(object sender, EventArgs e)
-        {
-            return;
-            if (mgView.Enabled)
-            {
-                ksViewForm.RButtonAcceptControls = new Control[0];
-            }
-            else
-            {
-                ksViewForm.RButtonAcceptControls = new Control[] { pbView };
-            }
-        }
-        */
 
         private void aroundSeekBar_MouseWheel(object sender, MouseEventArgs e)
         {
@@ -1698,9 +1566,6 @@ namespace ZipPla
             {
                 currentImageLongPathToolStripTextBox.Font = MenuTextFont;
             }
-            //currentImageLongPathToolStripTextBox.MouseMove += currentImageLongPathToolStripTextBox_MouseMove;
-            //currentImageLongPathToolStripTextBox.MouseEnter += currentImageLongPathToolStripTextBox_MouseEnter;
-            //ActivateLeaveTracking();
             currentImageLongPathToolStripTextBox.MouseLeave += currentImageLongPathToolStripTextBox_MouseLeave;
             statusStrip.Items.Insert(0, currentImageLongPathToolStripTextBox);
             //MessageBox.Show(statusStrip.Items.Count.ToString());
@@ -1709,12 +1574,6 @@ namespace ZipPla
             msStatusStrip = new MessageForwarder(statusStrip, ForwardedMessage.MouseWheel);
             msPage = new MessageForwarder(mtbPage, ForwardedMessage.MouseWheel);
 
-            /*
-            foreach (ToolStripItem item in statusStrip.Items) item.MouseDown += (sender2, e2) =>
-            {
-                EventHandlerForOpenNextOrPrevious(statusStrip, e2);
-            };
-            */
 
             if (LoadSettingToLoad_FormLocation != null)
             {
@@ -1768,14 +1627,6 @@ namespace ZipPla
             moveToolStripMenuItem.Text = Message._Move;
             editToolStripMenuItem.Text = Message._Edit;
 
-            /*
-            openFileContextMenuForMenuStripMenuItem.Text = Message.OpenFile + " (Ctrl+O)...";
-            openNewThumbnailWindowContextMenuForMenuStripMenuItem.Text = Message.OpenNewThumbnailWindow + " (Ctrl+T)...";
-            fullscreenContextMenuForMenuStripMenuItem.Text = Message.FullScreen + " (Ctrl+Shift+F)";
-            windowContextMenuForMenuStripMenuItem.Text = Message.Window + " (Esc)";
-            togglefullscreenmodeContextMenuForMenuStripMenuItem.Text = Message.ToggleFullScreenMode + " (F11)";
-            exitContextMenuForMenuStripMenuItem.Text = Message.Exit + " (Ctrl+Q)";
-            */
             openFileToolStripMenuItem.Text = Message.OpenFile + " ...";
             //openNewThumbnailWindowToolStripMenuItem.Text = Message.OpenNewThumbnailWindow;
             switchToThumbnailWindowToolStripMenuItem.Text = Message.SwitchToThumbnailWindow;
@@ -1796,12 +1647,6 @@ namespace ZipPla
 
             alwaysAutoHideUIToolStripMenuItem.Text = Message.AlwaysAutomaticallyHideUI;
 
-            /*
-            magnifierContextMenuForMenuStripMenuItem.Text = Message.Magnifier;
-            magnifierContextMenuForMenuStripMenuItem.ShortcutKeyDisplayString = "";
-            rightToLeftContextMenuForMenuStripMenuItem.Text = Message.RightToLeft;
-            leftToRightContextMenuForMenuStripMenuItem.Text = Message.LeftToRight;
-            */
             magnifierToolStripMenuItem.Text = Message.ToggleMagnifier;
             //magnifierToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClick + ", Z";
             enableMagnifierToolStripMenuItem.Text = Message.EnableMagnifier;
@@ -1818,14 +1663,6 @@ namespace ZipPla
             areaAverageMagnifierToolStripMenuItem.Text = Message.AreaAverage;
             areaAverageNormalToolStripMenuItem.Text = Message.AreaAverage;
 
-            /*
-#if !AUTOBUILD
-            antiMoire1ToolStripMenuItem.Text = Message.AntiMoire + " 3/4";
-            antiMoire2ToolStripMenuItem.Text = Message.AntiMoire + " 4/5";
-            antiMoire3ToolStripMenuItem.Text = Message.AntiMoire + " 5/6";
-            antiMoire4ToolStripMenuItem.Text = Message.AntiMoire + " 6/7";
-#endif
-            */
             linearizeColorSpaceforGamma22NormalToolStripMenuItem.Text = Message.LinearizeColorSpace;
             linearizeColorSpaceforGamma22MagnifierToolStripMenuItem.Text = Message.LinearizeColorSpace;
 
@@ -1875,9 +1712,6 @@ namespace ZipPla
             previousPageToolStripMenuItem.Text = Message.PreviousPage;
             rightPageToolStripMenuItem.Text = Message.RightPage;
             leftPageToolStripMenuItem.Text = Message.LeftPage;
-            //SetForwerdBackMessage();
-            //forward1pageContextMenuForMenuStripMenuItem.Text = Message.ForwardOneWheelDownOnBarCursorDown;
-            //back1pageContextMenuForMenuStripMenuItem.Text = Message.BackOneWheelDownOnBarCursorDown;
             moveForward1PageToolStripMenuItem.Text = Message.MoveForwardOnePage;
             //moveForward1PageToolStripMenuItem.ShortcutKeyDisplayString = Message.WheelDownOnBar + ", " + Message.CursorDown;
             moveBack1PageToolStripMenuItem.Text = Message.MoveBackOnePage;
@@ -1895,12 +1729,6 @@ namespace ZipPla
             //openNextToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnPosteriorHalfOfBar + ", Alt+" + Message.CursorRight; 
             //openPreviousToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnAnteriorHalfOfBar + ", Alt+" + Message.CursorLeft;
 
-            /*
-            setThumbnailManuallyContextMenuForMenuStripMenuItem.Text = Message.SetThumbnailManually;
-            clearThumbnailSettingContextMenuForMenuStripMenuItem.Text = Message.ClearThumbnailSetting;
-            saveCurrentPageSequenceContextMenuForMenuStripMenuItem.Text = Message.SaveCurrentPageSequence;
-            clearPageSequenceSettingContextMenuForMenuStripMenuItem.Text = Message.ClearPageSequenceSetting;
-            */
 
             noneToolStripMenuItem.Text = Message.None;
             tagEditorToolStripMenuItem.Text = Message.EditTags + "...";
@@ -1932,35 +1760,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void SetForwerdBackMessage(bool? pageLeftToRight = null)
-        {
-            if (pageLeftToRight == null)
-                pageLeftToRight = PageLeftToRight;
-
-            if (pageLeftToRight == true)
-            {
-                //forwardContextMenuForMenuStripMenuItem.Text = Message.ForwardLeftButtonOnRightHalfInLeftToRightWheelDownCursorRight;
-                //backContextMenuForMenuStripMenuItem.Text = Message.BackLeftButtonOnLeftHalfInLeftToRightWheelUpCursorLeft;
-                nextPageToolStripMenuItem.ShortcutKeyDisplayString = Message.LeftClickOnRightHalf + " (" + Message.LeftToRight + "), " + Message.WheelDown + ", " + Message.CursorRight;
-                previousPageToolStripMenuItem.ShortcutKeyDisplayString = Message.LeftClickOnLeftHalf + " (" + Message.LeftToRight + "), " + Message.WheelUp + ", " + Message.CursorLeft;
-
-                //openNextToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnRightHalfOfBar + " (" + Message.LeftToRight + ")";
-                //openPreviousToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnLeftHalfOfBar + " (" + Message.LeftToRight + ")";
-            }
-            else
-            {
-                //forwardContextMenuForMenuStripMenuItem.Text = Message.ForwardLeftButtonOnLeftHalfInRightToLeftWheelDownCursorRight;
-                //backContextMenuForMenuStripMenuItem.Text = Message.BackLeftButtonOnRightHalfInRightToLeftWheelUpCursorLeft;
-                nextPageToolStripMenuItem.ShortcutKeyDisplayString = Message.LeftClickOnLeftHalf + " (" + Message.RightToLeft + "), " + Message.WheelDown + ", " + Message.CursorRight;
-                previousPageToolStripMenuItem.ShortcutKeyDisplayString = Message.LeftClickOnRightHalf + " (" + Message.RightToLeft + "), " + Message.WheelUp + ", " + Message.CursorLeft;
-
-
-                //openNextToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnLeftHalfOfBar + " (" + Message.RightToLeft + ")";
-                //openPreviousToolStripMenuItem.ShortcutKeyDisplayString = Message.MiddleClickOnRightHalfOfBar + " (" + Message.RightToLeft + ")";
-            }
-        }
-        */
 
         private int NextPage
         {
@@ -2122,19 +1921,6 @@ namespace ZipPla
                             if (currentDisplay != memoriedDisplay)
                             {
                                 Bounds = BetterFormRestoreBounds.GetMovedWindowBounds(currentDisplay, Bounds, memoriedDisplay);
-                                /*
-                                var bounds = Bounds;
-
-                                // 原点を基準に平行移動
-                                bounds.X += currentDisplay.X - memoriedDisplay.X;
-                                bounds.Y += currentDisplay.Y - memoriedDisplay.Y;
-
-                                // 範囲内に押し込む
-                                //var temp2 = betterFormRestoreBound.StopMemoryNormalStateBound;
-                                //betterFormRestoreBound.StopMemoryNormalStateBound = true;
-                                Bounds = Pack(bounds, currentDisplay);
-                                //betterFormRestoreBound.StopMemoryNormalStateBound = temp2;
-                                */
                             }
                         }
                         pbView_SizeChanged_SizeChanging = temp;
@@ -2196,16 +1982,6 @@ namespace ZipPla
             var ws = WindowState;
             var pre = ViewerForm_SizeChanged_CurrentWindowState;
 
-            /*
-            if (pre == FormWindowState.Maximized && ws == FormWindowState.Normal && ViewerForm_SizeChanged_Point != null)
-            {
-                Location = (Point)ViewerForm_SizeChanged_Point;
-            }
-            else if (ws == FormWindowState.Normal)
-            {
-                ViewerForm_SizeChanged_Point = Location;
-            }
-            */
 
             //if (ws != FormWindowState.Minimized) ViewerForm_SizeChanged_pbSizeMemoryForMinimize = pbView.Size;
             
@@ -2245,12 +2021,6 @@ namespace ZipPla
                 prevSize = Size.Empty;
 
             }
-            /*
-            if (pre == FormWindowState.Normal&& ipcLookAheadInfo == null)
-            {
-                normalStateSize = Size;
-            }
-            */
         }
 
         const int DragEventKeyState_LeftButton = 1;
@@ -2329,10 +2099,6 @@ namespace ZipPla
         private string currentArchiveFilePath = null;
         private string currentStartingFilePath = null;
         private SortModeDetails currentSortModeDetails = null;
-        //private PackedImageLoader nextLoader = null;
-        //private int[] nextEntries = null;
-        //private PackedImageLoader.PackedImageEntry[] nextEntries = null;
-        //private string[] nextEntriesPath = null;
         class NextData : IDisposable
         {
             public readonly string[] EntriesPaths;
@@ -2761,20 +2527,6 @@ namespace ZipPla
                 try
                 {
                     //Program.TryUpdateLastAccessTime(path); // 既にファイルを開いているのでここでは不可
-                    /*
-                    if (currentArchiveFilePath != null && currentArchiveFilePath != path)
-                    {
-                        VirtualFolder.AddBookmarkData(Program.HistorySorPath,
-                            new string[] { currentArchiveFilePath, path },
-                            new int[] { Math.Max(0, currentPage), Math.Max(0, startPage) }, limitOfItemsCount: Program.GetLimitOfHistoryCount(), deleteLostPath: true);
-                        SendSorMessageToCatalogForm(
-                            new string[] { currentArchiveFilePath, path },
-                            new string[] { Program.HistorySorPath, Program.HistorySorPath },
-                            new int[] { Math.Max(0, currentPage), Math.Max(0, startPage) },
-                            new bool[] { false, false });
-                    }
-                    else
-                    */
                     {
                         AddHistoryInBackground(path, Math.Max(0, startPage)); // V26
                         SendSorMessageToCatalogForm(path, Program.HistorySorPath, Math.Max(0, startPage), requestToUpdateLastAccessTime: false, m: SelfLastAccessTimeUpdateMode.None);
@@ -2801,16 +2553,6 @@ namespace ZipPla
             //ShowCurrentPageToStatusBar();
 
             // seemToBeBook は廃止
-            /*
-            if (requestedCoverBindingMode == null)
-            {
-                if (currentPage == 0 && seemToBeBook(nextLoader.Type, nextEntriesBase))
-                {
-                    onePageModeForNext = true;
-                }
-            }
-            else
-            */
             {
                 onePageModeForNext = currentPage == 0 && CoverBindingMode/*requestedCoverBindingMode*/ == CoverBindingMode.ForceSingle;
             }
@@ -2890,56 +2632,6 @@ namespace ZipPla
             return Program.GetPackedImageLoader(path, ArchivesInArchiveMode, animation: true, onMemory: onMemory);
         }
 
-        /*
-        private static readonly Regex seemToBeBook_IsNumber = new Regex(@"^\d$", RegexOptions.Compiled);
-        private static bool seemToBeBook(PackedImageLoader.PackType type, PackedImageLoader.PackedImageEntry[] entries)
-        {
-            try
-            {
-                if (entries.Length < 2) return false;
-
-                var testCount = Math.Min(100, entries.Length - 1);
-                var testLength = testCount + 1;
-                var matchCount = 0;
-                for (var i = 1; i < testLength; i++)
-                {
-                    var a = entries[i - 1].Path;
-                    var b = entries[i].Path;
-                    var aIndex = 0;
-                    var bIndex = 0;
-                    var match = true;
-                    while (aIndex < a.Length && bIndex < b.Length)
-                    {
-                        var aj = a[aIndex++];
-                        var bj = b[bIndex++];
-                        if (aj != bj) // 漢数字なども数値とみなされる
-                        {
-                            if (char.IsNumber(aj) && char.IsNumber(bj))
-                            {
-                                while (aIndex < a.Length && char.IsNumber(a[aIndex])) aIndex++;
-                                while (bIndex < b.Length && char.IsNumber(b[bIndex])) bIndex++;
-                            }
-                            else
-                            {
-                                match = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (aIndex == a.Length && bIndex == b.Length && match) matchCount++;
-                }
-
-                // イレギュラー3つまでは許容する
-                if (testCount <= 3) return matchCount >= 1;
-
-                return 10 * matchCount > 8 * (testCount - 3);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        */
 
         private void Reload(bool force = false, bool updateOriginal = false, bool keepSameSizePages = false)
         {
@@ -3219,17 +2911,6 @@ namespace ZipPla
 
             if (!reload)
             {
-                /*
-                var zipPlaInfo = new ZipPlaInfo(currentArchiveFilePath);
-                if (zipPlaInfo.PageLeftToRight == null)
-                {
-                    PageLeftToRight = SettingForm.LeftToRight;
-                }
-                else
-                {
-                    PageLeftToRight = (bool)zipPlaInfo.PageLeftToRight;
-                }
-                */
 
                 // 常にリクエストに従う方法
                 var bindingFromPath = ZipPlaInfo.GetOnlyBindingModeFromFullName(currentArchiveFilePath);
@@ -3244,26 +2925,6 @@ namespace ZipPla
                 }
 
                 // 名前昇順以外は RightToLeft を禁止する方法 
-                /*
-                // 画像ファイル指定で開かれた場合 NameInAsc でも leftToRight を強制するという選択肢も考えられるが、
-                // ファイル指定から書籍を読むという使い方も多いと考えられるため却下
-                if (currentSortModeDetails == null || currentSortModeDetails.SortMode == SortMode.NameInAsc)
-                {
-                    var bindingFromPath = ZipPlaInfo.GetOnlyBindingModeFromFullName(currentArchiveFilePath);
-                    if (bindingFromPath == null)
-                    {
-                        BindingMode = binding == null ? Program.GetBindingModeFromCulture(Message.CurrentLanguage) : (BindingMode)binding;
-                    }
-                    else
-                    {
-                        BindingMode = (BindingMode)bindingFromPath;
-                    }
-                }
-                else
-                {
-                    BindingMode = BindingMode.LeftToRight;
-                }
-                */
             }
         }
 
@@ -3614,15 +3275,6 @@ namespace ZipPla
                             //var originalRotate = ViewerFormImageFilter.GetOrientation(img);
                             bmwLoadEachPage_DoWork_DEBUG_Phase = 3;
                             //sw.Stop(); MessageBox.Show($"{sw.Elapsed}");
-                            /*
-                            try
-                            {
-                                img = ToBitmap24_Standard(img, PixelFormat.Format32bppRgb);
-                            }
-                            catch
-                            {
-                                throw;
-                            }*/
 
                             //Thread.Sleep(500);
 
@@ -3631,41 +3283,8 @@ namespace ZipPla
                             //var isColorImage = imageFilter.NeedToCheckWhetherColorOrNot() && ViewerMode != ViewerModeEnum.CoverSetting ?
                             //    ViewerFormImageFilter.TryGetWhetherColorOrNot(img) : null;
 
-                            /*
-                            var maxColorDiff = ViewerFormImageFilter.TryGetMaxColorDiff(img);
-                            if (maxColorDiff == null && IsGrayScaleBitmap(img))
-                            {
-                                maxColorDiff = 0;
-                            }
-                            */
 
                             // アニメーションの遅延読み込み実装前
-                            /*
-                            foreach (var bitmap in img.Bitmaps)
-                            {
-                                var mcd = ViewerFormImageFilter.TryGetMaxColorDiff(bitmap);
-                                if (mcd == null)
-                                {
-                                    maxColorDiff = null;
-                                    break;
-                                }
-                                else if (mcd > maxColorDiff)
-                                {
-                                    maxColorDiff = mcd;
-                                }
-                            }
-                            if (maxColorDiff == null)
-                            {
-                                if (img.Bitmaps.All(bitmap => IsGrayScaleBitmap(bitmap)))
-                                {
-                                    maxColorDiff = 0;
-                                }
-                                else if (img.FrameCount > 1)
-                                {
-                                    maxColorDiff = 255; // アニメーションの場合 null は許さない
-                                }
-                            }
-                            */
 
                             // アニメーションの遅延読み込み実装後
                             maxColorDiff = ViewerFormImageFilter.TryGetMaxColorDiff(img); // TryGet は全てのフレームに大して同じ効果
@@ -3686,9 +3305,6 @@ namespace ZipPla
                             imageInfo0 = ImageLoader.GetImageInfo(img); // img がピクセルフォーマット変換で Dispose される前に行う
                             if (reducedDecoded) imageInfo0 = new ImageInfo(layoutSize, imageInfo0.BitPerPixel);
 
-                            //var sw = new System.Diagnostics.Stopwatch();
-                            //sw.Start();
-                            //img = ToBitmap24_Standard(img as Bitmap, PixelFormat.Format64bppPArgb);
                             if (maxColorDiff == 0)
                             {
                                 //if (img.PixelFormat != PixelFormat.Format8bppIndexed) // 遅延読み込みのためできるだけ ApplyToAll は使いたくない
@@ -3704,9 +3320,6 @@ namespace ZipPla
                                     img.ApplyToAll(ToBitmap24Unsafe);
                                 }
                             }
-                            //bmp = ToBitmap24_Standard(img as Bitmap, PixelFormat.Format24bppRgb);
-                            // bmp = ToBitmap24_ExStandard(img as Bitmap, PixelFormat.Format24bppRgb);
-                            //sw.Stop(); MessageBox.Show($"{sw.Elapsed}");
 
                             if (ViewerMode != ViewerModeEnum.CoverSetting && imageFilter.PreFilterExists())
                             {
@@ -3796,28 +3409,9 @@ namespace ZipPla
                                 bmwLoadEachPage_DoWork_DEBUG_Phase = 10;
 
 
-                                /*
-                                result = new Bitmap(resizedSize.Width, resizedSize.Height, PixelFormat.Format24bppRgb);
-                                var rect = new Rectangle(0, 0, resizedSize.Width, resizedSize.Height);
-                                using (var g = Graphics.FromImage(result))
-                                {
-                                    if ((bmp.PixelFormat & PixelFormat.Alpha) != 0)
-                                    {
-                                        g.FillRectangle(Brushes.White, rect);
-                                    }
-                                    g.DrawImage(bmp, rect, new RectangleF(0, 0, bmp.Width, bmp.Height), GraphicsUnit.Pixel);
-                                    // 等しくなければ、これで厳密にピクセルが一致することを 2x3 の市松模様画像で確認
-                                }
-                                */
 
                                 //var sw = new System.Diagnostics.Stopwatch();  sw.Start();
 
-                                //result = BitmapResizer.CreateNew(bmp, resizedSize); // 0.017
-                                //result = MathematicalImageResizer.NearestNeighbor(bmp, resizedSize); // 0.0026
-                                //result = MathematicalImageResizer.Lanczos3(bmp, resizedSize); // 0.027 
-                                //result = MathematicalImageResizer.Lanczos4(bmp, resizedSize); // 0.035 
-                                //result = MathematicalImageResizer.Lanczos2(bmp, resizedSize); // 0.018
-                                //result = MathematicalImageResizer.AreaAverage(bmp, resizedSize); // 0.018
                                 ScalingAlgorithm scalingAlgorithm;
                                 if ((long)resizedSize.Width * resizedSize.Height > (long)bmp.Width * bmp.Height)
                                 {
@@ -3856,14 +3450,6 @@ namespace ZipPla
                                     case ScalingAlgorithm.Spline16: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Spline16(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
                                     case ScalingAlgorithm.Spline36: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Spline36(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
                                     case ScalingAlgorithm.Spline64: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.Spline64(bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    /*
-#if !AUTOBUILD
-                                    case ScalingAlgorithm.AntiMoire1: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.FewAliasingLanczos(3, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.AntiMoire2: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.FewAliasingLanczos(4, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.AntiMoire3: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.FewAliasingLanczos(5, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-                                    case ScalingAlgorithm.AntiMoire4: entity = bmp.CreateNew(bmpi => LongVectorImageResizer.FewAliasingLanczos(6, bmpi, pixelsPerPixelToBeLeft, gamma, resizedSize, parallel)); break;
-#endif
-                                    */
                                     default: entity = bmp.CreateNew(bmpi => BitmapResizer.CreateNew(bmpi, resizedSize, keepGrayscale: true)); break; // グレースケールは 8bpp のまま縮小する（C2）
                                 }
 
@@ -3885,14 +3471,6 @@ namespace ZipPla
                                     string algorithm;
                                     switch (scalingAlgorithm)
                                     {
-                                        /*
-#if !AUTOBUILD
-                                        case ScalingAlgorithm.AntiMoire1: algorithm = "Anti-moire 3/4"; break;
-                                        case ScalingAlgorithm.AntiMoire2: algorithm = "Anti-moire 4/5"; break;
-                                        case ScalingAlgorithm.AntiMoire3: algorithm = "Anti-moire 5/6"; break;
-                                        case ScalingAlgorithm.AntiMoire4: algorithm = "Anti-moire 6/7"; break;
-#endif
-                                        */
                                         default: algorithm = scalingAlgorithm.ToString(); break;
                                     }
                                     var linearize = isIndividuallyImplemented(scalingAlgorithm) ? "" : gamma == GammaConversion.Value1_0 ? "no linearized / " : "linearize γ = 2.2 → 1.0 / ";
@@ -4050,63 +3628,11 @@ namespace ZipPla
                 bmwLoadEachPage_DoWork_DEBUG_WorkNumber = -1;
             }
 
-            /*
-#if DEBUG
-            catch// (Exception er)
-            {
-                //Program.AlertError(error);
-                //MessageBox.Show($"{er}");
-                e.Result = Program.GetErrorImage(Math.Max(1, (int)Math.Round(ViewSize.Height / Math.Sqrt(2))), ViewSize.Height);
-            }
-#else
-            catch// (Exception er)
-            {
-                //MessageBox.Show($"{er}");
-                e.Result = Program.GetErrorImage(Math.Max(1, (int)Math.Round(ViewSize.Height / Math.Sqrt(2))), ViewSize.Height);
-            }
-#endif
-*/
         }
 
 
         // 入力のメモリをそのまま使えば高速だがマネージドではなくなる
         // 今の形では決して速くない
-        /*
-        private Bitmap ImageToBitmap24_2(Image img)
-        {
-            var bmp = img as Bitmap;
-            if (bmp != null)
-            {
-                if (bmp.PixelFormat == PixelFormat.Format24bppRgb)
-                {
-                    return bmp;
-                }
-                else
-                {
-                    var result = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format24bppRgb);
-                    var data = bmp.LockBits(new Rectangle(Point.Empty, bmp.Size), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                    var resultData = result.LockBits(new Rectangle(Point.Empty, bmp.Size), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
-                    var buff = new byte[data.Height * data.Stride];
-                    System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buff, 0, buff.Length);
-                    System.Runtime.InteropServices.Marshal.Copy(buff, 0, resultData.Scan0, buff.Length);
-                    result.UnlockBits(resultData);
-                    bmp.UnlockBits(data);
-                    bmp.Dispose();
-
-                    //var result = new Bitmap(bmp.Width, bmp.Height, data.Stride, data.PixelFormat, data.Scan0);
-                    //bmp.UnlockBits(data);
-                    //bmp.Dispose();
-                    return result;
-                }
-            }
-            else
-            {
-                bmp = new Bitmap(img);
-                img.Dispose();
-                return ImageToBitmap24_2(bmp);
-            }
-        }
-        */
 
 
         // 画素のメモリも複製する Clone（C9）
@@ -4217,83 +3743,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private Bitmap ToBitmap24_ExStandard(Bitmap bmp, PixelFormat pixelFormat)
-        {
-            if (bmp.PixelFormat == pixelFormat)
-            {
-                return bmp;
-            }
-            var w = bmp.Width;
-            var h = bmp.Height;
-            var result = new Bitmap(w, h, pixelFormat);
-            try
-            {
-                var fullRect = new Rectangle(0, 0, w, h);
-                var lineRect = new Rectangle(0, 0, w, 1);
-                var originalPixelFormat = bmp.PixelFormat;
-                var data = bmp.LockBits(fullRect, ImageLockMode.ReadOnly, originalPixelFormat);
-                try
-                {
-                    var dataScan0 = data.Scan0;
-                    var dataStride = data.Stride;
-                    var resultData = result.LockBits(fullRect, ImageLockMode.WriteOnly, pixelFormat);
-                    try
-                    {
-                        var outScan0 = resultData.Scan0;
-                        var outStride = resultData.Stride;
-                        var buffSize = Math.Max(dataStride, outStride);
-                        //Parallel.For(0, h, () => Tuple.Create(new Bitmap(w, 1, originalPixelFormat), new byte[buffSize]), (j, state, resouces) =>
-                        var resouces = Tuple.Create(new Bitmap(w, 1, originalPixelFormat), new byte[buffSize]); for (var j = 0; j < h; j++)
-                        {
-                            var line = resouces.Item1;
-                            var buff = resouces.Item2;
-                            var lineData = line.LockBits(lineRect, ImageLockMode.WriteOnly, originalPixelFormat);
-                            try
-                            {
-                                Marshal.Copy(dataScan0 + dataStride * j, buff, 0, dataStride);
-                                Marshal.Copy(buff, 0, lineData.Scan0, dataStride);
-                            }
-                            finally
-                            {
-                                line.UnlockBits(lineData);
-                            }
-                            using (line = new Bitmap(line))
-                            {
-                                lineData = line.LockBits(lineRect, ImageLockMode.ReadOnly, pixelFormat);
-                                try
-                                {
-                                    Marshal.Copy(lineData.Scan0, buff, 0, outStride);
-                                    Marshal.Copy(buff, 0, outScan0 + outStride * j, outStride);
-                                }
-                                finally
-                                {
-                                    line.UnlockBits(lineData);
-                                }
-                            }
-                        }
-                        //    return resouces;
-                        //}, resouces => resouces.Item1.Dispose());
-                    }
-                    finally
-                    {
-                        result.UnlockBits(resultData);
-                    }
-                }
-                finally
-                {
-                    bmp.UnlockBits(data);
-                }
-                bmp.Dispose();
-                return result;
-            }
-            catch (Exception ee)
-            {
-                result.Dispose();
-                throw;
-            }
-        }
-        */
 
         private int[] ColorConverter(int b, int g, int r, int a, PixelFormat pixelFormat)
         {
@@ -4331,497 +3780,6 @@ namespace ZipPla
         }
 #endif
 
-        /*
-        private Bitmap ToBitmap24(Bitmap bmp)
-        {
-            if (bmp == null) throw new ArgumentNullException("bmp");
-            var pixelFormat = bmp.PixelFormat;
-            if (pixelFormat == PixelFormat.Format24bppRgb)
-            {
-                return bmp;
-            }
-            if (!(
-                pixelFormat == PixelFormat.Format32bppRgb ||
-                pixelFormat == PixelFormat.Format32bppArgb ||
-                pixelFormat == PixelFormat.Format32bppPArgb ||
-                pixelFormat == PixelFormat.Format16bppArgb1555 ||
-                pixelFormat == PixelFormat.Format16bppGrayScale ||
-                pixelFormat == PixelFormat.Format16bppRgb555 ||
-                pixelFormat == PixelFormat.Format16bppRgb565 ||
-                pixelFormat == PixelFormat.Format1bppIndexed ||
-                pixelFormat == PixelFormat.Format48bppRgb ||
-                pixelFormat == PixelFormat.Format4bppIndexed ||
-                pixelFormat == PixelFormat.Format64bppArgb ||
-                pixelFormat == PixelFormat.Format64bppPArgb ||
-                pixelFormat == PixelFormat.Format8bppIndexed //||
-                //pixelFormat == PixelFormat_Format32bppCMYK
-               ))
-            {
-                // これでパフォーマンスが上がるわけでもなく、失敗することが増えるだけ
-                // pixelFormat = PixelFormat.Format24bppRgb;
-
-                var bmp2 = new Bitmap(bmp);
-                try
-                {
-                    var result = ToBitmap24(bmp2);
-                    bmp.Dispose();
-                    return result;
-                }
-                catch
-                {
-                    bmp2.Dispose();
-                    throw;
-                }
-            }
-            var w = bmp.Width;
-            var h = bmp.Height;
-            var rect = new Rectangle(0, 0, w, h);
-            var dst = new Bitmap(w, h, PixelFormat.Format24bppRgb);
-            try
-            {
-                var dstData = dst.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
-                try
-                {
-                    var dstScan0 = dstData.Scan0;
-                    var dstStride = dstData.Stride;
-                    var buffOutSize = 3 * w;
-                    
-                    var srcData = bmp.LockBits(rect, ImageLockMode.ReadOnly, pixelFormat);
-                    try
-                    {
-                        var srcScan0 = srcData.Scan0;
-                        var srcStride = srcData.Stride;
-                        var bpp = Image.GetPixelFormatSize(pixelFormat);
-                        var buffInSize = (bpp * w + 7) / 8;
-
-                        var palette = null as byte[][];
-                        if ((pixelFormat & PixelFormat.Indexed) == PixelFormat.Indexed)
-                        {
-                            var indexSize = 1 << bpp;
-                            var bmpPalette = bmp.Palette.Entries;
-                            var stop = Math.Min(indexSize, bmpPalette.Length);
-                            palette = new byte[indexSize][];
-                            for (var i = 0; i < stop; i++)
-                            {
-                                var c = bmpPalette[i];
-                                var a = c.A;
-                                var ar = (255 - a) * 255 + 127;
-                                palette[i] = new byte[3] { (byte)((a * c.B + ar) / 255), (byte)((a * c.G + ar) / 255), (byte)((a * c.R + ar) / 255) };
-                            }
-                        }
-
-                        // 非線形変換（ガンマ 1 / 2.2 に近いが異なる）
-                        // 使いまわしているが、毎回生成してもほとんどパフォーマンスに影響はない
-                        if (ToBitmap24_RGBLookUp == null && bpp > 32)
-                        {
-                            using (var sample = new Bitmap(8193 / 3, 1, PixelFormat.Format48bppRgb)) //  8bppGrayScale がないのでカラーを利用
-                            {
-                                var sampleRect = new Rectangle(0, 0, 8193 / 3, 1);
-                                var buff = new short[8193]; for (var i = 0; i < 8193; i++) buff[i] = (short)i;
-                                var data = sample.LockBits(sampleRect, ImageLockMode.WriteOnly, PixelFormat.Format48bppRgb);
-                                try
-                                {
-                                    Marshal.Copy(buff, 0, data.Scan0, 8193);
-                                }
-                                finally
-                                {
-                                    sample.UnlockBits(data);
-                                }
-                                ToBitmap24_RGBLookUp = new byte[8193];
-                                data = sample.LockBits(sampleRect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                                try
-                                {
-                                    Marshal.Copy(data.Scan0, ToBitmap24_RGBLookUp, 0, 8193);
-                                }
-                                finally
-                                {
-                                    sample.UnlockBits(data);
-                                }
-                            }
-                        }
-                        
-                        int buffInLength;
-                        switch (pixelFormat)
-                        {
-                            case PixelFormat.Format32bppRgb:
-                                Parallel.For(0, h,
-                                    () => new byte[buffInSize],
-                                    (j, state, buff) =>
-                                    {
-                                        Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffInSize);
-                                        int u = 3, v = 4;
-                                        while (v < buffInSize)
-                                        {
-                                            buff[u++] = buff[v++];
-                                            buff[u++] = buff[v++];
-                                            buff[u++] = buff[v]; v += 2;
-                                        }
-                                        Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buff;
-                                    }, buff => { });
-                                break;
-                            case PixelFormat.Format32bppArgb:
-                                Parallel.For(0, h,
-                                    () => new byte[buffInSize],
-                                    (j, state, buff) =>
-                                    {
-                                        Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffInSize);
-                                        int u = 0, v = 0;
-                                        while (v < buffInSize)
-                                        {
-                                            var a = (int)buff[v + 3];
-                                            var ar = (255 - a) * 255 + 127;
-                                            buff[u++] = (byte)((a * buff[v++] + ar) / 255);
-                                            buff[u++] = (byte)((a * buff[v++] + ar) / 255);
-                                            buff[u++] = (byte)((a * buff[v] + ar) / 255); v += 2;
-
-                                        }
-                                        Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buff;
-                                    }, buff => { });
-                                break;
-                            case PixelFormat.Format32bppPArgb:
-                                Parallel.For(0, h,
-                                    () => new byte[buffInSize],
-                                    (j, state, buff) =>
-                                    {
-                                        Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffInSize);
-                                        int u = 0, v = 0;
-                                        while (v < buffInSize)
-                                        {
-                                            var ar = 255 - buff[v + 3];
-                                            int value;
-                                            value = buff[v++] + ar;
-                                            buff[u++] = (byte)(value > 255 ? 255 : value);
-                                            value = buff[v++] + ar;
-                                            buff[u++] = (byte)(value > 255 ? 255 : value);
-                                            value = buff[v] + ar; v += 2;
-                                            buff[u++] = (byte)(value > 255 ? 255 : value);
-                                        }
-                                        Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buff;
-                                    }, buff => { });
-                                break;
-                            case PixelFormat.Format16bppArgb1555:
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new short[w], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, w);
-                                        var u = 0;
-                                        for (var v = 0; v < w; v++)
-                                        {
-                                            var s = buffIn[v];
-                                            if ((s & 0x8000) != 0)
-                                            {
-                                                buffOut[u++] = (byte)(s << 3 | 4);
-                                                buffOut[u++] = (byte)((0xFF8 & (s >> 2)) | 4);
-                                                buffOut[u++] = (byte)((0xFF8 & (s >> 7)) | 4);
-                                            }
-                                            else
-                                            {
-                                                buffOut[u++] = 255;
-                                                buffOut[u++] = 255;
-                                                buffOut[u++] = 255;
-                                            }
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format16bppGrayScale:
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new short[w], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, w);
-                                        var u = 0;
-                                        for (var v = 0; v < w; v++)
-                                        {
-                                            var s = (int)(ushort)buffIn[v];
-                                            var value = s <= 0 ? (byte)0 : s >= 8192 ? (byte)255 : ToBitmap24_RGBLookUp[s];
-                                            buffOut[u++] = value;
-                                            buffOut[u++] = value;
-                                            buffOut[u++] = value;
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, w);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format16bppRgb555:
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new short[w], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, w);
-                                        var u = 0;
-                                        for (var v = 0; v < w; v++)
-                                        {
-                                            var s = buffIn[v];
-                                            buffOut[u++] = (byte)(s << 3 | 4);
-                                            buffOut[u++] = (byte)((0xFF8 & (s >> 2)) | 4);
-                                            buffOut[u++] = (byte)((0xFF8 & (s >> 7)) | 4);
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format16bppRgb565:
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new short[w], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, w);
-                                        var u = 0;
-                                        for (var v = 0; v < w; v++)
-                                        {
-                                            var s = buffIn[v];
-                                            buffOut[u++] = (byte)(s << 3 | 4);
-                                            buffOut[u++] = (byte)((0xFFC & (s >> 3)) | 2);
-                                            buffOut[u++] = (byte)((0xFF8 & (s >> 8)) | 4);
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format1bppIndexed:
-                                buffInLength = (buffInSize + 3) >> 2;
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new int[buffInLength], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, buffInLength);
-                                        int u = 0, v = 0, shift = 0;
-                                        for (var i = 0; i < w; i++)
-                                        {
-                                            var c = palette[(buffIn[v] >> shift) & 1];
-                                            buffOut[u++] = c[0];
-                                            buffOut[u++] = c[1];
-                                            buffOut[u++] = c[2];
-                                            shift++;
-                                            if(shift == 32)
-                                            {
-                                                shift = 0;
-                                                v++;
-                                            }
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format48bppRgb:
-                                buffInLength = buffInSize >> 1;
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new short[buffInLength], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, buffInLength);
-                                        var u = 0;
-                                        while (u < buffInLength)
-                                        {
-                                            int value;
-                                            value = (ushort)buffIn[u];
-                                            buffOut[u++] = value <= 0 ? (byte)0 : value >= 8192 ? (byte)255 : ToBitmap24_RGBLookUp[value];
-                                            value = (ushort)buffIn[u];
-                                            buffOut[u++] = value <= 0 ? (byte)0 : value >= 8192 ? (byte)255 : ToBitmap24_RGBLookUp[value];
-                                            value = (ushort)buffIn[u];
-                                            buffOut[u++] = value <= 0 ? (byte)0 : value >= 8192 ? (byte)255 : ToBitmap24_RGBLookUp[value];
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format4bppIndexed:
-                                buffInLength = (buffInSize + 1) >> 2;
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new int[buffInLength], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, buffInLength);
-                                        int u = 0, v = 0, shift = 0;
-                                        for (var i = 0; i < w; i++)
-                                        {
-                                            var c = palette[(buffIn[v] >> shift) & 0xF];
-                                            buffOut[u++] = c[0];
-                                            buffOut[u++] = c[1];
-                                            buffOut[u++] = c[2];
-                                            shift += 4;
-                                            if (shift == 32)
-                                            {
-                                                shift = 0;
-                                                v++;
-                                            }
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format64bppArgb:
-                                buffInLength = buffInSize >> 1;
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new short[buffInLength], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, buffInLength);
-                                        int u = 0, v = 0;
-                                        while (v < buffInLength)
-                                        {
-                                            var a = ((ushort)buffIn[v + 3] + 16) >> 5;
-                                            var ar = (255 - a) * 255 + 127;
-                                            int value;
-                                            value = (ushort)buffIn[v++];
-                                            value = value <= 0 ? 0 : value >= 8192 ? 255 : ToBitmap24_RGBLookUp[value];
-                                            value = (a * value + ar) / 255; // a < 0 になりうるので value も範囲外の可能性がある
-                                            buffOut[u++] = (byte)(value <= 0 ? 0 : value >= 255 ? 255 : value);
-                                            value = (ushort)buffIn[v++];
-                                            value = value <= 0 ? 0 : value >= 8192 ? 255 : ToBitmap24_RGBLookUp[value];
-                                            value = (a * value + ar) / 255; // a < 0 になりうるので value も範囲外の可能性がある
-                                            buffOut[u++] = (byte)(value <= 0 ? 0 : value >= 255 ? 255 : value);
-                                            value = (ushort)buffIn[v]; v += 2;
-                                            value = value <= 0 ? 0 : value >= 8192 ? 255 : ToBitmap24_RGBLookUp[value];
-                                            value = (a * value + ar) / 255; // a < 0 になりうるので value も範囲外の可能性がある
-                                            buffOut[u++] = (byte)(value <= 0 ? 0 : value >= 255 ? 255 : value);
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format64bppPArgb:
-                                buffInLength = buffInSize >> 1;
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new short[buffInLength], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, buffInLength);
-                                        int u = 0, v = 0;
-                                        while (v < buffInLength)
-                                        {
-                                            var ar = 255 - (((ushort)buffIn[v + 3] + 16) >> 5);
-                                            int value;
-                                            value = buffIn[v++];
-                                            value = value <= 0 ? 0 : value >= 8192 ? 255 : ToBitmap24_RGBLookUp[value];
-                                            value = value + ar; // 過多のチェックは当然。a < 0 の可能性より過小のチェックも必要
-                                            buffOut[u++] = (byte)(value <= 0 ? 0 : value >= 255 ? 255 : value);
-                                            value = buffIn[v++];
-                                            value = value <= 0 ? 0 : value >= 8192 ? 255 : ToBitmap24_RGBLookUp[value];
-                                            value = value + ar; // 過多のチェックは当然。a < 0 の可能性より過小のチェックも必要
-                                            buffOut[u++] = (byte)(value <= 0 ? 0 : value >= 255 ? 255 : value);
-                                            value = buffIn[v]; v += 2;
-                                            value = value <= 0 ? 0 : value >= 8192 ? 255 : ToBitmap24_RGBLookUp[value];
-                                            value = value + ar; // 過多のチェックは当然。a < 0 の可能性より過小のチェックも必要
-                                            buffOut[u++] = (byte)(value <= 0 ? 0 : value >= 255 ? 255 : value);
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat.Format8bppIndexed:
-                                Parallel.For(0, h,
-                                    () => Tuple.Create(new byte[buffInSize], new byte[buffOutSize]),
-                                    (j, state, buffs) =>
-                                    {
-                                        var buffIn = buffs.Item1;
-                                        var buffOut = buffs.Item2;
-                                        Marshal.Copy(srcScan0 + j * srcStride, buffIn, 0, buffInSize);
-                                        var u = 0;
-                                        for (var v = 0; v < w; v++)
-                                        {
-                                            var c = palette[buffIn[v]];
-                                            buffOut[u++] = c[0];
-                                            buffOut[u++] = c[1];
-                                            buffOut[u++] = c[2];
-                                        }
-                                        Marshal.Copy(buffOut, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buffs;
-                                    }, buffs => { });
-                                break;
-                            case PixelFormat_Format32bppCMYK:
-                                Parallel.For(0, h,
-                                    () => new byte[buffInSize],
-                                    (j, state, buff) =>
-                                    {
-                                        Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffInSize);
-                                        int u = 0, v = 0;
-                                        while (v < buffInSize)
-                                        {
-                                            var c = (int)buff[v++];
-                                            var m = (int)buff[v++];
-                                            var y = (int)buff[v++];
-                                            var k = (int)buff[v++];
-
-                                            //buff[u++] = (byte)Math.Max(0, 255 - y - k);
-                                            //buff[u++] = (byte)Math.Max(0, 255 - m - k);
-                                            //buff[u++] = (byte)Math.Max(0, 255 - c - k);
-
-                                            var kr = 255 - k;
-                                            buff[u++] = (byte)(255 - ((y * kr + 127) / 255 + k));
-                                            buff[u++] = (byte)(255 - ((m * kr + 127) / 255 + k));
-                                            buff[u++] = (byte)(255 - ((c * kr + 127) / 255 + k));
-
-                                            //buff[u++] = (byte)(Math.Pow(Math.Max(0, 255 - y - k) / 255.0, 1 / 2.0) * 255 + 0.5);
-                                            //buff[u++] = (byte)(Math.Pow(Math.Max(0, 255 - m - k) / 255.0, 1 / 2.0) * 255 + 0.5);
-                                            //buff[u++] = (byte)(Math.Pow(Math.Max(0, 255 - c - k) / 255.0, 1 / 2.0) * 255 + 0.5);
-
-
-                                            //var kd = k / 255.0;
-                                            //var krd = (1 - kd) / 255.0;
-                                            //buff[u++] = (byte)(Math.Pow(1 - (y * krd + kd), 1 / 2.2) * 255 + 0.5);
-                                            //buff[u++] = (byte)(Math.Pow(1 - (m * krd + kd), 1 / 2.2) * 255 + 0.5);
-                                            //buff[u++] = (byte)(Math.Pow(1 - (c * krd + kd), 1 / 2.2) * 255 + 0.5);
-                                        }
-                                        Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buff;
-                                    }, buff => { });
-                                break;
-                            case PixelFormat.Format24bppRgb:
-                                {
-                                    var buff = new byte[buffInSize];
-                                    for (var j = 0; j < h; j++)
-                                    {
-                                        Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffInSize);
-                                        Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                    }
-                                }
-                                break;
-                        }
-                    }
-                    finally
-                    {
-                        bmp.UnlockBits(srcData);
-                    }
-                    bmp.Dispose();
-                    return dst;
-                }
-                finally
-                {
-                    dst.UnlockBits(dstData);
-                }
-            }
-            catch
-            {
-                dst.Dispose();
-                throw;
-            }
-        }
-        */
         
         // kernel32.dll が公開しているのは RtlMoveMemory で、CopyMemory はヘッダのマクロの名前。.NET（Core）では見つからず描画が失敗したので、実体を指定する
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
@@ -5209,19 +4167,6 @@ namespace ZipPla
 
                 return ToBitmap24Unsafe(bmp, leaveOpenOriginal); // 8 が無理なら 24 に変換
 
-                /*
-                var bmp2 = new Bitmap(bmp);
-                try
-                {
-                    var result = ToBitmap8Unsafe(bmp2);
-                    bmp.Dispose();
-                    return result;
-                }
-                catch
-                {
-                    bmp2.Dispose();
-                    throw;
-                }*/
             }
             var w = bmp.Width;
             var h = bmp.Height;
@@ -5626,203 +4571,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        /// <summary>
-        /// img を型変換だけするか、img を Dispose して別に 24 bit の Bitmap を返します
-        /// </summary>
-        /// <param name="img"></param>
-        /// <returns></returns>
-        private Bitmap ImageToBitmap24(Image img)
-        {
-            var bmp = img as Bitmap;
-            if(bmp == null)
-            {
-                bmp = new Bitmap(img);
-                img.Dispose();
-                return ImageToBitmap24(bmp);
-            }
-            if (bmp.PixelFormat == PixelFormat.Format24bppRgb)
-            {
-                return bmp;
-            }
-            var w = img.Width;
-            var h = img.Height;
-            var dst = new Bitmap(w, h, PixelFormat.Format24bppRgb);
-            try
-            {
-                // 並列で自前実装。最も速い
-                if (
-                    bmp.PixelFormat == PixelFormat.Format32bppRgb ||
-                    bmp.PixelFormat == PixelFormat.Format32bppArgb ||
-                    bmp.PixelFormat == PixelFormat.Format32bppPArgb)
-                {
-                    var rect = new Rectangle(0, 0, w, h);
-                    var dstData = dst.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
-                    try
-                    {
-                        var srcData = bmp.LockBits(rect, ImageLockMode.ReadOnly, bmp.PixelFormat);
-                        var dstScan0 = dstData.Scan0;
-                        var dstStride = dstData.Stride;
-                        var srcScan0 = srcData.Scan0;
-                        var srcStride = srcData.Stride;
-                        var buffSize = 4 * w;
-                        var buffOutSize = 3 * w;
-                        try
-                        {
-                            if (bmp.PixelFormat == PixelFormat.Format32bppRgb)
-                            {
-                                // LockBits 時にピクセルフォーマットを変換した場合
-                                // この部分は高速だが、LockBits に時間がかかる
-                                // やはり並列の自前実装が最も速い。LockBits の２倍近くの速さ。
-                                // なおアルファがあるものはそもそも LockBits では背景が黒くなるので
-                                // 議論の意味がない
-                                Parallel.For(0, h,
-                                    () => new byte[buffSize],
-                                    (j, state, buff) =>
-                                    {
-                                        System.Runtime.InteropServices.Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffSize);
-                                        int u = 0, v = 0;
-                                        while (v < buffSize)
-                                        {
-                                            buff[u++] = buff[v++];
-                                            buff[u++] = buff[v++];
-                                            buff[u++] = buff[v];
-                                            v += 2;
-                                        }
-                                        System.Runtime.InteropServices.Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buff;
-                                    }, buff => { });
-                            }
-                            else if (bmp.PixelFormat == PixelFormat.Format32bppArgb)
-                            {
-                                //var sw = new System.Diagnostics.Stopwatch();
-                                //sw.Start();
-                                Parallel.For(0, h,
-                                    () => new byte[buffSize],
-                                    (j, state, buff) =>
-                                    {
-                                        System.Runtime.InteropServices.Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffSize);
-                                        int u = 0, v = 0;
-                                        while (v < buffSize)
-                                        {
-                                                
-
-
-                                                // 0.10 秒
-                                                var a = (int)buff[v + 3];
-                                            var ar = 255 - a; ar = ar * 255 + 127;
-                                            buff[u++] = (byte)((a * buff[v++] + ar) / 255);
-                                            buff[u++] = (byte)((a * buff[v++] + ar) / 255);
-                                            buff[u++] = (byte)((a * buff[v] + ar) / 255);
-                                            v += 2;
-                                        }
-                                        System.Runtime.InteropServices.Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buff;
-                                    }, buff => { });
-                                //sw.Stop(); MessageBox.Show($"{sw.Elapsed}");
-                            }
-                            else
-                            {
-                                Parallel.For(0, h,
-                                    () => new byte[buffSize],
-                                    (j, state, buff) =>
-                                    {
-                                        System.Runtime.InteropServices.Marshal.Copy(srcScan0 + j * srcStride, buff, 0, buffSize);
-                                        int u = 0, v = 0;
-                                        while (v < buffSize)
-                                        {
-                                            var a = 255 - buff[v + 3];
-                                            buff[u++] = (byte)(buff[v++] + a);
-                                            buff[u++] = (byte)(buff[v++] + a);
-                                            buff[u++] = (byte)(buff[v] + a);
-                                            v += 2;
-                                        }
-                                        System.Runtime.InteropServices.Marshal.Copy(buff, 0, dstScan0 + j * dstStride, buffOutSize);
-                                        return buff;
-                                    }, buff => { });
-                            }
-                        }
-                        finally
-                        {
-                            bmp.UnlockBits(srcData);
-                        }
-                    }
-                    finally
-                    {
-                        dst.UnlockBits(dstData);
-                    }
-                    img.Dispose();
-                    return dst;
-                }
-
-                // アルファを持たないかインデックス付きなら LockBits の変換を利用。
-                // インデックス付きは以下のようにグラフィックが使えないのでいずれにしても背景は白くならない
-                // http://dobon.net/vb/bbs/log3-49/29128.html
-                if (!((img.PixelFormat & PixelFormat.Alpha) == PixelFormat.Alpha ||
-                    (img.PixelFormat & PixelFormat.PAlpha) == PixelFormat.PAlpha) ||
-                    (img.PixelFormat & PixelFormat.Indexed) == PixelFormat.Indexed)
-                {
-                    var result = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format24bppRgb);
-                    var data = bmp.LockBits(new Rectangle(Point.Empty, bmp.Size), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                    try
-                    {
-                        var buff = new byte[data.Height * data.Stride];
-                        var resultData = result.LockBits(new Rectangle(Point.Empty, bmp.Size),
-                            ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
-                        try
-                        {
-                            System.Runtime.InteropServices.Marshal.Copy(data.Scan0, buff, 0, buff.Length);
-                            System.Runtime.InteropServices.Marshal.Copy(buff, 0, resultData.Scan0, buff.Length);
-                        }
-                        finally
-                        {
-                            result.UnlockBits(resultData);
-                        }
-                    }
-                    finally
-                    {
-                        bmp.UnlockBits(data);
-                    }
-                    bmp.Dispose();
-                    return result;
-                }
-
-                // 残りは Graphics を使う
-                {
-                    var length = w * 3;
-                    var pallet = new byte[length];
-                    for (var i = 0; i < pallet.Length; i++) pallet[i] = 255;
-                    var rect = new Rectangle(0, 0, w, h);
-                    var dstData = dst.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
-                    try
-                    {
-                        var pnt = dstData.Scan0;
-                        var stride = dstData.Stride;
-                        Parallel.For(0, h, y =>
-                        {
-                            System.Runtime.InteropServices.Marshal.Copy(pallet, 0, pnt + y * stride, length);
-                        });
-                    }
-                    finally
-                    {
-                        dst.UnlockBits(dstData);
-                    }
-
-                    using (var g = Graphics.FromImage(dst))
-                    {
-                        g.DrawImageUnscaled(img, 0, 0);
-                    }
-                    img.Dispose();
-                    return dst;
-                }
-            }
-            catch
-            {
-                dst.Dispose();
-                throw;
-            }
-        }
-        */
 
         private Size GetResizedSize(Size originalSize)
         {
@@ -5876,23 +4624,6 @@ namespace ZipPla
             }
 
             // 強制見開きページ用
-            /*
-            var minPage = Math.Min(MinPageCountInWindow, MaxPageCountInWindow);
-            if (minPage > 1)
-            {
-                viewSize.Width /= minPage;
-            }
-            else if(BindingMode != BindingMode.SinglePage && BindingMode != BindingMode.SinglePageWithoutScalingUp && MaxDivision > 1)
-            {
-                var a = (ulong)oWidth * (ulong)viewSize.Height;
-                var b = (ulong)viewSize.Width * (ulong)oHeight;
-                if (a * a > b * b * (ulong)MaxDivision)
-                {
-                    viewSize.Width *= MaxDivision;
-                }
-
-            }
-            */
             
 
             Size result;
@@ -6393,23 +5124,6 @@ namespace ZipPla
         private ulong GetImageSizeInByte(VirtualBitmapEx image)
         {
             return (ulong)image.DataSizeInBytes;
-            /*
-            if (image.isEntity)
-            {
-                if (image.PixelFormat == PixelFormat.Format8bppIndexed)
-                {
-                    return (((ulong)image.Width + 3ul) & ~3ul) * (ulong)image.Height * (ulong)image.FrameCount;
-                }
-                else
-                {
-                    return (((ulong)image.Width * 3ul + 3ul) & ~3ul) * (ulong)image.Height * (ulong)image.FrameCount;
-                }
-            }
-            else
-            {
-                return 0;
-            }
-            */
         }
 
 
@@ -6662,43 +5376,12 @@ namespace ZipPla
                 }
                 else
                 {
-                    /*
-                    if (!fullscreen && maxmized && betterFormRestoreBound is BetterFormRestoreBounds bfrb)
-                    {
-                        var bound = bfrb.BetterRestoreBounds;
-                        config.Point = bound.Location;
-                        config.Size = bound.Size;
-                    }
-                    else
-                    */
                     {
                         var bounds = BetterFormRestoreBounds.GetMovedWindowBounds(this, normalStateLocation ?? Location, prevSize, betterFormRestoreBound.BoundsLastNoMinimized);
                         config.Point = bounds.Location;
                         config.Size = bounds.Size;
 
 
-                        /*
-                    if (fullscreen && maxmized && normalStateLocation is Point nsl)
-                    {
-                        var workingArea = Screen.FromControl(this).WorkingArea;
-                        var rect = new Rectangle(nsl, prevSize);
-                        var nslWorkingArea = Screen.FromRectangle(rect).WorkingArea;
-                        if (workingArea != nslWorkingArea)
-                        {
-                            rect.X += workingArea.X - nslWorkingArea.X;
-                            rect.Y += workingArea.Y - nslWorkingArea.Y;
-                            rect = ViewerForm.Pack(rect, workingArea);
-                        }
-                        config.Point = rect.Location;
-                        config.Size = rect.Size;
-                    }
-                    else
-                    {
-                        config.Point = normalStateLocation == null ? Location : (Point)normalStateLocation;
-                        //config.Size = normalStateSize == null ? Size : (Size)normalStateSize; //prevSize;
-                        config.Size = prevSize;
-                    }
-                    */
                     }
 
                 }
@@ -7000,12 +5683,6 @@ namespace ZipPla
                     {
                         LoadSettingToLoad_FormLocation = p;
                     }
-                    /*
-                    SetOneTimeEventHandler(
-                        () => Location = p,
-                        eh => Load += eh,
-                        eh => Load -= eh);
-                        */
                 }
             }
             else
@@ -7143,12 +5820,6 @@ namespace ZipPla
                     PseudoMaximized = false;
                     PseudoMaximizedSize = default(Size);
                 }
-                /*
-                else
-                {
-                    WindowState = FormWindowState.Normal;
-                }
-                */
             }
 
             if (fullscreen && ipcLookAheadInfo == null)
@@ -7289,9 +5960,6 @@ namespace ZipPla
                 //VirtualFolder.AddBookmarkData(Program.HistorySorPath, currentArchiveFilePath, Math.Max(0,currentPage), limitOfItemsCount: Program.GetLimitOfHistoryCount(), deleteLostPath: true);
                 //SendSorMessageToCatalogForm(currentArchiveFilePath, Program.HistorySorPath, Math.Max(0, currentPage), requestToUpdateLastAccessTime: true);
 
-                //var page = currentStartingFilePath == currentArchiveFilePath ? Math.Max(0, currentPage) : -1;
-                //VirtualFolder.AddBookmarkData(Program.HistorySorPath, currentStartingFilePath, page, limitOfItemsCount: Program.GetLimitOfHistoryCount(), deleteLostPath: true);
-                //SendSorMessageToCatalogForm(currentStartingFilePath, Program.HistorySorPath, page, requestToUpdateLastAccessTime: true);
 
                 var page = loader == null || loader.Type != PackedImageLoader.PackType.Directory ? Math.Max(0, currentPage) : -1;
                 var targetPath = loader != null && loader.Type != PackedImageLoader.PackType.Directory ? currentArchiveFilePath : currentStartingFilePath;
@@ -7306,9 +5974,6 @@ namespace ZipPla
         bool pbView_SizeChanged_SizeChanging = false;
         private void pbView_SizeChanged(object sender, EventArgs e)
         {
-            //optionToolStripMenuItem.Text = pbView.Bounds.ToString();
-            //pbView.LocationChanged -= f;
-            //pbView.LocationChanged += f;
 
             var size = pbView.Bounds;
             if (size.Width > 0 && size.Height > 0)
@@ -7661,22 +6326,9 @@ namespace ZipPla
                         ViewerMode = ViewerModeEnum.Normal;
                         return;
                     }
-                    /*
-                    else
-                    {
-                        orgSize = new Size(-orgSize.Width, -orgSize.Height);
-                    }
-                    */
                 }
 
                 // 拡大画像生成待ちで待たされるので不適切
-                /*
-                lock (img)
-                {
-                    // ここはメインスレッドでしか実行されないので同じくメインスレッドでしか行われない Dispose は危険因子ではない
-                    totalWidth += zoomedWidthArray[i - currentPage] = (int)Math.Round(zoomedHeight * img.Width / (double)img.Height);
-                }
-                */
 
                 //var resizedSize = GetResizedSize(orgSize);
                 //totalWidth += zoomedWidthArray[i - currentPage] = (int)Math.Round(zoomedHeight * size.Width / (double)size.Height);
@@ -7706,13 +6358,6 @@ namespace ZipPla
             pbView_Paint_OnlyDrawMeasure = false;
             pbView.Invalidate(false);
 
-                /*
-            if (pbView_CanPaint())
-            {
-                pbView.Invalidate(false);
-            }
-            else drawLoading(null);
-            */
         }
 
         private void pbPaintDrawOnlyMeasure()
@@ -7720,46 +6365,8 @@ namespace ZipPla
             pbView_Paint_OnlyDrawMeasure = true;
             pbView.Invalidate(false);
 
-            /*
-        if (pbView_CanPaint())
-        {
-            pbView.Invalidate(false);
-        }
-        else drawLoading(null);
-        */
         }
 
-        /*
-        private readonly HashSet<Bitmap> lockBits_LockedList = new HashSet<Bitmap>();
-        private void lockBits(Bitmap bmp, Rectangle rect, ImageLockMode flags, Action<BitmapData> body)
-        {
-            bool locked;
-            lock (lockBits_LockedList)
-            {
-                locked = lockBits_LockedList.Contains(bmp);
-                if (!locked) lockBits_LockedList.Add(bmp);
-            }
-            if(!locked)
-            {
-                try
-                {
-                    var data = bmp.LockBits(rect, flags, PixelFormat.Format24bppRgb);
-                    try
-                    {
-                        body(data);
-                    }
-                    finally
-                    {
-                        bmp.UnlockBits(data);
-                    }
-                }
-                finally
-                {
-                    lockBits_LockedList.Remove(bmp);
-                }
-            }
-        }
-        */
 
         public static void lockBits(BitmapEx bmp, Rectangle rect, ImageLockMode flags, string purpose, Action<BitmapData> body)
         {
@@ -7925,12 +6532,6 @@ namespace ZipPla
                             {
                                 FillRectangle(data, HalfGrayBrusher, rect, ParallelMode.ParallelForUIThread);
                             });
-                            /*
-                            using (var g = Graphics.FromImage(pbView_Paint_Canvas))
-                            {
-                                g.
-                            }
-                            */
                             drawLoading_ShowingMessage = true;
                             //sw.Stop(); s += sw.Elapsed + "\n"; sw.Restart();
                         }
@@ -7984,9 +6585,6 @@ namespace ZipPla
             }
 
             //sw.Stop(); s += sw.Elapsed + "\n"; MessageBox.Show(s);
-            /*
-            pbView_PaintToGraphics(e.Graphics);
-            */
         }
 
         /// <summary>
@@ -8103,64 +6701,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void drawMessageOnRectangle(Graphics g)//, Image baseImage)
-        {
-            string mess;
-            var vm = ViewerMode;
-            bool opening;
-            if (((opening = vm == ViewerModeEnum.MagnifierOpening) || vm == ViewerModeEnum.MagnifierClosing) && (mess = pbView_Paint_RectangleMessage) != null)
-            {
-                var rect = pbView_Paint_Rectangle;
-                rect.Intersect(pbView.ClientRectangle);
-                if (rect.Width > 0 && rect.Height > 0 && mess != "")
-                {
-                    var baseFont = pbView.Font ?? DefaultFont;
-                    var font = new Font(baseFont.FontFamily, baseFont.Size * 2);
-                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-                    var size = g.MeasureString(mess, font);
-                    bool sizeChanged;
-                    if (sizeChanged = size.Width > rect.Width)
-                    {
-                        var newSize = (float)Math.Max(baseFont.Size, (double)font.Size * rect.Width / size.Width);
-                        font.Dispose();
-                        font = new Font(baseFont.FontFamily, newSize);
-                    }
-
-                    if (opening)
-                    {
-                        //g.DrawString(mess, font, pbView_Paint_Brush, rect.Location);
-                        g.DrawString(mess, font, pbView_Paint_Brush_WithoutAlpha, rect.Location);
-
-                    }
-                    else
-                    {
-                        //g.DrawString(mess, font, Brushes.Black, rect.Location);
-                        //g.DrawString(mess, font, Brushes.White, rect.Location);
-                        
-                        if (baseImage is System.Drawing.Bitmap baseBitmap)
-                        {
-                            if (sizeChanged) size = g.MeasureString(mess, font);
-                            rect.Width = (int)Math.Ceiling(size.Width);
-                            rect.Height = (int)Math.Ceiling(size.Height);
-                            rect.Intersect(new Rectangle(0, 0, baseBitmap.Width, baseBitmap.Height));
-                            if (rect.Width > 0 && rect.Height > 0)
-                            {
-                                using (var back = baseBitmap.Clone(rect, baseBitmap.PixelFormat))
-                                using (var b = new TextureBrush(back))
-                                {
-                                    g.DrawString(mess, font, b, rect.Location);
-                                }
-                            }
-                        }
-                    }
-
-
-                    font.Dispose();
-                }
-            }
-        }
-*/
 
         private void drawMeasure(Graphics g, Bitmap backGround)
         {
@@ -8283,16 +6823,6 @@ namespace ZipPla
                                 FillRectangle(dst, localLeftBound, localBottomBound, color, localRect.Width, bottomBound - localBottomBound, ParallelMode.Single);
                             }
 
-                                /*
-                                lockBits(magBitI.Bitmaps[magBitI.GetCurrentIndex(now)], localRect,
-                                    ImageLockMode.ReadOnly, "zoomed image (source)", src =>
-                                    {
-                                        var localLeftBound = Math.Max(0, mathX + offset);
-                                        DrawBitmapDataUnscaled(dst, localLeftBound, topBound, src);
-
-
-                                    });
-                                    */
                         }
 
                         if (topBound > 0) FillRectangle(dst, 0, 0, color, pbViewSize.Width, topBound, ParallelMode.Single);
@@ -8312,17 +6842,6 @@ namespace ZipPla
                 for (var i = startPage; i < stopPage; i++)
                 {
                     totalWidth += ResizedImageArray[i].Width;
-                    /*
-                    if (imageHeight == -1)
-                    {
-                        imageHeight = ResizedImageArray[i].Height;
-                    }
-                    else if (imageHeight != ResizedImageArray[i].Height)
-                    {
-                        // 高さ不一致は描画条件不成立（現在の実装ではここへの到達は想定されない）
-                        return sizeChanged;
-                    }
-                    */
                 }
 
                 var divisions = 1;
@@ -8437,33 +6956,6 @@ namespace ZipPla
                         }
 
 
-                                /*
-                                var img = imgEx.Bitmaps[imgEx.GetCurrentIndex(now)];
-                                lockBits(img, new Rectangle(0, 0, img.Width, imageHeight),
-                                    ImageLockMode.ReadOnly, "normal image (source)", src =>
-                                    {
-                                        var x = offsetX + (pageLeftToRight ? -totalWidth - img.Width : totalWidth);
-                                        //g.DrawImageUnscaled(img, x, offsetY);
-                                        if (divisions == 1)
-                                        {
-                                            DrawBitmapDataUnscaled(dst, x, offsetY, src);
-
-                                            var imageWidth = resizedSize.Width;
-                                            if (offsetY > minOffetY) FillRectangle(dst, x, minOffetY, bColor, imageWidth, offsetY - minOffetY, ParallelMode.Single);
-                                            if (bottomBound < maxBottomBound) FillRectangle(dst, x, bottomBound, bColor,
-                                                imageWidth, maxBottomBound - bottomBound, ParallelMode.Single);
-                                        }
-                                        else
-                                        {
-                                            var imageWidth = right - left;
-                                            DrawBitmapDataUnscaled(dst, x, offsetY, src, left, 0, imageWidth, img.Height);
-
-                                            if (offsetY > minOffetY) FillRectangle(dst, x, minOffetY, bColor, imageWidth, offsetY - minOffetY, ParallelMode.Single);
-                                            if (bottomBound < maxBottomBound) FillRectangle(dst, x, bottomBound, bColor,
-                                                imageWidth, maxBottomBound - bottomBound, ParallelMode.Single);
-                                        }
-                                });
-                                */
 
                                 totalWidth += imgEx.Width;
                     }
@@ -8697,15 +7189,6 @@ namespace ZipPla
             var dstLeft = dst.Scan0 + yDst * dstStride + xDst * bytePerPixel;
             var buffSize = width * bytePerPixel;
 
-            /*
-            ParallelFor(parallelMode, 0, height, () => new byte[buffSize], (j, buff) =>
-            {
-                var currentDstLeft = dstLeft + (j * dstStride);
-                System.Runtime.InteropServices.Marshal.Copy(currentDstLeft, buff, 0, buffSize);
-                editor(buff);
-                System.Runtime.InteropServices.Marshal.Copy(buff, 0, currentDstLeft, buffSize);
-            });
-            */
 
             ParallelFor(parallelMode, 0, height, j =>
             {
@@ -8787,16 +7270,6 @@ namespace ZipPla
                         Parallel.For(fromInclusive, toExclusive, localInit, (i, state, local) => { body(i, local); return local; }, localFinally);
                         break;
                     }
-                    /*
-                case ParallelMode.ParallelForUIThread:
-                    {
-                        var thread = new Thread(() =>
-                             Parallel.For(fromInclusive, toExclusive, localInit, (i, state, local) => { body(i, local); return local; }, null)
-                         );
-                        thread.Start();
-                        thread.Join();
-                        break;
-                    }*/
             }
         }
         private static void ParallelFor(ParallelMode parallelMode, int fromInclusive, int toExclusive, Action<int> body)
@@ -8814,17 +7287,6 @@ namespace ZipPla
                         Parallel.For(fromInclusive, toExclusive, body);
                         break;
                     }
-                    /*
-                case ParallelMode.ParallelForUIThread:
-                    {
-                        var thread = new Thread(() =>
-                            Parallel.For(fromInclusive, toExclusive, body)
-                        );
-                        thread.Start();
-                        thread.Join();
-                        break;
-                    }
-                    */
             }
         }
 
@@ -8880,36 +7342,10 @@ namespace ZipPla
                         var size = zoomedSizeArray[i];
                         var width = size.Width;
                         var height = size.Height;
-                        /*
-                        VirtualBitmapEx element;
-                        if (isEntity)
-                        {
-                            element = new VirtualBitmapEx(original.CreateNew(f =>
-                            {
-                                var pixelFormat = f.PixelFormat;
-                                var result = new Bitmap(width, height, pixelFormat);
-                                if ((pixelFormat & PixelFormat.Indexed) == PixelFormat.Indexed) result.Palette = f.Palette;
-                                return result;
-                            }));
-                        }
-                        else
-                        {
-                            element = new VirtualBitmapEx(original, zoomedSizeArray[i]);
-                        }
-                        virtualBitmapExArray[i] = element;
-                        */
                     }
                 }
                 catch
                 {
-                    /*
-                    for (var i = 0; i < zoomedSizeArray.Length; i++)
-                    {
-                        var bitmapEx = virtualBitmapExArray[i];
-                        if (bitmapEx == null) break;
-                        bitmapEx.Dispose();
-                    }
-                    */
                     throw;
                 }
             }
@@ -8953,15 +7389,6 @@ namespace ZipPla
                 return result;
             }
 
-            /*
-            public static MagnifierCanvas FromBitmapEx(BitmapEx bitmapEx)
-            {
-                var result = new MagnifierCanvas();
-                result.virtualBitmapExArray = new VirtualBitmapEx[1] { new  VirtualBitmapEx(bitmapEx)};
-                result.offsetArray = new Point[1] { new Point(0, 0) };
-                return result;
-            }
-            */
         }
 
         //private Tuple<int, int> Magnifier_VisiblePage = null;
@@ -9039,30 +7466,6 @@ namespace ZipPla
                                 //var rect = new Rectangle(X, (zoomedHeight - zoomedHeightI) / 2, zoomedWidth, zoomedHeightI);
                                 //var rect = new Rectangle(0, (zoomedHeight - zoomedHeightI) / 2, zoomedWidth, zoomedHeightI);
 
-                                /*
-                                if (rect.Y > 0)
-                                {
-                                    canvas1.ApplyToAll(frame =>
-                                    {
-                                        lockBits(frame, new Rectangle(0, 0, zoomedWidth, rect.Y), ImageLockMode.WriteOnly, $"fillMagnifierU{i}", data =>
-                                        {
-                                            FillRectangle(data, 0, 0, pbView.BackColor, zoomedWidth, rect.Y, ParallelMode.Parallel);
-                                        });
-                                        return frame;
-                                    });
-                                }
-                                if (rect.Bottom < zoomedHeight)
-                                {
-                                    canvas1.ApplyToAll(frame =>
-                                    {
-                                        lockBits(frame, new Rectangle(0, rect.Bottom, zoomedWidth, zoomedHeight - rect.Bottom), ImageLockMode.WriteOnly, $"fillMagnifierL{i}", data =>
-                                        {
-                                            FillRectangle(data, 0, 0, pbView.BackColor, zoomedWidth, zoomedHeight - rect.Bottom, ParallelMode.Parallel);
-                                        });
-                                        return frame;
-                                    });
-                                }
-                                */
 
                                 var gamma = ResizeGammaMagnifier;
 
@@ -9079,13 +7482,6 @@ namespace ZipPla
                                 const int pixelsPerPixelToBeLeft = int.MaxValue;
                                 const bool parallel = true;
 
-                                /*
-                                for (var ii = 0; ii < 200; ii++)
-                                {
-                                    if (bwMagnifierMaker?.CancellationPending == true) break;
-                                    Thread.Sleep(10);
-                                }
-                                */
                                 
 
                                 var canvas1 = imgEx.CreateNew(img =>
@@ -9130,39 +7526,6 @@ namespace ZipPla
                                     return; // キャンセルがかかった場合
                                 }
 
-                                /*
-                                canvas1.ApplyToAll((frame, frameNumber) =>
-                                {
-                                    var img = imgEx.Bitmaps[frameNumber];
-                                    switch (scalingAlgorithm)
-                                    {
-                                        case ScalingAlgorithm.HighSpeed: QuickGraphic.DrawImage(frame, rect, img, bwMagnifierMaker); break;
-                                    //case ScalingAlgorithm.HighSpeed: LongVectorImageResizer.Spline4(img, 2, canvas, rect, parallel, bwMagnifierMaker); break;
-                                    case ScalingAlgorithm.NearestNeighbor: LongVectorImageResizer.NearestNeighbor(img, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.AreaAverage: LongVectorImageResizer.AreaAverage(img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Lanczos1: LongVectorImageResizer.Lanczos(1, img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Lanczos2: LongVectorImageResizer.Lanczos(2, img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Lanczos3: LongVectorImageResizer.Lanczos(3, img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Lanczos4: LongVectorImageResizer.Lanczos(4, img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Spline4: LongVectorImageResizer.Spline4(img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Spline16: LongVectorImageResizer.Spline16(img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Spline36: LongVectorImageResizer.Spline36(img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                        case ScalingAlgorithm.Spline64: LongVectorImageResizer.Spline64(img, pixelsPerPixelToBeLeft, gamma, frame, rect, parallel, bwMagnifierMaker); break;
-                                    //default: QuickGraphic.DrawImage(canvas, rect, img, bwMagnifierMaker); break;
-
-                                    // 品質の良さを重視する場合
-                                    // 他のオプションがあるので現在は不採用
-                                    // BitmapResizer の使用を止めるならこちらを採用か
-                                    //default: LongVectorImageResizer.Lanczos(3, img, 4, GammaConversion.Value1_0, canvas, rect, parallel, bwMagnifierMaker); break;
-
-                                    // キャンセルが必要なので BitmapResizer は使えないがそれと同等の出力であることを重視
-                                    // BitmapResizer は BitmapScalingMode.Unspecified を使用しており、これが Linear であることは以下に明記されている
-                                    // https://msdn.microsoft.com/en-us/library/system.windows.media.bitmapscalingmode(v=vs.110).aspx
-                                    default: LongVectorImageResizer.Spline4(img, int.MaxValue, GammaConversion.Value1_0, frame, rect, parallel, bwMagnifierMaker); break;
-                                    }
-                                    return frame;
-                                });
-                                */
 
                                 //sw.Stop(); MessageBox.Show($"{sw.Elapsed}");
                                 try
@@ -9446,12 +7809,6 @@ namespace ZipPla
 
             touchMode = false;
 
-            /*
-            if (currentPage < 0 || nextPage <= currentPage)
-            {
-                return Rectangle.Empty;
-            }
-            */
 
             magPower_ = getCurrentMagnifierPower();
             if (magPower_ == null || currentPage < 0 || nextPage < currentPage || MaxDivision <= 1 && nextPage == currentPage ||
@@ -9606,20 +7963,6 @@ namespace ZipPla
                         }
                         
 
-                        /*
-                        var left = offsetX + wh;
-                        var right = offsetX + totalWidth - -wh;
-                        
-                        if (pointAsLocation.X < offsetX)
-                            pointAsLocation.X = offsetX;
-                        else if (pointAsLocation.X > offsetX + totalWidth - size.Width)
-                            pointAsLocation.X = offsetX + totalWidth - size.Width;
-
-                        if (pointAsLocation.Y < offsetY)
-                            pointAsLocation.Y = offsetY;
-                        else if (pointAsLocation.Y > offsetY + totalHeight - size.Height)
-                            pointAsLocation.Y = offsetY + totalHeight - size.Height;
-                            */
                             
                     }
 
@@ -9632,9 +7975,6 @@ namespace ZipPla
                 else
                 {
                     GetMagnifierRectangle_LastCursorPosition = pointClient;
-                    //GetMagnifierRectangle_LastRectanglePosition = BindingMode != BindingMode.RightToLeft ?
-                    //    new PointD(offsetX, offsetY) : new PointD(offsetX + totalWidth - size.Width, offsetY);
-                    //GetMagnifierRectangle_LastCursorDelta = VectorD.Zero;
 
                     pointAsLocation = BindingMode != BindingMode.RightToLeft ?
                         new PointD(offsetX + wh, offsetY + hh) : new PointD(offsetX + totalWidth - wh, offsetY + hh);
@@ -10056,16 +8396,6 @@ namespace ZipPla
 
             Program.ShowCursor();
 
-            /*
-            if (MessageBox.Show(this, (delete ? Message.WillClearCoverSetting : Message.RenameForCover) + "\r\n\r\n" +
-                Message.BeforeRename + ":\r\n  " + Path.GetFileName(prevArchiveFilePath) + "\r\n" +
-                Message.AfterRename + ":\r\n  " + Path.GetFileName(newArchiveFilePath) + "\r\n", Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
-                != DialogResult.OK)
-            {
-                ExitCoverSetting();
-                return;
-            }
-            */
             if (MessageForm.Show(this, (delete ? Message.WillClearCoverSetting : Message.RenameForCover) + "\r\n\r\n" +
                 Message.BeforeRename + ":\r\n  " + Path.GetFileName(prevArchiveFilePath) + "\r\n" +
                 Message.AfterRename + ":\r\n  " + Path.GetFileName(newArchiveFilePath) + "\r\n", Message.Question, Message.OK, Message.Cancel, MessageBoxIcon.Question)
@@ -10372,17 +8702,6 @@ namespace ZipPla
             var newArchiveFilePath = zipPlaInfo.GetPathOfCurrentInfo(isDirSafety(prevArchiveFilePath));
 
             Program.ShowCursor();
-            /*
-            if (MessageBox.Show(
-                (delete ? Message.WillClearPageSequenceSetting : binding == BindingMode.LeftToRight ? Message.RenameForPageSequenceLeftToRight :
-                binding == BindingMode.RightToLeft ? Message.RenameForPageSequenceRightToLeft : Message.RenameForPageSequenceSinglePage) + "\r\n\r\n" +
-                Message.BeforeRename + ":\r\n  " + Path.GetFileName(prevArchiveFilePath) + "\r\n" +
-                Message.AfterRename + ":\r\n  " + Path.GetFileName(newArchiveFilePath) + "\r\n", Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
-                != DialogResult.OK)
-            {
-                return;
-            }
-            */
             if (MessageForm.Show(this,
                 (delete ? Message.WillClearPageSequenceSetting : binding == BindingMode.LeftToRight ? Message.RenameForPageSequenceLeftToRight :
                 binding == BindingMode.RightToLeft ? Message.RenameForPageSequenceRightToLeft : Message.RenameForPageSequenceSinglePage) + "\r\n\r\n" +
@@ -10542,12 +8861,6 @@ namespace ZipPla
                 onImageY = Math.Max(0, Math.Min(totalHeight - onImageHeight, clientPoint.Y - offsetY2 - onImageHeight / 2.0));
             }
 
-            /*
-            if (KeyboardShortcut.GetKeyState(Keys.A))
-            {
-                MessageBox.Show($"{new Rectangle((int)(offsetX2 + onImageX + 0.5), (int)(offsetY2 + onImageY + 0.5), (int)(onImageWidth + 0.5), (int)(onImageHeight + 0.5))}");
-            }
-            */
 
             switch (getMode)
             {
@@ -10815,24 +9128,6 @@ namespace ZipPla
                 //return result || isMovableDividedPage(n, checkLoaded);
                 return result;
             }
-            /*
-            var nextPage = currentPage;
-            if (n > 0)
-            {
-                for (var i = 0; i < n; i++)
-                {
-                    nextPage = NextPage;
-                }
-            }
-            else
-            {
-                for (var i = 0; i < -n; i++)
-                {
-                    nextPage = PreviousPage;
-                }
-            }
-            return nextPage != currentPage && nextPage >= 0 && ResizedImageArray != null && nextPage < ResizedImageArray.Length;
-            */
         }
 
         /// <summary>
@@ -11182,10 +9477,6 @@ namespace ZipPla
         private SearchManager searchManagerFromCatalogForm = null;
         private InitialFullscreenMode? requestedInitialFullscreenMode = null;
         private bool? requestedAlwaysHideUI = null;
-        // private FormWindowState? tmWatchIpc_Tick_FormWindowStateFromSetteingFileMemory = null;
-        // private bool tmWatchIpc_FullscreenMemory = false;
-        // private bool tmWatchIpc_MaximizedMemory = false;
-        //private bool tmWatchIpc_Tick_MemoryOriginalFullscreen = false;
         private bool tmWatchIpc_Stopped = false;
 
         // 待機ビューアは、カタログが依頼を書いたときに立つ名前付きイベントで起きる（V6）。
@@ -11324,10 +9615,6 @@ namespace ZipPla
                             {
                                 Invoke((MethodInvoker)(() =>
                                 {
-                                    /*
-                                    if (!secondTerm && (path != shownImegesPath || page >= 0 && page != shownImegesPage))
-                                    {
-                                        */
 
                                     var filterChanged = fString != requestedFilterString || fString2 != requestedFilterStringWithoutAlias;
 
@@ -11375,13 +9662,6 @@ namespace ZipPla
                                         var load = false;
                                         // ページ指定でページだけが変わってるパターン
                                         // 現状これはほぼ起こり得ないのでコメントアウト
-                                        /*
-                                        if (path == requestedImagePath && bind == requestedBindingMode && page >= 0 && page <= mtbPage.Maximum)
-                                        {
-                                            mtbPage.Value = page;
-                                            load = true;
-                                        }
-                                        */
 
                                         var sortChanged = filterChanged ? true : null as bool?;
 
@@ -11431,22 +9711,6 @@ namespace ZipPla
                                         {
                                             pbView.BackColor = color;
                                         }
-                                        /*
-                                        if (noFullscreen)
-                                        {
-                                            Size = prevSize;
-                                            LoadSettings_FormWindowStateFromSetteingFile = null;
-
-
-                                            fullScreenModeChange(false);
-                                            //tmWatchIpc_Tick_MemoryOriginalFullscreen = FullScreen;
-                                            //fullScreenModeChange(false);
-                                        }
-                                        else
-                                        {
-                                            if(tmWatchIpc_Tick_MemoryOriginalFullscreen && !FullScreen) fullScreenModeChange(true);
-                                        }
-                                        */
 
 
                                         if (fromCatalogFormEvent)
@@ -11482,10 +9746,6 @@ namespace ZipPla
                                             //requestedCoverBindingMode = coverBind;
                                             CoverBindingMode = coverBind;
                                             requestedIgnoreSavedFilerSetting = ignFilter;
-                                            //requestedSortModeDetails = sort;
-                                            //requestedImageColor = color;
-                                            //requestedFilterString = fString;
-                                            //requestedFilterStringWithoutAlias = fString2;
                                         }
 
                                         // show で無くて OpenFile に失敗した場合次回も実行するように
@@ -11575,26 +9835,6 @@ namespace ZipPla
                                             mtbPageTop_As_Reference_pbViewBottom = pnlSeekbar.Bounds.Top - pbView.Bottom;
 
                                             MyActivate(finallyTopMost: true);
-                                            /*
-                                            /////
-                                            showWithoutActivation = true;
-                                            /////
-
-                                            TopMost = true;
-                                            Visible = true;
-                                            Activate();
-
-                                            try
-                                            {
-                                                Microsoft.VisualBasic.Interaction.AppActivate(System.Diagnostics.Process.GetCurrentProcess().Id);
-                                            }
-                                            catch { }
-
-                                            /////
-                                            showWithoutActivation = false;
-                                            Activate();
-                                            /////
-                                            */
 
 
                                             prevSize = tempPrevSize;
@@ -11615,27 +9855,6 @@ namespace ZipPla
 
                                             //if (LoadSettings_LoadedLocation != null) Location = (Point)LoadSettings_LoadedLocation;
                                             MyActivate(finallyTopMost: false);
-                                            /*
-                                            /////
-                                            showWithoutActivation = true;
-                                            /////
-
-                                            Visible = true;
-                                            TopMost = true;
-                                            Activate();
-                                            TopMost = false;
-
-                                            try
-                                            {
-                                                Microsoft.VisualBasic.Interaction.AppActivate(System.Diagnostics.Process.GetCurrentProcess().Id);
-                                            }
-                                            catch { }
-
-                                            /////
-                                            showWithoutActivation = false;
-                                            Activate();
-                                            /////
-                                            */
                                             
 
                                             SetCurrentImageLongPath();
@@ -11755,56 +9974,8 @@ namespace ZipPla
 
             if (!(finallyTopMost && TopMostInFullscreen)) TopMost = false;
             
-            /*
-            try
-            {
-                using (var currentProcess = Process.GetCurrentProcess())
-                {
-                    WindowActivator.ActiveWindow(currentProcess.MainWindowHandle);
-                    // WindowActivator.ActiveWindow(currentProcess.MainWindowHandle);
-                }
-            }
-            catch { }
-            */
         }
         
-        /*
-        public static void ActiveWindowWithSetWindowPos(IntPtr hWnd)
-        {
-            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE);
-            SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0,
-                SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-        }
-
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-        private static extern bool SetWindowPos(IntPtr hWnd,
-            int hWndInsertAfter, int x, int y, int cx, int cy, int uFlags);
-
-        private const int SWP_NOSIZE = 0x0001;
-        private const int SWP_NOMOVE = 0x0002;
-        private const int SWP_SHOWWINDOW = 0x0040;
-
-        private const int HWND_TOPMOST = -1;
-        private const int HWND_NOTOPMOST = -2;
-
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        private static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
-
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        static extern bool BringWindowToTop(IntPtr hWnd);
-
-        ///// ShowWithoutActivationプロパティのオーバーライド
-        private bool showWithoutActivation = false;
-        protected override bool ShowWithoutActivation { get { return showWithoutActivation; } }
-        /////
-        
-        */
 
         private void closeWindowtoolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -11857,51 +10028,6 @@ namespace ZipPla
             }
         }
         
-        /*
-        private void currentImageLongPathToolStripTextBox_MouseMove(object sender, MouseEventArgs e)
-        {
-            currentImageLongPathToolStripTextBox.Text = "Move " + DateTime.Now;
-
-        }
-
-        private void currentImageLongPathToolStripTextBox_MouseEnter(object sender, EventArgs e)
-        {
-            currentImageLongPathToolStripTextBox.Text = "Enter " + DateTime.Now;
-
-        }
-
-        [DllImport("comctl32.dll", SetLastError = true)]
-        private static extern bool _TrackMouseEvent(ref TRACKMOUSEEVENT tme);
-
-        private struct TRACKMOUSEEVENT
-        {
-            public int cbSize;
-            public int dwFlags;
-            public IntPtr hwndTrack;
-            public int dwHowerTime;
-        }
-
-        private void ActivateLeaveTracking()
-        {
-            const int TME_LEAVE = 0x00000002;
-            const int TME_NONCLIENT = 0x00000010;
-
-            TRACKMOUSEEVENT tme = new TRACKMOUSEEVENT();
-            tme.hwndTrack = this.Handle;
-            tme.dwHowerTime = 0;
-            tme.dwFlags = TME_LEAVE | TME_NONCLIENT;
-            tme.cbSize = Marshal.SizeOf(typeof(TRACKMOUSEEVENT));
-#if AUTOBUILD
-            _TrackMouseEvent(ref tme);
-#else
-            if (!_TrackMouseEvent(ref tme))
-            {
-                throw new Exception(Marshal.GetLastWin32Error().ToString());
-            }
-#endif
-
-        }
-        */
         
         private void currentImageLongPathToolStripTextBox_MouseLeave(object sender, EventArgs e)
         {
@@ -11920,13 +10046,6 @@ namespace ZipPla
                     var dt = positionOnClient.Y - bounds.Top + 1;
                     var db = bounds.Bottom - positionOnClient.Y;
                     var dm = Math.Min(Math.Min(Math.Min(dl, dr), dt), db);
-                    /*
-                    if (dm == dl) cursorPosition.X -= dl;
-                    else if (dm == dr) cursorPosition.X += dr;
-                    else if (dm == dt) cursorPosition.Y -= dt;
-                    else cursorPosition.Y += db;
-                    Cursor.Position = cursorPosition;
-                    */
                     if (dm == db)
                     {
                         cursorPosition.Y += db;
@@ -11957,17 +10076,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void currentImageLongPathToolStripTextBox_MouseLeave(object sender, EventArgs e)
-        {
-            if (FullScreen)
-            {
-                mtbPage_Top = mtbPage.Bounds.Top;
-                mtbPage.Visible = false;
-                statusStrip.Visible = false;
-            }
-        }
-        */
         // 上が期待通りに働かないので下で対処
         private bool MouseInPbView = false;
         private void pbView_MouseEnter(object sender, EventArgs e)
@@ -12065,25 +10173,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void setMouseButtonShape(Position position)
-        {
-            switch (position)
-            {
-                case Position.Left: Cursor.Current = Cursors.PanWest; break;
-                case Position.Right: Cursor.Current = Cursors.PanEast; break;
-                case Position.Center:
-                    switch (BindingMode)
-                    {
-                        case BindingMode.RightToLeft: Cursor.Current = Cursors.PanSE; break;
-                        case BindingMode.LeftToRight: Cursor.Current = Cursors.PanSW; break;
-                        default: Cursor.Current = Cursors.PanWest; break;
-                    }
-                    break;
-                default: Cursor.Current = Cursors.Default; break;
-            }
-        }
-        */
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -12148,22 +10237,6 @@ namespace ZipPla
         }
         
         bool ContextMenuForMenuStrip_Opend = false;
-        /*
-        bool ContextMenuForMenuStripPostProcessing_worked = false;
-        private void ContextMenuForMenuStripPostProcessing()
-        {
-            if (menuStrip.Visible && menuStrip_Buttom == 0 && FullScreen)
-            {
-                if (!menuStrip.ClientRectangle.Contains(menuStrip.PointToClient(Cursor.Position)))
-                {
-                    menuStrip_Buttom = menuStrip.Bounds.Bottom;
-                    menuStrip.Visible = false;
-                }
-            }
-            ContextMenuForMenuStrip_Opend = false;
-            ContextMenuForMenuStripPostProcessing_worked = true;
-        }
-        */
 
         private void ContextMenuForMenuStripPostProcessing2()
         {
@@ -12338,18 +10411,6 @@ namespace ZipPla
             fixDropDownLocation(sender);
         }
 
-        /*
-        private void imageFilterToolStripMenuItem_DropDownClosed(object sender, EventArgs e)
-        {
-            ContextMenuForMenuStripPostProcessing2();
-        }
-
-        private void imageFilterToolStripMenuItem_DropDownOpened(object sender, EventArgs e)
-        {
-            ContextMenuForMenuStrip_Opend = true;
-            fixDropDownLocation(sender);
-        }
-        */
 
         private void slideshowToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
@@ -12705,16 +10766,6 @@ namespace ZipPla
             var newArchiveFilePath = zipPlaInfo.GetPathOfCurrentInfo(isDirSafety(prevArchiveFilePath));
 
             Program.ShowCursor();
-            /*
-            if (MessageBox.Show(
-                Message.RenameForTags + "\r\n\r\n" +
-                Message.BeforeRename + ":\r\n  " + Path.GetFileName(prevArchiveFilePath) + "\r\n" +
-                Message.AfterRename + ":\r\n  " + Path.GetFileName(newArchiveFilePath) + "\r\n", Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
-                != DialogResult.OK)
-            {
-                return;
-            }
-            */
             if (MessageForm.Show(this,
                 Message.RenameForTags + "\r\n\r\n" +
                 Message.BeforeRename + ":\r\n  " + Path.GetFileName(prevArchiveFilePath) + "\r\n" +
@@ -12818,15 +10869,6 @@ namespace ZipPla
             var newArchiveFilePath = zipPlaInfo.GetPathOfCurrentInfo(isDirSafety(prevArchiveFilePath));
 
             Program.ShowCursor();
-            /*
-            if (MessageBox.Show(this, 
-                Message.RenameForRating + "\r\n\r\n" +
-                Message.BeforeRename + ":\r\n  " + Path.GetFileName(prevArchiveFilePath) + "\r\n" +
-                Message.AfterRename + ":\r\n  " + Path.GetFileName(newArchiveFilePath) + "\r\n", Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
-                != DialogResult.OK)
-            {
-                return;
-            }*/
             if (MessageForm.Show(this,
                 Message.RenameForRating + "\r\n\r\n" +
                 Message.BeforeRename + ":\r\n  " + Path.GetFileName(prevArchiveFilePath) + "\r\n" +
@@ -13080,19 +11122,6 @@ namespace ZipPla
         private void pbView_MouseDown(object sender, MouseEventArgs e)
         {
             // キーボードショートカットに置き換え
-            /*
-            if (e.Button == MouseButtons.Middle)
-            {
-                if (ViewerMode == ViewerModeEnum.Normal)
-                {
-                    MagnifierPhase1();
-                }
-                else if (ViewerMode == ViewerModeEnum.Magnifier)
-                {
-                    MagnifierPhase3();
-                }
-            }
-            else*/
             if (e.Button == MouseButtons.Left)
             {
                 if (ksViewForm.IgnoreAnyMouseEventOnce != MouseButtons.Left)
@@ -13102,15 +11131,6 @@ namespace ZipPla
                         SetCoverForThumbnail();
                         ksViewForm.IgnoreMouseEventOnce = e;
                     }
-                    /*
-                    else
-                    {
-                        if (!ksViewForm.ActionsContainsLButton)
-                        {
-                            defaultClickBehavior(e.Location);
-                        }
-                    }
-                    */
                 }
             }
             else if (e.Button == MouseButtons.Right)
@@ -13131,44 +11151,7 @@ namespace ZipPla
             //setMouseButtonShape(position);
         }
 
-        /*
-        private void defaultClickBehavior(Point clientPoint)
-        {
-            if (ViewerMode == ViewerModeEnum.Normal)// || ViewerMode == ViewerModeEnum.Magnifier)
-            {
-                var position = GetPositionOnView(clientPoint);
-                switch (position)
-                {
-                    case Position.Left:
-                        movePageNatural(BindingMode != BindingMode.RightToLeft ? -1 : 1);
-                        break;
-                    case Position.Right:
-                        movePageNatural(BindingMode != BindingMode.RightToLeft ? 1 : -1);
-                        break;
-                    case Position.Center:
-                        movePageToMinimulBack();
-                        break;
-                }
-            }
-        }
-        */
 
-        /*
-        private void pbView_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Middle)
-            {
-                if (ViewerMode == ViewerModeEnum.MagnifierOpening)
-                {
-                    MagnifierPhase2();
-                }
-                else if (ViewerMode == ViewerModeEnum.MagnifierClosing)
-                {
-                    MagnifierPhase4();
-                }
-            }
-        }
-        */
 
         private void closeWindowtoolStripMenuItem_MouseEnter(object sender, EventArgs e)
         {
@@ -13180,16 +11163,6 @@ namespace ZipPla
             }
             
             // 古い方法
-            /*
-            if (FullScreen)
-            {
-                var tsmi = (ToolStripMenuItem)sender;
-                var temp = Cursor.Position;
-                Cursor.Position = new Point(Width - 1 - tsmi.Width / 2, tsmi.Height / 2);
-                Application.DoEvents();
-                Cursor.Position = temp;
-            }
-            */
         }
 
         private void ChangePageDirection(BindingMode binding)
@@ -13215,25 +11188,6 @@ namespace ZipPla
             return !((aIsSpread || a == BindingMode.SinglePage) && (bIsSpread || b == BindingMode.SinglePage));
         }
         
-        /*
-        private void ViewerForm_KeyDown(object sender, KeyEventArgs e)
-        {
-            bool Handled = true;
-            switch (e.KeyCode)
-            {
-                case Keys.Escape:
-                    windowToolStripMenuItem_Click(null, null);
-                    break;
-                default:
-                    Handled = false;
-                    break;
-            }
-            if (Handled)
-            {
-                e.Handled = true;
-            }
-        }
-        */
 
         private static readonly int Control_PreviewKeyDown_Speed = Program.DpiScaling(20);
         private bool KeysUpState = false;
@@ -13317,32 +11271,6 @@ namespace ZipPla
             return b ? 1 : 0;
         }
 
-        /*
-        private void ViewerForm_KeyUp(object sender, KeyEventArgs e)
-        {
-            bool Handled = true;
-            switch (e.KeyCode)
-            {
-                case Keys.Z:
-                    if (ViewerMode == ViewerModeEnum.MagnifierOpening)
-                    {
-                        MagnifierPhase2();
-                    }
-                    else if (ViewerMode == ViewerModeEnum.MagnifierClosing)
-                    {
-                        MagnifierPhase4();
-                    }
-                    break;
-                default:
-                    Handled = false;
-                    break;
-            }
-            if (Handled)
-            {
-                e.Handled = true;
-            }
-        }
-        */
 
         private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -13513,31 +11441,6 @@ namespace ZipPla
         }
 
 
-        /*
-        private void magnifierContextMenuForMenuStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (ViewerMode == ViewerModeEnum.Normal)
-            {
-                MagnifierPhase1();
-                MagnifierPhase2();
-            }
-            else if (ViewerMode == ViewerModeEnum.Magnifier)
-            {
-                MagnifierPhase3();
-                MagnifierPhase4();
-            }
-        }
-
-        private void rightToLeftContextMenuForMenuStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ChangePageDirection(false);
-        }
-
-        private void leftToRightContextMenuForMenuStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ChangePageDirection(true);
-        }
-        */
 
         private void magnifierToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -13994,27 +11897,6 @@ namespace ZipPla
             {
                 // seemToBook は廃止
                 onePageModeForNext = CoverBindingMode == CoverBindingMode.ForceSingle;
-                /*
-                if (requestedCoverBindingMode == null)
-                {
-                    var ea = EntryArray;
-                    if (ea != null)
-                    {
-                        var ld = loader;
-                        if (ld != null)
-                        {
-                            if (seemToBeBook(ld.Type, ea))
-                            {
-                                onePageModeForNext = true;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    onePageModeForNext = requestedCoverBindingMode == CoverBindingMode.ForceSingle;
-                }
-                */
             }
             showCurrentPage();
             mtbPage.Value = currentPage;
@@ -14072,13 +11954,6 @@ namespace ZipPla
             bmwLoadEachPage.ThreadCount = LoadThreadCount;
         }
         
-        /*
-        private void ViewerForm_HelpButtonClicked(object sender, CancelEventArgs e)
-        {
-            SetMemoryUBound();
-            ReduceUsingMemory(usedMemoryUBound);
-        }
-        */
 
         private void mtbPage_MouseEnter(object sender, EventArgs e)
         {
@@ -14204,12 +12079,6 @@ namespace ZipPla
                 }
                 return true;
             }
-            /*
-            public bool ShortcutEquals(KeyboardShortcutCommand other)
-            {
-                return ShortcutEquals(Shortcut, other.Shortcut);
-            }
-            */
             public static bool ShortcutEquals(Keys[][] a, Keys b)
             {
                 if (a == null || a.Length != 1) return false;
@@ -14231,11 +12100,6 @@ namespace ZipPla
                 return a0 != null && a0.Length == 1 && ExtendedKeys.IsLButton((System.Windows.Forms.Keys)a0[0]);
             }
             
-            /*
-            private static bool ShortcutIntersect(Keys[][] a, Keys[][] b)
-            {
-                return a != null && a.Any(ai => ai != null && ai.Any(ak => b != null && b.Any(bi => bi != null && bi.Any(bk => ak == bk || ExtendedKeys.IsLButton((System.Windows.Forms.Keys)ak) && ExtendedKeys.IsLButton((System.Windows.Forms.Keys)bk)))));
-            }*/
 
             public bool ShortcutCompetes(KeyboardShortcutCommand other)
             {
@@ -14257,12 +12121,6 @@ namespace ZipPla
                 return KeyboardShortcutSettingForm.WeaklyCompetesShortcut(Convert(Shortcut), Convert(other.Shortcut));
             }
 
-            /*
-            public bool ShortcutIntersect(KeyboardShortcutCommand other)
-            {
-                return ShortcutIntersect(Shortcut, other.Shortcut);
-            }
-            */
 
             public enum Keys
             {
@@ -14770,25 +12628,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void setShortcutKeyForDevelop()
-        {
-            var t = getMouseGestureSettingTemplate(CommandSender.KeyboardShortcut);
-            ksViewForm.Actions = new KeyboardShortcutAction[]
-            {
-                setShortcutKeyForDevelopHelper(t, Command.NextPage, Keys.Right),
-                setShortcutKeyForDevelopHelper(t, Command.PreviousPage, Keys.Left),
-                setShortcutKeyForDevelopHelper(t, Command.MoveForwardOnePage, Keys.Down),
-                setShortcutKeyForDevelopHelper(t, Command.MoveBackOnePage, Keys.Up),
-            };
-        }
-        private KeyboardShortcutAction setShortcutKeyForDevelopHelper(MouseGestureSettingTemplate[] t, Command command, params Keys[] keys)
-        {
-            var intCommand = (int)command;
-            var continuousExecution = ContinuousExecutionCommands.Contains(command);
-            return new KeyboardShortcutAction(intCommand, t.First(e => e.Key == intCommand).Action, continuousExecution, keys);
-        }
-        */
 
         private void setShortcutKeyDisplayStrings(bool setKeyNames)
         {
@@ -14899,18 +12738,6 @@ namespace ZipPla
                 Command.NextPage, Command.MoveForwardOrMagnifierAutoScroll, Command.MoveForwardOrMagnifierAutoScrollWithoutOverwrap);
             previousPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(/*Message.WheelUp,*/ kss,
                 Command.PreviousPage, Command.MoveBackOrMagnifierAutoScroll, Command.MoveBackOrMagnifierAutoScrollWithoutOverwrap);
-            /*
-            if (ksViewForm.ActionsContainsLButton)
-            {
-                rightPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.RightPage);
-                leftPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.LeftPage);
-            }
-            else
-            {
-                rightPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.LeftClickOnRightHalf, kss, Command.RightPage);
-                leftPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.LeftClickOnLeftHalf, kss, Command.LeftPage);
-            }
-            */
             rightPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss,
                 Command.RightPage, Command.MoveRightOrMagnifierAutoScroll, Command.MoveRightOrMagnifierAutoScrollWithoutOverwrap);
             leftPageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss,
@@ -14933,10 +12760,6 @@ namespace ZipPla
             {
                 moveBack1PageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.WheelUpOnBar, kss, Command.MoveBackOnePage);
             }
-            //else
-            //{
-                //moveBack1PageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(Message.LeftClickOnCenter + ", " + Message.WheelUpOnBar, kss, Command.MoveBackOnePage);
-            //}
             moveRight1PageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveRightOnePage);
             moveRight1PageToolStripMenuItem.Visible = !string.IsNullOrEmpty(moveRight1PageToolStripMenuItem.ShortcutKeyDisplayString);
             moveLeft1PageToolStripMenuItem.ShortcutKeyDisplayString = getShortcutKeyDisplayStrings(kss, Command.MoveLeftOnePage);
@@ -15352,33 +13175,7 @@ namespace ZipPla
 
         }
 
-        /*
-        private void mtbPage_MouseDown(object sender, MouseEventArgs e)
-        {
-            EventHandlerForOpenNextOrPrevious(sender, e);
-        }
 
-        private void statusStrip_MouseDown(object sender, MouseEventArgs e)
-        {
-            EventHandlerForOpenNextOrPrevious(sender, e);
-        }
-        */
-
-            /*
-        private void EventHandlerForOpenNextOrPrevious(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Middle)
-            {
-                var control = sender as Control;
-                if (control != null)
-                {
-                    var p = control.PointToClient(Cursor.Position);
-                    if ((2 * p.X < control.Left + control.Right) ^ mtbPage.ValueRightToLeft) OpenPrevious();
-                    else OpenNext();
-                }
-            }
-        }
-        */
         
         private void ShowViewSettingHint()
         {
@@ -15460,15 +13257,6 @@ namespace ZipPla
             }
 
             // 4 つを順番に
-            /*
-            switch(BindingMode)
-            {
-                case BindingMode.LeftToRight: ChangePageDirection(BindingMode.RightToLeft); break;
-                case BindingMode.RightToLeft: ChangePageDirection(BindingMode.SinglePage); break;
-                case BindingMode.SinglePage: ChangePageDirection(BindingMode.SinglePageWithoutScalingUp); break;
-                default: ChangePageDirection(BindingMode.LeftToRight); break;
-            }
-            */
         }
 
         private void pbView_MouseLeave(object sender, EventArgs e)
@@ -15680,22 +13468,6 @@ namespace ZipPla
                         tmSlideshow_Tick(sender, e);
                     }
                     bmwLoadEachPage.EachRunWorkerCompleted -= eh;
-                    /*
-                    if (isMovable())
-                    {
-                        move();
-                        tmSlideshow_LoadWaiting = false;
-                        if (tmSlideshow_StopReserved)
-                        {
-                            tmSlideshow_StopReserved = false;
-                        }
-                        else
-                        {
-                            tmSlideshow.Start();
-                        }
-                        bmwLoadEachPage.EachRunWorkerCompleted -= eh;
-                    }
-                    */
                 };
                 bmwLoadEachPage.EachRunWorkerCompleted += eh;
             }
@@ -15781,15 +13553,6 @@ namespace ZipPla
             ControlPainter.FillCross(sender as ToolStripItem, e);
         }
 
-        /*
-        private void imageFilterToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
-        {
-            rotateLeftToolStripMenuItem.Checked = imageFilter.RotationAngle == 270;
-            rotateRightToolStripMenuItem.Checked = imageFilter.RotationAngle == 90;
-            //binarizationToolStripMenuItem.Checked = imageFilter.PixelValueConversion == PixelValueConversion.Binarization;
-            //autoContrastControlToolStripMenuItem.Checked = imageFilter.PixelValueConversion == PixelValueConversion.AutoContrastControl;
-        }
-        */
 
         private void rotateLeftToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -15847,45 +13610,7 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void removeMoireToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            toggleMoireRemover();
-        }
 
-        private void toggleMoireRemover()
-        {
-            if (ViewerMode != ViewerModeEnum.CoverSetting)
-            {
-                imageFilter.MoireRemoverEnabled = !imageFilter.MoireRemoverEnabled;
-                reloadForChangeFilter(forOnlyPostFilter: true);
-            }
-        }
-        */
-
-        /*
-        private void binarizationToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            toggleBinarization();
-        }
-
-        private void toggleBinarization()
-        {
-            imageFilter.PixelValueConversion = imageFilter.PixelValueConversion == PixelValueConversion.Binarization ? PixelValueConversion.None : PixelValueConversion.Binarization;
-            reloadForChangeFilter();
-        }
-
-        private void autoContrastControlToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            toggleAutoContrastControl();
-        }
-
-        private void toggleAutoContrastControl()
-        {
-            imageFilter.PixelValueConversion = imageFilter.PixelValueConversion == PixelValueConversion.AutoContrastControl ? PixelValueConversion.None : PixelValueConversion.AutoContrastControl;
-            reloadForChangeFilter();
-        }
-        */
 
         private void reloadForChangeFilter(bool forOnlyPostFilter)
         {
@@ -16042,14 +13767,6 @@ namespace ZipPla
             spline16NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline16;
             spline36NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline36;
             spline64NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline64;
-            /*
-#if !AUTOBUILD
-            antiMoire1ToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.AntiMoire1;
-            antiMoire2ToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.AntiMoire2;
-            antiMoire3ToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.AntiMoire3;
-            antiMoire4ToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.AntiMoire4;
-#endif
-            */
         }
 
         int standardScalingAlgorithm_BenchRequest = -1;
@@ -16146,35 +13863,6 @@ namespace ZipPla
             setStandardScalingAlgorithm(ScalingAlgorithm.Spline64);
         }
 
-        /*
-        private void antiMoire1ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-#if !AUTOBUILD
-            setStandardScalingAlgorithm(ScalingAlgorithm.AntiMoire1);
-#endif
-        }
-
-        private void antiMoire2ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-#if !AUTOBUILD
-            setStandardScalingAlgorithm(ScalingAlgorithm.AntiMoire2);
-#endif
-        }
-
-        private void antiMoire3ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-#if !AUTOBUILD
-            setStandardScalingAlgorithm(ScalingAlgorithm.AntiMoire3);
-#endif
-        }
-
-        private void antiMoire4ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-#if !AUTOBUILD
-            setStandardScalingAlgorithm(ScalingAlgorithm.AntiMoire4);
-#endif
-        }
-        */
 
         private void linearizeColorSpaceforGamma22NormalToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -16392,21 +14080,6 @@ namespace ZipPla
             {
                 normalStateLocation = Location;
             }
-            /*
-            var screen = Screen.FromControl(this).Bounds.Location;
-            if (ws == FormWindowState.Maximized && ViewerForm_LocationChanged_LastWindowState == FormWindowState.Maximized &&
-                ViewerForm_LocationChanged_LastScreenOrigin != null && ViewerForm_LocationChanged_LastScreenOrigin != screen && normalStateLocation != null)
-            {
-                var nsl = (Point)normalStateLocation;
-                var pre = (Point)ViewerForm_LocationChanged_LastScreenOrigin;
-                normalStateLocation = new Point(nsl.X + screen.X - pre.X, nsl.Y + screen.Y - pre.Y);
-
-                this.screen
-            }
-
-            ViewerForm_LocationChanged_LastWindowState = ws;
-            ViewerForm_LocationChanged_LastScreenOrigin = screen;
-            */
         }
 
         private void alwaysAutoHideUIToolStripMenuItem_Click(object sender, EventArgs e)
@@ -16789,12 +14462,6 @@ namespace ZipPla
             ViewSettingHintMode = ViewSettingHintMode == ViewSettingHintMode.ShowWhenChangingSettings ? ViewSettingHintMode.NeverShow : ViewSettingHintMode.ShowWhenChangingSettings;
         }
 
-        /*
-        private void ViewerForm_Deactivate(object sender, EventArgs e)
-        {
-            //tmMemoryReducer.Enabled = true;
-        }
-        */
 
         private void ToggleForceFirstPageToBeSingle()
         {
@@ -16827,230 +14494,8 @@ namespace ZipPla
             ContextMenuForMenuStripPostProcessing2();
         }
 
-        /*
-        private void menuStrip_MouseMove(object sender, MouseEventArgs e)
-        {
-            //if (!menuStrip.Visible)
-            {
-                var newPoint = menuStrip.PointToClient(pbView.PointToScreen(e.Location));
-                pbView_MouseMove(pbView, new MouseEventArgs(e.Button, e.Clicks, newPoint.X,newPoint.Y, e.Delta));
-            }
-        }
-        */
     }
 
-    /*
-    class myTrackBarMouseWheelEventArgs : MouseEventArgs
-    {
-        public bool Handled = false;
-        public int Value;
-        public myTrackBarMouseWheelEventArgs(MouseEventArgs e) : base(e.Button, e.Clicks, e.X, e.Y, e.Delta)
-        {
-        }
-    }
-    delegate void myTrackBarMouseWheelEventHandler(myTrackBarOld sender, myTrackBarMouseWheelEventArgs e);
-
-    class myTrackBarOld : TrackBar
-    {
-        public new event myTrackBarMouseWheelEventHandler MouseWheel;
-
-        private int ValueForced;
-        private readonly double DisplayMagnificationX;
-        private readonly double DisplayMagnificationY;
-        public myTrackBarOld()
-        {
-            ValueForced = Minimum - 1;
-            using (var g = CreateGraphics())
-            {
-                DisplayMagnificationX = g.DpiX / 96.0;
-                DisplayMagnificationY = g.DpiY / 96.0;
-            }
-
-            Maximum = base.Maximum;
-        }
-        
-        protected override void OnMouseWheel(MouseEventArgs e)
-        {
-            //var delta = e.Delta / 120;
-            if(MouseWheel != null)
-            {
-                var e2 = new myTrackBarMouseWheelEventArgs(e);
-                MouseWheel(this, e2);
-                if(e2.Handled)
-                {
-                    ValueForced = Math.Max(Minimum, Math.Min(Maximum, e2.Value));
-                }
-            }
-
-            base.OnMouseWheel(e);
-        }
-
-        protected override void OnValueChanged(EventArgs e)
-        {
-            if (ValueForced >= Minimum)
-            {
-                Value = ValueForced;
-            }
-            ValueForced = Minimum - 1;
-
-            if (maximum != base.Maximum)
-            {
-                int baseValue;
-                if (valueRightToLeft)
-                {
-                    baseValue = maximum + 1;
-                }
-                else
-                {
-                    baseValue = maximum;
-                }
-                if (baseValue != base.Value) base.Value = baseValue;
-            }
-
-
-            base.OnValueChanged(e);
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                Value = PointToValue(e.Location);
-            }
-            base.OnMouseDown(e);
-        }
-
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            if(e.KeyCode == Keys.Up || e.KeyCode == Keys.Down || e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
-            {
-                e.Handled = true;
-            }
-            base.OnKeyDown(e);
-        }
-
-        public int PointToValue(Point clientCoordinate)
-        {
-            int x = clientCoordinate.X, y = clientCoordinate.Y;
-            var margin = 5 + 8 * DisplayMagnificationX;
-            var right = Width - margin - 1;
-            int result;
-            if (x <= margin)
-            {
-                result = Minimum;
-            }
-            else if (x >= right)
-            {
-                result = Maximum;
-            }
-            else
-            {
-                result =(int)Math.Round((Maximum - Minimum) * (x - margin) / (right - margin) + Minimum);
-            }
-            if(valueRightToLeft)
-            {
-                return maximum - (result - Minimum);
-            }
-            else
-            {
-                return result;
-            }
-        }
-        
-        private bool valueRightToLeft = false;
-
-        /// <summary>
-        /// Minimum, Enabled を外部から操作する場合は使えない
-        /// </summary>
-        public bool ValueRightToLeft
-        {
-            get { return valueRightToLeft; }
-            set
-            {
-                if(value != valueRightToLeft)
-                {
-                    var currentValue = Value;
-                    valueRightToLeft = value;
-                    Value = currentValue;
-                }
-            }
-        }
-        public new int Value
-        {
-            get
-            {
-                if (maximum == base.Maximum)
-                {
-                    if (valueRightToLeft)
-                    {
-                        return Maximum - (base.Value - Minimum);
-                    }
-                    else
-                    {
-                        return base.Value;
-                    }
-                }
-                else
-                {
-                    return maximum;
-                }
-            }
-            set
-            {
-                if (maximum == base.Maximum)
-                {
-                    if (valueRightToLeft)
-                    {
-                        base.Value = Maximum - (value - Minimum);
-                    }
-                    else
-                    {
-                        base.Value = value;
-                    }
-                }
-                else
-                {
-                    if (valueRightToLeft)
-                    {
-                        base.Value = maximum + 1;
-                    }
-                    else
-                    {
-                        base.Value = maximum;
-                    }
-                }
-            }
-        }
-
-        private int maximum;
-        public new int Maximum
-        {
-            get
-            {
-                return maximum;
-            }
-            set
-            {
-                if(value > Minimum)
-                {
-                    base.Maximum = maximum = value;
-                    //Enabled = true;
-                }
-                else
-                {
-                    maximum = value;
-                    var min = Minimum;
-                    var max = min + 1;
-                    base.Maximum = max;
-                    base.Value = valueRightToLeft ? max : min;
-                    //Enabled = false;
-                }
-            }
-        }
-        
-    }
-
-    */
 
     public class ViewControl : Control, ISupportInitialize
     {
@@ -17101,20 +14546,6 @@ namespace ZipPla
             catch { }
         }
 
-        /*
-        public void PerformPaint()
-        {
-            using (var g = CreateGraphics())
-            {
-                OnPaint(new PaintEventArgs(g, DisplayRectangle));
-            }
-        }
-
-        public new void Invalidate(bool dummy)
-        {
-            PerformPaint();
-        }
-        */
 
 #region Paint 中にスレッドの譲渡が起こっても Paint が二重で動作することがないようにする実装
         bool invalidating = false;
@@ -17233,57 +14664,6 @@ namespace ZipPla
         }
     }
 
-    /*
-    class ContextMenuForMenuStrip : ContextMenu
-    {
-        public bool CancelClose = false;
-
-        public bool CloseCancelable = false;
-
-        private bool waiting = false;
-
-        public event EventHandler DropDownClosed;
-        
-        public async void Show(ToolStripMenuItem toolStripMenuItem)
-        {
-            if (waiting) return;
-
-            var bounds = toolStripMenuItem.Bounds;
-            var parent = toolStripMenuItem.GetCurrentParent();
-            var parentBounds = parent.Bounds;
-
-            if (CloseCancelable)
-            {
-                do
-                {
-                    CancelClose = false;
-                    Show(parent, new Point(bounds.Left, parentBounds.Height));
-                    Application.DoEvents();
-                }
-                while (CancelClose);
-            }
-            else
-            {
-                Show(parent, new Point(bounds.Left, parentBounds.Height));
-            }
-
-            DropDownClosed?.Invoke(this, null);
-
-            if (bounds.Contains(parent.PointToClient(Cursor.Position)))
-            {
-                waiting = true;
-                await Task.Run(()=>
-                {
-                    while (((Control.MouseButtons & MouseButtons.Left) == MouseButtons.Left))
-                    {
-                        Thread.Sleep(50);
-                    }
-                });
-                waiting = false;
-            }
-        }
-    }
-    */
 
     public enum SeekBarMode { LeftToRight, RightToLeft, SameAsPage, ReverseOfPage }
     public enum ZoomMode { LeftToRight, RightToLeft, SameAsPage, ReverseOfPage }

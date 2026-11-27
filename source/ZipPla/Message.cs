@@ -31,9 +31,6 @@ namespace ZipPla
 #endif
             {
                 SetJapaneseMessages();
-                //CurrentLanguage = new CultureInfo("ja-JP");
-                //if (!System.IO.File.Exists(path)) MakeNewTextFile(path, GetCurrentMessages());
-                //MakeNewTextFile(path, GetCurrentMessages(path));
                 MakeNewTextFile(path, GetCurrentMessages());
             }
 
@@ -43,9 +40,6 @@ namespace ZipPla
 #endif
             {
                 SetEnglishMessages();
-                //CurrentLanguage = DefaultLanguage;
-                //if (!System.IO.File.Exists(path)) MakeNewTextFile(path, GetCurrentMessages());
-                //MakeNewTextFile(path, GetCurrentMessages(path));
                 MakeNewTextFile(path, GetCurrentMessages());
             }
 
@@ -94,17 +88,6 @@ namespace ZipPla
             get
             {
                 return CultureInfo.CurrentUICulture;
-                /*
-                var currentUICulture = CultureInfo.CurrentUICulture;
-                if (currentUICulture.IsNeutralCulture)
-                {
-                    return currentUICulture;
-                }
-                else
-                {
-                    return currentUICulture.Parent;
-                }
-                */
             }
         }
 
@@ -250,46 +233,6 @@ namespace ZipPla
             return result;
         }
 
-        /*
-        private static void SetMessagesOld(CultureInfo language)
-        {
-            var path = GetLanguageFilePath(language);
-
-            // ファイル → FileStream → MemoryStream → Reader
-            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read))
-            using (var mr = new System.IO.MemoryStream((int)fs.Length))
-            {
-                fs.CopyTo(mr);
-                mr.Seek(0, System.IO.SeekOrigin.Begin);
-
-                using (var r = new System.IO.StreamReader(mr))
-
-                // ファイル → FileStream → Reader
-                //using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read))
-                //using (var r = new System.IO.StreamReader(fs))
-
-                // ファイル → Reader
-                //using (var r = new System.IO.StreamReader(path))
-                {
-                    string line;
-                    Type thisType = typeof(Message);
-                    while ((line = r.ReadLine()) != null)
-                    {
-                        var equal = line.IndexOf("=");
-                        if (equal <= 0 || line.Length - 1 <= equal) continue;
-                        var name = line.Substring(0, equal);
-                        var value = line.Substring(equal + 1);
-
-                        var pi = thisType.GetProperty(name);
-                        if (pi != null)
-                        {
-                            pi.SetValue(null, value);
-                        }
-                    }
-                }
-            }
-        }
-        */
 
         private static bool MakeNewTextFile(string filepath, string text, bool append = false)
         {
@@ -479,12 +422,6 @@ namespace ZipPla
             MaxCountCaptchaInAVideo = "動画内の最大キャプチャ数";
             FitOnScreen = "ウィンドウに合わせる";
             EverySecond = "1 秒間隔";
-            //ThumbnailList = "サムネイルリスト";
-            //FileList = "ファイルリスト";
-            //PageInFileList = "ページ（ファイルリスト内）";
-            //RatingInFileList = "レート（ファイルリスト内）";
-            //DateAccessedInFileList = "アクセス日時（ファイルリスト内）";
-            //DateModifiedInFileList = "更新日時（ファイルリスト内）";
             ArchiveFilesPdfFiles = "圧縮ファイル／ PDF ファイル";
             ImageFiles = "画像ファイル";
             VideoFiles = "動画ファイル";
@@ -784,10 +721,6 @@ namespace ZipPla
             WheelDown = "ホイール ↓";
             //CursorRight = "カーソル →";
             WheelUp = "ホイール ↑";
-            //CursorLeft = "カーソル ←";
-            //LeftClickOnRightHalf = "右半分をクリック";
-            //LeftClickOnLeftHalf = "左半分をクリック";
-            //LeftClickOnCenter = "中央をクリック";
 
             Specials = "特殊入力";
 
@@ -1033,13 +966,6 @@ namespace ZipPla
             DisplayRespectingToSortOfDirection = "ソート方向に合わせて表示";
             //ShowFolderSizeOnStatusBar = "フォルダーサイズをステータスバーに表示";
 
-            /*
-            ArrangementOfFolders = "フォルダーの並べ方";
-            MixWithFiles = "ファイルと区別しない";
-            DisplayFirst = "先頭に表示";
-            DisplayLast = "末尾に表示";
-            FitToDirectionOfSort = "ソート方向に合わせる";
-            */
             //ItemSelectionFeedback = "選択項目のフィードバック";
             AutomaticSelectionSwitching = "選択項目の自動切り替え";
             InAppropriateCases = "適切な場合に";
@@ -1079,9 +1005,6 @@ namespace ZipPla
             ShowDialogBeforeConnection = "通信時に通知";
             //AskPermissionBeforeInternetConnection = "通信前にユーザーの許可を求める";
             OtherChecksOnStartup = "その他の起動時チェック";
-            //CheckOnStartup = "Check on startup";
-            //CheckOnStartup = "起動時にチェック";
-            //DoNotShowAgain = "二度目以降は表示しない";
             DragAndDrop = "ドラッグ＆ドロップ";
             //ShowThumbnails = "サムネイルを表示";
             //OpenInZipPla = "ZipPla で開く";
@@ -1133,10 +1056,6 @@ namespace ZipPla
             //TargetItemsAreSpecifiedByRegularExpression = @"対象の名前は /\.(zip|rar|pdf)$/i のような正規表現で指定してください。";
             ApplicationFilterDescription = @"ファイル／フォルダーの指定には以下の形式が使用できます。\n\n\n全てのファイル／フォルダー\n*;\\n\nZIP ファイル／フォルダー／RAR ファイル\nzip;\;rar\n\n正規表現\n/\.jpe?g$/i";
 
-            //Viewer = "ビューアー";
-            //ExternalViewer = "外部ビューアー";
-            //BuiltInViewer = "内蔵ビューアー";
-            //DefaultViewer = "デフォルトビューアー";
             
             OK = "OK";
             Cancel = "キャンセル";
@@ -1151,9 +1070,6 @@ namespace ZipPla
             DoYouDiscardChangedName = "名前の変更を破棄してもよろしいですか？";
             DoYouRenameThis = "名前を変更しますか？";
             DoYouRenameFollowing1Items = "以下の $1 個の項目の名前を変更しますか？";
-            //DoYouOverwriteFollowing1Items = "以下の $1 個の項目を上書きしてもよろしいですか？";
-            //DoYouSendSelectedItemsToRecycleBin = "選択項目をごみ箱へ移動してもよろしいですか？";
-            //DoYouDeleteSelectedItemsPermanently = "選択項目を完全に削除してもよろしいですか？";
             DoYouSendFollowing1ItemsToRecycleBin = "以下の $1 個の項目をごみ箱に移動しますか？";
             DoYouDeleteFollowing1ItemsPermanently = "以下の $1 個の項目を完全に削除しますか？";
             DoYouRemoveFollowing1ItemsFromVirtualFolder = "以下の $1 個の項目を仮想フォルダーから除去しますか？";
@@ -1342,16 +1258,6 @@ namespace ZipPla
             MaxCountCaptchaInAVideo = "Max count captcha in a video";
             FitOnScreen = "Fit on the screen";
             EverySecond = "Every second";
-            //Vertical = "Vertical";
-            //AlternativeVertical = "Alternative vertical";
-            //Horizontal = "Horizontal";
-            //AlternativeHorizontal = "Alternative horizontal";
-            //ThumbnailList = "Thumbnail list";
-            //FileList = "File list";
-            //PageInFileList = "Page time in file list";
-            //RatingInFileList = "Rating in file list";
-            //DateAccessedInFileList = "Date accessed in file list";
-            //DateModifiedInFileList = "Date modified in file list";
             ArchiveFilesPdfFiles = "Archive files / PDF files";
             ImageFiles = "Image files";
             VideoFiles = "Video files";
@@ -1399,14 +1305,6 @@ namespace ZipPla
             OneLine = "1 line";
             _1Lines = "$1 lines";
             ThumbnailCache  = "Thumbnail cache";
-            /*
-            ThumbnailCacheFirstDescription =
-                @"By using the thumbnail cache,\n" +
-                @"thumbnails you view are stored in some location for quick viewing later.";
-            ThumbnailCacheFirstDescriptionForFirstLaunch =
-                @"By using the thumbnail cache, thumbnails you view are stored in some location for\n" +
-                @"quick viewing later. This option can be changed from ""Thumbnail > Thumbnail cache...""";
-                */
             ThumbnailCacheFirstDescription =
                 @"This option allow thumbnails you view to be stored in some location\n" +
                 @"for quick viewing later.";
@@ -1660,10 +1558,6 @@ namespace ZipPla
             WheelDown = "Wheel ↓";
             //CursorRight = "Cursor →";
             WheelUp = "Wheel ↑";
-            //CursorLeft = "Cursor ←";
-            //LeftClickOnRightHalf = "Click on right half";
-            //LeftClickOnLeftHalf = "Click on left half";
-            //LeftClickOnCenter = "Click on center";
 
             Specials = "Specials";
 
@@ -1737,9 +1631,6 @@ namespace ZipPla
             RotateLeft = "Rotate left";
             RotateRight = "Rotate right";
             CancelRotationSetting = "Cancel rotation setting";
-            //Binarization = "Binarization";
-            //AutoContrastControl = "Auto contrast control";
-            //RemoveMoire = "Remove moire";
             ToneCurve = "Tone curve";
             ToneCurveSepiaTone = "Tone curve (sepia tone)";
             ToneCurveUserDefined = "Tone curve (user-defined)";
@@ -1911,13 +1802,6 @@ namespace ZipPla
             DisplayRespectingToSortOfDirection = "Display respecting to sort of direction";
             //ShowFolderSizeOnStatusBar = "Show folder size on status bar";
 
-            /*
-            ArrangementOfFolders = "Arrangement of folders";
-            MixWithFiles = "Mix with files";
-            DisplayFirst = "Display first";
-            DisplayLast = "Display last";
-            FitToDirectionOfSort = "Fit to direction of sort";
-            */
 
             //ItemSelectionFeedback = "Item selection feedback";
             AutomaticSelectionSwitching = "Automatic selection switching";
@@ -2007,10 +1891,6 @@ namespace ZipPla
             //TargetItemsAreSpecifiedByRegularExpression = @"Target items are specified by regular expression like /\.(zip|rar|pdf)$/i";
             ApplicationFilterDescription = @"The following patterns can be used to specify files/folders.\n\n\nAll files/folders\n*;\\n\nZIP files / all folders / RAR files\nzip;\;rar\n\nRegular expression\n/\.jpe?g$/i";
 
-            //Viewer = "Viewer";
-            //ExternalViewer = "External viewer";
-            //BuiltInViewer = "Built-in viewer";
-            //DefaultViewer = "Default viewer";
 
             OK = "OK";
             Cancel = "Cancel";
@@ -2220,12 +2100,6 @@ namespace ZipPla
         public static string MaxCountCaptchaInAVideo { get; private set; }
         public static string FitOnScreen { get; private set; }
         public static string EverySecond { get; private set; }
-        //public static string ThumbnailList { get; private set; }
-        //public static string FileList { get; private set; }
-        //public static string PageInFileList { get; private set; }
-        //public static string RatingInFileList { get; private set; }
-        //public static string DateAccessedInFileList { get; private set; }
-        //public static string DateModifiedInFileList { get; private set; }
         public static string ArchiveFilesPdfFiles { get; private set; }
         public static string ImageFiles { get; private set; }
         public static string VideoFiles { get; private set; }
@@ -2283,10 +2157,6 @@ namespace ZipPla
         public static string Browse { get; private set; }
         public static string NotUseThumbnailCache { get; private set; }
         public static string AdsNotSupportedWarningMessage { get; private set; }
-        //public static string CreateThumbnailCache { get; private set; }
-        //public static string AboutThumbnailCache { get; private set; }
-        //public static string ThumbnailCacheDescription { get; private set; }
-        //public static string ShowFilename { get; private set; }
         public static string ShowName { get; private set; }
         public static string _Others { get; private set; }
         public static string _ChangeCurrentProfileColor { get; private set; }
@@ -2392,9 +2262,6 @@ namespace ZipPla
         //public static string MoveFilesFolders { get; private set; }
         public static string MoveExtractSelectedItems { get; private set; }
         public static string MoveExtractSelectedItemsTo1 { get; private set; }
-        //public static string MoveSelectedItemsTo1 { get; private set; }
-        //public static string MoveThisTo1 { get; private set; }
-        //public static string MoveTheseTo1 { get; private set; }
         public static string AssociatedApplication { get; private set; }
         //public static string MoveToThisFolder { get; private set; }
         public static string OpenInCurrentWindow { get; private set; }
@@ -2485,21 +2352,11 @@ namespace ZipPla
         public static string DisableMagnifierWithoutScreenEffects { get; private set; }
         public static string MagnifierOperatingGuide { get; private set; }
 
-        //public static string MagnifierMiddleButtonZ { get; private set; }
-        //public static string RightToLeftL { get; private set; }
-        //public static string LeftToRightR { get; private set; }
 
         //public static string ForwardLeftButtonWheelDownCursorRight { get; private set; }
         //public static string BackWheelUpCursorLeft { get; private set; }
 
-        //public static string ForwardLeftButtonOnLeftHalfInRightToLeftWheelDownCursorRight { get; private set; }
-        //public static string ForwardLeftButtonOnRightHalfInLeftToRightWheelDownCursorRight { get; private set; }
-        //public static string BackLeftButtonOnRightHalfInRightToLeftWheelUpCursorLeft { get; private set; }
-        //public static string BackLeftButtonOnLeftHalfInLeftToRightWheelUpCursorLeft { get; private set; }
 
-        //public static string ForwardOneWheelDownOnBarCursorDown { get; private set; }
-        //public static string BackOneWheelDownOnBarCursorDown { get; private set; }
-        //public static string Ratio { get; private set; }
 
         //public static string DefaultClickBehavior { get; private set; }
         public static string NextPage { get; private set; }
@@ -2760,13 +2617,6 @@ namespace ZipPla
         //public static string ShowFolderSizeOnStatusBar { get; private set; }
 
 
-        /*
-    public static string ArrangementOfFolders { get; private set; }
-    public static string MixWithFiles { get; private set; }
-    public static string DisplayFirst { get; private set; }
-    public static string DisplayLast { get; private set; }
-    public static string FitToDirectionOfSort { get; private set; }
-    */
 
         public static string AutomaticSelectionSwitching { get; private set; }
         public static string InAppropriateCases { get; private set; }
@@ -2820,9 +2670,6 @@ namespace ZipPla
         public static string ShowInContextMenu { get; private set; }
         public static string RenameItemByEditingTextBox { get; private set; }
         public static string AllFiles { get; private set; }
-        //public static string Default { get; private set; }
-        //public static string StartWithAccessKeyContainedInName { get; private set; }
-        //public static string EnableAccessKeysInAlsoBookmark { get; private set; }
         public static string AboutAccessKey { get; private set; }
         public static string ApplicationAccessKeyUsageDescription { get; private set; }
         public static string BookmarkAccessKeyUsageDescription { get; private set; }
@@ -2838,10 +2685,6 @@ namespace ZipPla
         public static string ApplicationFilterDescription { get; private set; }
 
 
-        //public static string Viewer { get; private set; }
-        //public static string ExternalViewer { get; private set; }
-        //public static string BuiltInViewer { get; private set; }
-        //public static string DefaultViewer { get; private set; }
 
         public static string OK { get; private set; }
         public static string Cancel { get; private set; }

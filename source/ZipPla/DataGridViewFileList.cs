@@ -17,21 +17,6 @@ namespace ZipPla
 
     public class DataGridViewFileList : DataGridView, IGraphicalList
     {
-        /*
-        DataGridView dataGridView;
-
-        public DataGridViewFileList(DataGridView dataGridView)
-        {
-            this.dataGridView = dataGridView;
-            dataGridView.MouseDown += dataGridView_MouseDown;
-        }
-
-        private void dataGridView_MouseDown(object sender, MouseEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        */
 
         //public Func<int?> GetCurrentIndex;
 
@@ -376,9 +361,6 @@ namespace ZipPla
             {
                 OnMouseDown_DragOutStartRectangle = Rectangle.Empty;
 
-                //foreach (var action in mouseDown) base.MouseDown -= action;
-                //OnMouseClick(e);
-                //foreach (var action in mouseDown) base.MouseDown += action;
 
 
                 var hit = HitTest(e.X, e.Y);
@@ -460,10 +442,6 @@ namespace ZipPla
                 DragAttempted?.Invoke(this, e);
             }
             OnMouseDown_DragOutStartIndex = -1;
-            //if (index >= 0 && hit.ColumnIndex >= 0)
-            //{
-                //SetCurrentCellAddressCore(hit.ColumnIndex, index, setAnchorCellAddress: false, validateCurrentCell: false, throughMouseClick: false);
-            //}
             
             base.OnMouseUp(e);
         }

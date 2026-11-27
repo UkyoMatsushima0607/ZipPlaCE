@@ -283,21 +283,6 @@ namespace ZipPla
                 catalogForm.PrepareLookAheadProcess();
             }
             
-            /*
-            if (KeyboardShortcut.GetKeyState(Keys.D) && KeyboardShortcut.GetKeyState(Keys.G))
-            {
-                var argumentsFormat = associated?.Item2;
-                var s = $"t<{target}>";
-                if (argumentsFormat != null) s += $"\nf<{argumentsFormat}>";
-                if (arguments != null) s += $"\na<{arguments}>";
-                var res = MessageBox.Show(catalogForm, s + "\n\nClick OK to copy above to clipboard.",
-                    "DEBUG", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
-                if (res == DialogResult.OK)
-                {
-                    Clipboard.SetText(s);
-                }
-            }
-            */
         }
 
         private static string GetArguments(string argumentsFormat, string path)
@@ -491,33 +476,6 @@ namespace ZipPla
             
             if (Subdivide(path) && catalogForm.InMovie) return AppendAccessKey(Message.SubdivideAroundHere, accessKey);
             return alias ?? Message.OpenInCurrentWindow;
-            /*
-            if (path == null || path.Length != 1) return "";
-
-            var path0 = path[0];
-
-            if (path0 == null) return "";
-
-            try
-            {
-                if(GetMenuText_MoveHereSuitable.IsMatch(path0) || Directory.Exists(path0))
-                {
-                    return Message.OpenInCurrentWindow;
-                }
-                else if (CatalogForm.IsSupportedByCatalogFormExceptFolder(path0)) // ファイルらしい名前のフォルダは存在し得る
-                {
-                    return Message.ShowThumbnails;
-                }
-                else
-                {
-                    return Message.MoveToLocationOfThis;
-                }
-            }
-            catch
-            {
-                return "";
-            }
-            */
         }
 
         private static string AppendAccessKey(string text, Keys accessKey)
@@ -969,13 +927,6 @@ namespace ZipPla
             }
             else
             {
-                /*
-                if (string.Compare(path, SettingForm.ExplorerPath, ignoreCase: true) == 0)
-                {
-                    return Message.OpenInExplorer;
-                }
-                else
-                */
                 {
                     try
                     {
@@ -1213,11 +1164,6 @@ namespace ZipPla
         protected override string GetMenuText(string[] path)
         {
             return GetApplicationName();
-            /*
-            if (path == null || path.Length == 0) return ExternalApplicationProvider.GetName(targetPath, Message.MoveTo1, targetAlias);
-            if (path.Length == 1) return ExternalApplicationProvider.GetName(targetPath, Message.MoveThisTo1, targetAlias);
-            return ExternalApplicationProvider.GetName(targetPath, Message.MoveTheseTo1, targetAlias);
-            */
         }
 
         /// <summary>
@@ -1264,13 +1210,6 @@ namespace ZipPla
                         var src = tuple.Item1;
                         var dst = tuple.Item2;
                         // このコマンドをコピーに使うことは想定されない
-                        /*
-                        if (!move && src == dst)
-                        {
-                            dst = GetNewPath(dst, " - " + Message.Copy, Directory.Exists(src), movedFiles);
-                            movedFiles.Add(dst);
-                        }
-                        */
                         moveOrCopy(src, Path.GetDirectoryName(dst), Path.GetFileName(dst));
                     }
                     fo.PerformOperations();
@@ -1611,17 +1550,6 @@ namespace ZipPla
         {
             Regex contextMenu, openByClicking;
             bool ocRegex;
-            /*
-            string name;
-            try
-            {
-                name = System.IO.Path.GetFileNameWithoutExtension(Path);
-            }
-            catch
-            {
-                name = Path;
-            }
-            */
             contextMenu = ParseItemGroup(ShowInContextMenu, testMode: false, isRegex: out var cmRegex);
             if (ShowInContextMenu == OpenByClicking)
             {

@@ -128,17 +128,6 @@ namespace WindowsFormUtilities
             rows = newRows;
             selectedRows = adsorbedRows;
 #if DEBUG
-            /*
-            var sr = selectedRows.OrderBy(r => r.Index).ToArray();
-            for (var i = 1; i < sr.Length; i++)
-            {
-                if (sr[i].Index - sr[i - 1].Index > 1)
-                {
-
-                    break;
-                }
-            }
-            */
 #endif
         }
 

@@ -596,15 +596,6 @@ namespace ZipPla
             }
             
 #if DRAWING
-            /*
-            public System.Drawing.Image GetDrawingImage()
-            {
-                byte[] r = GetImageAsBytes();
-                if (r == null)
-                    return null;
-                return System.Drawing.Bitmap.FromStream(new MemoryStream(r));
-            }
-            */
 #endif// DRAWING
         }
     }

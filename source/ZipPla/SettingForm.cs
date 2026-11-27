@@ -106,26 +106,6 @@ namespace ZipPla
                 }
             }
         }
-        /*
-        private bool CurrentPageLeftToRight
-        {
-            get
-            {
-                return rbLeftToRight.Checked;
-            }
-            set
-            {
-                if (value)
-                {
-                    rbLeftToRight.Checked = true;
-                }
-                else
-                {
-                    rbRightToLeft.Checked = true;
-                }
-            }
-        }
-        */
         private int CurrentMaximumNumberOfHistories
         {
             get
@@ -261,19 +241,6 @@ namespace ZipPla
                 cbDynamicStringSelectionAllowUserToRename.Checked = value;
             }
         }
-        /*
-        private bool CurrentStartWithAccessKey
-        {
-            get
-            {
-                return cbAlwaysEnableAccessKey.Checked;
-            }
-            set
-            {
-                cbAlwaysEnableAccessKey.Checked = value;
-            }
-        }
-        */
         private DynamicStringSelectionInfo[] CurrentDynamicStringSelections
         {
             get
@@ -393,13 +360,6 @@ namespace ZipPla
                     result.Cells[tbcCommandLineParameter.Index].ReadOnly = true;
                     break;
 
-                /*
-                case "<Explorer>": // 互換性保持のため
-                    {
-                        //var alias = Message.OpenInExplorer;
-                        result = getApplicationRow(ExplorerPath, null, true, ExplorerPath, GetName(ExplorerPath, null), "/select,", false, info.ShowInContextMenu, info.OpenByClicking); break;
-                    }
-                    */
                 default:
                     {
                         var path = info.Path;
@@ -649,19 +609,7 @@ namespace ZipPla
             btnLanguageEdit.Text = Message.Edit;
             openlanguageFolderToolStripMenuItem.Text = Message.OpenLanguageFolder;
             updateAndEditLanguageFileToolStripMenuItem.Text = Message.UpdateAndEditLanguageFile;
-            //gbDefaultPageSequence.Text = Message.DefaultPageSequence;
-            //rbLeftToRight.Text = Message.LeftToRight;
-            //rbRightToLeft.Text = Message.RightToLeft;
             gbHistory.Text = Message.MaximumNumberOfHistories;
-            //gbSubfolders.Text = Message.SubfolderHandling;
-            //rbSubfolderIngnore.Text = Message.Ignore;
-            //rbSubfolderSameWayAsArchives.Text = Message.InTheSameWayAsArchives;
-            //rbSubfolderSearch.Text = Message.SearchSubfoldersAsWell;
-            //gbViewer.Text = Message.Viewer;
-            //lbExternalViewer.Text = Message.ExternalViewer + ":";
-            //lbDefaultViewer.Text = Message.DefaultViewer + ":";
-            //rbBuiltInViewer.Text = Message.BuiltInViewer;
-            //rbExternalViewer.Text = Message.ExternalViewer;
             btnOK.Text = Message.OK;
             btnCancel.Text = Message.Cancel;
             gbZipPlaUpdateCheck.Text = Message.ZipPlaUpdateCheck;
@@ -861,12 +809,6 @@ namespace ZipPla
                                 if (name == defaultName) row.Alias = null;
                             }
                             row.Cells[tbcName.Index].Value = name;
-                            /*
-                            if (path != null && path.Length > 0 && path.Last() == Path.DirectorySeparatorChar)
-                            {
-                                row.Cells[tbcName.Index].Value = Message.MoveTo1.Replace("$1", row.Alias);
-                            }
-                            */
                         }
                         break;
                 }
@@ -937,12 +879,6 @@ namespace ZipPla
         private enum LoadSettings_Result { INIFileNotFound, INILoadError, Completed }
         private LoadSettings_Result LoadSettings()
         {
-            /*
-            if (!File.Exists(Configuration.XmlPath))
-            {
-                return LoadSettings_Result.INIFileNotFound;
-            }
-            */
 
             string language;
             //bool defaultPageLeftToRight;
@@ -1154,14 +1090,6 @@ namespace ZipPla
 
             // 表示項目が一つならいきなりそれを呼び出す処理
             // 現在表示項目は一つにならないので不要
-            /*
-            var cands = (from ToolStripItem item in cmsApplicationAdd.Items where item is ToolStripMenuItem && item.Enabled select item).ToArray();
-            if (cands.Length == 1)
-            {
-                cands[0].PerformClick();
-            }
-            else
-            */
             {
                 cmsApplicationAdd.Show(Cursor.Position);
             }
@@ -1452,15 +1380,6 @@ namespace ZipPla
                     dgv.CancelEdit();
                 }
             }
-            /*
-            else if (e.ColumnIndex == tbcName.Index)
-            {
-                var newName = $"{e.FormattedValue}";
-                var trimedNewName = newName.Trim();
-                var row = dgv.Rows[e.RowIndex] as DataGridViewRowWithData;
-                if (trimedNewName == "" || trimedNewName == GetName(row.Path, null)) trimedNewName = null;
-            }
-            */
         }
 
         bool dgvDynamicStringSelection_CellValidating_canceled;
@@ -1471,18 +1390,6 @@ namespace ZipPla
 
             dgvDynamicStringSelection_preValidating = dgvDynamicStringSelection[e.ColumnIndex, e.RowIndex].Value as string;
             // すべて受け付ける
-            /*
-            DataGridView dgv = (DataGridView)sender;
-
-            //新しい行のセルでなく、セルの内容が変更されている時だけ検証する
-            if (e.RowIndex == dgv.NewRowIndex || !dgv.IsCurrentCellDirty)
-            {
-                return;
-            }
-
-            var newName = $"{e.FormattedValue}";
-            var trimedNewName = newName.Trim();
-            */
 
         }
 

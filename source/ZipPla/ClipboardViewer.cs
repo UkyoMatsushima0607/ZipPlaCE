@@ -85,18 +85,6 @@ namespace ZipPla
                         ClipboardHandler(this,
                                 new ClipboardEventArgs(null));
                     }
-                    /*
-                    if (Clipboard.ContainsText())
-                    {
-                        // クリップボードの内容がテキストの場合のみ
-                        if (ClipboardHandler != null)
-                        {
-                            // クリップボードの内容を取得してハンドラを呼び出す
-                            ClipboardHandler(this,
-                                new ClipboardEventArgs(Clipboard.GetText()));
-                        }
-                    }
-                    */
                     if ((int)nextHandle != 0)
                         SendMessage(
                             nextHandle, msg.Msg, msg.WParam, msg.LParam);

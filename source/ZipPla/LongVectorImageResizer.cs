@@ -33,17 +33,8 @@ namespace ZipPla
             else if (distance < n)
             {
                 // 三角関数の計算時間がテーブル作成処理の半分を占める
-                /*
-                var pi_x = Math.PI * distance;
-                var pi_x_n = pi_x / n;
-                weight = (Math.Sin(pi_x) * Math.Sin(pi_x_n)) / (pi_x * pi_x_n);
-                */
 
                 // 三角関数の計算時間は無視できる、精度は 7 bit 程度
-                /*
-                var distance_n = distance / n;
-                weight = fastSinPi(distance) * fastSinPi(distance_n) / ((Math.PI * Math.PI) * distance * distance_n);
-                */
 
                 // 三角関数の計算時間はテーブル作成処理の 1 割程度、ほぼ 17 bit 分の精度（±2^(-17-1) 以内の誤差）を保証
                 var pi_x = Math.PI * distance;
@@ -101,41 +92,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private static double fastSinPi(double x)
-        {
-            // sin(πx) == sin(πy/2 + π/2 + πn) == (-1)^n * cos(πy/2) となる (y, n) を -1 ≦ y ≦ 1, n ∈ {整数} の範囲で探す
-            // x == θ + n で θ = y/2 + 1/2 が x の小数部分、n が整数部分とみなせるのでこれを利用
-            var n = Math.Floor(x);
-            var yHalf = (x - n) - 0.5;
-
-            // この条件で |cos(πy/2) - (1 - 1.224 y^2 + 0.224 y^4)| < 0.001 なのでこれを利用する（※）
-            const double t = 1.217508184; // Sinc 関数の計算に用いる場合相対誤差最小化が妥当
-            // const double t = 1.224; // 絶対誤差の最小化
-            var yHalf2 = yHalf * yHalf;
-            if (((long)n & 1) == 0)
-            {
-                return 1 - yHalf2 * (t * 4 - ((t - 1) * 16) * yHalf2);
-            }
-            else
-            {
-                return -1 + yHalf2 * (t * 4 - ((t - 1) * 16) * yHalf2);
-            }
-
-            // ※ この場合の実際の誤差の最大値は 0.000920147 程度
-            // 1 - (t * y^2 + (1 - t) * y^4) 型の近似で絶対誤差基準の t の最適値は t = 1.22400815 程度で
-            // その時の誤差の最大値は  0.000918799 程度なので t = 1.224 が事実上の最適値とみなせる
-            // 相対誤差については t = 1.2175081841 で最大相対誤差は 0.00370048 であり
-            // t = 1.224 のときの最大相対誤差は 0.0119661 まで大きくなるので
-            // 用途に応じて使い分けるかのが望ましい
-            // t = 1.2175081841 での最大絶対誤差は 0.00215913 程度
-            // 誤差の平均がゼロになるのは t = 1.22535 程度のとき
-            // cos(πy/2) の代わりに sin(πy)/(πy) で同じことをしても
-            // 絶対誤差は 0.007 程度までしか下げられないのでこの方法は偶然の産物と言ってよいのだろうか
-            // それとも三角関数のゼロ点が変曲点になっていることから説明可能な必然の結果なのか
-            // 近似関数がゼロ点で変曲点になるような t は t = 1.2
-        }
-        */
         
         public static Bitmap Lanczos(int n, Bitmap src, int pixelsPerPixelToBeLeft, GammaConversion gamma, Size size, bool parallel, Func<bool> cancel = null)
         {
@@ -542,24 +498,6 @@ namespace ZipPla
             int rx2 = 0, ry2 = 0;
 
             bool gammaIs1 = gamma == GammaConversion.Value1_0;
-            /*
-            var sw = new System.Diagnostics.Stopwatch();
-            var s = "";
-
-            getWeightArray(out rx2, false, tryGetWeight1, tryGetWeight2, srcRect.Width, dstRect.Width, srcStep.Width, 12);
-            sw.Restart();
-            getWeightArray(out rx2, false, tryGetWeight1, tryGetWeight2, srcRect.Width, dstRect.Width, srcStep.Width, 12);
-            sw.Stop(); s += rx2 + " - " + sw.Elapsed + "\n";
-            System.Windows.Forms.MessageBox.Show(s);
-            */
-            /*
-            getWeightArrayOld(out rx2, false, tryGetWeight1, tryGetWeight2, srcRect.Width, dstRect.Width, srcStep.Width, 12);
-            sw.Restart();
-            getWeightArrayOld(out rx2, false, tryGetWeight1, tryGetWeight2, srcRect.Width, dstRect.Width, srcStep.Width, 12);
-            sw.Stop(); s += rx2 + " - " + sw.Elapsed + "\n";
-
-            System.Windows.Forms.MessageBox.Show(s);
-            */
             //sw.Start();
             IntPtr toLinearPointer = IntPtr.Zero;
             if (srcPixelFormat == PixelFormat.Format24bppRgb)
@@ -3850,142 +3788,8 @@ namespace ZipPla
             return result;
         }
 
-        /*
-        private static ulong[] getWeightArrayOld(out int count, bool half, TryGetWeightDelegate1 tryGetWeight1, TryGetWeightDelegate2 tryGetWeight2, int srcLength, int dstLength, int step, int digitsWithoutSignBit)
-        {
-            if (dstLength <= 0 || srcLength <= 0)
-            {
-                count = 0;
-                return new ulong[0];
-            }
-            var dstLength_ = (long)dstLength;
-            var srcLength_ = (long)srcLength;
-
-            long dstLength2 = (long)dstLength * 2;
-            long dstLengthStep = dstLength * step;
-            long dstLength2Step = dstLength2 * step;
-            double power = (double)dstLengthStep / srcLength;
-            var srcLengthPerStepCeiling = (srcLength + step - 1) / step;
-
-            var resultLength = half ? (dstLength_ + 1) / 2 : dstLength_;
-            var listArray = new List<double>[resultLength];
-            //var calcLength = Math.Min(resultLength, dstLength_ / gcd(dstLength_, srcLength_)); 先頭の端の処理が内部に影響をあたえるので誤り
-            var useTryGetWeight1 = tryGetWeight1 != null;
-            var useDistanceAsDst = power < 1;
-            count = 0;
-            for (long i = 0; i < resultLength; i++)
-            {
-                var weights = new List<double>();
-
-                var iAsSrcTimesDstLength2 = (2 * i + 1) * srcLength_ - dstLength_;
-                var iNearestAsSrcPerStep = (iAsSrcTimesDstLength2 + dstLengthStep) / dstLength2Step;
-                var plus = iNearestAsSrcPerStep * dstLength2Step >= iAsSrcTimesDstLength2;
-                var abs2 = 1;
-                var iAsSrcPerStep = (double)iAsSrcTimesDstLength2 / dstLength2Step;
-                var iNearestAsSrcPerStepInt = (int)iNearestAsSrcPerStep;
-
-                while (true)
-                {
-                    var d = plus ? (abs2 >> 1) : -(abs2 >> 1);
-                    var seek = iNearestAsSrcPerStepInt + d;
-                    double distance = (seek - iAsSrcPerStep);
-                    bool success;
-                    double weight;
-                    if (useTryGetWeight1)
-                    {
-                        success = tryGetWeight1(useDistanceAsDst ? power * distance : distance, out weight);
-                    }
-                    else
-                    {
-                        success = tryGetWeight2(distance, power, out weight);
-                    }
-                    if (success)
-                    {
-                        weights.Add(weight);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                    abs2++;
-                    plus = !plus;
-                }
-
-                var weightsCount = weights.Count;
-                if ((weightsCount & 1) != 0)
-                {
-                    weights.Add(0);
-                    weightsCount++;
-                }
-
-                if (count < weightsCount) count = weightsCount;
-
-                listArray[i] = weights;
-            };
-
-            var countl = (long)count;
-            var result = new ulong[countl * resultLength];
-
-            if (digitsWithoutSignBit <= 0) digitsWithoutSignBit = getSuitabgleDigits(countl);
-            var shift = 1 << digitsWithoutSignBit;
-            var allowance = (1 << Math.Max(0, digitsWithoutSignBit - 9)) - 1;
-
-            var bufferSize = countl / 2 - allowance; // 全ての数の端数が 0.5 だった場合に -count / 2 小さくなる
-            var doubleBuffer = bufferSize <= 0 ? null : new double[bufferSize];
-            var intBuffer = bufferSize <= 0 ? null : new int[bufferSize];
-
-            for (long i = 0; i < resultLength; i++)
-            {
-                var weights = listArray[i];
-                var iAsSrcTimesDstLength2 = (2 * i + 1) * srcLength_ - dstLength_;
-                var iNearestAsSrcPerStep = (iAsSrcTimesDstLength2 + dstLengthStep) / dstLength2Step;
-                var plus = iNearestAsSrcPerStep * dstLength2Step >= iAsSrcTimesDstLength2;
-                var iNearestAsSrcPerStepInt = (int)iNearestAsSrcPerStep;
-
-                var offset = ((plus ? countl : countl - 1) / 2);
-                var doubleResult = new double[countl];
-                var abs2 = 1;
-                foreach (var weight in weights)
-                {
-                    var d = plus ? (abs2 >> 1) : -(abs2 >> 1);
-                    var seek = iNearestAsSrcPerStepInt + d;
-                    var index = d + offset;
-                    if (seek < 0)
-                    {
-                        doubleResult[index - seek] += weight;
-                    }
-                    else if (seek >= srcLength)
-                    {
-                        doubleResult[index - (seek - srcLength + 1)] += weight;
-                    }
-                    else
-                    {
-                        doubleResult[index] = weight;
-                    }
-
-                    abs2++;
-                    plus = !plus;
-                }
-                Array.Copy(rigorousNormalization(shift, allowance, doubleResult, doubleBuffer, intBuffer), 0, result, i * countl, countl);
-            };
-            
-            return result;
-        }
-        */
         
 
-        /*
-        private static long gcd(long a, long b)
-        {
-            while (a != 0)
-            {
-                var a_ = a;
-                a = b % a;
-                b = a_;
-            }
-            return b;
-        }
-        */
 
         private static ulong[] rigorousNormalization(long total, long allowance, double[] input, double[] doubleBuffer, int[] intBuffer)
         {

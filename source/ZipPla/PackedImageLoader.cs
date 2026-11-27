@@ -847,140 +847,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        public List<PackedImageEntry> GetPackedImageEntries(PackedImageLoaderFileInfo neededFileInfos = 0, bool needToExecOnTask = false)
-        {
-            var fullEntriesList = GetPackedImageFullEntries(neededFileInfos, needToExecOnTask);
-
-            if (Type == PackType.Pdf) return fullEntriesList;
-
-            var replaced = GetSeparatorReplacedArray(fullEntriesList, Type);
-
-            var count = fullEntriesList.Count;
-
-            //var fullEntries = fullEntriesList.OrderBy(entry => entry.Path, new LogicalStringComparer()).ToArray();
-            var fullEntries = Enumerable.Range(0, count).OrderBy(i => replaced[i], new LogicalStringComparer()).Select(i => fullEntriesList[i]).ToArray();
-
-            replaced = null;
-
-            if (count < 3) return fullEntries.ToList(); // ソートは必要
-
-            var count1 = count - 1;
-            var delete = new bool[count];
-            var declesedCount = count;
-            var path0 = fullEntries[0].Path;
-            var path1 = fullEntries[1].Path;
-            for (var i = 1; i < count1; i++)
-            {
-                var path2 = fullEntries[i + 1].Path;
-
-                var len0 = path0.Length;
-                var len1 = path1.Length;
-                var centerCenter = len0 < len1;
-                int len01;
-                if (centerCenter)
-                {
-                    if (len1 - len0 < 2)
-                    {
-                        path0 = path1;
-                        path1 = path2;
-                        continue;
-                    }
-                    len01 = len0;
-                }
-                else
-                {
-                    if (len0 - len1 < 2)
-                    {
-                        path0 = path1;
-                        path1 = path2;
-                        continue;
-                    }
-                    len01 = len1;
-                }
-                var digitStart = -1;
-                var digitStop = -1;
-                var j = 1;
-                for (; j < len01; j++)
-                {
-                    var c0 = path0[j];
-                    var c1 = path1[j];
-                    var c0IsDigit = '0' <= c0 && c0 <= '9';
-                    if (c0 == c1)
-                    {
-                        if (c0IsDigit)
-                        {
-                            if (digitStop < j) digitStart = j;
-                            digitStop = j + 1;
-                        }
-                        continue;
-                    }
-                    if (digitStop == j && (c0IsDigit || '0' <= c1 && c1 <= '9'))
-                    {
-                        digitStart = -1;
-                    }
-                    break;
-                }
-                if (digitStart < 0)
-                {
-                    path0 = path1;
-                    path1 = path2;
-                    continue;
-                }
-                var center = centerCenter ? path1 : path0;
-                var lenC = centerCenter ? len1 : len0;
-                len01 = Math.Min(len01 + 3, lenC);
-                while (j < len01)
-                {
-                    var cc = center[j++];
-                    if ('0' <= cc && cc <= '9') break;
-                }
-                if (j == len01)
-                {
-                    path0 = path1;
-                    path1 = path2;
-                    continue;
-                }
-                var digitStart2 = j - 1;
-                while (j < lenC)
-                {
-                    var cc = center[j++];
-                    if (!('0' <= cc && cc <= '9')) break;
-                }
-                int nMin, nMax;
-                if (!int.TryParse(center.Substring(digitStart, digitStop - digitStart), out nMin) || !int.TryParse(center.Substring(digitStart2, j - digitStart2 - 1), out nMax) || nMin + 1 != nMax)
-                {
-                    path0 = path1;
-                    path1 = path2;
-                    continue;
-                }
-
-                if (path2 == center.Substring(0, digitStart) + center.Substring(digitStart2))
-                {
-                    declesedCount -= 2; // 削除の重複は起こらない。また起こっても問題にならない。
-                    delete[centerCenter ? i - 1 : i] = true;
-                    delete[i + 1] = true;
-                }
-
-                path0 = path1;
-                path1 = path2;
-            }
-
-            if (declesedCount < count)
-            {
-                var result = new List<PackedImageEntry>(capacity: Math.Max(1, declesedCount));
-                for (var i = 0; i < count; i++)
-                {
-                    if (!delete[i]) result.Add(fullEntries[i]);
-                }
-                return result;
-            }
-            else
-            {
-                return fullEntries.ToList();
-            }
-        }
-        */
 
         public static bool PrioritizeSevenZip = false;
 
@@ -1313,28 +1179,6 @@ namespace ZipPla
             }
 
             // 他に画像がない場合
-            /*
-            var h = leftHierarchies - 1;
-            if (h >= 0 && (alwaysLoadLowerHierarchies || result.Count == 0))
-            {
-                //System.Windows.Forms.MessageBox.Show($"{alwaysLoadLowerHierarchies} {result.Count}");
-                var childrenList = new List<Tuple<PackedImageLoader, List<PackedImageEntry>>>();
-                foreach (var path in dirEntries)
-                {
-                    var name = path.Substring(parentPathLength);
-                    if (Supports(name))
-                    {
-                        addChildFile(result, childrenList, h, path, name, neededFileInfos);
-                    }
-                }
-                foreach (var path in Directory.GetDirectories(path))
-                {
-                    var name = path.Substring(parentPathLength);
-                    addChildFile(result, childrenList, h, path, name, neededFileInfos);
-                }
-                children = childrenList.ToArray();
-            }
-            */
 
             return result;
         }
@@ -1555,9 +1399,6 @@ namespace ZipPla
 
             foreach (var entry in sevenZipArchive.EnumerableEntries)
             {
-                //size += entry.Size;
-                //if (sizeBound == long.MaxValue && entry.IsSolid) sizeBound = SolidSizeBound;
-                //if (size > sizeBound) break;
                 if (!entry.IsFolder && ImageLoader.SupportsFullReading(entry.FileName, ffmpegEixsts))
                 {
                     throwIfEncryptedRar4Entry(format, entry);
@@ -1649,24 +1490,6 @@ namespace ZipPla
                     }
                 }
 
-                /*
-                if (needToIgnoreMacList && macFileList.Any())
-                {
-                    var noEntity = new List<PackedImageEntry>();
-                    foreach (var piEntry in macFileList)
-                    {
-                        var entityPath = piEntry.Path.Substring(9);
-                        if (result.All(entity => entity.Path != entityPath))
-                        {
-                            noEntity.Add(piEntry);
-                        }
-                    }
-                    if (noEntity.Any())
-                    {
-                        result.AddRange(noEntity);
-                    }
-                }
-                */
                 
                 var h = leftHierarchies - 1;
                 if (h >= 0 && (searchMode == PackedImageLoaderSearchMode.Full || result.Count == 0))
@@ -1744,9 +1567,6 @@ namespace ZipPla
             {
                 var entry = sevenZipArchiveEntries[i];
                 var size = entry.Size;
-                //totalSize += size;
-                //if (sizeBound == long.MaxValue && entry.IsSolid) sizeBound = SolidSizeBound;
-                //if (totalSize > sizeBound) break;
                 var path = entry.FileName;
                 if (ImageLoader.SupportsFullReading(path, ffmpegEixsts))
                 {
@@ -1812,14 +1632,6 @@ namespace ZipPla
                 var result = new List<PackedImageEntry>();
                 var length = pdfArchive.NumberOfPages;
 
-                /*
-                var maxDigit = (int)Math.Floor(Math.Log10(Math.Max(1, length - 1))) + 1;
-                var format = "{0:D" + maxDigit + "}";
-                for (var i = 0; i < length; i++)
-                {
-                    result.Add(new PackedImageEntry(i, string.Format(format, i)));
-                }
-                */
                 for (var i = 0; i < length; i++)
                 {
                     result.Add(new PackedImageEntry(-1, i, (i + 1).ToString()));
@@ -2220,28 +2032,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private MemoryStream ConvertToMemoryStream(Stream stream)
-        {
-            var result = stream as MemoryStream;
-            if (result != null) return result;
-            try
-            {
-                result = new MemoryStream();
-                stream.CopyTo(result);
-                return result;
-            }
-            catch
-            {
-                result?.Dispose();
-                throw;
-            }
-            finally
-            {
-                stream.Dispose();
-            }
-        }
-        */
 
         private bool OpenInnerImageStreamSharpCompress_IsSolid = false;
         private Stream GetInnerImageStreamSharpCompress(int physicalIndex)
@@ -2565,9 +2355,6 @@ namespace ZipPla
 
         private static void SevenZipEntryExtractInTask(Entry entry, Stream dst)
         {
-            //var t = new System.Threading.Thread(new System.Threading.ThreadStart(() => entry.Extract(dst)));
-            //t.Start();
-            //t.Join();
 
             using (var task = Task.Run(() => entry.Extract(dst)))
             {
@@ -3075,45 +2862,6 @@ namespace ZipPla
                 }
                 stream.Seek(0, SeekOrigin.Begin);
 
-                /*
-                if ((buffer[7] & 0x8) == 0x8) // UTF-8 フラグ
-                {
-                    UseZipArchiveClass = false; // UTF-8 フラグがあっても ZipArchive は対応できない
-                    stream.Seek(-bufferSize, SeekOrigin.Current);
-                }
-                else // UTF-8 フラグのないファイルへの対応
-                */
-                /*
-                {
-                    var skip = 16;
-                    while (skip > 0)
-                    {
-                        var read = stream.Read(buffer, 0, Math.Min(bufferSize, skip));
-                        if (read == 0) throw new IOException();
-                        skip -= read;
-                    }
-                    var i = 0;
-                    while (i < 6)
-                    {
-                        var read = stream.Read(buffer, i, 6 - i);
-                        if (read == 0) throw new IOException();
-                        i += read;
-                    }
-                    var fileNameLength = buffer[2] | buffer[3] << 8;
-                    var nameBuffer = new byte[fileNameLength];
-                    i = 0;
-                    while (i < fileNameLength)
-                    {
-                        var read = stream.Read(nameBuffer, i, fileNameLength - i);
-                        if (read == 0) throw new IOException();
-                        i += read;
-                    }
-                    var code = ImageLoader.GetCode(nameBuffer);
-                    UseZipArchiveClass = code != Encoding.UTF8;
-
-                    stream.Seek(0, SeekOrigin.Begin);
-                }
-                */
 
                 return PackType.Zip;
             }
@@ -3148,12 +2896,6 @@ namespace ZipPla
                 stream.Seek(-bufferSize, SeekOrigin.Current);
                 return PackType.Cab;
             }
-            /* Gz は非対応。対応させる場合ヘッダチェックにおける Lha との衝突に注意
-            else if (fourByte.Take(2).SequenceEqual(new byte[2] { 0x1F, 0x8B }))
-            {
-                stream.Seek(-bufferSize, SeekOrigin.Current);
-                return PackType.Gz;
-            }*/
             else if (buffer[2] == 0x2D && buffer[3] == 0x6C)
             {
                 stream.Seek(-bufferSize, SeekOrigin.Current);
@@ -3163,117 +2905,8 @@ namespace ZipPla
 
             // ほとんどの場合に以下で TAR は判定可能だが、
             // 意図すれば TAR でありながら他のファイル形式のように見えるヘッダが作成可能
-            /*
-            else
-            {
-
-                var hundredByte = new byte[100];
-                Array.Copy(fourByte, hundredByte, 4);
-                stream.Read(hundredByte, 4, 100 - 4);
-                var nullChar = hundredByte.ToList().IndexOf(0);
-
-                if (nullChar >= 1)
-                {
-                    for (int i = nullChar + 1; i < 100; i++)
-                    {
-                        if (hundredByte[i] != 0)
-                        {
-                            return PackType.Unknown;
-                        }
-                    }
-                }
-
-                stream.Seek(-100, SeekOrigin.Current);
-                return PackType.Tar;
-            }
-            */
         }
 
-        /*
-        private static PackType GetTypeFromStreamAndSeekFirst(Stream stream)
-        {
-            var fourByte = new byte[4];
-            stream.Read(fourByte, 0, 4);
-            if (fourByte[0] == 0x50 && fourByte[1] == 0x4B && (fourByte[2] == 0x03 && fourByte[3] == 0x04 || fourByte[2] == 0x07 && fourByte[3] == 0x08))
-            {
-                stream.Seek(-4, SeekOrigin.Current);
-                return PackType.Zip;
-            }
-            else if (fourByte.SequenceEqual(new byte[4] { 0x52, 0x61, 0x72, 0x21 }))
-            {
-                stream.Read(fourByte, 0, 4);
-                if (fourByte[0] == 0x1A && fourByte[1] == 0x07)
-                {
-                    var fourByte2 = fourByte[2];
-                    if (fourByte2 == 0x00)
-                    {
-                        stream.Seek(-8, SeekOrigin.Current);
-                        return PackType.Rar;
-                    }
-                    else if (fourByte2 == 0x01 && fourByte[3] == 0x00)
-                    {
-                        stream.Seek(-8, SeekOrigin.Current);
-                        return PackType.Rar5;
-                    }
-                }
-                return PackType.Unknown;
-            }
-            else if (fourByte.SequenceEqual(new byte[4] { 0x25, 0x50, 0x44, 0x46 }))
-            {
-                stream.Seek(-4, SeekOrigin.Current);
-                return PackType.Pdf;
-            }
-            else if (fourByte.SequenceEqual(new byte[4] { 0x37, 0x7A, 0xBC, 0xAF }))// 残り2バイト 0x27 0x1C のチェックは SharpCompress に任せる
-            {
-                stream.Seek(-4, SeekOrigin.Current);
-                return PackType.SevenZip;
-            }
-            else if (fourByte.SequenceEqual(new byte[] { 0x4D, 0x53, 0x43, 0x46 }))
-            {
-                stream.Seek(-4, SeekOrigin.Current);
-                return PackType.Cab;
-            }
-           ／* Gz は非対応。対応させる場合ヘッダチェックにおける Lha との衝突に注意
-            else if (fourByte.Take(2).SequenceEqual(new byte[2] { 0x1F, 0x8B }))
-            {
-                stream.Seek(-4, SeekOrigin.Current);
-                return PackType.Gz;
-            }*／
-            else if (fourByte[2] == 0x2D && fourByte[3] == 0x6C)
-            {
-                stream.Seek(-4, SeekOrigin.Current);
-                return PackType.Lha;
-            }
-            return PackType.Unknown;
-
-            // ほとんどの場合に以下で TAR は判定可能だが、
-            // 意図すれば TAR でありながら他のファイル形式のように見えるヘッダが作成可能
-            ／*
-            else
-            {
-
-                var hundredByte = new byte[100];
-                Array.Copy(fourByte, hundredByte, 4);
-                stream.Read(hundredByte, 4, 100 - 4);
-                var nullChar = hundredByte.ToList().IndexOf(0);
-
-                if (nullChar >= 1)
-                {
-                    for (int i = nullChar + 1; i < 100; i++)
-                    {
-                        if (hundredByte[i] != 0)
-                        {
-                            return PackType.Unknown;
-                        }
-                    }
-                }
-
-                stream.Seek(-100, SeekOrigin.Current);
-                return PackType.Tar;
-            }
-            *／
-        }
-    */
 
         private bool Disposed = false;
 

@@ -154,14 +154,6 @@ namespace ZipPla
             color = (k2 * c + 127) / 255;
             adr[2] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
 
-            /*
-            color = k2 - ((255 - y) * k2 + 127) / 255; // blue
-            adr[0] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
-            color = k2 - ((255 - m) * k2 + 127) / 255; // green
-            adr[1] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
-            color = k2 - ((255 - c) * k2 + 127) / 255; // red
-            adr[2] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
-            */
         }
 
         private static unsafe void CMYToRGB(Byte c, Byte m, Byte y, byte* adr)
@@ -175,14 +167,6 @@ namespace ZipPla
             color = (k2 * c + 127) / 255;
             adr[2] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
 
-            /*
-            color = k2 - ((255 - y) * k2 + 127) / 255; // blue
-            adr[0] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
-            color = k2 - ((255 - m) * k2 + 127) / 255; // green
-            adr[1] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
-            color = k2 - ((255 - c) * k2 + 127) / 255; // red
-            adr[2] = (byte)(color < 0 ? 0 : color > 255 ? 255 : color);
-            */
         }
 
         private static unsafe void LabToRGB(Byte lb, Byte ab, Byte bb, byte* adr)

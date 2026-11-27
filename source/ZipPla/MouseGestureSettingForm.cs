@@ -60,19 +60,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private struct CommandInfo
-        {
-            public readonly int Key;
-            public readonly int TemplateIndex;
-
-            public CommandInfo(int key, int templateIndex)
-            {
-                Key = key;
-                TemplateIndex = templateIndex;
-            }
-        }
-        */
 
         //public string Gesture1IsAlreadyRegistered = "Gusture \"$1\" is already registered.";
         public string EnabledText { get { return cbEnabled.Text; } set{ cbEnabled.Text = value; } }

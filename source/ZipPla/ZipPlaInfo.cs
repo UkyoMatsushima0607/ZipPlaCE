@@ -98,10 +98,6 @@ namespace ZipPla
                 while (index0 < pathLength && path[index0] == ' ') index0++;
                 var fullLength = pair.Item2 - 2;
                 var targetStr = path.Substring(index0, fullLength);
-                //if(targetStr.Length < fullLength)
-                //{
-                //    System.Windows.Forms.MessageBox.Show($"{targetStr}");
-                //}
                 var charArray = targetStr.ToArray();
                 var j = 0;
                 int index = 0;

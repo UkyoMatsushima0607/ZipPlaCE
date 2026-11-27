@@ -32,9 +32,6 @@ namespace ZipPla
     {
         public static GifFileData Analyz(System.IO.Stream fs)
         {
-            //int len = (int)fs.Length;
-            //byte[] buf = new byte[len];
-            //fs.Read(buf, 0, len);
             var buf = ToBytes(fs);
             var len = buf.Length;
             

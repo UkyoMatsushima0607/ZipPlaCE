@@ -235,16 +235,8 @@ namespace ZipPla
             RunTimeMeasure.Block("Start");
 #endif
 
-            //GPSizeThumbnail.fileCacheTest(); return;
-            //ViewerFormImageFilter.GetFromLinear(); return;
-            //LockManager.Test(); return;
-            //Clipboard.SetText(KeyboardShortcut.GetKeysString());return;
 
 
-            //Clipboard.SetText(LongVectorImageResizer.CreateFromLinear(31 - 18, "fromLinearIn18Out31_gamma2_2", LongVectorImageResizer.toLinear18_gamma2_2)); MessageBox.Show("OK"); return;
-            //Clipboard.SetText(LongVectorImageResizer.CreateFromLinear(20 - 13, "fromLinearIn13Out20_gamma2_2", LongVectorImageResizer.toLinear13_gamma2_2, 1UL << 19)); MessageBox.Show("OK"); return;
-            //Clipboard.SetText(LongVectorImageResizer.CreateFromLinear(21 - 14, "fromLinearIn14Out21_gamma2_2", LongVectorImageResizer.toLinear14_gamma2_2, 1UL << 20)); MessageBox.Show("OK"); return;
-            //LongVectorImageResizer.gammaTableTest(); return;
 
             //MessageBox.Show($"{ViewerFormImageFilter.ParallelBreakTestCode()}"); return;
 
@@ -274,24 +266,6 @@ namespace ZipPla
             startForm = new ViewerForm(null);
 #else
             
-            /*
-            if (cmds.Length > 1 && cmds[1] == "-mode:thumbnail-cache")
-            {
-                try
-                {
-                    if (cmds.Length == 4 && cmds[2] == "create")
-                    {
-                        GPSizeThumbnail.
-                    }
-                }
-                catch (Exception e)
-                {
-                    MessageBox.Show(e.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                
-                return;
-            }
-            */
             bool? ffmpegExists = null;
             if (cmds.Length == 2)
             {
@@ -312,16 +286,6 @@ namespace ZipPla
                 {
                     startForm = new CatalogForm(cmds[1]);
                 }
-                /*
-                else if ((PackedImageLoader.Supports(cmds[1]) || ImageLoader.SupportsFullReading(cmds[1], ref ffmpegExists)) && File.Exists(cmds[1]))
-                {
-                    startForm = new ViewerForm(cmds[1], -1);
-                }
-                else if(File.Exists(cmds[1]))
-                {
-                    startForm = new CatalogForm(cmds[1]);
-                }
-                */
                 else if (File.Exists(cmds[1]))
                 {
                     if (PackedImageLoader.Supports(cmds[1]) || ImageLoader.SupportsFullReading(cmds[1], ref ffmpegExists))
@@ -1146,53 +1110,6 @@ namespace ZipPla
         }
 
 
-        /*
-        /// <summary>
-        /// 12 が上限。 13! > int.MaxValue
-        /// </summary>
-        /// <param name="col"></param>
-        /// <returns></returns>
-        public static int EncodeDisplayIndices(DataGridViewColumnCollection col)
-        {
-            var code = 0;
-            var m = 1;
-            var colArray = (from DataGridViewColumn c in col select c).ToArray();
-            var count = colArray.Length;
-
-            // DarumaOtoshi がより適切がより適切
-            var range = new List<int>(count); for (var i = 0; i < count; i++) range.Add(i);
-            for (var i = 0; i < count; i++)
-            {
-                var p = range.IndexOf(colArray.First(c => c.DisplayIndex == i).Index);
-                range.RemoveAt(p);
-                code += m * p;
-                m *= (count - i);
-            }
-            
-            return code;
-        }
-        /// <summary>
-        /// 12 が上限。 13! > int.MaxValue
-        /// </summary>
-        /// <param name="col"></param>
-        /// <param name="code"></param>
-        public static void DecodeDisplayIndices(DataGridViewColumnCollection col, int code)
-        {
-            if (code < 0) return;
-            var colArray = (from DataGridViewColumn c in col select c).ToArray();
-            var count = colArray.Length;
-            
-            // DarumaOtoshi がより適切
-            var range = new List<int>(count); for (var i = 0; i < count; i++) range.Add(i);
-            for(var i = 0; i < count; i++)
-            {
-                var p = code % (count - i);
-                code /= (count - i);
-                colArray[range[p]].DisplayIndex = i;
-                range.RemoveAt(p);
-            }
-        }
-        */
 
         public static bool FileExistsWithoutException(string path)
         {
@@ -1240,12 +1157,6 @@ namespace ZipPla
 
         public static void ShowSetting(ViewerForm form, out ulong BuiltInViewerMemoryLimit)
         {
-            /*
-            if (form == null)
-            {
-                form = startForm;
-            }
-            */
             using (var settingForm = new SettingForm())
             {
                 settingForm.Icon = form.Icon;
@@ -1371,16 +1282,6 @@ namespace ZipPla
         public static int GetLimitOfHistoryCount()
         {
             return (new GeneralConfig()).MaximumNumberOfHistories;
-            /*
-            try
-            {
-                return int.Parse(INIManager.LoadIniStringWithError("Settings", "MaximumNumberOfHistories"));
-            }
-            catch
-            {
-                return 10000;
-            }
-            */
         }
 
         public static DateTime? TryUpdateLastAccessTime(string path)
@@ -1470,21 +1371,11 @@ namespace ZipPla
                 {
                     item.ForeColor = normalColor;
                     ForeColorManager.Set(item);
-                    /*
-                    EventHandler ev = (sender, e) => CatalogForm.SetMenuItemColor(item, normalColor);
-                    item.DropDownOpening += ev;
-                    item.DropDownClosed += ev;
-                    item.MouseEnter += ev;
-                    item.MouseLeave += ev;
-                    */
                 }
 
 
                 //MessageBox.Show($"{zipPlaInfos[0].TagArray.Length} {zipPlaInfos[0].TagArray[0]}");
                 initialCheckStates[i] = initState;
-                //item.Click += (sender2, e2) =>
-                //{
-                //};
                 if (parent == null)
                 {
                     item.MouseDown += (sender2, e2) =>
@@ -1560,23 +1451,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private static void itemCheckToggle(ToolStripMenuItem item, CheckState initState)
-        {
-            switch (item.CheckState)
-            {
-                case CheckState.Unchecked:
-                    item.CheckState = CheckState.Checked;
-                    break;
-                case CheckState.Indeterminate:
-                    item.CheckState = CheckState.Unchecked;
-                    break;
-                default:
-                    item.CheckState = initState == CheckState.Indeterminate ? CheckState.Indeterminate : CheckState.Unchecked;
-                    break;
-            }
-        }
-        */
 
         /// <summary>
         /// サブフォルダを含むすべてのファイルを返す。dirInfos を受け取る場合はすべてのサブフォルダも返す。
@@ -1885,23 +1759,6 @@ namespace ZipPla
             return (from toolStripItem in toolStripItems select new ForeColorManager(toolStripItem)).ToArray();
         }
 
-        /*
-        /// <summary>
-        /// ドロップダウンが開かれたことを通知します。自前のドロップダウンを開くときに使用します。
-        /// </summary>
-        public void SetDropDownOpend()
-        {
-            dropDowned = true;
-        }
-
-        /// <summary>
-        /// ドロップダウンが閉じられたことを通知します。自前のドロップダウンを閉じるときに使用します。
-        /// </summary>
-        public void SetDropDownClosed()
-        {
-            dropDowned = false;
-        }
-        */
 
         private ToolStripItem toolStripItem;
         private bool dropDowned = false;

@@ -293,9 +293,6 @@ namespace ZipPla
         
         private readonly DoubleClickChecker doubleClickChecker = new DoubleClickChecker();
 
-        //public bool ActionsContainsLButton { get; private set; }
-        //public bool ActionsContainsMButton { get; private set; }
-        //public bool ActionsContainsRButton { get; private set; }
         private KeyboardShortcutAction[] actions;
         public KeyboardShortcutAction[] Actions
         {
@@ -306,9 +303,6 @@ namespace ZipPla
             set
             {
                 actions = value;
-                //ActionsContainsLButton = actions.Any(action => action.Shortcut.Any(cond => cond.Contains(Keys.LButton)));
-                //ActionsContainsMButton = actions.Any(action => action.Shortcut.Any(cond => cond.Contains(Keys.MButton)));
-                //ActionsContainsRButton = actions.Any(action => action.Shortcut.Any(cond => cond.Contains(Keys.RButton)));
             }
         }
 
@@ -596,12 +590,6 @@ namespace ZipPla
                         }
                     }
 
-                    /*
-                    else
-                    {
-                        KeySequence.Add(keyState);
-                    }
-                    */
                 }
                 else if (!isUp)
                 {

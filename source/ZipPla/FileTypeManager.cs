@@ -366,40 +366,4 @@ namespace ZipPla
     }
     
 
-    /*
-    public class Win32FileInfo
-    {
-        public static bool GetFileInfo(string fileName, ref CItem item)
-        {
-            if (!System.IO.File.Exists(fileName))
-                return false;
-            SHFILEINFOW shinfo = new SHFILEINFOW();
-            Win32.SHGetFileInfoW(
-                    fileName,
-                    FileAttributesFlags.FILE_ATTRIBUTE_NORMAL,
-                    ref shinfo,
-                    (uint)Marshal.SizeOf(shinfo),
-                    ShellFileInfoFlags.SHGFI_ICON |
-                    ShellFileInfoFlags.SHGFI_LARGEICON |
-                    ShellFileInfoFlags.SHGFI_TYPENAME |
-                    ShellFileInfoFlags.SHGFI_DISPLAYNAME
-                );
-            item.image = Imaging.CreateBitmapSourceFromHIcon(
-                    shinfo.hIcon,
-                    new Int32Rect(0, 0, 32, 32),
-                    BitmapSizeOptions.FromEmptyOptions()
-                );
-            item.type = shinfo.szTypeName;
-            item.name = shinfo.szDisplayName;
-            return true;
-        }
-    }
-
-    public class CItem
-    {
-        public BitmapSource image { get; set; }
-        public string name { get; set; }
-        public string type { get; set; }
-    }
-    */
 }

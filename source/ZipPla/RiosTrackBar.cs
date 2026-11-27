@@ -343,9 +343,6 @@ namespace ZipPla
                         else
                         {
                             var rect = g.ClipBounds;
-                            //var rect = new Rectangle((int)(rectF.X - 1), (int)(rectF.Y - 1), (int)(rectF.Width + 2), (int)(rectF.Height + 2));
-                            //var x1 = (int)side;
-                            //var x2 = (int)(side + centerLineLength);
                             rect.Intersect(new RectangleF(side, y1, centerLineLength, y2 - y1 + 1));
 
                             if (erase)

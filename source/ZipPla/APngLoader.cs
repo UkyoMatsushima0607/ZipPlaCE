@@ -228,35 +228,6 @@ namespace ZipPla
                         {
                             RemoveAlpha(ref raw);
 
-                            /*
-                            if (NeedCanvas(fctl))
-                            {
-                                var temp = raw;
-                                try
-                                {
-                                    raw = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-                                    try
-                                    {
-                                        using (var g = Graphics.FromImage(raw))
-                                        {
-                                            var x = (int)fctl.XOffset;
-                                            var y = (int)fctl.YOffset;
-                                            if (x > 0 || y > 0 || x + raw.Width < width || y + raw.Height < height) g.FillRectangle(Brushes.White, 0, 0, width, height);
-                                            g.DrawImageUnscaled(temp, x, y);
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        raw.Dispose();
-                                        throw;
-                                    }
-                                }
-                                finally
-                                {
-                                    temp.Dispose();
-                                }
-                            }
-                            */
 
                             var next = currentIndex + 1;
                             fcTLChunk nextFctl;

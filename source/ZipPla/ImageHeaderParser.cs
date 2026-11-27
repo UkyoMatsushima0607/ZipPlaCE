@@ -107,13 +107,6 @@ namespace ZipPla
             return info;
         }
 
-        /*
-        public ImageInfo(Image img)
-        {
-            Size = img.Size;
-            BitPerPixel = Image.GetPixelFormatSize(img.PixelFormat);
-        }
-        */
         
         public ImageInfo (string path) : this(new FileStream(path, FileMode.Open, FileAccess.Read), disposeStream: true)
         {
@@ -138,27 +131,11 @@ namespace ZipPla
                     case 0xFFd8: // JPEG
                         while (fs.Read(buf16, 0, 4) == 4)
                         {
-                            /*
-                            if(k==0)
-                            {
-                                MessageBox.Show($"{path}\n{buf[0]:X} {buf[1]:X} {buf[2]:X} {buf[3]:X}");
-
-                            }:*/
                             if (buf16[0] != 0xff) throw new NotSupportedException();
                             var buf1 = buf16[1];
                             if ((buf1 & 0xf0) == 0xc0 && buf1 != 0xc4 && buf1 != 0xc8 && buf1 != 0xcc)
                             {
                                 if (fs.Seek(1, SeekOrigin.Current) < 1 || fs.Read(buf16, 0, 4) < 4) throw new NotSupportedException();
-                                /*
-                                if (k == 0)
-                                {
-                                    k++;
-                                    using (var img = new Bitmap(path))
-                                    {
-                                        MessageBox.Show($"{(buf[2] << 8) | buf[3]} x {(buf[0] << 8) | buf[1]}\n{img.Width} x {img.Height}");
-                                    }
-                                }
-                                */
 
                                 Size = new Size((buf16[2] << 8) | buf16[3], (buf16[0] << 8) | buf16[1]);
                                 return;
@@ -187,16 +164,6 @@ namespace ZipPla
                                 case 6: bpp *= 4; break;
                                 default: throw new NotSupportedException();
                             }
-                            /*
-                                    if (k == 0)
-                                    {
-                                        k++;
-                                        using (var img = new Bitmap(path))
-                                        {
-                                            MessageBox.Show($"{width} x {height} x {bpp}\n{img.Width} x {img.Height}");
-                                        }
-                                    }
-                            */
                             Size = new Size(width, height);
                             BitPerPixel = bpp;
                             return;
@@ -219,9 +186,6 @@ namespace ZipPla
                                     BitPerPixel = bpp;
                                     return;
                                 }
-                            //case 40:
-                            //case 108:
-                            //case 124:
                             default:
                                 {
                                     int width = buf16[4] | buf16[5] << 8 | buf16[6] << 16 | buf16[7] << 24;
@@ -277,23 +241,6 @@ namespace ZipPla
                             int width = Math.Abs(rigt - left) + 1; // デバイス単位
                             int height = Math.Abs(botm - top_) + 1;
                             
-                            /*
-                            if (fs.Read(buf16, 0, 16) < 16) throw new NotSupportedException();
-                            int mcLeft = buf16[0] | buf16[1] << 8 | buf16[2] << 16 | buf16[3] << 24;
-                            int mcTop_ = buf16[4] | buf16[5] << 8 | buf16[6] << 16 | buf16[7] << 24;
-                            int mcRigt = buf16[8] | buf16[9] << 8 | buf16[10] << 16 | buf16[11] << 24;
-                            int mcBotm = buf16[12] | buf16[13] << 8 | buf16[14] << 16 | buf16[15] << 24;
-                            // Inclusive-inclusive bounds in device units
-                            int mcWidth = Math.Abs(mcRigt - mcLeft) + 1; // 0.01 mm
-                            int mcHeight = Math.Abs(mcBotm - mcTop_) + 1;
-
-                            const int seek = 4 * 4 + 2 * 2 + 4 * 3;
-                            if (fs.Seek(seek, SeekOrigin.Current) < seek || fs.Read(buf16, 0, 16) < 16) throw new NotSupportedException();
-                            int szdw = buf16[0] | buf16[1] << 8 | buf16[2] << 16 | buf16[3] << 24; // 
-                            int szdh = buf16[4] | buf16[5] << 8 | buf16[6] << 16 | buf16[7] << 24;
-                            int szmw = buf16[8] | buf16[9] << 8 | buf16[10] << 16 | buf16[11] << 24;
-                            int szmh = buf16[12] | buf16[13] << 8 | buf16[14] << 16 | buf16[15] << 24;
-                            */
 
                             Size = new Size(width, height);
                             return;

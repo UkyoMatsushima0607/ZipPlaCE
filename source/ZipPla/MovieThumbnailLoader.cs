@@ -847,23 +847,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        public static void RoundTest()
-        {
-            System.Windows.Forms.MessageBox.Show(
-                $"{(new Fraction(1, 4)).FloorOfPlusHalf()} {(new Fraction(2, 4)).FloorOfPlusHalf()} {(new Fraction(3, 4)).FloorOfPlusHalf()},\n" +
-                $"{(new Fraction(-1, 4)).FloorOfPlusHalf()} {(new Fraction(-2, 4)).FloorOfPlusHalf()} {(new Fraction(-3, 4)).FloorOfPlusHalf()},\n" +
-                $"{(new Fraction(1, -4)).FloorOfPlusHalf()} {(new Fraction(2, -4)).FloorOfPlusHalf()} {(new Fraction(3, -4)).FloorOfPlusHalf()},\n" +
-                $"{(new Fraction(-1, -4)).FloorOfPlusHalf()} {(new Fraction(-2, -4)).FloorOfPlusHalf()} {(new Fraction(-3, -4)).FloorOfPlusHalf()},\n" +
-                $"{(new Fraction(1, 3)).FloorOfPlusHalf()} {(new Fraction(2, 3)).FloorOfPlusHalf()}\n" +
-                $"{(new Fraction(-1, 3)).FloorOfPlusHalf()} {(new Fraction(-2, 3)).FloorOfPlusHalf()}\n" +
-                $"{(new Fraction(1, -3)).FloorOfPlusHalf()} {(new Fraction(2, -3)).FloorOfPlusHalf()} ,\n" +
-                $"{(new Fraction(-1, -3)).FloorOfPlusHalf()} {(new Fraction(-2, -3)).FloorOfPlusHalf()} {(new Fraction(0,1)).FloorOfPlusHalf()}\n"
-
-
-                );
-        }
-        */
 
         public bool Equals(int other)
         {

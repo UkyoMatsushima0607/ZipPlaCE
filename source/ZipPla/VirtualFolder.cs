@@ -501,42 +501,6 @@ namespace ZipPla
                         newPathSet.Add(path);
                     }
 
-                    /*
-                    var needToAdd = !deleteOrReplace;
-                    for (var j = 0; j < existingFolderCount; j++)
-                    {
-                        if (path == folderPathList[j])
-                        {
-                            needToAdd = false;
-                            edited = true;
-                            if (delete || replace && contains(path, folderPathList, j))
-                            {
-                                folderPathList.RemoveAt(j);
-                                folderPageList.RemoveAt(j);
-                                j--;
-                                existingFolderCount--;
-                            }
-                            else if(replace)
-                            {
-                                folderPathList[j] = replacedPath;
-                                if (page >= 0) folderPageList[j] = page;
-                                newPathSet.Add(replacedPath);
-                            }
-                            else
-                            {
-                                folderPageList[j] = page;
-                                newPathSet.Add(path);
-                            }
-                        }
-                    }
-                    if(needToAdd)
-                    {
-                        edited = true;
-                        folderPathList.Add(path);
-                        folderPageList.Add(page);
-                        newPathSet.Add(path);
-                    }
-                    */
                 }
                 else
                 {
@@ -578,42 +542,6 @@ namespace ZipPla
                         newPathSet.Add(path);
                     }
 
-                    /*
-                    var needToAdd = !deleteOrReplace;
-                    for (var j = 0; j < existingFileCount; j++)
-                    {
-                        if (path == filePathList[j])
-                        {
-                            needToAdd = false;
-                            edited = true;
-                            if (delete || replace && contains(path, filePathList, j))
-                            {
-                                filePathList.RemoveAt(j);
-                                filePageList.RemoveAt(j);
-                                j--;
-                                existingFileCount--;
-                            }
-                            else if (replace)
-                            {
-                                filePathList[j] = replacedPath;
-                                if (page >= 0) filePageList[j] = page;
-                                newPathSet.Add(replacedPath);
-                            }
-                            else
-                            {
-                                filePageList[j] = page;
-                                newPathSet.Add(path);
-                            }
-                        }
-                    }
-                    if (needToAdd)
-                    {
-                        edited = true;
-                        filePathList.Add(path);
-                        filePageList.Add(page);
-                        newPathSet.Add(path);
-                    }
-                    */
                 }
             }
 
@@ -655,17 +583,6 @@ namespace ZipPla
             if (edited) SaveBookmarkData(bmkPath, filePathList.ToArray(), filePageList.ToArray(), folderPathList.ToArray(), folderPageList.ToArray());
         }
 
-        /*
-        private static bool contains(string search, IEnumerable<string> strs, int exceptedIndex)
-        {
-            var index = 0;
-            foreach (var str in strs)
-            {
-                if (index++ != exceptedIndex && string.Compare(search, str, ignoreCase: true) == 0) return true;
-            }
-            return false;
-        }
-        */
 
         // 履歴に追加するたびに全項目の存在確認と（上限に達していれば）最終アクセス日時の取得をしていた（K11）。
         // 履歴が 1 万件でネットワークドライブの項目があると、追加のたびに数秒かかりうる。結果を短い時間だけ覚えておく。

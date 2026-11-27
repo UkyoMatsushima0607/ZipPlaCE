@@ -15,58 +15,6 @@ using TouchLibrary.Core;
 using TouchLibrary;
 using System.Reflection;
 
-/*
-namespace TouchWindowLibrary
-{
-    public class TouchWindow : IDisposable
-    {
-        private TouchWindowCore touchWindowCore;
-        
-        public TouchWindow(Control target, TWF ulFlags = TWF.None)
-        {
-            touchWindowCore = new TouchWindowCore(target, ulFlags);
-            touchWindowCore.Touch += touchWindowCore_Touch;
-        }
-
-        public bool IsTouchWindowRegistered { get { return touchWindowCore.IsTouchWindowRegistered; } }
-        public bool? CanRegisterTouchWindow { get { return touchWindowCore.CanRegisterTouchWindow; } }
-
-        public event TouchEventHandler Touch;
-        
-        private void touchWindowCore_Touch(TouchWindowCore sender, TouchCoreEventArgs e)
-        {
-            if (Touch == null) return;
-
-            var inputs = e.Inputs.Select(input => (TouchInput)input).ToArray();
-
-            if (Touch != null)
-            {
-                var touchEventArgs = new TouchEventArgs(inputs);
-                Touch(this, touchEventArgs);
-                if (touchEventArgs.Handled)
-                {
-                    e.Handled = true;
-                    return;
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            touchWindowCore.Touch -= touchWindowCore_Touch;
-            touchWindowCore.Dispose();
-        }
-    }
-
-    public class TouchEventArgs : EventArgs
-    {
-        public bool Handled = false;
-        public readonly TouchInput[] Inputs;
-        public TouchEventArgs(TouchInput[] inputs) { Inputs = inputs; }
-    }
-    public delegate void TouchEventHandler(TouchWindow sender, TouchEventArgs e);
-}
-*/
 
 namespace ZipPla
 {

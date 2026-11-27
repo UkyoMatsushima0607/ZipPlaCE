@@ -105,21 +105,6 @@ namespace ZipPla
             });
         }
 
-        /*
-        public static bool IsUninstalled(string ngen, string target)
-        {
-            using (var p = Process.Start(GetNgenStartInfo(ngen, "display", target, runas: false)))
-            {
-                p.WaitForExit();
-                switch (p.ExitCode)
-                {
-                    case -1: return true;
-                    case 0: return false;
-                    default: throw new Exception($"ngen.exe error({p.ExitCode})");
-                }
-            }
-        }
-        */
 
         public static bool LostNativeImageExists(string ngen, string target, params string[] ignoreFiles)
         {
@@ -183,15 +168,6 @@ namespace ZipPla
             target = Path.GetFullPath(target);
 
             // ngen.exe のデフォルト値を on にする場合、試用ユーザー向けにこの処理を加えたほうが望ましい
-            /*
-            var parent = Path.GetDirectoryName(target);
-            var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-            if (desktop == parent ||
-                defaultParentFolderName != null && Path.Combine(desktop, defaultParentFolderName, Path.GetFileName(target)) == target)
-            {
-                return false;
-            }
-            */
 
             bool In(string dir)
             {
@@ -248,37 +224,5 @@ namespace ZipPla
             }
         }
 
-        /*
-        private class NativeImage
-        {
-            public NativeImage(string text)
-            {
-                var items = text.Split(new string[] { ", " }, StringSplitOptions.None);
-                if (items.Length > 0) Name = items[0].Trim();
-                for (var i = 1; i < items.Length; i++)
-                {
-                    var item = items[i];
-                    if (Version != null && item.StartsWith("Version="))
-                    {
-                        Version = item.Substring(8);
-                    }
-                    else if (Culture != null && item.StartsWith("Culture="))
-                    {
-                        Culture = item.Substring(8);
-                    }
-                    else if (PublicKeyToken != null && item.StartsWith("PublicKeyToken="))
-                    {
-                        PublicKeyToken = item.Substring(15);
-                    }
-                }
-            }
-
-            public readonly string Name;
-            public readonly string Version;
-            public readonly string Culture;
-            public readonly string PublicKeyToken;
-
-        }
-        */
     }
 }

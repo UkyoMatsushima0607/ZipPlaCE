@@ -104,12 +104,6 @@ namespace ZipPla
             {
                 return PixelFormat.Format24bppRgb;
             }
-            /*
-            else if((pixelFormat & PixelFormat.Alpha) != 0)
-            {
-                return PixelFormat.Format24bppRgb;
-            }
-            */
             else
             {
                 return pixelFormat;
@@ -238,60 +232,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private static void drawBitmapForNoneAlpha(Bitmap dstBitmap, Rectangle dstRectangle, Bitmap srcBitmap, BackgroundWorker backgroundWorker)
-        {
-            var srcWidth = srcBitmap.Width;
-            var srcHeight = srcBitmap.Height;
-            var pixelFormat = FlattenFormat(srcBitmap.PixelFormat);
-            var srcImage = srcBitmap.LockBits(new Rectangle(0, 0, srcWidth, srcHeight), System.Drawing.Imaging.ImageLockMode.ReadOnly, pixelFormat);
-            try
-            {
-                var dstImage = dstBitmap.LockBits(dstRectangle, System.Drawing.Imaging.ImageLockMode.WriteOnly, pixelFormat);
-                try
-                {
-                    var srcStride = srcImage.Stride;
-                    var dstStride = dstImage.Stride;
-                    var bytePerPixel = Image.GetPixelFormatSize(pixelFormat) >> 3;
-                    unsafe
-                    {
-                        var srcAddress = (byte*)srcImage.Scan0;
-                        var dstAddress = (byte*)dstImage.Scan0;
-                        if (srcWidth < (dstRectangle.Width << 1) || srcHeight < (dstRectangle.Height << 1))
-                        {
-                            if (backgroundWorker != null)
-                            {
-                                bilinear(dstAddress, dstRectangle.Width, dstRectangle.Height, dstStride, srcAddress, srcWidth, srcHeight, srcStride, bytePerPixel, backgroundWorker);
-                            }
-                            else
-                            {
-                                bilinear(dstAddress, dstRectangle.Width, dstRectangle.Height, dstStride, srcAddress, srcWidth, srcHeight, srcStride, bytePerPixel);
-                            }
-                        }
-                        else
-                        {
-                            if (backgroundWorker != null)
-                            {
-                                antiAliasing2x(dstAddress, dstRectangle.Width, dstRectangle.Height, dstStride, srcAddress, srcWidth, srcHeight, srcStride, bytePerPixel, backgroundWorker);
-                            }
-                            else
-                            {
-                                antiAliasing2x(dstAddress, dstRectangle.Width, dstRectangle.Height, dstStride, srcAddress, srcWidth, srcHeight, srcStride, bytePerPixel);
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    dstBitmap.UnlockBits(dstImage);
-                }
-            }
-            finally
-            {
-                srcBitmap.UnlockBits(srcImage);
-            }
-        }
-        */
 
         private unsafe static void BilinearForAlpha(byte* dstAddress, int dstWidth, int dstHeight, int dstStride, int dstBytesPerPixel, byte* srcAddress, int srcWidth, int srcHeight, int srcStride, int srcBytesPerPixel, bool parallel)
         {
@@ -647,24 +587,6 @@ namespace ZipPla
                 var alpha4C48 = (((255 * 4) - alpha4_255) * (255 * 4)) + (255 * 8);
                 for (var i = 0; i < srcBytePerPixel1; i++)
                 {
-                    /*
-                    var dstLocali = srcLocal00[i] + srcLocal01[i] + srcLocal10[i] + srcLocal11[i];
-                    switch(dstLocali & 0x7)
-                    {
-                        case 0:
-                        case 1:
-                        case 2:
-                        case 4:
-                        case 5:
-                            dstLocali >>= 2;
-                            break;
-                        case 3:
-                        case 6:
-                        case 7:
-                            dstLocali = (dstLocali >> 2) + 1;
-                            break;
-                    }
-                    */
                     var dstLocali = ((srcLocal00[i] + srcLocal01[i] + srcLocal10[i] + srcLocal11[i])* alpha4_255 + alpha4C48) / (255 * 16);
                     if (dstLocali <= 0) dstLocal[i] = 0;
                     else if (dstLocali >= 255) dstLocal[i] = 255;

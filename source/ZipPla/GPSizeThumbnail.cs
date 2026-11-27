@@ -374,69 +374,7 @@ namespace ZipPla
 
 
 
-        /*
-    public static void ClearBlackList()
-    {
-        lock (blackList)
-        {
-            blackList.Clear();
-        }
-    }
 
-    private static readonly Dictionary<string, int> blackList = new Dictionary<string, int>(); // スレッドセーフでない
-    public static bool Editing(string path, int weightDecrease = 1)
-    {
-        //return path != null && blackList.Contains(path.ToLower());
-        if (path != null)
-        {
-            var lower = path.ToLower();
-            int weight;
-            lock (blackList)
-            {
-                if (blackList.TryGetValue(lower, out weight))
-                {
-                    if (weight > weightDecrease)
-                    {
-                        if (weightDecrease > 0) blackList[lower] = weight - weightDecrease;
-                    }
-                    else
-                    {
-                        blackList.Remove(lower);
-                    }
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public static void AddBlackListWeight(string path, int weightIncrease = 1)
-    {
-        if (path != null)
-        {
-            var lower = path.ToLower();
-            int weight;
-            lock (blackList)
-            {
-                if (blackList.TryGetValue(lower, out weight))
-                {
-                    blackList[lower] = weight + weightIncrease;
-                }
-                else
-                {
-                    blackList[lower] = weightIncrease;
-                }
-            }
-        }
-    }
-    */
-
-        /*
-        public static void fileCacheTest()
-        {
-            MessageBox.Show(GetCommonFolderRoot(@"\\localhost\aa\bc\d"));
-        }
-        */
 
         private static bool IsPathRooted(string path)
         {
@@ -481,21 +419,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private static string GetRelativePath(string current, string target)
-        {
-            var cDirs = current.Split(Path.DirectorySeparatorChar);
-            var tDirs = target.Split(Path.DirectorySeparatorChar);
-            var cLen = cDirs.Length;
-            var len = Math.Min(cLen, tDirs.Length);
-            var i = 0;
-            var p = 0;
-            while (i < len && cDirs[i] == tDirs[i]) p += tDirs[i++].Length + 1;
-            var up = "";
-            while (i++ < cLen) up += ".." + Path.DirectorySeparatorChar;
-            return up + target.Substring(p);
-        }
-        */
 
         private static string GetFullPath(string current, string target)
         {
@@ -1721,37 +1644,6 @@ namespace ZipPla
                             throw;
                         }
 
-                        /*
-                        var img = new Bitmap(width, height);
-                        try
-                        {
-                            using (var g = Graphics.FromImage(img))
-                            {
-                                g.DrawImage(prevBitmap, 0, 0, width, height);
-                            }
-                            var m = new MemoryStream();
-                            //img.Save(m, TrySet_ImageCodecInfo, TrySet_EncoderParameters);
-                            WindowsMediaPhoto.Save(m, img, JXR_QUALITY);
-
-                            if (sizeBound < long.MaxValue / 2)
-                            {
-                                sizeBound -= m.Position;
-                                if (sizeBound < 0) // これで終わりの可能性があるので等号は含めない
-                                {
-                                    throw new Exception();
-                                }
-                            }
-
-                            compressed[i] = m;
-
-                        }
-                        catch
-                        {
-                            img.Dispose();
-                            if (!dontDisposePrev) prevBitmap.Dispose();
-                            throw;
-                        }
-                        */
 
 
                         if (!dontDisposePrev) prevBitmap.Dispose();
@@ -1787,9 +1679,6 @@ namespace ZipPla
                             }
                             // 後回しの書き込みでは、サムネイルを作ったあとに元ファイルが変わっていたら書かない（古い画像に新しい日時を付けてしまうため）
                             if (pending != null && lastWriteTime != pending.ExpectedLastWriteTime) throw new Exception();
-                            //var fileInfo = new FileInfo(fileName);
-                            //var lastWriteTime = fileInfo.LastWriteTime;
-                            //fileInfo = null;
 
                             w.Write(lastWriteTime.Ticks);
                             w.Write(index);
@@ -1938,33 +1827,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        static bool fileIsLocked(string fileName)
-        {
-            try
-            {
-                File.SetLastWriteTime(fileName, File.GetLastWriteTime(fileName));
-                return false;
-            }
-            catch
-            {
-                return true;
-            }
-        }
-
-        static bool directoryIsLocked(string directoryName)
-        {
-            try
-            {
-                Directory.SetLastWriteTime(directoryName, Directory.GetLastWriteTime(directoryName));
-                return false;
-            }
-            catch
-            {
-                return true;
-            }
-        }
-        */
 
 
         private static bool GetResizedInfo(Size requiredSize, bool letterBox, Size originalSize, Fraction pixelRatio, bool cacheFullSize,
@@ -1987,12 +1849,6 @@ namespace ZipPla
             }
             var resizedMaxSizeInt = resizedMaxSize.Round();
 
-            /*
-            var wZoom = (double)requiredSize.Width / aspect.Numerator;
-            var hZoom = (double)requiredSize.Height / aspect.Denominator;
-            var zoom = letterBox ? Math.Min(wZoom, hZoom) : Math.Max(wZoom, hZoom);
-            var resizedMaxSize = new SizeD(aspect.Numerator, aspect.Denominator) * zoom;
-            */
 
             // 容量節約のため、必要でない限りオリジナルに近いサイズは作らない
             if (!cacheFullSize && (
@@ -2067,57 +1923,7 @@ namespace ZipPla
             return true;
         }
 
-        /*
-        private static Size[] GetSizeArray(Size requiredSize, Size originalSize)
-        {
-            var reversedResult = new List<Size>();
-            var zoom = 1;
-            while (true)
-            {
-                var size = new Size(requiredSize.Width / zoom, requiredSize.Height / zoom);
-                if (size.Width * size.Height < AREA_UBOUND)
-                {
-                    if (zoom == 1)
-                    {
-                        var m = originalSize.Width * originalSize.Height;
-                        if (m < AREA_UBOUND)
-                        {
-                            reversedResult.Add(originalSize);
-                        }
-                        else
-                        {
-                            var z2 = Math.Sqrt((double)AREA_UBOUND / m);
-                            reversedResult.Add(new Size((int)Math.Ceiling(originalSize.Width * z2), (int)Math.Ceiling(originalSize.Height * z2)));
-                        }
-                    }
-                    break;
-                }
-                reversedResult.Add(size);
-                zoom *= COMMON_RATIO;
-            }
-            var result = new Size[reversedResult.Count];
-            for (var i = 0; i < result.Length; i++)
-            {
-                result[i] = reversedResult[result.Length - i - 1];
-            }
-            return result;
-        }
-        */
 
-        /*
-        private static EncoderParameters GetJpegEncoderParameters(long quality)
-        {
-            var eps = new EncoderParameters(1);
-            var ep = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality);
-            eps.Param[0] = ep;
-            return eps;
-        }
-
-        private static ImageCodecInfo GetEncoderInfo(ImageFormat f)
-        {
-            return ImageCodecInfo.GetImageEncoders().FirstOrDefault(enc => enc.FormatID == f.Guid);
-        }
-        */
 
         private static void editFile(string fileName, Action action)
         {
@@ -2128,40 +1934,6 @@ namespace ZipPla
         {
             EnterEditing(fileName);
             try { return func(); } finally { ExitedEditing(fileName); }
-            /*
-            var fileNameLowerCase = fileName.ToLower();
-            //blackList.Add(fileNameLowerCase);
-            
-            if (preAction != null)
-            {
-                if(preBlackListWeight != null)
-                {
-                    var preBlackListWeightInt = (int)preBlackListWeight;
-                    lock (blackList)
-                    {
-                        blackList[fileNameLowerCase] = preBlackListWeightInt;
-                    }
-                }
-                preAction();
-            }
-
-            if (blackListWeight > 0)
-            {
-                lock (blackList)
-                {
-                    if (preAction == null || !blackList.ContainsKey(fileNameLowerCase))
-                    {
-                        blackList[fileNameLowerCase] = blackListWeight;
-                    }
-                    else
-                    {
-                        blackList[fileNameLowerCase] += blackListWeight;
-                    }
-                }
-            }
-
-            return func();
-            */
         }
     }
     
@@ -2256,20 +2028,6 @@ namespace ZipPla
             }
         }
         
-        /*
-        public static bool IsNTFS(string fileName)
-        {
-            try
-            {
-                var info = new DriveInfo(fileName);
-                return info.DriveFormat.ToLower() == "ntfs";
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        */
         
         public static bool Exists(string fileName, string streamName)
         {

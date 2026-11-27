@@ -45,10 +45,6 @@ namespace ZipPla
 
         private bool HideZipPlaCoverImageFile = true;
 
-        //private static readonly Regex zipPlaCoverImageFileRegex = new Regex(@"(?:^|\/|\\)\{ZipPlaCoverFile\}\.(?:jpe?g|png|bmp|gif)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        //private static readonly Regex zipPlaCoverImageTypeRegex = new Regex(@".(?:jpe?g|png|bmp|gif)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        //bool isZipPlaCoverImageFile(string path) { return path != null && zipPlaCoverImageFileRegex.IsMatch(path); }
-        //bool isZipPlaCoverImageType(string path) { return path != null && zipPlaCoverImageTypeRegex.IsMatch(path); }
         bool isZipPlaCoverImageFile(string path)
         {
             if (path == null || path.Length < ZipPlaCoverImageFileWithExtensionInLower.Length) return false;
@@ -101,20 +97,8 @@ namespace ZipPla
                         // ignore 以外でトグルする実装
                         itemLoadLevel = temp == ItemLoadLevel.Header ? ItemLoadLevel.Full : ItemLoadLevel.Header;
 
-                        /*
-                        AllowFullpower = false;
-                        MessageBox.Show(this, Message.AtLeastOneKindOfItemsMustBeSelected, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        AllowFullpower = true;
-                        */
 
                         // 変更しない実装
-                        /*
-                        itemLoadLevel = temp;
-                        AllowFullpower = false;
-                        MessageBox.Show(this, Message.AtLeastOneKindOfItemsMustBeSelected, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        AllowFullpower = true;
-                        return false;
-                        */
                     }
                 }
                 else
@@ -127,20 +111,6 @@ namespace ZipPla
             return false;
         }
 
-        /*
-        bool checkDirectorySize = false;
-        bool CheckDirectorySize
-        {
-            get { return checkDirectorySize; }
-            set
-            {
-                if (value != checkDirectorySize)
-                {
-                    getFolderSizeToolStripMenuItem.Checked = checkDirectorySize = value;
-                }
-            }
-        }
-        */
 
         SortSyncMode sortSyncMode = SortSyncMode.Directory;
         public SortSyncMode SortSyncMode
@@ -230,13 +200,6 @@ namespace ZipPla
                 alwaysAutomaticallyHideUIToolStripMenuItem.Checked = value;
 
 
-                /*
-                if (!silent)
-                {
-                    StopLookAheadProcess();
-                    PrepareLookAheadProcess();
-                }
-                */
             }
         }
 
@@ -563,25 +526,6 @@ namespace ZipPla
             }
         }
         // マウスホイールで直下を動かす動作を MouseEnter + Focus で実装していたとき
-        /*
-        private Control latestControledControl = null;
-        private Control LatestControledControl
-        {
-            get
-            {
-                if (latestControledControl == null || !latestControledControl.Visible)
-                {
-                    if (latestControledControl == tvCatalog) return dgvFileList;
-                    else return tvCatalog;
-                }
-                return latestControledControl;
-            }
-            set
-            {
-                latestControledControl = value;
-            }
-        }
-        */
 
         public int packedImageLoaderLeftHierarchies = 0;
         public PackedImageLoaderSearchMode packedImageLoaderSearchMode = PackedImageLoaderSearchMode.Full;
@@ -697,12 +641,6 @@ namespace ZipPla
                 alwaysStartInWindowModeToolStripMenuItem.Checked = value == InitialFullscreenMode.ForceWindow;
                 openInFullscreenToolStripMenuItem.Checked = value == InitialFullscreenMode.ForceFullscreen;
 
-                /*
-                if (!silent)
-                {
-                    StopLookAheadProcess();
-                    PrepareLookAheadProcess();
-                }*/
             }
         }
 
@@ -983,12 +921,6 @@ namespace ZipPla
             get
             {
                 return tvCatalog.LayoutMode;
-                /*
-                if (totallyUniformedToolStripMenuItem.Checked) return ThumbViewerAligningMode.TotallyUniformedGrid;
-                if (horizontallyUniformedToolStripMenuItem.Checked) return ThumbViewerAligningMode.HorizontallyUniformedGrid;
-                if (alignedLeftToolStripMenuItem.Checked) return ThumbViewerAligningMode.LeftAlignedGrid;
-                return ThumbViewerAligningMode.CenteredGrid;
-                */
             }
             set
             {
@@ -1190,23 +1122,6 @@ namespace ZipPla
                 p.Dispose();
             }
         }
-        /*
-        public async void SetOpendByExternalApplication(Process p, IEnumerable<string> fullPathSet)
-        {
-            if (p == null || p.HasExited || fullPathSet == null) return;
-            var set = new HashSet<string>(from path in fullPathSet where !string.IsNullOrEmpty(path) select path.ToLower());
-            if (!set.Any()) return;
-            OpendByExternalApplication_Dictionary[p] = set;
-            //#if DEBUG
-            //            MessageBox.Show("Opend \"" + set.First() + "\"" + (set.Count == 1 ? "." : $" + {set.Count} files."));
-            //#endif
-            await Task.Run(() => p.WaitForExit()); // エクスプローラーを読んだ場合ここには到達するがすぐに終了する
-            OpendByExternalApplication_Dictionary.Remove(p);
-            //#if DEBUG
-            //            MessageBox.Show("Closed \"" + set.First() + "\"" + (set.Count == 1 ? "." : $" + {set.Count} files."));
-            //#endif
-        }
-        */
         public void AddToOpendByExternalApplicationDictionary(object key, IEnumerable<string> path)
         {
             if (path == null) return;
@@ -1292,16 +1207,6 @@ namespace ZipPla
                 //MessageBox.Show("3");
 
                 LoadSettings(path, sortModeOption: sortMode);
-                /*
-            if (!path.EndsWith(Path.DirectorySeparatorChar.ToString()) && File.Exists(path) &&
-                !(MovieThumbnailLoader.Supports(path) && MovieThumbnailLoader.ffmpegExists()))
-            {
-                LoadSettings(Path.GetDirectoryName(path), Path.GetFileName(path));
-            }
-            else
-            {
-                LoadSettings(path);
-            }*/
             }
             catch
             {
@@ -1541,21 +1446,6 @@ namespace ZipPla
             sw.Stop(); ss += $"cmp:\t{sw.Elapsed}\n"; MessageBox.Show(ss);
         }
 #endif
-        /*
-        private int? GetCurrentShowIndex()
-        {
-            try
-            {
-                var f = tvCatalog.FocusedIndex;
-                if (f >= 0) return tvCatalog.DataIndexToShowIndex[f];
-                else return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-        */
         int tbcIconWidth, tbcMargin;
 
         Font MenuTextFont = null;
@@ -1568,25 +1458,6 @@ namespace ZipPla
             return false;
 
             // Windows 10 の「テキストサイズのみを変更する」の設定を拾うためのコード
-            /*
-            if (Program.DisplayMagnification < 1.001) return false;
-
-            try
-            {
-                return SystemInfoManager.IsWindowsVersionOrGreater(6, 2, 0);
-            }
-            catch
-            {
-                return false;
-            }
-
-            // Windows 8.1以上、もしくはWindows Server 2012 R2以上では正しいバージョンを返さずに、「6.2」と返す可能性（Windows 10 でこの動作を確認済み）
-            // http://dobon.net/vb/dotnet/system/osversion.html#windows8point1
-            // 6.2 以上かどうかを調べるなら現状問題ないが、将来的に 6.2 とすら返さなくなる可能性を考慮して使用しない
-            //var version = Environment.OSVersion.Version;
-            //var major = version.Major;
-            //return major > 6 || major == 6 && version.Minor >= 2;
-            */
         }
 
         private GestureListener gestureListener;
@@ -1756,14 +1627,6 @@ namespace ZipPla
             cmsRightClick.Closed += OpenInFileInClipboardProvider.Owner_Closed;
 
 
-            /*
-#if DEBUG
-            Load += (sender, e) => setNewDynamicStringSelectionToolStripMenuItems(new SelectionToFilterToolStripMenuItem[] { new SelectionToFilterToolStripMenuItem(this) });
-            //Load += (sender, e) => setNewDynamicStringSelectionToolStripMenuItems(new SelectionToFilterToolStripMenuItem[] { });
-#else
-            x = y;
-#endif
-            */
 
             tvCatalog.bottomPadding = Program.DpiScaling(2);
 
@@ -1843,13 +1706,6 @@ namespace ZipPla
             mgFileList.MouseGestureStarting += mgFileList_MouseGestureStarting;
             mgFileList.MouseGestureCompleted += mgFileList_MouseGestureCompleted;
             mgFileList.Enabled = false; // mgCatalog との整合性のため
-                                        /*
-                            #if !DEBUG
-                                        mgCatalog.Enabled = false;
-                                        mgFileList.Enabled = false;
-                                        mouseGestureSettingToolStripMenuItem.Visible = false;
-                            #endif
-                                        */
 
 #if !DEBUG
             loadCountToolStripMenuItem.Visible = false;
@@ -2501,46 +2357,11 @@ namespace ZipPla
         }
 
         // SetKeepOpen 実装１
-        /*
-        private static void SetKeepOpen(ToolStripMenuItem tsmi, params ToolStripMenuItem[] exceptions)
-        {
-            foreach (var item in tsmi.DropDownItems)
-            {
-                var childTsmi = item as ToolStripMenuItem;
-                if (childTsmi != null && !exceptions.Contains(childTsmi))
-                {
-                    childTsmi.MouseEnter += SetKeepOpen_MouseEnter;
-                    childTsmi.MouseLeave += SetKeepOpen_MouseLeave;
-                    SetKeepOpen(childTsmi, exceptions);
-                }
-            }
-        }
-
-        private static void SetKeepOpen_MouseLeave(object sender, EventArgs e)
-        {
-            ((ToolStripDropDown)((ToolStripMenuItem)sender).Owner).AutoClose = true;
-        }
-
-        private static void SetKeepOpen_MouseEnter(object sender, EventArgs e)
-        {
-            ((ToolStripDropDown)((ToolStripMenuItem)sender).Owner).AutoClose = false;
-        }
-        */
 
         private static readonly Bitmap ExplorerIcon = getExplorerIcon();
         private static Bitmap getExplorerIcon()
         {
             return ExplorerProvider.Icon;
-            /*
-            try
-            {
-                return FileTypeManager.GetSmallIconBitmap(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), useFileAttrinutes: false);
-            }
-            catch
-            {
-                return null;
-            }
-            */
         }
 
         private void focusVisibleMainList()
@@ -2674,20 +2495,6 @@ namespace ZipPla
             // ただしこのままでは ExplorerProvider が重複し、
             // また明らかに不適切な MoveItemsProvider やあまり使われないであろう BuiltInViewerProveder まで表示されるので
             // 有効にする場合 ExternalEpplicationProvider だけを表示するような変更を加えるのが望ましいと思われる
-            /*
-            var start = items.Count;
-            if (start > 0)
-            {
-                items.Add(new ToolStripSeparator());
-                start++;
-            }
-            if (InsertAppToCToolStrip(items, start, path) == 0)
-            {
-                var tsmi = new ToolStripMenuItem(Message.ApplicationIsNotSpecified);
-                tsmi.Enabled = false;
-                items.Insert(start++, tsmi);
-            }
-            */
             if (this != ActiveForm) Activate();
             AllowFullpower = false; // これは cms 自体のものなので必要
         }
@@ -2715,15 +2522,6 @@ namespace ZipPla
             if (zabLocation_DirectoryButtonContextMenuStripOpening_Path != null)
             {
                 setToTree(zabLocation_DirectoryButtonContextMenuStripOpening_Path, CollapseOthersWhenSynchronizing);
-                /*
-                if(!folderTreeToolStripMenuItem.Checked)
-                {
-                    folderTreeToolStripMenuItem.Checked = true;
-                    setFolderTreeVisible(silent: false);
-                }
-
-                explorerTreeView.TrySelect(zabLocation_DirectoryButtonContextMenuStripOpening_Path);
-                */
             }
         }
 
@@ -2781,27 +2579,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private bool mouseGestureHandler(MouseGestureCompletedEventArgs e)
-        {
-            if(e.UserDirections.SequenceEqual(new MouseGestureDirection[] { MouseGestureDirection.Left }))
-            {
-                btnGoToBack.PerformClick();
-                return true;
-            }
-            if (e.UserDirections.SequenceEqual(new MouseGestureDirection[] { MouseGestureDirection.Right }))
-            {
-                btnGoToForward.PerformClick();
-                return true;
-            }
-            if (e.UserDirections.SequenceEqual(new MouseGestureDirection[] { MouseGestureDirection.Up }))
-            {
-                gotToParent();
-                return true;
-            }
-            return false;
-        }
-        */
 
         private void mgFileList_MouseGestureCompleted(MouseGesture sender, MouseGestureCompletedEventArgs e)
         {
@@ -3059,10 +2836,6 @@ namespace ZipPla
 
                 if (test(cc => char.IsLetterOrDigit(cc) || char.IsSymbol(cc))) return result;
 
-                //bool isAsciiLetterOrDigit(char cc) => 'a' <= cc && cc <= 'z' || 'a' <= cc && cc <= 'z' || 'A' <= cc && cc <= 'Z';
-                //if (test(isAsciiLetterOrDigit)) return result;
-                //bool isNoneAsciiLetterOrDigit(char cc) => char.IsLetterOrDigit(cc) && !('a' <= cc && cc <= 'z' || 'A' <= cc && cc <= 'Z');
-                //if (test(isNoneAsciiLetterOrDigit)) return result;
 
                 return Tuple.Create(clickedIndex, 0);
             }
@@ -3150,9 +2923,6 @@ namespace ZipPla
 #if RUNTIME
             Program.RunTimeMeasure?.Block("LoadEventHandlerStarted");
 #endif
-            //itemsCountToolStripStatusLabel.Width = Program.DpiScalingX(90);
-            //fileSizeToolStripStatusLabel.Width = Program.DpiScalingX(70);
-            //selectedFileContainsCountToolStripStatusLabel.Width = Program.DpiScalingX(90);
 
             selectedFileNameToolStripTextBox.ReadOnly = true;
             if (MenuTextFont != null)
@@ -3163,9 +2933,6 @@ namespace ZipPla
             selectedFileNameToolStripTextBox.MouseEnter += SelectedFileNameToolStripTextBox_MouseEnter;
             selectedFileNameToolStripTextBox.MouseLeave += SelectedFileNameToolStripTextBox_MouseLeave;
             selectedFileNameToolStripTextBox.TextChanged += SelectedFileNameToolStripTextBox_TextChanged;
-            //selectedFileNameToolStripTextBox.KeyDown += SelectedFileNameToolStripTextBox_KeyDown;
-            //selectedFileNameToolStripTextBox.GotFocus += SelectedFileNameToolStripTextBox_GotFocus;
-            //selectedFileNameToolStripTextBox.LostFocus += SelectedFileNameToolStripTextBox_LostFocus;
 
 #if RUNTIME
             Program.RunTimeMeasure?.Block("PrepareMessageForwarder");
@@ -3262,13 +3029,6 @@ namespace ZipPla
                     pasteToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.V;
                     break;
                 case false:
-                    /*
-                    if (rightClickFileNameToolStripTextBox.ReadOnly)
-                    {
-                        setRightClickMenuShortcutKeys(true);
-                    }
-                    else
-                    */
                     {
                         deleteonlyForListFileToolStripMenuItem.ShortcutKeys = Keys.None;
                         cutToolStripMenuItem.ShortcutKeys = Keys.None;
@@ -3322,17 +3082,6 @@ namespace ZipPla
                 }
             }
 
-            /*
-            var ac = ActiveControl;
-            if (ac == tvCatalog)
-            {
-                cmsRightClickPrepareAndShowForKeyOnTvCatalog(onlyTag);
-            }
-            else if (ac == dgvFileList)
-            {
-                cmsRightClickPrepareAndShowForKeyOnFileList(onlyTag);
-            }
-            */
         }
 
         private void cmsRightClickPrepareAndShowForKeyOnTreeView()
@@ -3442,40 +3191,6 @@ namespace ZipPla
 
         }
 
-        /*
-        private void setControlEvent(Control control)
-        {
-            control.MouseEnter += Control_MouseEnter;
-            control.MouseLeave += Control_MouseLeave;
-            foreach (Control child in control.Controls)
-            {
-                setControlEvent(child);
-            }
-        }
-
-        private bool mouseIsOnWindow;
-        private void Control_MouseEnter(object sender, EventArgs e)
-        {
-            if (!mouseIsOnWindow)
-            {
-                mouseIsOnWindow = true;
-                globalMouseEnter(Cursor.Position);
-            }
-        }
-        private void Control_MouseLeave(object sender, EventArgs e)
-        {
-            if (mouseIsOnWindow)
-            {
-                var p = Cursor.Position;
-                var bounds = ClientRectangle;
-                if(!bounds.Contains(PointToClient(p)))
-                {
-                    mouseIsOnWindow = false;
-                    globalMouseLeave(p);
-                }
-            }
-        }
-        */
 
         private void SelectedFileNameToolStripTextBox_TextChanged(object sender, EventArgs e)
         {
@@ -3626,12 +3341,6 @@ namespace ZipPla
             maxCaptchaCountInAVideoToolStripMenuItem.Text = Message.MaxCountCaptchaInAVideo;
             fitOnTheScreenToolStripMenuItem.Text = Message.FitOnScreen;
             everySecondsToolStripMenuItem.Text = Message.EverySecond;
-            //thumbnailListToolStripMenuItem.Text = Message.ThumbnailList;
-            //fileListToolStripMenuItem.Text = Message.FileList;
-            //pageInFileListToolStripMenuItem.Text = Message.PageInFileList;
-            //ratingInFileListToolStripMenuItem.Text = Message.RatingInFileList;
-            //accessTimeInFileListToolStripMenuItem.Text = Message.DateAccessedInFileList;
-            //writeTimeInFileListToolStripMenuItem.Text = Message.DateModifiedInFileList;
             thumbnailSizeToolStripMenuItem.Text = Message._Thumbnail;
             archivesInArchiveToolStripMenuItem.Text = Message.LoadArchivesInArchive;
             ignoreArchivesInArchiveToolStripMenuItem.Text = Message.NoneRecommended;
@@ -3794,10 +3503,6 @@ namespace ZipPla
             tbcLength.HeaderText = Message.Length;
             tbcFPS.HeaderText = Message.FPS;
 
-            //openInBuiltinViewerToolStripMenuItem.Text = Message.OpenInBuiltInViewer;
-            //openInAssociationToolStripMenuItem.Text = Message.Open;
-            //moveToThisFolderToolStripMenuItem.Text = Message.MoveToThisFolder;
-            //openInExplorerToolStripMenuItem.Text = Message.OpenInExplorer;
             tagToolStripMenuItem.Text = Message.Tag;
             listFileToolStripMenuItem.Text = Message.VirtualFolder;
             addToNewListToolStripMenuItem.Text = Message.AddToNewVirtualFolder + "...";
@@ -4010,9 +3715,6 @@ namespace ZipPla
 
         private void setColumnWidth(DataGridViewColumn column, int cellMaximumWidth, Func<string, int> measure)
         {
-            //var gap = 200;
-            //var headerWidth = tbcMargin + measure(column.HeaderText) + gap;
-            //var x = column.HeaderCell.InheritedStyle.;
 
             //column.Width = Math.Max(cellMaximumWidth, headerWidth);
 
@@ -4110,39 +3812,6 @@ namespace ZipPla
             set
             {
                 SetSubfolderMode(value, checkAllLoadLevel: false);
-                /*
-                if (value != subfolderMode)
-                {
-                    subfolderMode = value;
-                    switch (value)
-                    {
-                        case SubfolderMode.Display:
-                            foldersToolStripMenuItem.CheckState = CheckState.Checked;
-                            searchSubfoldersAsWellToolStripMenuItem.Checked = false;
-                            break;
-                        case SubfolderMode.DisplayHeader:
-                            foldersToolStripMenuItem.CheckState = CheckState.Indeterminate;
-                            searchSubfoldersAsWellToolStripMenuItem.Checked = false;
-                            break;
-                        case SubfolderMode.Ignore:
-                            foldersToolStripMenuItem.CheckState = CheckState.Unchecked;
-                            searchSubfoldersAsWellToolStripMenuItem.Checked = false;
-                            break;
-                        case SubfolderMode.Search:
-                            foldersToolStripMenuItem.CheckState = CheckState.Unchecked;
-                            searchSubfoldersAsWellToolStripMenuItem.Checked = true;
-                            break;
-                        case SubfolderMode.DisplayAndSearch:
-                            foldersToolStripMenuItem.CheckState = CheckState.Checked;
-                            searchSubfoldersAsWellToolStripMenuItem.Checked = true;
-                            break;
-                        case SubfolderMode.DisplayHeaderAndSearch:
-                            foldersToolStripMenuItem.CheckState = CheckState.Indeterminate;
-                            searchSubfoldersAsWellToolStripMenuItem.Checked = true;
-                            break;
-                    }
-                }
-                */
             }
         }
         bool SetSubfolderMode(SubfolderMode value, bool checkAllLoadLevel)
@@ -4172,11 +3841,6 @@ namespace ZipPla
                                     SubfolderMode.DisplayHeader :
                                     SubfolderMode.DisplayAndSearch;
                         
-                        /*
-                        AllowFullpower = false;
-                        MessageBox.Show(this, Message.AtLeastOneKindOfItemsMustBeSelected, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        AllowFullpower = true;
-                        */
                     }
                     else
                     {
@@ -4466,186 +4130,8 @@ namespace ZipPla
         private void dgvFileList_GraphicalListDragLeave(object sender, EventArgs e) { graphicalListDragLeave(sender, e); }
         private void dgvFileList_GraphicalListDragDrop(IGraphicalList sender, GraphicalListDragEventArgs e) { graphicalListDragDrop(sender, e); }
 
-        /*
-        private void CatalogForm_DragEnter(object sender, DragEventArgs e)
-        {
-            if (dragOuting)
-            {
-                e.Effect = DragDropEffects.None;
-                return;
-            }
-            try
-            {
-                if (e.KeyState == DragEventKeyState_LeftButton && e.Data.GetDataPresent(DataFormats.FileDrop) && zabLocation.Enabled)
-                {
 
-                    var action = dragAndDropAction;// (new GeneralConfig()).DragAndDropAction;
-                    if (action == DragAndDropAction.ShowThumbnails)
-                    {
-                        string[] Files = ShortcutResolver.Exec((string[])e.Data.GetData(DataFormats.FileDrop, false)).ToArray();
-                        if (Files.Length == 1) // && IsSupportedByCatalogFormAndExists(Files[0]))
-                        {
-                            e.Effect = DragDropEffects.Copy;
-                        }
-                        else
-                        {
-                            e.Effect = DragDropEffects.None;
-                        }
-                    }
-                    else if (action == DragAndDropAction.MoveOrCopyFiles)
-                    {
-                        string[] Files = (string[])e.Data.GetData(DataFormats.FileDrop, false);
-                        if (Files.Length > 0 && (InRealDirectory || InVirtualDirectory))
-                        {
-                            var cl = currentLocation;
-                            if (cl != null)
-                            {
-                                if (InRealDirectory)
-                                {
-                                    string root = null;
-                                    try
-                                    {
-                                        root = Path.GetPathRoot(cl).ToLower();
-                                    }
-                                    catch { }
-                                    if (root != null)
-                                    {
-                                        if (Files.All(file => Path.GetPathRoot(file).ToLower() == root))
-                                        {
-                                            e.Effect = DragDropEffects.Move;
-                                        }
-                                        else
-                                        {
-                                            e.Effect = DragDropEffects.Copy;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        e.Effect = DragDropEffects.None;
-                                    }
-                                }
-                                else
-                                {
-                                    e.Effect = DragDropEffects.Copy;
-                                }
-                            }
-                            else
-                            {
-                                e.Effect = DragDropEffects.None;
-                            }
-                        }
-                        else
-                        {
-                            e.Effect = DragDropEffects.None;
-                        }
-                    }
-                    else
-                    {
-                        e.Effect = DragDropEffects.None;
-                    }
-                }
-                else
-                {
-                    e.Effect = DragDropEffects.None;
-                }
-            }
-            catch (Exception error)
-            {
-                e.Effect = DragDropEffects.None;
-                Program.AlertError(error);
-            }
-        }
 
-        private void CatalogForm_DragDrop(object sender, DragEventArgs e)
-        {
-            try
-            {
-                //var action = (new GeneralConfig()).DragAndDropAction;
-                var action = dragAndDropAction;
-                if (action == DragAndDropAction.ShowThumbnails)
-                {
-                    var path = ShortcutResolver.Exec(((string[])e.Data.GetData(DataFormats.FileDrop, false))[0]);
-
-                    MoveLocation(ApplicationProviderUser.DragAndDrop, path);
-
-                    //zabLocation.Text = path;
-                    //MakePreview();
-                }
-                else if (action == DragAndDropAction.MoveOrCopyFiles)
-                {
-                    pasteToCurrentLocation(e.Data, e.Effect);
-                }
-            }
-            catch (Exception error)
-            {
-                Program.AlertError(error);
-            }
-        }
-        */
-
-        /*
-        private void OpenInDefaultViewer(ApplicationProviderUser user, string path, bool? isDir = null)
-        {
-            try
-            {
-                RecentFfmpegExists = MovieThumbnailLoader.ffmpegExists();
-                foreach (var app in ApplicationArray)
-                {
-                    if (isDir == null) isDir = Directory.Exists(path);
-                    if (app.IsDefaultFor(path, (bool)isDir))
-                    {
-                        app.Exec(user, path);
-                        return;
-                    }
-                }
-                throw new Exception(Message.ApplicationIsNotSpecified);
-            }
-            catch (Exception error)
-            {
-                MessageBox.Show(this, error.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-        */
-
-        /*
-        private string GetExtentionByStreamAndSeekFirst(Stream stream)
-        {
-            var fourByte = new byte[4];
-            stream.Read(fourByte, 0, 4);
-            stream.Seek(-4, SeekOrigin.Current);
-            if (fourByte.SequenceEqual(new byte[4] { 0x50, 0x4B, 0x03, 0x04 }))
-            {
-                return ".zip";
-            }
-            else if (fourByte.SequenceEqual(new byte[4] { 0x52, 0x61, 0x72, 0x21 }))
-            {
-                return ".rar";
-            }
-            else if (fourByte.Take(2).SequenceEqual(new byte[2] { 0x1F, 0x8B }))
-            {
-                return ".gz";
-            }
-            else
-            {
-                var hundredByte = new byte[100];
-                stream.Read(hundredByte, 0, 100);
-                stream.Seek(-100, SeekOrigin.Current);
-                var nullChar = hundredByte.ToList().IndexOf(0);
-
-                if (nullChar >= 1)
-                {
-                    for (int i = nullChar + 1; i < 100; i++)
-                    {
-                        if (hundredByte[i] != 0)
-                        {
-                            return null;
-                        }
-                    }
-                }
-                return ".tar";
-            }
-        }
-        */
 
         private int getArchiveIndexWithAIAInfo(string path)
         {
@@ -4843,16 +4329,6 @@ namespace ZipPla
             {
                 if (isDir)
                 {
-                    /*
-                    if (CheckDirectorySize)
-                    {
-                        try
-                        {
-                            fileSize = Program.GetDirectoryFileSize(new DirectoryInfo(zipPath));
-                        }
-                        catch { } // 読み取りできないファイルがあるとサイズを取得できない
-                    }
-                    */
                 }
                 else
                 {
@@ -4862,78 +4338,14 @@ namespace ZipPla
                 bool? ffmpegExists = null;
                 if (isDir || PackedImageLoader.Supports(zipPath))
                 {
-                    /*
-                    filecount = -1;
-                    try
-                    {
-                        if (thumbnailCache != null)
-                        {
-
-                            byte[] data;
-                            //if (GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, out data))
-                            if (GPSizeThumbnail.TryGet(thumbnailCache, zipPath, getArchiveIndexWithAIAInfo(zipPath), out data))
-                            {
-                                try
-                                {
-                                    filecount = dataToFileCount(data);
-                                }
-                                catch { }
-                            }
-                        }
-                        if (filecount == -1 && ArchivesInArchiveMode == ArchivesInArchiveMode.Ignore)
-                        {
-                            using (var loader = new PackedImageLoader(zipPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode))
-                            {
-                                filecount = loader.GetPackedImageEntries().Count;
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        filecount = -1;
-                        throw;
-                    }
-                    */
                     getFileCount(out filecount, zipPath, stat);
                 }
                 else if (ImageLoader.SupportsAtLeastThumbnailReading(zipPath, ref ffmpegExists))
                 {
-                    /*
-                    if (ImageInfo.Supports(zipPath))
-                    {
-                        imageInfo = new ImageInfo(zipPath); // パフォーマンス的なロスが少ないので正確な方から取得
-                    }
-                    else
-                    {
-                        byte[] data;
-                        if (thumbnailCache != null && GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, out data))
-                        {
-                            imageInfo = ImageInfo.FromData(data);
-                        }
-                    }
-                    */
                     getImageHeader(out imageInfo, zipPath, stat);
                 }
                 else if (MovieThumbnailLoader.Supports(zipPath) && (ffmpegExists ?? MovieThumbnailLoader.ffmpegExists()))
                 {
-                    /*
-                    movieInfo = null;
-
-                    byte[] data;
-                    if (thumbnailCache != null && GPSizeThumbnail.TryGetWithIgnoredIndex(thumbnailCache, zipPath, out data))
-                    {
-                        try
-                        {
-                            movieInfo = MovieInfo.FromData(data);
-                        }
-                        catch { }
-                    }
-
-                    if (movieInfo == null)
-                    {
-                        movieInfo = MovieInfo.FromFile(zipPath);
-                    }
-                    */
                     getMovieHeader(out movieInfo, zipPath, stat);
                 }
                 else
@@ -5122,21 +4534,6 @@ namespace ZipPla
                             }
                             result = null;
                         }
-                        /*
-                        if (isDir && InRealDirectory)
-                        {
-                            bool notRegistered;
-                            lock (folderWatchers)
-                            {
-                                notRegistered = !folderWatchers.ContainsKey(zipPath);
-                                if (notRegistered) folderWatchers.Add(zipPath, null);
-                            }
-                            if (notRegistered)
-                            {
-                                var watcher = new FileSystemWatcher(zipPath,)
-                            }
-                        }
-                        */
                         return result;
                     }
                     else if (ImageLoader.SupportsAtLeastThumbnailReading(zipPath, ref ffmpegExists))
@@ -5350,10 +4747,6 @@ namespace ZipPla
             catch// (Exception e)
             {
                 loadError = LoadResult.LoadError;
-                //using (var g = Graphics.FromImage(result))
-                //{
-                // drawFileImage(g, result.Width, result.Height, DefaultFont, Brushes.Blue, Path.GetFileName(zipPath), zipPath, Brushes.Yellow);
-                //}
                 imageInfo = null;
                 movieInfo = null;
                 if (backgroundWorker != null && backgroundWorker.CancellationPending) return null;
@@ -5392,13 +4785,6 @@ namespace ZipPla
             var sw = srcSize.Width;
             var sh = srcSize.Height;
 
-            /*
-            switch (currentClipMode)
-            {
-                case ClipMode.Letterbox: return th * sw > tw * sh ? new Size(tw, (2 * sh * tw + sw) / (2 * sw)) : new Size((2 * sw * th + sh) / (2 * sh), th);
-                default: return th * sw < tw * sh ? new Size(tw, (2 * sh * tw + sw) / (2 * sw)) : new Size((2 * sw * th + sh) / (2 * sh), th);
-            }
-            */
 
             bool land, port, lett;
 
@@ -5410,11 +4796,6 @@ namespace ZipPla
             // キャッシュを使わない場合はこちらを採用するということも考えられるが、
             // 外部プログラムがアスペクト比に誤差を与えた場合にも
             // 隙間を埋める処理を行うのは悪い選択肢ではないと判断しコメントアウト
-            /*
-            land = (2 * th - 1) * sw >= (2 * tw + 1) * sh;
-            port = (2 * th + 1) * sw <= (2 * tw - 1) * sh;
-            lett = localClipMode == ClipMode.Letterbox;
-            */
 
             if (land && lett || port && !lett)
             {
@@ -5464,10 +4845,6 @@ namespace ZipPla
                 loadError = LoadResult.LoadError;
                 if (backgroundWorker != null && backgroundWorker.CancellationPending) return null;
                 var result = Program.GetErrorImage(tvCatalog.ThumbnailWidth, tvCatalog.ThumbnailHeight);
-                //using (var g = Graphics.FromImage(result))
-                //{
-                //drawFileImage(g, result.Width, result.Height, DefaultFont, Brushes.Blue, Path.GetFileName(zipPath), zipPath, Brushes.Yellow);
-                //}
                 return result;
             }
 
@@ -5576,10 +4953,6 @@ namespace ZipPla
                 imageInfo = null;
                 if (backgroundWorker != null && backgroundWorker.CancellationPending) return null;
                 var result = Program.GetErrorImage(tvCatalog.ThumbnailWidth, tvCatalog.ThumbnailHeight);
-                //using (var g = Graphics.FromImage(result))
-                //{
-                //drawFileImage(g, result.Width, result.Height, DefaultFont, Brushes.Blue, Path.GetFileName(zipPath), zipPath, Brushes.Yellow);
-                //}
                 return result;
             }
         }
@@ -5666,121 +5039,7 @@ namespace ZipPla
         private Rectangle Round(RectangleF rect) { return new Rectangle((int)Math.Round(rect.X), (int)Math.Round(rect.Y), (int)Math.Round(rect.Width), (int)Math.Round(rect.Height)); }
 
 
-        /*private Bitmap DoJustClippingQuickGraphic(Image src, bool needToResize, ClipMode? localClipMode = null)
-        {
-            var tvCatalogThumbnailSize = tvCatalog.ThumbnailSize;
-            if (src != null && src.Size == tvCatalogThumbnailSize) return new Bitmap(src);
-
-            var clipMode = localClipMode != null ? (ClipMode)localClipMode : currentClipMode;
-            Bitmap result = new Bitmap(tvCatalogThumbnailSize.Width, tvCatalogThumbnailSize.Height, PixelFormat.Format24bppRgb);
-            try
-            {
-                // 自前のアルゴリズムを使う方法
-                switch (clipMode)
-                {
-                    case ClipMode.Letterbox:
-                        {
-                            //var zoom = Math.Min(result.Width / (float)src.Width, result.Height / (float)src.Height);
-                            //var w = zoom * src.Width;
-                            //var h = zoom * src.Height;
-                            var size = sizeProvider(src.Size, clipMode);
-                            var w = size.Width;
-                            var h = size.Height;
-                            var poorRect = new RectangleF((result.Width - w) / 2, (result.Height - h) / 2, w, h);
-                            using (var g = Graphics.FromImage(result))
-                            {
-                                g.FillRectangle(Brushes.White, new RectangleF(new PointF(), result.Size));
-                            }
-
-                            if (needToResize)
-                            {
-                                // 説明用クリッピングなしサムネイルの作成
-                                //g.DrawImage(src, poorRect, new RectangleF(new PointF(), src.Size), GraphicsUnit.Pixel);
-                                QuickGraphic.DrawImage(result, poorRect, src, null);
-                            }
-                            else
-                            {
-                                //g.DrawImageUnscaledAndClipped(src, Round(poorRect));
-                                using (var g = Graphics.FromImage(result))
-                                {
-                                    g.DrawImageUnscaled(src, (int)Math.Round(poorRect.X), (int)Math.Round(poorRect.Y));
-                                }
-                            }
-                            break;
-                        }*//*
-                    case ClipMode.PanAndScan:
-                        {
-                            var zoomP = Math.Max(result.Width / (float)src.Width, result.Height / (float)src.Height);
-                            var wP = result.Width / zoomP;
-                            var hP = result.Height / zoomP;
-                            var poorRectP = new RectangleF((src.Width - wP) / 2, (src.Height - hP) / 2, wP, hP);
-                            if ((src.PixelFormat & PixelFormat.Alpha) != 0)
-                            {
-                                using (var g = Graphics.FromImage(result))
-                                {
-                                    g.FillRectangle(Brushes.White, new RectangleF(new PointF(), result.Size));
-                                }
-                            }
-                            if (needToResize)
-                            {
-                                g.DrawImage(src, new RectangleF(new PointF(), result.Size), poorRectP, GraphicsUnit.Pixel);
-                            }
-                            else
-                            {
-                                //g.DrawImageUnscaledAndClipped(src, Round(poorRectP));
-                                g.DrawImageUnscaled(src, -(int)Math.Round(poorRectP.X), -(int)Math.Round(poorRectP.Y));
-                            }
-                            break;
-                        }
-                    default:
-                        {
-                            var focusPoint = BitmapAnalyzer.GetFocus(src);
-                            var zoom = Math.Max(result.Width / (float)src.Width, result.Height / (float)src.Height);
-                            var iw = src.Width;
-                            var ih = src.Height;
-                            var w = result.Width / zoom;
-                            var h = result.Height / zoom;
-                            var plaRectP = new RectangleF(focusPoint.X - w / 2, focusPoint.Y - h / 2, w, h);
-                            if (plaRectP.Left < 0) plaRectP.X = 0;
-                            else if (plaRectP.Right > iw) plaRectP.X = iw - w;
-                            if (plaRectP.Top < 0) plaRectP.Y = 0;
-                            else if (plaRectP.Bottom > ih) plaRectP.Y = ih - h;
-                            var p = new PointF((focusPoint.X - plaRectP.X) * zoom, (focusPoint.Y - plaRectP.Y) * zoom);
-                            var r = (float)Math.Sqrt(result.Width * result.Height) / 10;
-                            if ((src.PixelFormat & PixelFormat.Alpha) != 0)
-                            {
-                                using (var g = Graphics.FromImage(result))
-                                {
-                                    g.FillRectangle(Brushes.White, new RectangleF(new PointF(), result.Size));
-                                }
-                            }
-                            if (needToResize)
-                            {
-                                //g.DrawImageUnscaledAndClipped(src, Round(plaRectP));
-                                g.DrawImage(src, new RectangleF(new PointF(), result.Size), plaRectP, GraphicsUnit.Pixel);
-                            }
-                            else
-                            {
-                                g.DrawImageUnscaled(src, -(int)Math.Round(plaRectP.X), -(int)Math.Round(plaRectP.Y));
-                            }
-#if DEBUG
-                                using (var pen = new Pen(Color.Cyan, r / 5))
-                                {
-                                    g.DrawEllipse(pen, new RectangleF(p.X - r, p.Y - r, 2 * r, 2 * r));
-                                }
-#endif
-                            break;
-                        }
-                        *//*
-                }
-                return result;
-            }
-            catch
-            {
-                result.Dispose();
-                throw;
-            }
-        }*/
+        
 
         /// <summary>注目点。キャッシュファイルに記録があれば使い、なければ計算して記録する（P4）</summary>
         private static Point getFocusWithCache(Bitmap src, Rectangle rectangle, Fraction pixelRatio, GPSizeThumbnail.FocusCache focusCache)
@@ -5819,9 +5078,6 @@ namespace ZipPla
                     {
                         case ClipMode.Letterbox:
                             {
-                                //var zoom = Math.Min(result.Width / (float)src.Width, result.Height / (float)src.Height);
-                                //var w = zoom * src.Width;
-                                //var h = zoom * src.Height;
 
                                 // これで概ね良いが、絶対的なサイズに応じて無意味な隙間を埋める処理をするので
                                 // 厳密には正しくない
@@ -5878,57 +5134,7 @@ namespace ZipPla
                             }
                         default:
                             {
-                                /*
-                                var focusPoint = BitmapAnalyzer.GetFocus(src);
-                                var zoom = Math.Max(result.Width / (float)src.Width, result.Height / (float)src.Height);
-                                var iw = src.Width;
-                                var ih = src.Height;
-                                var w = result.Width / zoom;
-                                var h = result.Height / zoom;
-                                var plaRectP = new RectangleF(focusPoint.X - w / 2, focusPoint.Y - h / 2, w, h);
-                                if (plaRectP.Left < 0) plaRectP.X = 0;
-                                else if (plaRectP.Right > iw) plaRectP.X = iw - w;
-                                if (plaRectP.Top < 0) plaRectP.Y = 0;
-                                else if (plaRectP.Bottom > ih) plaRectP.Y = ih - h;
-                                var p = new PointF((focusPoint.X - plaRectP.X) * zoom, (focusPoint.Y - plaRectP.Y) * zoom);
-                                var r = (float)Math.Sqrt(result.Width * result.Height) / 10;
-                                */
 
-                                /*
-                                var focusPoint = BitmapAnalyzer.GetFocus(src);
-                                var zoom = Math.Max(result.Width / (float)src.Width, result.Height / (float)src.Height);
-                                var invZoomHalf = 0.5f / zoom;
-                                var iw = src.Width - invZoomHalf;
-                                var ih = src.Height - invZoomHalf;
-                                var w = result.Width / zoom - invZoomHalf;
-                                var h = result.Height / zoom - invZoomHalf;
-                                var plaRectP = new RectangleF(focusPoint.X - w / 2, focusPoint.Y - h / 2, w, h);
-                                if (plaRectP.Left < 0) plaRectP.X = 0;
-                                else if (plaRectP.Right > iw) plaRectP.X = iw - w;
-                                if (plaRectP.Top < 0) plaRectP.Y = 0;
-                                else if (plaRectP.Bottom > ih) plaRectP.Y = ih - h;
-#if DEBUG
-                                var p = new PointF((focusPoint.X - plaRectP.X) * zoom, (focusPoint.Y - plaRectP.Y) * zoom);
-                                var r = (float)Math.Sqrt(result.Width * result.Height) / 10;
-#endif
-*/
-                                /*
-                                                                var focusPoint = BitmapAnalyzer.GetFocus(src);
-                                                                var zoom = Math.Max(result.Width / (float)src.Width, result.Height / (float)src.Height);
-                                                                var iw = src.Width;
-                                                                var ih = src.Height;
-                                                                var w = (int)Math.Round(result.Width / zoom);
-                                                                var h = (int)Math.Round(result.Height / zoom);
-                                                                var plaRectP = new Rectangle(focusPoint.X - w / 2, focusPoint.Y - h / 2, w, h);
-                                                                if (plaRectP.Left < 0) plaRectP.X = 0;
-                                                                else if (plaRectP.Right > iw) plaRectP.X = iw - w;
-                                                                if (plaRectP.Top < 0) plaRectP.Y = 0;
-                                                                else if (plaRectP.Bottom > ih) plaRectP.Y = ih - h;
-#if DEBUG
-                                                                var p = new PointF((focusPoint.X - plaRectP.X) * zoom, (focusPoint.Y - plaRectP.Y) * zoom);
-                                                                var r = (float)Math.Sqrt(result.Width * result.Height) / 10;
-#endif
-                                */
 #if PERFLOG
                                 var perfFocus = PerfTrace.Now();
 #endif
@@ -6051,16 +5257,6 @@ namespace ZipPla
                 isDirectory = Directory.Exists(zipPath);
                 if (isDirectory)
                 {
-                    /*
-                    if (CheckDirectorySize)
-                    {
-                        try
-                        {
-                            fileSize = Program.GetDirectoryFileSize(new DirectoryInfo(zipPath));
-                        }
-                        catch { } // アクセス禁止のサブフォルダがあるとサイズは取得できない
-                    }
-                    */
                 }
                 else
                 {
@@ -6116,17 +5312,6 @@ namespace ZipPla
                         requiredSize = tvCatalog.ThumbnailSize;
                     }
 
-                    /*
-                    ClipMode localLocalClipMode;
-                    if (givenSize && index < 0)
-                    {
-                        localLocalClipMode = currentClipMode;
-                    }
-                    else
-                    {
-                        localLocalClipMode = ClipMode.PlaClip;
-                    }
-                    */
 
                     Bitmap got;
                     byte[] data;
@@ -6170,22 +5355,6 @@ namespace ZipPla
                     List<PackedImageLoader.PackedImageEntry> entries;
                     using (var loader = new PackedImageLoader(zipPath, packedImageLoaderLeftHierarchies, packedImageLoaderSearchMode))
                     {
-                        /*
-                        if (loader.Type != PackedImageLoader.PackType.Directory)
-                        {
-                            isDirectory = false;
-                            fileSize = (new FileInfo(zipPath)).Length;
-                        }
-                        else
-                        {
-                            isDirectory = true;
-                            try
-                            {
-                                fileSize = Program.GetDirectoryFileSize(new DirectoryInfo(zipPath));
-                            }
-                            catch { } // 下位フォルダにアクセス出来ない箇所があった場合のため
-                        }
-                        */
                         // http://www.weblio.jp/content/DllImport+Attribute LogicalStringComparer インスタンスはスレッドセーフのため新たに作成する
                         //var entries = loader.GetPackedImageEntries().OrderBy(entry => entry.Path, new LogicalStringComparer());
                         entries = loader.GetPackedImageEntries();
@@ -6194,21 +5363,6 @@ namespace ZipPla
 
                         //var byZipPlaImageFile = false;
                         //if (coverPage == null)
-                        /*
-                        if (index < 0) // ZipPlaImageFile は手動で作成することも想定されるので削除は手軽ではない。従って ZipPlaImage と ZipPlaInfo の情報が競合した場合後者が優先されるべきである。
-                        {
-                            for (var i = 0; i < filecount; i++)
-                            {
-                                if (isZipPlaCoverImageFile(entries[i].Path))
-                                {
-                                    index = i;
-                                    //coverPage = i;
-                                    //byZipPlaImageFile = true;
-                                    break;
-                                }
-                            }
-                        }
-                        */
                         if (index >= 0)
                         {
                             if (backgroundWorker != null && backgroundWorker.CancellationPending)
@@ -6234,46 +5388,6 @@ namespace ZipPla
 
 
                                     ///////////
-                                    /*
-                                    int ThumbnailWidth, ThumbnailHeight;
-                                    if (givenSize)
-                                    {
-                                        ThumbnailWidth = width;
-                                        ThumbnailHeight = height;
-                                    }
-                                    else
-                                    {
-                                        var origRatio = (double)MaxPointImage.Width / MaxPointImage.Height;
-                                        if (origRatio < ratio)
-                                        {
-                                            ThumbnailWidth = MaxPointImage.Width;
-                                            ThumbnailHeight = (int)Math.Round(ThumbnailWidth / ratio);
-                                        }
-                                        else
-                                        {
-                                            ThumbnailHeight = MaxPointImage.Height;
-                                            ThumbnailWidth = (int)Math.Round(ThumbnailHeight * ratio);
-                                        }
-                                    }
-                                    if (v == null)
-                                    {
-                                        MaxPointRectangleF = new RectangleF(0, 0, image.Width, image.Height);
-                                    }
-                                    else if (image.Width * (2 * ThumbnailHeight - 1) >= image.Height * (2 * ThumbnailWidth + 1))
-                                    {
-                                        var shortEdge = image.Height * ThumbnailWidth / (double)ThumbnailHeight;
-                                        MaxPointRectangleF = new RectangleF((float)(v * (image.Width - shortEdge)), 0, (float)shortEdge, image.Height);
-                                    }
-                                    else if (image.Width * (2 * ThumbnailHeight + 1) <= image.Height * (2 * ThumbnailWidth - 1))
-                                    {
-                                        var shortEdge = image.Width * ThumbnailHeight / (double)ThumbnailWidth;
-                                        MaxPointRectangleF = new RectangleF(0, (float)(v * (image.Height - shortEdge)), image.Width, (float)shortEdge);
-                                    }
-                                    else
-                                    {
-                                        MaxPointRectangleF = new RectangleF(0, 0, image.Width, image.Height);
-                                    }
-                                    */
                                     //////////
                                 }
                                 catch
@@ -6332,16 +5446,6 @@ namespace ZipPla
                             else
                             {
 
-                                /*
-                                if (givenSize)
-                                {
-                                    localClipMode = currentClipMode;
-                                }
-                                else
-                                {
-                                    localClipMode = ClipMode.PlaClip;
-                                }
-                                */
                                 foreach (var entry in entries)
                                 {
                                     if (backgroundWorker != null && backgroundWorker.CancellationPending)
@@ -6390,16 +5494,6 @@ namespace ZipPla
                 }
                 else
                 {
-                    /*
-                    if (givenSize && (coverPage != null && coverPage < filecount)
-                    {
-                        localClipMode = currentClipMode;
-                    }
-                    else
-                    {
-                        localClipMode = ClipMode.PlaClip;
-                    }
-                    */
                 }
 
                 if (backgroundWorker != null && backgroundWorker.CancellationPending)
@@ -6586,96 +5680,6 @@ namespace ZipPla
                 imageInfo = ImageLoader.GetImageInfo(MaxPointImage);
                 MaxPointImage.Dispose();
 
-                /*
-            Bitmap canvas = new Bitmap(tvCatalog.ThumbnailWidth, tvCatalog.ThumbnailHeight, PixelFormat.Format24bppRgb);
-            try
-            {
-                // 自前のアルゴリズムを使う方法
-                //Program.DrawBitmap(canvas, MaxPointImage, new Rectangle(new Point(), canvas.Size), new Rectangle((int)Math.Round(MaxPointRectangleF.X), (int)Math.Round(MaxPointRectangleF.Y), (int)Math.Round(MaxPointRectangleF.Width), (int)Math.Round(MaxPointRectangleF.Height)));
-
-                /*
-                using (var g = Graphics.FromImage(canvas))
-                {
-                    switch (localClipMode)
-                    {
-                        case ClipMode.Letterbox:
-                            // 説明用クリッピングなしサムネイルの作成
-                            var zoom = Math.Min(canvas.Width / (float)MaxPointImage.Width, canvas.Height / (float)MaxPointImage.Height);
-                            var w = zoom * MaxPointImage.Width;
-                            var h = zoom * MaxPointImage.Height;
-                            var poorRect = new RectangleF((canvas.Width - w) / 2, (canvas.Height - h) / 2, w, h);
-                            //using (var g = Graphics.FromImage(canvas))
-                            {
-                                g.FillRectangle(Brushes.White, new RectangleF(new PointF(), canvas.Size));
-                                g.DrawImage(MaxPointImage, poorRect, new RectangleF(new PointF(), MaxPointImage.Size), GraphicsUnit.Pixel);
-                            }
-                            break;
-                        case ClipMode.PanAndScan:
-                            var zoomP = Math.Max(canvas.Width / (float)MaxPointImage.Width, canvas.Height / (float)MaxPointImage.Height);
-                            var wP = canvas.Width / zoomP;
-                            var hP = canvas.Height / zoomP;
-                            var poorRectP = new RectangleF((MaxPointImage.Width - wP) / 2, (MaxPointImage.Height - hP) / 2, wP, hP);
-                            //using (var g = Graphics.FromImage(canvas))
-                            {
-                                if ((MaxPointImage.PixelFormat & PixelFormat.Alpha) != 0)
-                                {
-                                    g.FillRectangle(Brushes.White, new RectangleF(new PointF(), canvas.Size));
-                                }
-                                g.DrawImage(MaxPointImage, new RectangleF(new PointF(), canvas.Size), poorRectP, GraphicsUnit.Pixel);
-                            }
-                            break;
-                        case ClipMode.PlaClip:
-                            //using (var g = Graphics.FromImage(canvas))
-                            {
-                                //g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
-                                //g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-
-                                var ratio = (double)canvas.Width / canvas.Height;
-                                Point focusPoint = Point.Empty;
-                                float z = 0;
-                                if (ratio < 0.7 || ratio > 0.714)
-                                {
-                                    //throw new Exception();
-                                    z = Math.Min(MaxPointRectangleF.Width / canvas.Width, MaxPointRectangleF.Height / canvas.Height);
-                                    var width = z * canvas.Width;
-                                    var height = z * canvas.Height;
-                                    focusPoint = BitmapAnalyzer.GetFocus(MaxPointImage, MaxPointRectangleF);
-                                    var newRect = new RectangleF(focusPoint.X - width / 2, focusPoint.Y - height / 2, width, height);
-                                    if (newRect.Left < MaxPointRectangleF.Left) newRect.X = MaxPointRectangleF.Left;
-                                    else if (newRect.Right > MaxPointRectangleF.Right) newRect.X = MaxPointRectangleF.Right - width;
-                                    if (newRect.Top < MaxPointRectangleF.Top) newRect.Y = MaxPointRectangleF.Top;
-                                    else if (newRect.Bottom > MaxPointRectangleF.Bottom) newRect.Y = MaxPointRectangleF.Bottom - height;
-                                    MaxPointRectangleF = newRect;
-
-                                }
-                                if ((MaxPointImage.PixelFormat & PixelFormat.Alpha) != 0)
-                                {
-                                    g.FillRectangle(Brushes.White, new RectangleF(new PointF(), canvas.Size));
-                                }
-                                g.DrawImage(MaxPointImage, new RectangleF(new PointF(), canvas.Size), MaxPointRectangleF, GraphicsUnit.Pixel);
-#if DEBUG
-                                var p = new PointF((focusPoint.X - MaxPointRectangleF.X) / z, (focusPoint.Y - MaxPointRectangleF.Y) / z);
-                                var r = (float)Math.Sqrt(canvas.Width * canvas.Height) / 10;
-                                using (var pen = new Pen(Color.Cyan, r / 5))
-                                {
-                                    g.DrawEllipse(pen, new RectangleF(p.X - r, p.Y - r, 2 * r, 2 * r));
-                                }
-#endif
-                            }
-                            break;
-                    }
-                    imageInfo = new ImageInfo(MaxPointImage);
-                    MaxPointImage.Dispose();
-
-                }
-                
-            }
-            catch
-                {
-                    canvas.Dispose();
-                    throw;
-                }
-                */
 
                 return canvas;
             }
@@ -6724,10 +5728,6 @@ namespace ZipPla
                     imageInfo = null;
                     if (backgroundWorker != null && backgroundWorker.CancellationPending) return null;
                     var result = Program.GetErrorImage(width, height);
-                    //using (var g = Graphics.FromImage(result))
-                    //{
-                    //drawFileImage(g, result.Width, result.Height, DefaultFont, Brushes.Blue, Path.GetFileName(zipPath), zipPath, Brushes.Yellow);
-                    //}
                     return result;
                 }
                 else
@@ -6756,34 +5756,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private static RectangleF getCoverRectangleByGivenImageFromThumbnailInfo(int width, int height, Size imageSize, double? fractionalPortion)
-        {
-            //var givenSize = width > 0 && height > 0;
-            int ThumbnailWidth, ThumbnailHeight;
-            ThumbnailWidth = width;
-            ThumbnailHeight = height;
-            
-            if (fractionalPortion == null)
-            {
-                return new RectangleF(0, 0, imageSize.Width, imageSize.Height);
-            }
-            else if (imageSize.Width * (2 * ThumbnailHeight - 1) >= imageSize.Height * (2 * ThumbnailWidth + 1))
-            {
-                var shortEdge = imageSize.Height * ThumbnailWidth / (double)ThumbnailHeight;
-                return  new RectangleF((float)(fractionalPortion * (imageSize.Width - shortEdge)), 0, (float)shortEdge, imageSize.Height);
-            }
-            else if (imageSize.Width * (2 * ThumbnailHeight + 1) <= imageSize.Height * (2 * ThumbnailWidth - 1))
-            {
-                var shortEdge = imageSize.Width * ThumbnailHeight / (double)ThumbnailWidth;
-                return new RectangleF(0, (float)(fractionalPortion * (imageSize.Height - shortEdge)), imageSize.Width, (float)shortEdge);
-            }
-            else
-            {
-                return new RectangleF(0, 0, imageSize.Width, imageSize.Height);
-            }
-        }
-        */
 
         private static Size drawFileIconImage(Graphics g, Rectangle rect, string iconPath, DateTime lastWriteTime, bool isDir, bool isExist)
         {
@@ -6794,63 +5766,12 @@ namespace ZipPla
                 g.DrawImage(img, rect.Left, rect.Bottom - img.Height); // 左下
                 return img.Size;
 
-                /*
-                using (var img = FileTypeManager.GetSmallIconBitmap(iconPath, useFileAttrinutes: !isExist))
-                {
-                    //g.DrawImage(img, rect.Right - img.Width, rect.Y); // 右上
-                    g.DrawImage(img, rect.Left, rect.Bottom - img.Height); // 左下
-                    return img.Size;
-                }
-                */
             }
             catch
             {
                 return new Size(0, 0);
             }
         }
-        /*
-        private static Size drawFileIconImage(Graphics g, Rectangle rect, string iconPath, bool isExist)
-        {
-            Bitmap iconBitmap = null;
-            if (!string.IsNullOrEmpty(iconPath))
-            {
-                try
-                {
-                    var iconImage = IconUtility.FileAssociatedImage(iconPath, isLarge: false, isExist: isExist);
-                    if (iconImage != null)
-                    {
-                        try
-                        {
-                            iconBitmap = new Bitmap(iconImage);
-                        }
-                        finally
-                        {
-                            iconImage.Dispose();
-                        }
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            if (iconBitmap == null)
-            {
-                return new Size(0, 0);
-            }
-
-            try
-            {
-                //g.DrawImage(iconBitmap, rect.Right - iconBitmap.Width, rect.Y); // 右上
-                g.DrawImage(iconBitmap, rect.Left, rect.Bottom - iconBitmap.Height); // 左下
-                return iconBitmap.Size;
-            }
-            finally
-            {
-                iconBitmap.Dispose();
-            }
-        }
-        */
 
 
         private static void drawFileImage(Graphics g, Rectangle rect, Font font, Brush foreBrush, string text, string iconPath, DateTime lastWriteTime, Brush backBrush, bool isDir, bool isExist)
@@ -6895,63 +5816,6 @@ namespace ZipPla
             }
         }
 
-        /*
-    private static void drawFileImage(Graphics g, Rectangle rect, Font font, Brush foreBrush, string text, string iconPath = null, Brush backBrush = null)
-    {
-        Bitmap iconBitmap = null;
-        if (!string.IsNullOrEmpty(iconPath))
-        {
-            try
-            {
-                var iconImage = IconUtility.FileAssociatedImage(iconPath, true, true);
-                if (iconImage != null)
-                {
-                    try
-                    {
-                        iconBitmap = new Bitmap(iconImage);
-                    }
-                    finally
-                    {
-                        iconImage.Dispose();
-                    }
-                }
-                //using (var icon = Icon.ExtractAssociatedIcon(iconPath)) { iconBitmap = icon.ToBitmap();  }
-            }
-            catch
-            {
-            }
-        }
-
-        try
-        {
-            var size = g.MeasureString(text, font, rect.Width);
-            size.Width += drawLeftMagin + drawRightMagin;
-            size.Height += drawTopMagin + drawBottomMagin;
-
-            RectangleF textRectangle;
-            if (iconBitmap == null)
-            {
-                textRectangle = new RectangleF(rect.X + Math.Max(0, (rect.Width - size.Width) / 2), rect.Y + Math.Max(0, (rect.Height - size.Height) / 2), size.Width, size.Height);
-            }
-            else
-            {
-                var margin = 10 * Program.DisplayMagnificationY;
-                g.DrawImage(iconBitmap, rect.X + (rect.Width - iconBitmap.Width) / 2, rect.Y + (int)((rect.Height - iconBitmap.Height) / 2 + 0.5));
-                textRectangle = new RectangleF(rect.X + Math.Max(0, (rect.Width - size.Width) / 2), rect.Y + Math.Max(0, (rect.Height + iconBitmap.Height) / 2 + margin), size.Width, size.Height);
-            }
-            if (backBrush != null)
-            {
-                g.FillRectangle(backBrush, textRectangle);
-            }
-            g.DrawString(text, font, foreBrush, new RectangleF(textRectangle.X + drawLeftMagin, textRectangle.Y + drawTopMagin,
-                textRectangle.Width - (drawLeftMagin + drawRightMagin), textRectangle.Height - (drawTopMagin + drawBottomMagin)));
-        }
-        finally
-        {
-            iconBitmap?.Dispose();
-        }
-    }
-    */
 
         private static Bitmap getImageWithFileIInfo(int width, int height, Brush backBrush)
         {
@@ -7073,72 +5937,8 @@ namespace ZipPla
 
             //drawRating_Bound = new Rectangle(0, 0, drawRating_PaintSize.Width, drawRating_PaintSize.Height * 4 / 3);
             //drawRating_StarsBound = new Rectangle((rectBack.Width - drawRating_FiveStarSizeWidth) / 2, 0, drawRating_FiveStarSizeWidth, drawRating_PaintSize.Height);
-            /*
-            var baseLabel = "★★★★★";
-            var label = ""; for (var i = 0; i < rating; i++) label += "★";
-            var labelSizeF = g.MeasureString(baseLabel, font);
-            var labelSize = new Size((int)(labelSizeF.Width + 0.5) + drawLeftMagin + drawRightMagin, (int)(labelSizeF.Height + 0.5) + drawTopMagin + drawBottomMagin);
-            g.FillRectangle(Brushes.Black, rect.X, rect.Y, labelSize.Width, labelSize.Height);
-            g.DrawString(baseLabel, font, Brushes.LightSlateGray, drawLeftMagin + rect.X, drawTopMagin + rect.Y);
-            g.DrawString(label, font, Brushes.Gold, drawLeftMagin + rect.X, drawTopMagin + rect.Y);
-
-            drawRating_Bound = new Rectangle(0, 0, labelSize.Width, labelSize.Height);
-            //DrowRating_StarsBound = new Rectangle()
-            //g.DrawString("☆☆☆☆☆", font, Brushes.Black, drawLeftMagin, drawTopMagin);
-            */
         }
 
-        /*
-        private void drawRatingOld(Graphics g, Rectangle rect, int? rating)
-        {
-            if (rating == null) rating = 0;
-            var r = (int)rating;
-            r = Math.Max(0, Math.Min(5, r));
-            var font = DefaultFont;
-
-            if(drawRating_StarSizeNotSet)
-            {
-                drawRating_StarSizeNotSet = false;
-                drawRating_PaintSize = TextRenderer.MeasureText(g, "★★★★★", DefaultFont);
-                drawRating_FiveStarSizeWidth = TextRenderer.MeasureText(g, "★★★★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
-                drawRating_PartStarSizesWidth = new int[6]
-                {
-                    TextRenderer.MeasureText(g, "", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width,
-                    TextRenderer.MeasureText(g, "★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width,
-                    TextRenderer.MeasureText(g, "★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width,
-                    TextRenderer.MeasureText(g, "★★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width,
-                    TextRenderer.MeasureText(g, "★★★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width,
-                    TextRenderer.MeasureText(g, "★★★★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width,
-                };
-            }
-
-            //var paintSize = TextRenderer.MeasureText(g, "★★★★★", DefaultFont);
-            //var fiveStarsSize = TextRenderer.MeasureText(g, "★★★★★", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding);
-            var partStars = "★★★★★".Substring(0, r);
-            //var partStarsSize = TextRenderer.MeasureText(g, partStars, DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding);
-
-            var rectBack = new Rectangle(rect.X, rect.Y, drawRating_PaintSize.Width, drawRating_PaintSize.Height * 4 / 3);
-            var rectFore = rectBack;
-            rectFore.X += (rectBack.Width - drawRating_FiveStarSizeWidth) / 2;
-            //rectFore.X += TextRenderer.MeasureText(g, ",", DefaultFont, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
-
-            if (!rect.Contains(rectBack))
-            {
-                drawRating_Bound = Rectangle.Empty;
-                drawRating_StarsBound = Rectangle.Empty;
-                return;
-            }
-
-            g.FillRectangle(Brushes.Black, rectBack);
-            TextRenderer.DrawText(g, partStars, DefaultFont, rectFore, Color.Gold, TextFormatFlags.NoPadding | TextFormatFlags.VerticalCenter);
-            rectFore.X += drawRating_PartStarSizesWidth[r];
-            TextRenderer.DrawText(g, "★★★★★".Substring(r), DefaultFont, rectFore, Color.LightSlateGray, TextFormatFlags.NoPadding | TextFormatFlags.VerticalCenter);
-
-
-            drawRating_Bound = new Rectangle(0, 0, drawRating_PaintSize.Width, drawRating_PaintSize.Height * 4 / 3);
-            drawRating_StarsBound = new Rectangle((rectBack.Width - drawRating_FiveStarSizeWidth) / 2, 0, drawRating_FiveStarSizeWidth, drawRating_PaintSize.Height);
-        }
-        */
 
         private static SizeF MeasureStringSizeByGraphics(Graphics g, string str, Font font, Dictionary<string, SizeF> sizeDictionary)
         {
@@ -7309,51 +6109,12 @@ namespace ZipPla
                 cutPerOpposite = srcAsp - 2 * dstAsp - dstTck;
                 //cutPerOpposite = dstArm;
             }
-            /*
-            else if (srcAsp < dstArm + dstAsp + dstTck + dstAsp + dstArm)
-            {
-                cutPerOpposite = dstArm;
-            }*/
             else
             {
                 cutPerOpposite = (srcAsp - dstTck - 2 * dstAsp) / 2;
             }
 
             // 単純に線形補間
-            /*
-            if (srcAsp < dstAsp)
-            {
-                cutPerOpposite = (1 / srcAsp - 1 / dstAsp)/2;
-            }
-            else if (srcAsp < dstAsp + dstTck)
-            {
-                cutPerOpposite = 0;
-            }
-            else if (srcAsp < dstArm + dstAsp)
-            {
-                cutPerOpposite = (srcAsp - dstAsp - dstTck) / (dstArm - dstTck) * dstArm;
-            }
-            else if (srcAsp < dstArm + dstAsp + dstTck)
-            {
-                cutPerOpposite = dstArm;
-            }
-            else if (srcAsp < dstAsp + dstTck + dstAsp)
-            {
-                cutPerOpposite = (srcAsp - 2 * dstAsp - dstTck) / (dstArm - dstAsp) * dstArm;
-            }
-            else if (srcAsp < dstArm + dstAsp + dstTck + dstAsp)
-            {
-                cutPerOpposite = srcAsp - 2 * dstAsp - dstTck;
-            }
-            else if (srcAsp < dstArm + dstAsp + dstTck + dstAsp + dstArm)
-            {
-                cutPerOpposite = dstArm;
-            }
-            else
-            {
-                cutPerOpposite = (srcAsp - dstTck - 2 * dstAsp) / 2;
-            }
-            */
 
             if (srcAsp < dstAsp)
             {
@@ -7365,9 +6126,6 @@ namespace ZipPla
                 clip = new RectangleF(blankAvoidRectangle.X + srcHeight * cutPerOpposite, blankAvoidRectangle.Y, srcHeight * dstWidth / dstHeight, srcHeight);
             }
 
-            //blankAvoidRectangle.Width--;
-            //blankAvoidRectangle.Height--;
-            //clip.Intersect(blankAvoidRectangle);
 
             // 最も近いもので決め打ち
             if (srcAsp < 0.7 * dstAsp || srcAsp > 1.4 * (dstArm + dstAsp + dstTck + dstAsp + dstArm))
@@ -7513,11 +6271,6 @@ namespace ZipPla
                     MakePreview_StopResetFilter = false;
                     stopResetFilter = true;
                 }
-                //if (MakePreview_FromConfig)
-                //{
-                //    MakePreview_FromConfig = false;
-                //}
-                //else
 
                 ImageLoader.SusieReset();
                 PackedImageLoader.CheckSevenZipExistence(this);
@@ -7564,121 +6317,8 @@ namespace ZipPla
             preCurrentLocation = getPathWithoutSeparator(zabLocation.Text);
             //addToolStripMenuItem.Enabled = false;
 
-            /*
-            {
-                var lowerLocation = preCurrentLocation.ToLower();
-                var filter = cbFilter.Text;
-                var bookmarks = (from DataGridViewRow row in dgvDirectoryList.Rows select row.Cells[tbcDirectoryName.Index].Value as CatalogBookmark).ToArray();
-                var exactMatchExists = bookmarks.Any(bookmark => bookmark.Location.ToLower() == lowerLocation && bookmark.Filter != null && bookmark.Filter == filter);
-                var selected = false;
-                foreach (var row in (from DataGridViewRow r in dgvDirectoryList.SelectedRows orderby r.Index select r).ToArray())
-                {
-                    if (selected)
-                    {
-                        row.Selected = false;
-                        continue;
-                    }
-                    var bookmark = row.Cells[tbcDirectoryName.Index].Value as CatalogBookmark;
-                    if (bookmark.Location.ToLower() == lowerLocation && (!exactMatchExists || bookmark.Filter != null && bookmark.Filter == cbFilter.Text))
-                    {
-                        row.Selected = selected = true;
-                    }
-                    else row.Selected = false;
-                }
-                if (!selected)
-                {
-                    foreach (DataGridViewRow row in dgvDirectoryList.Rows)
-                    {
-                        var bookmark = row.Cells[tbcDirectoryName.Index].Value as CatalogBookmark;
-                        if (bookmark.Location.ToLower() == lowerLocation && (!exactMatchExists || bookmark.Filter != null && bookmark.Filter == cbFilter.Text))
-                        {
-                            row.Selected = selected = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            */
-            /*
-            foreach (DataGridViewRow row in dgvDirectoryList.Rows)
-            {
-                if(selected)
-                {
-                    row.Selected = false;
-                    continue;
-                }
-                var bookmark = row.Cells[tbcDirectoryName.Index].Value as CatalogBookmark;
-                if (bookmark.Location.ToLower() == lowerLocation && (!exactMatchExists || bookmark.Filter != null && bookmark.Filter == cbFilter.Text))
-                {
-                    row.Selected = selected = true;
-                }
-                else row.Selected = false;
-            }
-            */
 
             undoBufferUpdateForMovingLocation(manualUndoShift, prevProfileInfo);
-            /*
-            if (prevProfileInfo != null && prevProfileInfo.Item2 == null) prevProfileInfo = null;
-            if (undoBufferIndex >= 0 && !string.IsNullOrEmpty(currentLocation))
-            {
-                var index = tvCatalog.SelectedIndex;
-                var zna = ZipNameArray;
-                string fileName;
-                if (index < 0 || zna == null || zna.Length <= index)
-                {
-                    fileName = null;
-                }
-                else
-                {
-                    fileName = zna[index];
-                }
-                var newData = new UndoBufferClass
-                {
-                    Location = currentLocation,
-                    ThumbnailPosition = tvCatalog.ScrollBarPercentage,
-                    FileListPosition = dgvFileList.FirstDisplayedScrollingRowIndex,
-                    SelectedFileName = fileName,
-                    ProfileColor = prevProfileInfo != null ? prevProfileInfo.Item1 : currentProfileColor,
-                    Profile = prevProfileInfo != null ? prevProfileInfo.Item2 : currentConditionToProfile()
-                };
-
-                var preIndex = undoBufferIndex - manualUndoShift;
-                if (0 <= preIndex && preIndex < undoBuffer.Count)
-                {
-                    undoBuffer[preIndex] = newData;
-                }
-            }
-
-            if (manualUndoShift == 0)
-            {
-                var newPath = true;
-                if (0 <= undoBufferIndex && undoBufferIndex < undoBuffer.Count)
-                {
-                    newPath = undoBuffer[undoBufferIndex].Location != preCurrentLocation ||
-                        (prevProfileInfo != null && prevProfileInfo.Item1 != currentProfileColor);
-                }
-                if (newPath)
-                {
-                    var newData = new UndoBufferClass
-                    {
-                        Location = preCurrentLocation,
-                        ProfileColor = currentProfileColor
-                    };
-                    undoBufferIndex++;
-                    if (undoBufferIndex < undoBuffer.Count)
-                    {
-                        undoBuffer.RemoveRange(undoBufferIndex, undoBuffer.Count - undoBufferIndex);
-                    }
-                    if (undoBufferIndex > undoBuffer.Count)
-                    {
-                        undoBufferIndex = undoBuffer.Count;
-                    }
-                    undoBuffer.Add(newData);
-                    btnGoToBack.Enabled = undoBufferIndex > 0;
-                    btnGoToForward.Enabled = false;
-                }
-            }
-            */
 
             if (!stopResetFilter && FilterRemovingMode == FilterRemovingMode.WhenMovingLocation)
             {
@@ -7940,12 +6580,6 @@ namespace ZipPla
                 }
 
                 int dummy;
-                /*
-                var archiveSkip = !archivesFilesPDFFielsToolStripMenuItem.Checked;
-                var imageSkip = !imageFilesToolStripMenuItem.Checked;
-                var videoSkip = !videoFilesToolStripMenuItem.Checked;
-                var otherSkip = !otherFilesToolStripMenuItem.Checked;
-                */
                 var archiveSkip = ArchiveLoadLevel == ItemLoadLevel.Ignore;
                 var imageSkip = ImageLoadLevel == ItemLoadLevel.Ignore;
                 var videoSkip = VideoLoadLevel == ItemLoadLevel.Ignore;
@@ -8034,52 +6668,6 @@ namespace ZipPla
             return false;
         }
 
-        /*
-        private string GetFileFilter(bool needToInvoke)
-        {
-            bool archiveSkip = true, imageSkip = true, videoSkip = true, otherSkip = true;
-            if (needToInvoke)
-            {
-                try
-                {
-                    Invoke((MethodInvoker)(() =>
-                    {
-                        archiveSkip = !archivesFilesPDFFielsToolStripMenuItem.Checked;
-                        imageSkip = !imageFilesToolStripMenuItem.Checked;
-                        videoSkip = !videoFilesToolStripMenuItem.Checked;
-                        otherSkip = !otherFilesToolStripMenuItem.Checked;
-                    }));
-                }
-                catch (ObjectDisposedException) { }
-            }
-            else
-            {
-                archiveSkip = !archivesFilesPDFFielsToolStripMenuItem.Checked;
-                imageSkip = !imageFilesToolStripMenuItem.Checked;
-                videoSkip = !videoFilesToolStripMenuItem.Checked;
-                otherSkip = !otherFilesToolStripMenuItem.Checked;
-            }
-            return GetFileFilter(archiveSkip, imageSkip, videoSkip, otherSkip);
-        }
-        
-        private string GetFileFilter(bool archiveSkip, bool imageSkip, bool videoSkip, bool otherSkip)
-        {
-            if (!otherSkip) return "*";
-            var result = "";
-            if (!archiveSkip) result += PackedImageLoader.SupportedArchiveFileFilter;
-            if (!imageSkip)
-            {
-                if (result != "") result += ";";
-                result += ImageLoader.SupportedFileFilter;
-            }
-            if (!videoSkip)
-            {
-                if (result != "") result += ";";
-                result += MovieThumbnailLoader.SupportedVideoFileFilter;
-            }
-            return result;
-        }
-        */
 
         private static bool hasAttributeToSkip(FileSystemInfo info)
         {
@@ -8143,21 +6731,6 @@ namespace ZipPla
                     continue;
                 }
                 //if (!PackedImageLoader.SupportedArchivesPath.IsMatch(path) && !PackedImageLoader.IsSupertedImage(path)) continue;
-                /*
-                FileAttributes attr;
-                try
-                {
-                    attr = fileInfo.Attributes;//File.GetAttributes(path);
-                }
-                catch
-                {
-                    continue;
-                }
-                if ((attr & (FileAttributes.Hidden | FileAttributes.System)) != 0)
-                {
-                    continue;
-                }
-                */
                 if (hasAttributeToSkip(entityInfo)) continue;
 
                 //IsImageFileArray[MatchFilesCount] = isImageFile;
@@ -8178,21 +6751,6 @@ namespace ZipPla
                 var dirInfo = dirInfos[i];
                 var path = dirInfo.FullName;
 
-                /*
-                FileAttributes attr;
-                try
-                {
-                    attr = dirInfo.Attributes;// (new DirectoryInfo(path)).Attributes;
-                }
-                catch
-                {
-                    continue;
-                }
-                if ((attr & (FileAttributes.Hidden | FileAttributes.System)) != 0)
-                {
-                    continue;
-                }
-                */
                 if (hasAttributeToSkip(dirInfo)) continue;
 
                 MatchIndexArray[MatchFilesAndFoldersCount++] = i;
@@ -8203,12 +6761,6 @@ namespace ZipPla
                 }
             }
 
-            /*
-            if (bwMakePreviewPrepare.CancellationPending)
-            {
-                throw new TimeoutException();
-            }
-            */
 
             var MatchCountFolderPathsLength = MatchFilesAndFoldersCount; // MatchFilesCount + folderPathsLength;
 
@@ -8300,28 +6852,11 @@ namespace ZipPla
         {
             tvCatalog.DrawStop = true;
 
-            /*
-            bool archiveSkip = true, imageSkip = true, videoSkip = true, otherSkip = true;
-            try
-            {
-                Invoke((MethodInvoker)(() =>
-                {
-                    archiveSkip = !archivesFilesPDFFielsToolStripMenuItem.Checked;
-                    imageSkip = !imageFilesToolStripMenuItem.Checked;
-                    videoSkip = !videoFilesToolStripMenuItem.Checked;
-                    otherSkip = !otherFilesToolStripMenuItem.Checked;
-                }));
-            }
-            catch (ObjectDisposedException) { }
-            */
             var archiveSkip = ArchiveLoadLevel == ItemLoadLevel.Ignore;
             var imageSkip = ImageLoadLevel == ItemLoadLevel.Ignore;
             var videoSkip = VideoLoadLevel == ItemLoadLevel.Ignore;
             var otherSkip = OtherLoadLevel == ItemLoadLevel.Ignore;
 
-            //var sw = new Stopwatch();
-            //var ss = "";
-            //sw.Start();
 
             var dirPath = (string)e.Argument;
             var dirPathWithSeparator = GetDirectoryPathWithSeparator(dirPath);
@@ -8397,33 +6932,6 @@ namespace ZipPla
                         newFolders = null;
                         newFolderPages = null;
 
-                        /*
-                        if (Program.HistorySorPath.ToLower() == dirPath.ToLower())
-                        {
-                            var new2old = new List<int>();
-                            for (var i = 0; i < filePaths.Length; i++)
-                            {
-                                if (File.Exists(filePaths[i])) new2old.Add(i);
-                            }
-                            if(new2old.Count < filePaths.Length)
-                            {
-                                filePaths = (from i in new2old select filePaths[i]).ToArray();
-                                filePages = (from i in new2old select filePages[i]).ToArray();
-                            }
-
-                            new2old.Clear();
-                            for (var i = 0; i < folderPaths.Length; i++)
-                            {
-                                if (Directory.Exists(folderPaths[i])) new2old.Add(i);
-                            }
-                            if (new2old.Count < folderPaths.Length)
-                            {
-                                folderPaths = (from i in new2old select folderPaths[i]).ToArray();
-                                folderPages = (from i in new2old select folderPages[i]).ToArray();
-                            }
-
-                        }
-                        */
 
                         filePathsLength = filePaths.Length;
                         folderPathsLength = folderPaths.Length;
@@ -8582,15 +7090,6 @@ namespace ZipPla
                                 zabLocation.Text = currentLocation;
                             }
                         }
-                        /*
-                    }));
-                }
-                catch (ObjectDisposedException) { }
-                try
-                {
-                    Invoke((MethodInvoker)(() =>
-                    {
-                    */
                         //cancelLastUndoBufferChange(); // makePreview よりも先に
                         zabLocation.Enabled = true;
                         tvCatalog.DrawStop = false;
@@ -8627,15 +7126,6 @@ namespace ZipPla
                         Invoke((MethodInvoker)(() =>
                         {
                             MessageBox.Show(this, ex.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            /*
-                        }));
-                    }
-                    catch (ObjectDisposedException) { }
-                    try
-                    {
-                        Invoke((MethodInvoker)(() =>
-                        {
-                        */
                             cancelLastUndoBufferChange();
                             zabLocation.Enabled = true;
                             tvCatalog.DrawStop = false;
@@ -8723,15 +7213,6 @@ namespace ZipPla
 #else
                             MessageBox.Show(this, ex.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
 #endif
-                            /*
-                        }));
-                    }
-                    catch (ObjectDisposedException) { }
-                    try
-                    {
-                        Invoke((MethodInvoker)(() =>
-                        {
-                    */
                             cancelLastUndoBufferChange();
                             zabLocation.Enabled = true;
                             tvCatalog.DrawStop = false;
@@ -8777,20 +7258,6 @@ namespace ZipPla
 
 
                     // thumbnailCount > 0 の場合のインクリメントで maximumMovieThumbnailCount を超えてしまう
-                    /*
-                    thumbnailCount = Math.Min(intTotalSeconds, maximumMovieThumbnailCount);
-                    if (thumbnailCount > 0)
-                    {
-                        a = totalSeconds / thumbnailCount;
-                        b = startTime + 0.5; // 両端を含む
-                        thumbnailCount++; // 両端を含む
-                    }
-                    else
-                    {
-                        thumbnailCount = 1;
-                        a = b = 0;
-                    }
-                    */
 
                     //修正版
                     if (intTotalSeconds == 0)
@@ -8888,12 +7355,6 @@ namespace ZipPla
                     }
 
                     VirtualFolder.GetPageFromBookmark(out filePages, out folderPages, filePaths, folderPaths, Program.HistorySorPath);
-                    /*
-                    filePages = new int[filePathsLength];
-                    for (var i = 0; i < filePathsLength; i++) filePages[i] = 2;
-                    folderPages = new int[folderPathsLength];
-                    for (var i = 0; i < folderPathsLength; i++) filePages[i] = 2;
-                    */
                 }
 
                 string[] zipPathArray;
@@ -8954,15 +7415,6 @@ namespace ZipPla
 #else
                             MessageBox.Show(this, ex.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
 #endif
-                            /*
-                        }));
-                    }
-                    catch (ObjectDisposedException) { }
-                    try
-                    {
-                        Invoke((MethodInvoker)(() =>
-                        {
-                        */
                             cancelLastUndoBufferChange();
                             zabLocation.Enabled = true;
                             tvCatalog.DrawStop = false;
@@ -9017,15 +7469,6 @@ namespace ZipPla
                     Invoke((MethodInvoker)(() =>
                     {
                         MessageBox.Show(this, (new NotSupportedException()).Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        /*
-                    }));
-                }
-                catch (ObjectDisposedException) { }
-                try
-                {
-                    Invoke((MethodInvoker)(() =>
-                    {
-                    */
                         cancelLastUndoBufferChange();
                         zabLocation.Enabled = true;
                         tvCatalog.DrawStop = false;
@@ -9137,13 +7580,6 @@ namespace ZipPla
             //sw.Restart();
 
 
-            /*
-            lock(folderWatchers)
-            {
-                foreach(var watcher in folderWatchers.Values) watcher?.Dispose();
-                folderWatchers.Clear();
-            }
-            */
 
             SetFileListPageHeaderWidth();
 
@@ -9235,16 +7671,6 @@ namespace ZipPla
 
             // cbLocation.Enabled = false 中の変化に対応
             //InitCursorIsOnControllField();
-            /*
-            if (cbLocation.ClientRectangle.Contains(cbLocation.PointToClient(MousePosition)))
-            {
-                GeneralMouseEnter(cbLocation);
-            }
-            else
-            {
-                GeneralMouseLeave(cbLocation);
-            }
-            */
 
             SetBackgroundMode(true, 0, true);
 
@@ -9259,10 +7685,6 @@ namespace ZipPla
 
             setTagFilteringMenuItems(needToRepairTagsFromBookmark: false, needToSaveCurrentTag: true);
 
-            /* firstShownItemSelect 内で行う
-            if (pnlCenter.Visible) tvCatalog.Focus();
-            else if (pnlRight.Visible) dgvFileList.Focus();show
-            */
 
             SetLookAheadArchive_PrevDataIndex = -1;
 
@@ -9665,9 +8087,6 @@ namespace ZipPla
                 //var singlePath = "";
                 try
                 {
-                    //int page;
-                    //bool allSelectionLoaded = false;
-                    //bool allSelectionArchive = false;
                     bool loadedIsSelected = false;
                     //bool singleEmpty = false;
                     bool singleCannotOpen = false;
@@ -9710,11 +8129,6 @@ namespace ZipPla
                             {
                                 var selectedIndices = tvCatalog.SelectedIndices;
                                 loadedIsSelected = true;
-                                //allSelectionLoaded = selectedIndices.All(s => s >= 0 && LoadResultArray != null && s < LoadResultArray.Length &&
-                                //    LoadResultArray[s] != LoadResult.NotYet);// && LoadResultArray[s] != LoadResult.FileNotFound);
-                                //allSelectionArchive = selectedIndices.All(s => s >= 0 && s < ZipPathArray.Length &&
-                                //     LoadResultArray[s] != LoadResult.NotYet && LoadResultArray[s] != LoadResult.FileNotFound &&
-                                //(ZipNameArray[s].EndsWith(Path.DirectorySeparatorChar.ToString()) || PackedImageLoader.SupportedArchivesPath.IsMatch(ZipPathArray[s])));
                                 if (selectedIndices.Length == 1)
                                 {
                                     var selectedIndex = selectedIndices[0];
@@ -9737,12 +8151,6 @@ namespace ZipPla
 
                     // tvCatalog が更新されるのは古いワーカーが片付いたあとなので
                     // インデクサへのアクセスは問題にならない。
-                    /*
-                    var item = new ThumbViewerItem();
-                    item.Image = ResultTuple.Item2;
-                    item.Text = name;
-                    tvCatalog[index] = item;
-                    */
                     {
                         // 一度消えて同じパスが再設定された場合を考慮する必要がある
                         // サムネイルは ThumbViewerItem が自分で読み込むので、既存のアイテムの Image には触らない
@@ -9759,22 +8167,10 @@ namespace ZipPla
                     }
 
                     // setFileListRowInLock 内部で行う
-                    /*
-                    if(dynamicRewrote)
-                    {
-                        resetVolatilitySort();
-                    }
-                    */
 
                     var dir = name.EndsWith(Path.DirectorySeparatorChar.ToString());
                     var archive = dir || PackedImageLoader.Supports(path);
 
-                    /*
-                    if (tvCatalog.SelectedIndex == index)
-                    {
-                        ShowStatusBar(index);
-                    }
-                    */
                     if (tvCatalog.IsSelected(index))
                     {
                         ShowStatusBarAfterItemLoaded();
@@ -9782,48 +8178,9 @@ namespace ZipPla
 
                     if (cmsRightClickPrepareAndShow_ZipPlaInfoReady && loadedIsSelected)
                     {
-                        /*
-                        if (allSelectionLoaded)
-                        {
-                            var renamable = InDirectoryVirtualDirectoryOrSmartDirectory;
-                            ratingToolStripMenuItem.Enabled = renamable;
-                            cutToolStripMenuItem.Enabled = InRealDirectory;
-                            var singleSelected = singlePath != "";
-                            var singleArchive = singleSelected && allSelectionArchive;//archive;
-                            pageSequenceToolStripMenuItem.Enabled = allSelectionArchive;
-                            thumbnailToolStripMenuItem.Enabled = InDirectoryVirtualDirectoryOrSmartDirectory && (singleArchive || MovieThumbnailLoader.Supports(singlePath)) || InMovie || InArchive;
-                            setThumbnailManuallyToolStripMenuItem.Enabled = singleSelected;
-                            tagToolStripMenuItem.Enabled = renamable;
-                            renameToolStripMenuItem.Enabled = renamable;
-                        }
-                        */
 
                         if (singleCannotOpen)// && BuiltInViewerIsDefault())
                         {
-                            /*
-                            if (isDir)
-                            {
-                                openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
-                                openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
-                                openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
-                                openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Bold);
-                                moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                            }
-                            else
-                            {
-                                openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
-                                openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
-                                openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                                openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Bold);
-                                openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                                moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
-                                moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
-                            }
-                            */
 
                             setAppInContextMenu(-1);
                         }
@@ -10019,25 +8376,6 @@ namespace ZipPla
             bool[] isDirs;
             getSelectedPathArray(clickedIndex, out selectedPaths, out isDirs);
             if (selectedPaths == null || selectedPaths.Length <= 0) return;
-            /*
-            var selectedIndices = tvCatalog.SelectedIndices;
-            if (selectedIndices.Length == 0) return;
-            var zpa = ZipPathArray;
-            if (zpa == null) return;
-            var zna = ZipNameArray;
-            if (zna == null) return;
-            if (zpa.Length != zna.Length) return;
-
-            var selectedPaths = new string[selectedIndices.Length];
-            var isDirs = new bool[selectedIndices.Length];
-            for (var i = 0; i < selectedIndices.Length; i++)
-            {
-                var index = selectedIndices[i];
-                if (index < 0 || index >= zpa.Length) return;
-                selectedPaths[i] = zpa[index];
-                isDirs[i] = zna[index].EndsWith(Path.DirectorySeparatorChar.ToString());
-            }
-            */
 
             var defaultNotFound = true;
             ApplicationProvider[] applicationArray;
@@ -10069,30 +8407,6 @@ namespace ZipPla
             {
                 infos[i] = new FileInfoForApplicationProvider { Path = selectedPaths[i], IsDir = isDirs[i] };
             }
-            /*
-            foreach (var app in ApplicationArray)
-            {
-                var ok = app.Supports(infos);
-                var isDefault = defaultNotFound && app.IsDefaultFor(infos);
-
-                if (isDefault) defaultNotFound = false;
-                if (!ok) continue;
-                var tsmi = app.GetToolStripMenuItem(this, selectedPaths);
-                if (isDefault)
-                {
-                    tsmi.Font = Program.StyledFont(tsmi.Font, FontStyle.Bold);
-                    tsmi.ShortcutKeyDisplayString = "Enter";
-                }
-                else
-                {
-                    tsmi.Font = Program.StyledFont(tsmi.Font, FontStyle.Regular);
-                    tsmi.ShortcutKeyDisplayString = null;
-                }
-                items.Insert(stop++, tsmi);
-            }
-
-            if (start == stop)
-            */
             if (InsertAppToCToolStrip(items, stop, infos, defaultNotFound, selectedPaths, applicationArray, AppInContextMenuEnabled) == 0 && !CoverSettingMode)
             {
                 var tsmi = new ToolStripMenuItem(Message.ApplicationIsNotSpecified);
@@ -10117,22 +8431,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private int InsertAppToCToolStrip(ToolStripItemCollection items, int startIndex, string path)
-        {
-            bool isDir; // “場所”はファイルもありうる。拡張子を持つような名前のフォルダも想定されるため名前だけからの判断はできない。
-            try
-            {
-                isDir = Directory.Exists(path);
-                if (!isDir && !File.Exists(path)) return 0; // 存在チェックも兼ねる
-            }
-            catch
-            {
-                return 0;
-            }
-            return InsertAppToCToolStrip(items, startIndex, new FileInfoForApplicationProvider[1] { new FileInfoForApplicationProvider { Path = path, IsDir = isDir } }, false, null);
-        }
-        */
 
         private int InsertAppToCToolStrip(ToolStripItemCollection items, int startIndex, FileInfoForApplicationProvider[] infos,
             bool addDefault, string[] selectedPaths, ApplicationProvider[] applicationArray, bool enabled)
@@ -10143,18 +8441,6 @@ namespace ZipPla
             foreach (var app in applicationArray)
             {
                 //if (selectedPaths.Length > 1 && app.GetMultiFileMode() == MultiFileMode.Single) continue;
-                /*
-                var ok = true;
-                var isDefault = defaultNotFound;
-                for (var i = 0; i < selectedPaths.Length; i++)
-                {
-                    var path = selectedPaths[i];
-                    var isDir = isDirs[i];
-                    if (ok && !app.Supports(path, isDir)) ok = false;
-                    if (isDefault && !app.IsDefaultFor(path, isDir)) isDefault = false;
-                    if (!ok && !isDefault) break;
-                }
-                */
                 var ok = app.Supports(infos);
                 var isDefault = addDefault && app.IsDefaultFor(infos);
 
@@ -10191,19 +8477,6 @@ namespace ZipPla
                         {
                             // ドラッグアウトのため Dispose してはいけない
                             // いずれにしても場所切替時に Dispose される
-                            /*
-                            lock (ZipPathArrayLocker)
-                            {
-                                lock (loadingPackedImageLoaderLocker)
-                                {
-                                    if (loadingPackedImageLoader != null)
-                                    {
-                                        loadingPackedImageLoader.Dispose();
-                                        loadingPackedImageLoader = null;
-                                    }
-                                }
-                            }
-                            */
 
                             loadCountToolStripMenuItem.Text = bmwMakePreview.CurrentThreadCount + "   " + e.Results.Count + " / " + ZipPathArray.Length;
 #if PERFLOG
@@ -10423,17 +8696,6 @@ namespace ZipPla
                 Application.Exit();
 #endif
             }
-            /*
-            else if(bmwMakePreview.IsBusy)
-            {
-                Visible = false;
-                //e.Cancel = true;
-                //await Task.Run(() => Thread.Sleep(1000));
-                Thread.Sleep(5000);
-                //CatalogForm_FormClosing_Force = true;
-                //Close();
-            }
-            */
         }
 
         private ToolStripMenuItem SelectedThumbnailSize
@@ -10453,48 +8715,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        /// <summary>
-        /// ini ファイル等に用いる言語設定非依存のソート名を取得
-        /// </summary>
-        private string GetSortString(int sortIndex)
-        {
-            switch (sortIndex)
-            {
-                case 0: return "Name in asc.";
-                case 1: return "Name in desc.";
-                case 2: return "Rating in asc.";
-                case 3: return "Rating in desc.";
-                case 4: return "Access in asc.";
-                case 5: return "Access in desc.";
-                case 6: return "Random";
-                default: return null;
-            }
-        }
-
-        private int GetSortIndex(string sortName)
-        {
-            switch (sortName)
-            {
-                case "Name in asc.":
-                    return 0;
-                case "Name in desc.":
-                    return 1;
-                case "Rating in asc.":
-                    return 2;
-                case "Rating in desc.":
-                    return 3;
-                case "Access in asc.":
-                    return 4;
-                case "Access in desc.":
-                    return 5;
-                case "Random":
-                    return 6;
-                default:
-                    return 0;
-            }
-        }
-        */
 
 
         //Size SaveSettings_WindowSizeWhenNotMaximized;
@@ -10648,13 +8868,6 @@ namespace ZipPla
             // コマンドラインから指定された場合キーボードから実行されたとみなす
             var selectFirst = startDirectory != null && selectedFileName == null;
 
-            /*
-            if (!File.Exists(Configuration.XmlPath))
-            {
-                ChangeThumbnailSize((ToolStripMenuItem)thumbnailSizeToolStripMenuItem.DropDownItems[2 + ChangeThumbnailSize_MenuItemOffset]);
-                return LoadSettings_Result.INIFileNotFound;
-            }
-            */
 
             Color color;
             bool maximized;
@@ -11079,17 +9292,6 @@ namespace ZipPla
             // 移行用
             if (doubleClick == null)
             {
-                /*
-                bool exists;
-                try
-                {
-                    exists = File.Exists(Configuration.XmlPath);
-                }
-                catch
-                {
-                    exists = false;
-                }
-                */
                 DoubleClickFileOpenMode = !firstCatalogFormRun ? DoubleClickMode.SelectAndClick : DoubleClickMode.IgnoreMouseMove;
             }
             else
@@ -11304,12 +9506,6 @@ namespace ZipPla
             Program.ShowSetting(this, out ApplicationArray, /*out startApplicationWithAccessKey,*/ out dssEnabled,
                 out allowRenameByCmsRightClick, out dss, out dragAndDropAction, out var historyTrimmed);
             setNewDynamicStringSelectionToolStripMenuItems(dssEnabled, dss);
-            /*
-            if (needToReload && SenseBindingMode())
-            {
-                UpdatePreview();
-            }
-            */
             if (historyTrimmed && string.Compare(currentLocation, Program.HistorySorPath, ignoreCase: true) == 0)
             {
                 UpdatePreview();
@@ -11354,217 +9550,6 @@ namespace ZipPla
         int SetBackgroundMode_ShownRange = 0;
         int[] SetBackgroundMode_WorkerOrder = null;
 
-        // サムネサムネ→リストヘッダ→残りヘッダ→残りサムネ
-#if FALSE
-        private void SetBackgroundMode(bool checkOrder, int processDecrease, bool DoEvenIfNotBusy = false)
-        {
-            var refThumbnail = pnlCenter.Visible;
-            var refFileList = !refThumbnail || pnlRight.Visible;
-            int[] s2d;
-            lock (ZipPathArrayLocker)
-            {
-                if (ZipPathArray == null || !DoEvenIfNotBusy && !bmwMakePreview.IsBusy) return;
-
-                // ZipPathArray の作成がサブスレッドで行われ、その後メインスレッドで tvCatalog の初期化が行われるため、
-                // その間にこの関数が呼びだされた場合インデックスの範囲に矛盾が生じるためこれを回避する。
-                var d2s = tvCatalog.DataIndexToShowIndex;
-                if (d2s == null || d2s.Length != ZipPathArray.Length)
-                {
-                    return;
-                }
-
-                s2d = tvCatalog.ShowIndexToDataIndex;
-
-                long stt = 0, stp = -1;
-                if (checkOrder)
-                {
-                    long u = -1, d = 0;
-                    var Order = new int[ZipPathArray.Length * 2];
-                    var alreadyAdded = new bool[ZipPathArray.Length];
-                    var idx = 0;
-                    var thumbStop = 0;
-                    if (refThumbnail)
-                    {
-                        var preIdx = 0;
-                        var start0 = tvCatalog.DisplayedStartShowIndex;
-                        var stop = tvCatalog.DisplayedStopShowIndex;
-                        var OrderInDisplay = new int[stop - start0];
-                        var Distances = new int[stop - start0];
-                        var p = tvCatalog.PointToClient(Cursor.Position);
-                        int x = 2 * p.X - tvCatalog.gridSizeH, y = 2 * p.Y - tvCatalog.gridSizeV;
-                        for (var i = (int)start0; i < stop; i++)
-                        {
-                            var p2 = tvCatalog.GetUpperLeftClientcoordinateOf(i);
-                            int dx = x - 2 * p2.X, dy = y - 2 * p2.Y;
-                            OrderInDisplay[preIdx] = i;
-                            Distances[preIdx] = dx * dx + dy * dy;
-                            preIdx++;
-                        }
-                        OrderInDisplay = OrderInDisplay.OrderBy(v => Distances[v - start0]).ToArray();
-                        for (var i = 0; i < Distances.Length; i++)
-                        {
-                            var di = s2d[OrderInDisplay[i]];
-                            if (!alreadyAdded[di])
-                            {
-                                alreadyAdded[di] = true;
-                                Order[idx++] = 2 * di + 1;
-                            }
-                        }
-                        u = start0 - 1;
-                        d = stop;
-                        stt = start0;
-                        stp = stop;
-                        thumbStop = idx;
-                    }
-                    if (refFileList)
-                    {
-                        var preIdx = 0;
-                        var start0 = dgvFileList.FirstDisplayedScrollingRowIndex;
-                        var stop = start0 + dgvFileList.DisplayedRowCount(includePartialRow: true) - 1; if (stop >= s2d.Length) stop = s2d.Length - 1;
-                        if (stop < start0) start0 = stop = 0;
-                        var OrderInDisplay = new int[stop - start0];
-                        var Distances = new int[stop - start0];
-                        var p = dgvFileList.PointToClient(Cursor.Position);
-                        var crec = dgvFileList.ClientRectangle;
-                        var mouseShowIndex = dgvFileList.HitTest(crec.X, p.Y).RowIndex;
-                        if (mouseShowIndex < 0)
-                        {
-                            if (p.X < crec.Bottom) mouseShowIndex = (int)start0;
-                            else mouseShowIndex = (int)stop - 1;
-                        }
-
-                        for (var i = (int)start0; i < stop; i++)
-                        {
-                            var di = Math.Abs(i - mouseShowIndex);
-                            OrderInDisplay[preIdx] = i;
-                            Distances[preIdx] = di;
-                            preIdx++;
-                        }
-                        OrderInDisplay = OrderInDisplay.OrderBy(v => Distances[v - start0]).ToArray();
-                        for (var i = 0; i < Distances.Length; i++)
-                        {
-                            var di = s2d[OrderInDisplay[i]];
-                            if (!alreadyAdded[di])
-                            {
-                                alreadyAdded[di] = true;
-                                Order[idx++] = 2 * di;
-                            }
-                        }
-                        if (!refThumbnail)
-                        {
-                            u = start0 - 1;
-                            d = stop;
-                            stt = start0;
-                            stp = stop;
-                        }
-                    }
-                    
-                    var shownCount = idx;
-                    var listCount = shownCount - thumbStop;
-
-                    SetBackgroundMode_ShownRange = idx;
-
-                    long len = tvCatalog.ShowIndexToDataIndex.Length;
-                    while (true)
-                    {
-                        if (stt - u < d - stp && u >= 0)
-                        {
-                            var di = s2d[u--];
-                            if (!alreadyAdded[di])
-                            {
-                                alreadyAdded[di] = true;
-                                Order[idx++] = 2 * di;
-                            }
-                        }
-                        else if (d < len)
-                        {
-                            var di = s2d[d++];
-                            if (!alreadyAdded[di])
-                            {
-                                alreadyAdded[di] = true;
-                                Order[idx++] = 2 * di;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    while (u >= 0)
-                    {
-                        var di = s2d[u--];
-                        if (!alreadyAdded[di])
-                        {
-                            alreadyAdded[di] = true;
-                            Order[idx++] = 2 * di;
-                        }
-                    }
-                    while (d < len)
-                    {
-                        var di = s2d[d++];
-                        if (!alreadyAdded[di])
-                        {
-                            alreadyAdded[di] = true;
-                            Order[idx++] = 2 * di;
-                        }
-                    }
-                    for (var i = 0; i < d2s.Length; i++)
-                    {
-                        if (d2s[i] < 0 && ZipMaskArray[i])
-                        {
-                            Order[idx++] = 2 * i;
-                        }
-                    }
-
-                    var hideStop = idx;
-                    var hideCount = idx - SetBackgroundMode_ShownRange;
-
-                    var listAndhideCount = listCount + hideCount;
-                    for (var i = thumbStop; i < hideStop; i++) Order[i + listAndhideCount] = Order[i] + 1;
-                    idx += hideStop - thumbStop;
-
-
-                    for (var i = 0; i < thumbStop; i++) Order[i + idx] = Order[i] - 1;
-
-                    idx += thumbStop;
-            
-
-                    SetBackgroundMode_WorkerOrder = new int[idx];
-                    Array.Copy(Order, SetBackgroundMode_WorkerOrder, idx);
-                    bmwMakePreview.SetWorksOrder(SetBackgroundMode_WorkerOrder);
-                }
-            }
-
-            if (!CursolIsOnControll() && !(((MouseButtons & MouseButtons.Left) == MouseButtons.Left || cbFilter.Focused) && Form.ActiveForm == this) && AllowFullpower)
-            {
-                bmwMakePreview.ThreadCount = Math.Max(2, Environment.ProcessorCount - 1);
-            }
-            else
-            {
-                try
-                {
-                    int WaitingDisplayedCount = 0;
-                    if (SetBackgroundMode_WorkerOrder != null && SetBackgroundMode_WorkerOrder.Length >= SetBackgroundMode_ShownRange)
-                    {
-                        for (var i = 0; i < SetBackgroundMode_ShownRange; i++)
-                        {
-                            var workerIndex = SetBackgroundMode_WorkerOrder[i];
-                            if (bmwMakePreview.GetWorkState(workerIndex) == BackgroundMultiWorker.WorkState.Waiting)
-                            {
-                                WaitingDisplayedCount++;
-                            }
-                        }
-                    }
-                    bmwMakePreview.ThreadCount = Math.Max(1, Math.Min(bmwMakePreview.ThreadCount + WaitingDisplayedCount - processDecrease, Environment.ProcessorCount / 2));
-                    return;
-                }
-                catch (Exception error)
-                {
-                    Program.AlertError(error);
-                }
-            }
-        }
-#else
 
         // サムネヘッダ→リストヘッダ→サムネサムネ→残りヘッダ→残りサムネ
         private void SetBackgroundMode(bool checkOrder, int processDecrease, bool DoEvenIfNotBusy = false)
@@ -11610,17 +9595,6 @@ namespace ZipPla
             {
                 Point p;
                 p = tvCatalog.PointToClient(cursorPosition);
-                /*
-                try
-                {
-                    p = tvCatalog.PointToClient(cursorPosition);
-                }
-                catch(Exception e)
-                {
-                    p = Point.Empty;
-                   // throw;
-                }
-                */
                 cursorPositionOnTvCatalog = p;
                 if (tvCatalog.Bounds.Contains(p))
                 {
@@ -11635,16 +9609,6 @@ namespace ZipPla
             }
 
 
-            /*
-            // ヘッダ優先
-            //var thumbnailBitForShown = refFileList ? 0 : 1;
-
-            // サムネイル優先
-            var thumbnailBitForShown = refThumbnail ? 1 : 0;
-
-
-            var thumbnailBitForHidden = refFileList ? 0 : 1;
-            */
 
             int[] s2d;
             lock (ZipPathArrayLocker)
@@ -11712,16 +9676,6 @@ namespace ZipPla
                         var Distances = new int[stop - start0];
                         Point p;
                         p = dgvFileList.PointToClient(cursorPosition);
-                        /*
-                        try
-                        {
-                            p = dgvFileList.PointToClient(cursorPosition);
-                        }
-                        catch (Exception e)
-                        {
-                            p = Point.Empty;
-                        }
-                        */
                         var crec = dgvFileList.ClientRectangle;
                         var mouseShowIndex = dgvFileList.HitTest(crec.X, p.Y).RowIndex;
                         if (mouseShowIndex < 0)
@@ -11872,7 +9826,6 @@ namespace ZipPla
                 }
             }
         }
-#endif
 
 
         private void tvCatalog_DisplayedChanged(object sender, EventArgs e)
@@ -12206,9 +10159,6 @@ namespace ZipPla
 
         //private static readonly TimeSpan DoubleClickTime = TimeSpan.FromMilliseconds(SystemInformation.DoubleClickTime);
 
-        //private int tvCatalog_MouseDown_LastExcuseIndex = -1;
-        //private DateTime tvCatalog_MouseDown_LastExcuseTime = DateTime.MinValue;
-        //int count;
         private int tvCatalog_MouseDown_ClickCount = 0;
         private int tvCatalog_MouseDown_LastClickTime = 0;
         private int tvCatalog_MouseDown_LastClickIndex = -1;
@@ -12216,12 +10166,6 @@ namespace ZipPla
         private void tvCatalog_MouseDown(object sender, MouseEventArgs e2)
         {
             // ActivateManager 側で対応
-            /*
-            if (cbLocation.Focused) // アクティブ化停止を妨げないように条件を付けておく
-            {
-                tvCatalog.Focus(); // ロケーションバーをボタンモードに戻すのが主な目的。UserControl のときは不要だった。
-            }
-            */
 
             LatestControledControl = sender as Control;
 
@@ -12346,22 +10290,6 @@ namespace ZipPla
                                 }
                             }
 
-                            /*
-                            var index = tvCatalog.SelectedIndex;
-                            if (tvCatalog.SelectedIndexDelay == index && (mk & (Keys.Control | Keys.Shift)) == 0)
-                            {
-                                var now = DateTime.Now;
-                                var noChat = index != tvCatalog_MouseDown_LastExcuseIndex || now - tvCatalog_MouseDown_LastExcuseTime > DoubleClickTime;
-                                tvCatalog_MouseDown_LastExcuseIndex = index;
-                                tvCatalog_MouseDown_LastExcuseTime = now;
-                                if (noChat)
-                                {
-                                    //optionToolStripMenuItem.Text = (count++).ToString();
-                                    tvCatalog.DoMouseUp();
-                                    OpenSelectedArchiveInDefaultViewer(ApplicationProviderUser.MouseClick);
-                                }
-                            }
-                            */
                         }
                         else
                         {
@@ -12402,12 +10330,6 @@ namespace ZipPla
         private void dgvFileList_MouseDown(object sender, MouseEventArgs e2)
         {
             // ActivateManager 側で対応
-            /*
-            if (cbLocation.Focused) // アクティブ化停止を妨げないように条件を付けておく
-            {
-                dgvFileList.Focus(); // ロケーションバーをボタンモードに戻すのが主な目的。ActiveteManager を使うことで詳細表示でも必要になった
-            }
-            */
 
             LatestControledControl = sender as Control;
 
@@ -12514,18 +10436,6 @@ namespace ZipPla
                         }
                     }
                 }
-                /*
-                else if (hit.ColumnIndex >= 0)
-                {
-                    e.Handled = true;
-
-                    if (!mgFileList.Enabled)
-                    {
-                        tvCatalog.SelectedIndex = -1;
-                        rightClickContextMenuPrepareAndShow(Cursor.Position, ModifierKeys); // この時点で ModifierKeys のホールド解除
-                    }
-                }
-                */
             }
             else if (e.Button == MouseButtons.Left)
             {
@@ -12578,26 +10488,6 @@ namespace ZipPla
                                 dgvFileList_MouseDown_ClickCount = 0;
                                 dgvFileList_MouseDown_LastClickIndex = -1;
                             }
-                            /*
-                            var index = hit.ColumnIndex;
-
-                            var now = DateTime.Now;
-                            var noChat = index != dgvFileList_MouseDown_LastExcuseIndex || now - dgvFileList_MouseDown_LastExcuseTime > DoubleClickTime;
-                            dgvFileList_MouseDown_LastExcuseIndex = index;
-                            dgvFileList_MouseDown_LastExcuseTime = now;
-
-                            if (noChat)
-                            {
-                                //tvCatalog.DoMouseUp();
-                                //Application.DoEvents();
-
-                                // ★ DataGridView の不具合の影響を受ける
-                                // DataGridViewBugFixed 内で詳細の説明
-                                OpenSelectedArchiveInDefaultViewer(ApplicationProviderUser.MouseClick);
-
-                                //Application.DoEvents();
-                            }
-                            */
                         }
                     }
                 }
@@ -12640,15 +10530,6 @@ namespace ZipPla
             else return -1;
         }
 
-        /*
-        private static bool CanBeCopied(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return false;
-            var altPos = path.IndexOf(Path.AltDirectorySeparatorChar);
-            if (altPos < 0) return true;
-            return PackedImageLoader.Supports(path.Substring(0, altPos));
-        }
-        */
 
         public bool RecentFfmpegExists;
 
@@ -12809,34 +10690,8 @@ namespace ZipPla
                 deleteonlyForListFileToolStripMenuItem.Text = Message.Delete;
             }
 
-            /*
-            var externalViewer = GetExternalViewer();
-            if (string.IsNullOrEmpty(externalViewer))
-            {
-                openInExternalViewerToolStripMenuItem.Visible = false;
-            }
-            else
-            {
-                openInExternalViewerToolStripMenuItem.Visible = true;
-                openInExternalViewerToolStripMenuItem.Text = Regex.Replace(Path.GetFileNameWithoutExtension(externalViewer), "^(.*)$", Message.OpenIn1);
-                openInExternalViewerToolStripMenuItem.Enabled = singleSelected;
-            }
-            */
 
-            /*
-            var isDir = false;
-            try
-            {
-                isDir = Directory.Exists(currentLocation);
-            }
-            catch { }
-            */
 
-            /*
-            openInBuiltinViewerToolStripMenuItem.Enabled = singleSelected;
-            openInAssociationToolStripMenuItem.Enabled = singleSelected;
-            openInExplorerToolStripMenuItem.Enabled = singleSelected;
-            */
             propertiesToolStripMenuItem.Enabled = singleSelected;
 
             var vfBookmarks = getVirtualFoldersInBookmarks().ToArray();
@@ -12878,32 +10733,6 @@ namespace ZipPla
             }
 
             // 新規作成が上（デザイナで移動すること、履歴から削除は未実装）
-            /*
-            while (spPos + 1 < listFileToolStripMenuItem.DropDownItems.Count)
-            {
-                listFileToolStripMenuItem.DropDownItems[spPos + 1].Dispose();
-            }
-            if (vfBookmarks.Length == 0)
-            {
-                tmsSeparatorForVirtualFolder.Visible = false;
-            }
-            else
-            {
-                tmsSeparatorForVirtualFolder.Visible = true;
-                var tsmiList = new List<ToolStripMenuItem>();
-                foreach (var bookmark in vfBookmarks)
-                {
-                    var tsmi = new ToolStripMenuItem();
-                    tsmi.Text = Message.AddTo1.Replace("$1", bookmark.ToString());
-                    var simpleBookmark = bookmark.SimpleBookmark;
-                    tsmi.Enabled = simpleBookmark?.Location != currentLocation;
-                    var vfPath = simpleBookmark?.Location;
-                    tsmi.Click += (sender, e) => addSelectedToList(true, sorPath: vfPath);
-                    tsmiList.Add(tsmi);
-                }
-                listFileToolStripMenuItem.DropDownItems.AddRange(tsmiList.ToArray());
-            }
-            */
 
             ZipPlaInfo zipPlaInfo = null;
             ZipPlaInfo[] zipPlaInfos = null;
@@ -12919,9 +10748,6 @@ namespace ZipPla
             bool allSelectionArchiveOrDirectoryOrEmptyDirectory;
             bool atLeast1SelectionArchive;
             bool allSelectionEntity;
-            //bool allSelectionCanBeCopied;
-            //bool isSingleEmpty = false;
-            //bool isSingleCannotOpen = false;
             var singlePath = "";
             var singleName = "";
             bool allSelectionFile;
@@ -13003,13 +10829,6 @@ namespace ZipPla
                             allSelectionFile = false;
                         }
 
-                        /*
-                        if (allSelectionArchive && (loadResult == LoadResult.LoadError || loadResult == LoadResult.FileNotFound ||
-                                !(thisIsFolder || PackedImageLoader.Supports(ZipPathArray[index]))))
-                        {
-                            allSelectionArchive = false;
-                        }
-                        */
                         if (allSelectionArchiveOrDirectoryOrEmptyDirectory && ((!thisIsFolder && (loadResult == LoadResult.LoadError || loadResult == LoadResult.FileNotFound)) ||
                                 !(thisIsFolder || PackedImageLoader.Supports(path))))
                         {
@@ -13027,19 +10846,7 @@ namespace ZipPla
                             {
                                 allSelectionEntity = false;
                             }
-                            /*
-                            if (allSelectionCanBeCopied && (notEntity || !CanBeCopied(path)))
-                            {
-                                allSelectionCanBeCopied = false;
-                            }
-                            */
                         }
-                        /*
-                        if (singleSelected && i == 0 && (loadResult == LoadResult.FileNotFound || loadResult == LoadResult.LoadError))
-                        {
-                            isSingleCannotOpen = true;
-                        }
-                        */
                     }
 
                 }
@@ -13050,62 +10857,6 @@ namespace ZipPla
             //var isSingleDirectory = singleSelected && selectedNameArray != null && selectedNameArray.Length == 1 &&
             //    selectedNameArray[0].EndsWith(Path.DirectorySeparatorChar.ToString());
 
-            /*
-            moveToThisFolderToolStripMenuItem.Enabled = isSingleDirectory;
-
-            if (BuiltInViewerIsDefault())
-            {
-                if (isSingleCannotOpen)
-                {
-                    if (isSingleDirectory)
-                    {
-                        openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
-                        openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
-                        openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
-                        openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Bold);
-                        moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                    }
-                    else
-                    {
-                        openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
-                        openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
-                        openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                        openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Bold);
-                        openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                        moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
-                        moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
-                    }
-                }
-                else
-                {
-                    openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Bold);
-                    openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                    openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Regular);
-                    openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                    openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
-                    openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                    moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
-                    moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
-                }
-
-            }
-            else
-            {
-                openInBuiltinViewerToolStripMenuItem.Font = Program.StyledFont(openInBuiltinViewerToolStripMenuItem.Font, FontStyle.Regular);
-                openInBuiltinViewerToolStripMenuItem.ShortcutKeyDisplayString = null;
-                openInExternalViewerToolStripMenuItem.Font = Program.StyledFont(openInExternalViewerToolStripMenuItem.Font, FontStyle.Bold);
-                openInExternalViewerToolStripMenuItem.ShortcutKeyDisplayString = "Enter";
-                openInAssociationToolStripMenuItem.Font = Program.StyledFont(openInAssociationToolStripMenuItem.Font, FontStyle.Regular);
-                openInAssociationToolStripMenuItem.ShortcutKeyDisplayString = null;
-                moveToThisFolderToolStripMenuItem.Font = Program.StyledFont(moveToThisFolderToolStripMenuItem.Font, FontStyle.Regular);
-                moveToThisFolderToolStripMenuItem.ShortcutKeyDisplayString = null;
-
-            }
-            */
 
             var ffmpegExists = MovieThumbnailLoader.ffmpegExists();
             RecentFfmpegExists = ffmpegExists;
@@ -13147,27 +10898,6 @@ namespace ZipPla
                     else
                     {
                         // 既に親フォルダの表紙が設定されているかどうかで表示内容を変更する場合
-                        /*
-                        try
-                        {
-                            if (File.Exists(Path.Combine(Path.GetDirectoryName(singlePath), ZipPlaCoverImageFileWithExtension)))
-                            {
-
-                                setCoverOfParentFolderToThisToolStripMenuItem.Enabled = false;
-                                setCoverOfParentFolderToThisToolStripMenuItem.Text = Message.SetCoverOfParentFolderToThis; !
-                            }
-                            else
-                            {
-                                setCoverOfParentFolderToThisToolStripMenuItem.Enabled = false;
-                                setCoverOfParentFolderToThisToolStripMenuItem.Text = Message.SetCoverOfParentFolderToThis;
-                            }
-                        }
-                        catch
-                        {
-                            setCoverOfParentFolderToThisToolStripMenuItem.Enabled = false;
-                            setCoverOfParentFolderToThisToolStripMenuItem.Text = Message.SetCoverOfParentFolderToThis;
-                        }
-                        */
 
                         // 変更しない場合
                         if (singleDir)
@@ -13194,10 +10924,6 @@ namespace ZipPla
                 setCoverOfParentFolderToThisToolStripMenuItem.Visible = false;
             }
 
-            /*
-            if(setCoverOfParentFolderToThisToolStripMenuItem.Visible)
-            {
-            }*/
 
             //copyToolStripMenuItem.Enabled = InDirectoryVirtualDirectoryOrSmartDirectory && allSelectionEntity;
             copyToolStripMenuItem.Enabled = (InDirectoryVirtualDirectoryOrSmartDirectory && allSelectionEntity) || InArchive || (InMovie && singleSelected);
@@ -13252,19 +10978,6 @@ namespace ZipPla
 
                     renameToolStripMenuItem.Enabled = singleSelected && renamable;
                 }
-                /*
-                else
-                {
-                    ratingToolStripMenuItem.Enabled = false;
-                    cutToolStripMenuItem.Enabled = false;
-                    pageSequenceToolStripMenuItem.Visible = allSelectionArchive;
-                    pageSequenceToolStripMenuItem.Enabled = false;
-                    thumbnailToolStripMenuItem.Enabled = false || singleMovieOrSingleInMovie || singleInArchive;
-                    thumbnailToolStripMenuItem.Visible = singleArchive || singleMovieOrSingleInMovie || singleInArchive;
-                    setThumbnailManuallyToolStripMenuItem.Enabled = false;
-                    tagToolStripMenuItem.Enabled = false;
-                }
-                */
 
                 var ratingHistogram = new int[6];
                 var pageSequenceHistogram = new int[4];
@@ -13322,13 +11035,6 @@ namespace ZipPla
                 rightToLeftToolStripMenuItem.CheckState = pageSequenceHistogram[2] == 0 ? CheckState.Unchecked : pageSequenceHistogram[2] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
                 singlePageToolStripMenuItem.CheckState = pageSequenceHistogram[3] == 0 ? CheckState.Unchecked : pageSequenceHistogram[3] < zipPlaInfosCount ? CheckState.Indeterminate : CheckState.Checked;
 
-                /*
-                ZipPlaInfo locationZipPlaInfo = null;
-                if(InMovie)
-                {
-                    locationZipPlaInfo = new ZipPlaInfo(currentLocation);
-                }
-                */
 
                 if (singleDir)
                 {
@@ -13390,49 +11096,11 @@ namespace ZipPla
                         }
                     }
 
-                    /*
-                    if(onlyTag)
-                    {
-                        for (var i = 0; i < items.Length; i++)
-                        {
-                            var item = items[i];
-                            var initState = initialCheckStates[i];
-                            item.MouseUp += (sender2, e2) =>
-                            {
-                                if (e2.Button == MouseButtons.Middle)
-                                {
-                                    switch (item.CheckState)
-                                    {
-                                        case CheckState.Unchecked:
-                                            item.CheckState = CheckState.Checked;
-                                            break;
-                                        case CheckState.Indeterminate:
-                                            item.CheckState = CheckState.Unchecked;
-                                            break;
-                                        default:
-                                            item.CheckState = initState == CheckState.Indeterminate ? CheckState.Indeterminate : CheckState.Unchecked;
-                                            break;
-                                    }
-                                    cmsRightClick.Invalidate();
-                                }
-                            };
-                        }
-                    }
-                    */
                 }
 
                 var uncheckAll = new ToolStripMenuItem(Message.UncheckAll);
                 uncheckAll.Enabled = initialCheckStates.Any(item => item != CheckState.Unchecked);
                 //uncheckAll.ShortcutKeyDisplayString = Message.RightClickNotToClose;
-                /*
-                uncheckAll.Click += (sender2, e2) =>
-                {
-                    foreach (var item in items)
-                    {
-                        item.Checked = false;
-                    }
-                    uncheckAll.Enabled = false;
-                };*/
                 var checkedChangedByUncheckAll = false;
                 foreach (var item in items)
                 {
@@ -13558,13 +11226,6 @@ namespace ZipPla
             renamableByCmsTextBox = allowRenameByCmsRightClick && singleSelected && renamable;
             //selectionToFilterToolStripMenuItem.Enabled = false;
             //selectionToFilterToolStripMenuItem.Text = Message.FilterWithSelectedText;
-            /*
-            if (selectedNameArray == null || selectedNameArray.Length == 0)
-            {
-                rightClickFileNameToolStripTextBox.Visible = false;
-            }
-            else
-            */
             {
                 //rightClickFileNameToolStripTextBox.Visible = true;
                 var text = renamableByCmsTextBox ? getBaseName(singleName) : TextAnalyzer.TextToWildcard(selectedNameArray);
@@ -13584,11 +11245,6 @@ namespace ZipPla
                 rightClickFileNameToolStripTextBox.Select(selected.Index, selected.Length);
                 rightClickFileNameToolStripTextBox_SelectedText = selected.Value;
                 foreach (var dss in getCurrentDynamicStringSelectionToolStripMenuItems()) dss.SelectedText = rightClickFileNameToolStripTextBox_SelectedText;
-                //if (!string.IsNullOrEmpty(rightClickFileNameToolStripTextBox_SelectedText))
-                //{
-                //    selectionToFilterToolStripMenuItem.Enabled = true;
-                //    selectionToFilterToolStripMenuItem.Text = Message.FilterWith1.Replace("$1", rightClickFileNameToolStripTextBox_SelectedText);
-                //}
             }
             rightClickFileNameToolStripTextBox.ReadOnly = !renamableByCmsTextBox;
 
@@ -14424,15 +12080,6 @@ namespace ZipPla
                                     }
                                 }
 
-                                /*
-                                if (ZipPathArray != null && selectedIndex < ZipPathArray.Length)
-                                {
-                                    var zipPlaInfo = new ZipPlaInfo(path);
-                                    zipPlaInfo.ThumbnailInfo = null;
-                                    var newPath = 
-                                    RenameShownArchive(selectedIndex, path, newPath);
-                                }
-                                */
 
                                 RenameShownArchive(selectedIndices, oldNames, newNames, atFirstArrayChange: true,
                                     needToReload: clearThumbnail || changeEffectivePageSequence,
@@ -14504,18 +12151,6 @@ namespace ZipPla
 
             foreach (var dss in getCurrentDynamicStringSelectionToolStripMenuItems()) dss.SelectedText = selectedText;
 
-            /*
-            if (string.IsNullOrEmpty(selectedText))
-            {
-                selectionToFilterToolStripMenuItem.Enabled = false;
-                selectionToFilterToolStripMenuItem.Text = Message.FilterWithSelectedText;
-            }
-            else
-            {
-                selectionToFilterToolStripMenuItem.Enabled = true;
-                selectionToFilterToolStripMenuItem.Text = Message.FilterWith1.Replace("$1", selectedText);
-            }
-            */
         }
 
         private void RightClickFileNameToolStripTextBox_MouseLeave(object sender, EventArgs e)
@@ -14528,13 +12163,7 @@ namespace ZipPla
             rightClickFileNameToolStripTextBox.Focus();
         }
 
-        //private void selectionToFilterToolStripMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    if (string.IsNullOrEmpty(rightClickFileNameToolStripTextBox_SelectedText)) return;
 
-        //    cbFilter.Text = rightClickFileNameToolStripTextBox_SelectedText;
-        //    setCurrentFilterToHistory(true);
-        //}
 
         public void StringToFilterForDynamicStringSelection(string str)
         {
@@ -14550,23 +12179,6 @@ namespace ZipPla
         private IEnumerable<ColoredBookmark> getVirtualFoldersInBookmarks()
         {
             return getSpecialFoldersInBookmarks(getVirtualFoldersInBookmarks_Regex, mustBeExistingFile: true);
-            /*
-            var tbcDirectoryNameINdex = tbcDirectoryName.Index;
-            foreach (DataGridViewRow row in dgvDirectoryList.Rows)
-            {
-                var coloredProfile = row.Cells[tbcDirectoryNameINdex].Value as ColoredBookmark;
-                var ok = false;
-                try
-                {
-                    ok = Path.GetExtension(coloredProfile.SimpleBookmark.Location).ToUpper() == ".SOR"; // Virtual の中でも特に SOR のみ
-                }
-                catch { } // 設定ファイルの破壊耐性
-                if (ok)
-                {
-                    yield return coloredProfile; // yield は try の外
-                }
-            }
-            */
         }
 
         private static readonly Regex getSmartFolderInBookmarks_Regex = new Regex($"\\.{SmartFolder.ExtensionWithoutPeriodInLower}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -14598,65 +12210,8 @@ namespace ZipPla
             return selectedIndex >= 0 && FileCountArray != null && selectedIndex < FileCountArray.Length;
         }
 
-        /*
-        private string GetExternalViewer(bool throwFileNotFoundException = false)
-        {
-            try
-            {
-                string externalViewr = (new GeneralConfig()).ExternalViewer;
-                if (string.IsNullOrEmpty(externalViewr))
-                {
-                    return null;
-                }
-                else if (!File.Exists(externalViewr))
-                {
-                    if (throwFileNotFoundException)
-                    {
-                        throw new FileNotFoundException(null, externalViewr);
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-                else
-                {
-                    return externalViewr;
-                }
-            }
-            catch
-            {
-                return null;
-            }
-        }
-        */
 
-        /*
-        private bool BuiltInViewerIsDefault()
-        {
-            try
-            {
-                DefaultViewer defaultViewer = (new GeneralConfig()).DefaultViewer;
-                return defaultViewer == DefaultViewer.BuiltIn;
-            }
-            catch
-            {
-                return true;
-            }
-        }
-        */
 
-        /*
-    private void openInExplorerToolStripMenuItem_Click(object sender, EventArgs e)
-    {
-        var selectedIndex = tvCatalog.SelectedIndex;
-        if (selectedIndex >= 0 && selectedIndex < ZipPathArray.Length)
-        {
-            var path = ZipPathArray[selectedIndex];
-            Program.OpenWithExplorer(path);
-        }
-    }
-    */
 
         class filePathComparator : IComparer<string>
         {
@@ -15281,38 +12836,22 @@ namespace ZipPla
                     }
                 default:
                     {
-                        /*
-                        if (GetSortArray_RandomOrder == null || GetSortArray_RandomOrder.Length != count)
-                        {
-                            GetSortArray_RandomOrder = DarumaOtoshi.RandomPermutation(count, randomForPermutation);
-                        }
-                        var result2 = order.OrderBy(x => GetSortArray_RandomOrder[x]).ToArray();
-                        */
                         if (GetSortArray_RandomSeed == null)
                         {
                             var now = DateTime.Now;
                             GetSortArray_RandomSeed = now.Ticks.ToString();
                             //GetSortArray_RandomSeed_Set = true;
                         }
-                        //var sw2 = new Stopwatch();
-                        //var s = "";
-                        //sw2.Start();
 
                         // ZipPathArray を使った場合：
                         // フォルダごと移動すると Seed が変わらなくても順番が変わる
                         // Seed を変えなくても PDF 内のソート順が同じということにならない
                         var table = (from key in ZipPathArray select GetRandomIndex(key, GetSortArray_RandomSeed)).ToArray(); // 10 万程度であれば処理時間はこちらが主要
 
-                        //sw2.Stop();
-                        //s += sw2.Elapsed + "\n";
-                        //sw2.Restart();
 
                         var result2 = order.OrderBy(x => table[x]).ToArray(); // 係数の問題で現実的な範囲ではこちらの計算時間は無視できる
 
 
-                        //sw2.Stop();
-                        //s += sw2.Elapsed + "\n";
-                        //MessageBox.Show(s);
                         result = result2;
                         break;
                     }
@@ -15453,12 +12992,6 @@ namespace ZipPla
             }
             Size? sizeN;
             ImageInfo ii;
-            /*
-            if (ImageLoader.SupportsAtLeastThumbnailReading(name))
-            {
-                sizeN = ImageInfoArray[index]?.Size;
-            }
-            else*/
             if (MovieThumbnailLoader.Supports(name))
             {
                 sizeN = MovieInfoArray[index]?.SizeByPixel;
@@ -15901,19 +13434,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private string getFileSizeStringInFileListGlobal(string name, long size)
-        {
-            if (name[name.Length - 1] != Path.DirectorySeparatorChar)
-            {
-                return Program.GetFormatSizeString(size, null, simpleForm: true);
-            }
-            else
-            {
-                return EmptyPageString;
-            }
-        }
-        */
 
         private const string setFileListRoDynamicPart_LengthFormat = @"h\:mm\:ss";
         private delegate void setFileListRoDynamicPart_SetterDelegate(ref bool changed, FileListRowInfo row, DataGridViewColumn column, string src);
@@ -16104,25 +13624,6 @@ namespace ZipPla
         }
 
 
-        /*
-        private string getRatioString(Fraction f)
-        {
-            return f.Numerator + ":" + f.Denominator;
-        }
-
-        private string getRatioString(Size size)
-        {
-            if(size.Height != 0)
-            {
-                return getRatioString((Fraction)size);
-            }
-            else
-            {
-                return "1:0";
-            }
-        }
-
-        */
 
         private const string EmptyPageString = "-";
         private const string QuestionPageString = "?";
@@ -16234,34 +13735,6 @@ namespace ZipPla
                 }
             }
 
-            /*
-            private static unsafe bool isBlankBitmap(Bitmap bitmap)
-            {
-                var w = bitmap.Width;
-                var h = bitmap.Height;
-                var pixelFormat = bitmap.PixelFormat;
-                var data = bitmap.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, pixelFormat);
-                try
-                {
-                    var adr0 = (byte*)data.Scan0;
-                    var stride = data.Stride;
-                    var bytePerLine = Image.GetPixelFormatSize(pixelFormat) / 8 * w;
-                    for(var y = 0; y < h; y++)
-                    {
-                        var adr = adr0 + y * stride;
-                        for (var x = 0; x < bytePerLine; x++)
-                        {
-                            if (adr[x] != 255) return false;
-                        }
-                    }
-                    return true;
-                }
-                finally
-                {
-                    bitmap.UnlockBits(data);
-                }
-            }
-            */
 
             private static Brush WhiteMask;
             private static Brush getWhiteMask(int alpha, Color color)
@@ -16535,44 +14008,9 @@ namespace ZipPla
                 paintRect.Width -= cellStyle.Padding.Horizontal;
                 paintRect.Height -= cellStyle.Padding.Vertical;
 
-                /*
-                //背景色を決定する
-                //選択されている時とされていない時で色を変える
-                bool isSelected =
-                    (cellState & DataGridViewElementStates.Selected) ==
-                    DataGridViewElementStates.Selected;
-                Color bkColor;
-                if (isSelected &&
-                    (paintParts & DataGridViewPaintParts.SelectionBackground) ==
-                        DataGridViewPaintParts.SelectionBackground)
-                {
-                    bkColor = cellStyle.SelectionBackColor;
-                }
-                else
-                {
-                    bkColor = cellStyle.BackColor;
-                }
-                //背景を描画する
-                if ((paintParts & DataGridViewPaintParts.Background) ==
-                    DataGridViewPaintParts.Background)
-                {
-                    using (SolidBrush backBrush = new SolidBrush(bkColor))
-                    {
-                        graphics.FillRectangle(backBrush, paintRect);
-                    }
-                }
-                */
 
                 base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts & ~DataGridViewPaintParts.ContentForeground);
 
-                /*
-                //背景を描画する
-                if ((paintParts & DataGridViewPaintParts.Background) ==
-                    DataGridViewPaintParts.Background)
-                {
-                    graphics.FillRectangle(Brushes.Black, paintRect);
-                }
-                */
 
                 //テキストを表示する
                 if ((paintParts & DataGridViewPaintParts.ContentForeground) ==
@@ -16756,59 +14194,6 @@ namespace ZipPla
                         //TextRenderer.DrawText(graphics, name.Substring(index), cellStyle.Font, paintRect, fColor, flags);
                         TextRenderer.DrawText(graphics, nameTrimed.Substring(Math.Min(tLen, index)), cellStyle.Font, paintRect, fColor, flags);
 
-                        /*
-                        var index = 0;
-                        var rectangles = new Rectangle[indexLengthTagTorios.Length * 2];
-                        var strs = new string[indexLengthTagTorios.Length * 2];
-                        var colors = new Color[indexLengthTagTorios.Length];
-                        var i = 0;
-                        foreach (var torio in indexLengthTagTorios)
-                        {
-                            var tagName = torio.Item3;
-                            var tag = tags.FirstOrDefault(t => t.Name == tagName);
-                            if (tag == default(ZipTag)) continue;
-                            // if( そのタグが描画対象でなければコンティニュー)
-
-
-                            //var str = name.Substring(index, torio.Item1 - index);
-                            var str = nameTrimed.Substring(Math.Min(tLen, index), Math.Max(0, Math.Min(tLen, torio.Item1) - index));
-                            var width = TextRenderer.MeasureText(graphics, str, cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
-                            //TextRenderer.DrawText(graphics, str, cellStyle.Font, paintRect, fColor, flags);
-                            strs[2 * i] = str;
-                            rectangles[2 * i] = paintRect;
-                            paintRect.X += width;
-                            paintRect.Width -= width;
-                            //str = name.Substring(torio.Item1, torio.Item2);
-                            str = nameTrimed.Substring(Math.Min(tLen, torio.Item1), Math.Max(0, Math.Min(tLen - torio.Item1, torio.Item2)));
-                            var tagPart = nameTrimed.Substring(Math.Min(tLen2, torio.Item1), Math.Max(0, Math.Min(tLen2 - torio.Item1, torio.Item2)));
-                            width = TextRenderer.MeasureText(graphics, str, cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
-                            var tagWidth = str == tagPart ? width : TextRenderer.MeasureText(graphics, tagPart, cellStyle.Font, new Size(int.MaxValue, int.MinValue), TextFormatFlags.NoPadding).Width;
-                            using (var b = new SolidBrush(tag.BackColor))
-                            {
-                                //graphics.FillRectangle(b, new Rectangle(paintRect.X + hShift, paintRectYForBG, tagWidth, height));
-
-                                var baseRect = new Rectangle(paintRect.X, paintRectYForBG, tagWidth, height);
-                                var drawRect = GetHShift(baseRect, tagPart, cellStyle.Font, flags);
-                                if (!drawRect.IsEmpty) graphics.FillRectangle(b, drawRect);
-                            }
-                            //TextRenderer.DrawText(graphics, str, cellStyle.Font, paintRect, tag.ForeColor, flags);
-                            colors[i] = tag.ForeColor;
-                            strs[2 * i + 1] = str;
-                            rectangles[2 * i + 1] = paintRect;
-                            paintRect.X += width;
-                            paintRect.Width -= width;
-                            index = torio.Item1 + torio.Item2;
-
-                            i++;
-                        }
-                        for (var j = 0; j < i; j++)
-                        {
-                            TextRenderer.DrawText(graphics, strs[2 * j], cellStyle.Font, rectangles[2 * j], fColor, flags);
-                            TextRenderer.DrawText(graphics, strs[2 * j + 1], cellStyle.Font, rectangles[2 * j + 1], colors[j], flags);
-                        }
-                        //TextRenderer.DrawText(graphics, name.Substring(index), cellStyle.Font, paintRect, fColor, flags);
-                        TextRenderer.DrawText(graphics, nameTrimed.Substring(Math.Min(tLen, index)), cellStyle.Font, paintRect, fColor, flags);
-                        */
                     }
                 }
                 //base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts);
@@ -16972,14 +14357,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private string getShortRatingString(string path)
-        {
-            var r = ZipPlaInfo.GetOnlyRating(path);
-            if (r >= 0) return "★×" + r;
-            else return "";
-        }
-        */
         
         private string getShortTimeString(DateTime dateTime, CultureInfo culture)
         {
@@ -17251,29 +14628,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        bool cbSortBy_DropDownClosed_Resorted = false;
-        private void cbSortBy_DropDownClosed(object sender, EventArgs e)
-        {
-            var cb = (ComboBox)sender;
-            lock (ZipPathArrayLocker)
-            {
-                if (ZipPathArray != null && cb.SelectedIndex == 4 && cb.RectangleToScreen(new Rectangle(0, 0, cb.DropDownWidth, cb.DropDownHeight)).Contains(Cursor.Position))
-                {
-                    tvCatalog.SelectedIndex = -1; // プロパティの set の処理において冗長な描画が入るが、影響の小ささから可読性を優先。
-                    GetSortArray_RandomOrder = null;
-                    tvCatalog.ShowIndexToDataIndex = GetSortArray();
-                    setFileListFromThumbnailViewer();
-                    var s2d = tvCatalog.ShowIndexToDataIndex;
-                    if (s2d.Length > 0)
-                    {
-                        tvCatalog.ScrollBarToIndex(s2d[0]);
-                    }
-                    cbSortBy_DropDownClosed_Resorted = true;
-                }
-            }
-        }
-        */
 
         Graphics cbFilter_Graphic = null;
         private int cbLocationMinimumWidth;
@@ -17328,14 +14682,6 @@ namespace ZipPla
                 // オートコンプリート問題の旧対策法 
                 //cbFilter.AutoCompleteMode = cbFilterACM;
                 //cbLocation.AutoCompleteMode = cbLocationACM;
-                /*
-                if (cbFilter.Text != text || cbFilter.SelectionStart != start || cbFilter.SelectionLength != length)
-                {
-                    cbFilter.Text = text;
-                    cbFilter.SelectionStart = start;
-                    cbFilter.SelectionLength = length;
-                }
-                */
             }
         }
 
@@ -17531,17 +14877,6 @@ namespace ZipPla
             if (si < 0)
             {
                 // → KeyDown 側で対処
-                /*
-                // ComboBox には設計ミスがあり、これをしないと空白になってしまう。
-                var text = cb.Text;
-                if (!string.IsNullOrEmpty(text) && !cb.Items.Contains(text))
-                {
-                    // ただしこれを行うとこの時点でテキストが追加されるのでファイルかフォルダが存在する
-
-                    cb.Items.Add(text);
-                    cb.SelectedIndex = cb.Items.Count - 1;
-                }
-                */
                 return;
             }
 
@@ -17551,14 +14886,6 @@ namespace ZipPla
             {
                 MakePreview();
             }
-            /*
-            cb.Text = cb.Items[si].ToString();
-
-            if (cb.Text != cbLocation_DropDown_TextBeforeDropDown)
-            {
-                MakePreview();
-            }
-            */
         }
 
 
@@ -17609,51 +14936,15 @@ namespace ZipPla
         {
             return CursorIsOnControllField;
             //return UnderCursorSet.Count > 0;
-            /*
-            foreach (var isUnderCorsor in IsUnderCursor.Values)
-            {
-                if (isUnderCorsor) return true;
-            }
-            return false;
-            */
         }
 
         // 復元する場合 RunWorkerStarting 内のコメントアウトを外すこと
-        /*
-        private void InitCursorIsOnControllField()
-        {
-            var position = PointToClient(Cursor.Position);
-            var rect = ClientRectangle;
-            CursorIsOnControllField = rect.Contains(position);
-        }
-        */
 
         #region ポインタ位置処理
 
         bool CursorIsOnControllField = false;
         private void GeneralMouseLeave(object something)
         {
-            /*
-#if !AUTOBUILD
-            if (something == null) throw new ArgumentNullException();
-#endif
-            
-            CursorIsOnControllField = false;
-            
-
-            if (!RenameShownArchive_MakePreviewSleepRequest && (!ClientRectangle.Contains(PointToClient(MousePosition))))
-            {
-                if (!CursolIsOnControll())
-                {
-                    if (!(((MouseButtons & MouseButtons.Left) == MouseButtons.Left || cbFilter.Focused) && Form.ActiveForm == this) && AllowFullpower)
-                        bmwMakePreview.ThreadCount = Math.Max(2, Environment.ProcessorCount - 1);
-                }
-            }
-            else
-            {
-               // ComeFromControl = true;
-            }
-            */
         }
         private void GeneralMouseEnter(object something)
         {
@@ -17778,28 +15069,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private const int WM_NCMOUSELEAVE = 0x02A2;
-
-        protected override void WndProc(ref System.Windows.Forms.Message m)
-        {
-            base.WndProc(ref m);
-
-            switch (m.Msg)
-            {
-                case WM_NCMOUSELEAVE:
-                    if (!this.Bounds.Contains(Cursor.Position))
-                    {
-                        unselectedItemMaskOn();
-                    }
-                    else
-                    {
-                        unselectedItemMaskOff();
-                    }
-                    break;
-            }
-        }
-        */
 
 
         private void globalMouseEnter(Point screenLocation)
@@ -17965,25 +15234,11 @@ namespace ZipPla
             if (e.KeyCode == Keys.Enter)
             {
                 // これを有効にする場合 Alt キーでメニューにフォーカスが移る動作を無効にする必要がある
-                /*
-                if ((mk & Keys.Alt) == Keys.Alt)
-                {
-                    OpenSelectedProperties();
-                }
-                else
-                */
                 {
                     OpenSelectedArchiveInDefaultViewer(ApplicationProviderUser.EnterKey, null);
                 }
                 LatestControledControl = sender as Control;
             }
-            /*
-            else if (e.KeyCode == Keys.Apps)
-            {
-                cmsRightClickPrepareAndShowForKeyOnTvCatalog(onlyTag: false);
-                LatestControledControl = sender as Control;
-            }
-            */
             else if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right || e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
             {
                 LatestControledControl = sender as Control;
@@ -18146,24 +15401,6 @@ namespace ZipPla
                 else
                 {
                     rightClickContextMenuPrepareAndShow(p, mk);
-                    /*
-                    if (RightClickContextMenu == CatalogFormConfigConetxtMenu.ZipPla)
-                    {
-                        cmsRightClickPrepareAndShow_(p, false);
-                    }
-                    else if (RightClickContextMenu == CatalogFormConfigConetxtMenu.Explorer)
-                    {
-                        explorerContextMenuPrepareAndShow(p);
-                    }
-                    else if(ControlRightClickContextMenu == CatalogFormConfigConetxtMenu.ZipPla)
-                    {
-                        cmsRightClickPrepareAndShow_(p, false);
-                    }
-                    else if (ControlRightClickContextMenu == CatalogFormConfigConetxtMenu.Explorer)
-                    {
-                        explorerContextMenuPrepareAndShow(p);
-                    }
-                    */
                 }
             }
             else if (!onlyTag && tvCatalog.Visible && (RightClickContextMenu != CatalogFormConetxtMenu.Tag))
@@ -18433,12 +15670,6 @@ namespace ZipPla
             psi.FileName = Application.ExecutablePath;
 
             psi.WindowStyle = ProcessWindowStyle.Hidden;
-            /*
-            var command = BuiltInViewerInitialFullscreenMode == InitialFullscreenMode.ForceWindow ? "-LookAheadModeW" :
-                BuiltInViewerInitialFullscreenMode == InitialFullscreenMode.ForceFullscreen ? "-LookAheadModeF" :
-                "-LookAheadMode";
-            if (AlwaysHideUI) command += "H";
-            */
             const string command = "-LookAheadMode";
             psi.Arguments = command + " " + currentIpcGUID + " " + guid;
             waitingProcess = Process.Start(psi);
@@ -18476,13 +15707,6 @@ namespace ZipPla
 
         private SortModeDetails GetCurrentSortModeDetails(int page)
         {
-            /*
-            if (page >= 0)
-            {
-                return null;
-            }
-            else
-            */
             {
                 return new SortModeDetails { SortMode = sortSyncMode == SortSyncMode.Directory ? sortMode : SortMode.NameInAsc,
                     PreSortMode = prevSortMode, RandomSeed = GetSortArray_RandomSeed };
@@ -18692,30 +15916,6 @@ namespace ZipPla
                     // それをもってプロセスを停止するべきではない
                     // 初の呼び出しで応答がないということは別のファイルを開こうとしているので
                     // 直ちにプロセスを停止する
-                    /*if (AllowReadAheadProcess && existingProcessAndFirstRequest && waitTime == 100 && !lookAheadInfo.Accept)
-                    // ビューアモードの通信チェック間隔よりも十分に長く
-                    {
-                        CheckAndRecoverWaitingProcess(forceDisposing: true);
-                        lookAheadInfo.Path = path;
-                        lookAheadInfo.Page = page;
-                        lookAheadInfo.ArchivesInArchive = ArchivesInArchiveMode;
-                        lookAheadInfo.ReadOnMemoryMode = ReadOnMemoryMode;
-                        lookAheadInfo.DefaultBinding = currentBindingMode;
-                        lookAheadInfo.CoverBinding = CoverBindingMode;
-                        lookAheadInfo.IgnoreSavedFilerSetting = !OpenInPreviousImageFilterSetting;
-                        lookAheadInfo.BackColor = BackColorOfBuiltInViewer;
-                        lookAheadInfo.InitialFullscreenMode = BuiltInViewerInitialFullscreenMode;
-                        lookAheadInfo.AlwaysHideUI = AlwaysHideUI;
-                        lookAheadInfo.SortModeDetails = sortModeDetails;
-                        setSendFilterToLookAheadInfo();
-                        lookAheadInfo.Message = coverSettingMode ? IpcLookAheadInfo.MessageEnum.CoverSetting : IpcLookAheadInfo.MessageEnum.Show;
-                        lookAheadInfo.Accept = false;
-                    }
-                    else if (waitTime == 1000)
-                    {
-                        Cursor.Current = Cursors.WaitCursor;
-                    }
-                    else*/
                     bool processExited;
                     try
                     {
@@ -18796,16 +15996,6 @@ namespace ZipPla
             // ポインティングなしデバイスへの配慮としてアクティブ化直後はマスクしない
             unselectedItemMaskOff();
 
-            /*
-            if(Bounds.Contains(Cursor.Position))
-            {
-                unselectedItemMaskOff();
-            }
-            else
-            {
-                unselectedItemMaskOn();
-            }
-            */
 
             if (BookmarkConfigModifiedDateTime > DateTime.MinValue)
             {
@@ -18924,19 +16114,6 @@ namespace ZipPla
                 SetLookAheadArchive(path, zga[dataIndex]);
             }
 
-            /*
-            if (dataIndex >= 0)
-            {
-                lock (ZipPathArrayLocker)
-                {
-                    if (ZipPathArray != null && dataIndex < ZipPathArray.Length &&
-                        LoadResultArray != null && LoadResultArray[dataIndex] != LoadResult.LoadError && LoadResultArray[dataIndex] != LoadResult.FileNotFound)
-                    {
-                        SetLookAheadArchive(ZipPathArray[dataIndex], ZipPageArray[dataIndex]);
-                    }
-                }
-            }
-            */
         }
 
         private void tmWatchIpc_Tick(object sender, EventArgs e)
@@ -19195,24 +16372,6 @@ namespace ZipPla
                                                             tvCatalog[index]?.DrawItem(onlyFrame: false);
                                                         }
 
-                                                        /*
-                                                        if (PackedImageLoader.IsSupertedImage(newold.New))
-                                                        {
-                                                            dgvFileList.Rows[showIndex].Cells[tbcPage.Index].Value = EmptyPageString;
-                                                        }
-                                                        else if (newold.NewPage >= 0)
-                                                        {
-                                                            dgvFileList.Rows[showIndex].Cells[tbcPage.Index].Value = total >= 0 ? $"{newold.NewPage + 1}/{total}" : $"{newold.NewPage + 1}/?";
-                                                        }
-                                                        else if (ZipNameArray[index].EndsWith(Path.DirectorySeparatorChar.ToString()) || PackedImageLoader.SupportedArchivesPath.IsMatch(newold.New))
-                                                        {
-                                                            dgvFileList.Rows[showIndex].Cells[tbcPage.Index].Value = total >= 0 ? $"{total}" : $"?";
-                                                        }
-                                                        else
-                                                        {
-                                                            dgvFileList.Rows[showIndex].Cells[tbcPage.Index].Value = EmptyPageString;
-                                                        }
-                                                        */
                                                     }
                                                 }
                                                 else
@@ -19220,10 +16379,6 @@ namespace ZipPla
                                                     // 見つからなければ再読込する実装
                                                     // 表示設定などで見つからないことは想定されて
                                                     // その場合再読込しても結果は変わらないので不要
-                                                    /*
-                                                    reloadAllThumbnailsToolStripMenuItem_Click(null, null);
-                                                    reloaded = true;
-                                                    */
                                                 }
                                             }
                                         }
@@ -19294,13 +16449,6 @@ namespace ZipPla
         // http://pieceofnostalgy.blogspot.jp/2011/11/net-framework.html
         //[System.Runtime.InteropServices.DllImport("user32.dll", CallingConvention = System.Runtime.InteropServices.CallingConvention.StdCall)]
         //public static extern IntPtr WindowFromPoint(int x, int y);
-        /*
-        private bool CursorIsJustOnWindow()
-        {
-            var p = Cursor.Position;
-            return WindowFromPoint(p.X, p.Y) == Handle;
-        }
-        */
 
         void ReloadOneThumbnailForSubThread(int index, Guid startingGuid)
         {
@@ -19428,12 +16576,6 @@ namespace ZipPla
                                         thumbnail?.Dispose();
                                         return;
                                     }
-                                    /*
-                                    var item = new ThumbViewerItem();
-                                    item.Image = thumbnail;
-                                    item.Text = zipName;
-                                    tvCatalog[index] = item;
-                                    */
 
 
 
@@ -19506,9 +16648,6 @@ namespace ZipPla
                                         setFileListRowInLock(index, dynamicOnly: false, localOnly: false, cultureForOnlyStatic: Message.CurrentLanguage, volatilitySortCancelIfChanged: true);
 
                                     }
-                                    //var row = dgvFileList.Rows[tvCatalog.DataIndexToShowIndex[index]];
-                                    //row.Cells[tbcFileName.Index].Value = zipName;
-                                    //(row.Cells[tbcRating.Index] as RatingGridViewTextBoxCell).Rating = ZipPlaInfo.GetOnlyRating(path); // getShortRatingString(path);
 
                                     // 最後にやらないと描画時に Success 等が正しく参照されない
                                     var silent = silentMode == SilentMode.Always || silentMode == SilentMode.OnlyIfNotSuccess && loadResult != LoadResult.Success;
@@ -19548,12 +16687,6 @@ namespace ZipPla
                                 {
                                     Program.AlertError(error);
                                 }
-                                /*
-                                if (tvCatalog.SelectedIndex == index)
-                                {
-                                    ShowStatusBar(index);
-                                }
-                                */
                                 if (tvCatalog.IsSelected(index))
                                 {
                                     ShowStatusBarAfterItemLoaded();
@@ -19715,9 +16848,6 @@ namespace ZipPla
                                         dirPathList = null;
                                     }
                                 }
-                                //var thisFileSize = ZipSizeArray[selectedIndex];
-                                //fileSizeToolStripStatusLabel.Text = fileSize >= 0 ? Program.GetFormatSizeString(fileSize, Message.Bytes, simpleForm: true) :
-                                //   isDir ? $"? {Message.Bytes}" : "";
 
                             }
                         }
@@ -19725,13 +16855,6 @@ namespace ZipPla
                 }
             }
             //var needToCheckDirSize = false;
-            /*
-            if (atLeastOneDir && !CheckDirectorySize)
-            {
-                fileSizeToolStripStatusLabel.Text = "";
-            }
-            else
-            */
             {
                 if (fileSize >= 0)
                 {
@@ -19819,122 +16942,10 @@ namespace ZipPla
                     }
                 });
 
-                /*
-                var dirSize = await GetDirectorySizeAsync(dirPathList, id);
-                if (dirSize >= 0)
-                {
-                    fileSize += dirSize;
-                    fileSizeToolStripStatusLabel.Text = Program.GetFormatSizeString(fileSize, Message.Bytes, simpleForm: true);
-                }
-                */
             }
         }
 
-        /*
-        private async Task<long> GetDirectorySizeAsync(IEnumerable<string> dirPathCollection, long id)
-        {
-            return await Task.Run(() =>
-            {
-                var result = 0L;
-                foreach (var dirPath in dirPathCollection)
-                {
-                    try
-                    {
-                        foreach (var file in new DirectoryInfo(dirPath).EnumerateFiles("*", SearchOption.AllDirectories))
-                        {
-                            result += file.Length;
-                            if (id != ShowStatusBar_CurrentID) return -1;
-                        }
-                    }
-                    catch
-                    {
-                        return -1;
-                    }
-                }
-                return result;
-            });
-        }
-        */
 
-        /*
-        private void ShowStatusBar() { ShowStatusBar(tvCatalog.SelectedIndex); }
-        private void ShowStatusBar(int selectedIndex)
-        {
-            var itemsCount = -1;
-            var selected = false;
-            lock (ZipPathArrayLocker)
-            {
-                if (ZipPathArray != null)
-                {
-                    itemsCount = ZipPathArray.Length;
-
-                    if (0 <= selectedIndex && selectedIndex < itemsCount)
-                    {
-                        var path = ZipPathArray[selectedIndex];
-                        var name = ZipNameArray[selectedIndex];
-                        var isDir = name.EndsWith(Path.DirectorySeparatorChar.ToString());
-                        if (selectedFileNameToolStripTextBox.Text != path) selectedFileNameToolStripTextBox.Text = path;
-                        if (ImageLoader.SupportsGetImageInfo(path))
-                        {
-                            var info = ImageInfoArray[selectedIndex];
-                            if (info == null)
-                            {
-                                selectedFileContainsCountToolStripStatusLabel.Text = "?x?";
-                            }
-                            else
-                            {
-                                var size = info.Size;
-                                selectedFileContainsCountToolStripStatusLabel.Text = $"{size.Width}x{size.Height}";
-                            }
-                        }
-                        else if (isDir || PackedImageLoader.SupportedArchivesPath.IsMatch(path))
-                        {
-                            selectedFileContainsCountToolStripStatusLabel.Text = Message._1Pages.Replace("$1", IfNegativeThenQuestion(FileCountArray[selectedIndex]));
-                        }
-                        else if  (MovieThumbnailLoader.Supports(path))
-                        {
-                            var info = MovieInfoArray[selectedIndex];
-                            if(info == null)
-                            {
-                                selectedFileContainsCountToolStripStatusLabel.Text = "";
-                            }
-                            else
-                            {
-                                selectedFileContainsCountToolStripStatusLabel.Text = info.ToShortString();
-                            }
-                        }
-                        else
-                        {
-                            selectedFileContainsCountToolStripStatusLabel.Text = "";
-                        }
-
-                        long fileSize = ZipSizeArray[selectedIndex];
-                        fileSizeToolStripStatusLabel.Text = fileSize >= 0 ? Program.GetFormatSizeString(fileSize, Message.Bytes, simpleForm: true) :
-                           isDir ? $"? {Message.Bytes}" : "";
-
-                        selected = true;
-                    }
-                }
-            }
-
-            tvCatalog_ShowIndexToDataIndexChanged(null, null);
-
-            if (!selected)
-            {
-                var selectedIndicesCount = tvCatalog.SelectedIndicesCount;
-                if (selectedIndicesCount > 1)
-                {
-                    selectedFileNameToolStripTextBox.Text = Message._1ItemsAreSelected.Replace("$1", selectedIndicesCount.ToString());
-                }
-                else
-                {
-                    selectedFileNameToolStripTextBox.Text = "";
-                }
-                selectedFileContainsCountToolStripStatusLabel.Text = "";
-                fileSizeToolStripStatusLabel.Text = "";
-            }
-        }
-        */
 
         private void setThumbnailManuallyToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -20041,9 +17052,6 @@ namespace ZipPla
                         fullMessage.AppendLine().Append("...");
                         for (var i = -dialogDisplayTail; i < 0; i++) appendPath(count + i);
                     }
-                    //var stop = count <= dialogDisplayUBound ? count : dialogDisplayUBound - 1;
-                    //for (var i = 0; i < stop; i++) message += Path.GetFileName(paths[i]) +
-                    //        (i < stop - 1 ? "\n" : stop < count ? "\n..." : "");
                 }
                 catch { }
 
@@ -20080,27 +17088,6 @@ namespace ZipPla
         {
             var startingGuid = loadingGuid;
 
-            /*
-            var count = selectedIndices.Length;
-            const int dialogLBound = 10;
-            if (count >= dialogLBound)
-            {
-                const int dialogDisplayUBound = 10;
-                var message = Message.DoYouRenameFollowing1Items.Replace("$1", count.ToString()) + "\n\n";
-                try
-                {
-                    var stop = count <= dialogDisplayUBound ? count : dialogDisplayUBound - 1; ;
-                    for (var i = 0; i < stop; i++) message += Path.GetFileName(paths[i]) +
-                            (i < stop - 1 ? "\n" : stop < count ? "\n..." : "");
-                }
-                catch { }
-
-                await Task.Run(() => Invoke((MethodInvoker)(() => CloseVisibleContextMenuStrips())));
-                var result = MessageBox.Show(this, message, Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
-                await Task.Run(() => Invoke((MethodInvoker)(() => tvCatalog.DoMouseUp())));
-                if (result != DialogResult.OK) return;
-            }
-            */
 
             var count = selectedIndices.Length;
 
@@ -20433,91 +17420,6 @@ namespace ZipPla
             if (innerCurrentEditException != null) throw innerCurrentEditException;
         }
 
-        /*
-        private void swapPathAndNameInSorBookmarkUndoBuff(string[] oldPathArray, string[] newPathArray, bool needToSaveBookmark)
-        {
-            int count;
-            if (oldPathArray == null || newPathArray == null || (count = oldPathArray.Length) != newPathArray.Length) return;
-            
-            // SOR
-            var renameTargetsSorSet = new HashSet<string>(from bmk in getVirtualFoldersInBookmarks() select bmk.SimpleBookmark.Location); // getVirtual は null を含むものは返さない
-            renameTargetsSorSet.Add(Program.HistorySorPath);
-            var current = currentLocation;
-            if (!CreatingZipPathArray && (current?.ToUpper().EndsWith(".SOR") == true)) // Virtual の中でも特に SOR のみ
-            {
-                renameTargetsSorSet.Add(current);
-            }
-            foreach (var renameTarget in renameTargetsSorSet)
-            {
-                try
-                {
-                    VirtualFolder.ReplaceBookmarkData(renameTarget, oldPathArray, newPathArray);
-                }
-                catch
-                {
-                    if (current == renameTarget) throw;
-                }
-            }
-
-            // ブックマーク
-            var changedBookmark = false;
-            var changedBookmarkDisplayedName = false;
-            foreach (DataGridViewRow row in dgvDirectoryList.Rows)
-            {
-                var bookmark = row.Cells[tbcDirectoryName.Index].Value as ColoredBookmark;
-                if (bookmark != null)
-                {
-                    var sb = bookmark.SimpleBookmark;
-                    var i = Array.IndexOf(oldPathArray, sb.Location);
-                    if(i >= 0)
-                    {
-                        changedBookmark = true;
-                        sb.Location = newPathArray[i];
-                        if (bookmark.SimpleBookmark.Alias == null) changedBookmarkDisplayedName = true;
-                    }
-                }
-            }
-            if(changedBookmark)
-            {
-                if (changedBookmarkDisplayedName)
-                {
-                    dgvDirectoryList.Invalidate();
-                }
-                if (needToSaveBookmark)
-                {
-                    saveBookmarkToIni_bookmarkChanged = true;
-                    saveBookmarkToConfig();
-                }
-            }
-
-            // UndoBuffer
-            foreach (var b in undoBuffer)
-            {
-                var i = Array.IndexOf(oldPathArray, b.Location);
-                if (i >= 0) b.Location = newPathArray[i];
-                
-                var bSelectedName = b.SelectedFileName;
-                if (!string.IsNullOrEmpty(bSelectedName))
-                {
-                    for (var j = 0; j < count; j++)
-                    {
-                        if (oldPathArray[j].EndsWith(bSelectedName))
-                        {
-                            b.SelectedFileName = newPathArray[j].Substring(oldPathArray[j].Length - bSelectedName.Length);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // 現在の場所
-            var indexOfCurrentLocation = Array.IndexOf(oldPathArray, current);
-            if (indexOfCurrentLocation >= 0)
-            {
-                currentLocation = newPathArray[indexOfCurrentLocation];
-            }
-
-        }*/
 
         private string getRelativePath(string fullPath, string oldRelativePath)
         {
@@ -20765,40 +17667,7 @@ namespace ZipPla
         }
 
 
-        /*
-        private void openInBuiltinViewerToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            OpenSelectedArchiveInBuiltInViewer();
-        }
 
-        private void openInExternalViewerToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            OpenSelectedArchiveInExternalViewer();
-        */
-
-        /*
-    private void openInAssociationToolStripMenuItem_Click(object sender, EventArgs e)
-    {
-        var selectedIndex = tvCatalog.SelectedIndex;
-        if (selectedIndex >= 0)
-        {
-            lock (ZipPathArrayLocker)
-            {
-                if (ZipPathArray != null && selectedIndex < ZipPathArray.Length)
-                {
-                    try
-                    {
-                        Process.Start(ZipPathArray[selectedIndex]);
-                    }
-                    catch (Exception error)
-                    {
-                        Program.AlertError(error);
-                    }
-                }
-            }
-        }
-    }
-    */
 
         private void editLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -20874,12 +17743,6 @@ namespace ZipPla
                 pnlRight.Dock = DockStyle.Fill;
             }
 
-            /*
-            if (ckd && ckd2)
-            {
-                pnlRight.Dock = getFileListDock();
-            }
-            */
 
             if (WindowState != FormWindowState.Minimized) setMainPanelWidth();
 
@@ -20898,32 +17761,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void pnlCenter_VisibleChanged(object sender, EventArgs e)
-        {
-            return;
-            if(pnlCenter.Visible)
-            {
-                if(pnlRight.Visible)
-                {
-                    pnlRight.Dock = getFileListDock();
-                }
-            }
-            else
-            {
-                pnlRight.Dock = DockStyle.Fill;
-            }
-        }
-
-        private void pnlRight_VisibleChanged(object sender, EventArgs e)
-        {
-            return;
-            if (pnlCenter.Visible && pnlRight.Visible)
-            {
-                pnlRight.Dock = getFileListDock();
-            }
-        }
-        */
 
         int pnlBookmarkNoFillHeight;
         private void bookmarkToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
@@ -21138,34 +17975,6 @@ namespace ZipPla
                     else tvCatalog.ScrollBarPercentage = 100;
                 }
             }
-            /*
-            else if (e.KeyCode == Keys.Delete)
-            {
-                //deleteonlyForListFileToolStripMenuItem_Click(sender, e);
-                //deleteSelectedItems(mk);
-                deleteKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.X)
-            {
-                //cutSelection(mk);
-                CutKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.C)
-            {
-                //copySelection(mk);
-                CopyKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.V)
-            {
-                //pasteToCurrentLocation();
-                PasteKeyAction(mk);
-            }
-            else if (e.KeyCode == Keys.Apps)
-            {
-                cmsRightClickPrepareAndShowForKeyOnFileList(onlyTag: false);
-                LatestControledControl = sender as Control;
-            }
-            */
             else if (commonKeyAction(e, mk))
             {
                 return;
@@ -21250,24 +18059,6 @@ namespace ZipPla
                 else
                 {
                     rightClickContextMenuPrepareAndShow(p, mk);
-                    /*
-                    if (RightClickContextMenu == CatalogFormConfigConetxtMenu.ZipPla)
-                    {
-                        cmsRightClickPrepareAndShow_(p, false);
-                    }
-                    else if (RightClickContextMenu == CatalogFormConfigConetxtMenu.Explorer)
-                    {
-                        explorerContextMenuPrepareAndShow(p);
-                    }
-                    else if (ControlRightClickContextMenu == CatalogFormConfigConetxtMenu.ZipPla)
-                    {
-                        cmsRightClickPrepareAndShow_(p, false);
-                    }
-                    else if (ControlRightClickContextMenu == CatalogFormConfigConetxtMenu.Explorer)
-                    {
-                        explorerContextMenuPrepareAndShow(p);
-                    }
-                    */
                 }
             }
             else if (!onlyTag && dgvFileList.Visible && (RightClickContextMenu != CatalogFormConetxtMenu.Tag))
@@ -21460,27 +18251,6 @@ namespace ZipPla
             MakePreview();
         }
 
-        /*
-        private void ratingInFileListToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            tbcRating.Visible = !tbcRating.Visible;
-        }
-
-        private void pageInFileListToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            tbcPage.Visible = !tbcPage.Visible;
-        }
-
-        private void accessTimeInFileListToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            tbcAccessTime.Visible = !tbcAccessTime.Visible;
-        }
-
-        private void writeTimeInFileListToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            tbcWriteTime.Visible = !tbcWriteTime.Visible;
-        }
-        */
 
 
         private void deleteonlyForListFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -21517,28 +18287,6 @@ namespace ZipPla
 
                 string[] deleteList;
                 //
-                /*
-                var d2s = tvCatalog.DataIndexToShowIndex;
-                int indexWithMaxShowIndex = -1;
-                int maxShowIndex = -1;
-                if (d2s != null)
-                {
-                    foreach (var index in selectedIndices)
-                    {
-                        if(index >= d2s.Length)
-                        {
-                            maxShowIndex = -1;
-                            break;
-                        }
-                        var showIndex = d2s[index];
-                        if(showIndex > maxShowIndex)
-                        {
-                            maxShowIndex = showIndex;
-                            indexWithMaxShowIndex = index;
-                        }
-                    }
-                }
-                */
                 int[] d2s;
                 lock (ZipPathArrayLocker)
                 {
@@ -21554,12 +18302,6 @@ namespace ZipPla
                         if (index < 0 || index >= indexBound) return;
                         var path = ZipPathArray[index]; if (path == null) return;
                         var name = ZipNameArray[index]; if (name == null) return;
-                        /*
-                        ZipMaskArray[index] = false;
-                        ZipPathArray[index] = null;
-                        ZipNameArray[index] = null;
-                        tvCatalog[index] = null; // これで Dispose される
-                        */
                         deleteList[k] = path;
                         showIndexArray[k] = d2s[index];
                         //if (!isSor) isDirList.Add(name.EndsWith(Path.DirectorySeparatorChar.ToString()));
@@ -21568,12 +18310,6 @@ namespace ZipPla
                     Arrange(deleteList, sorter);
                     Arrange(selectedIndices, sorter);
                     //deleteList.Sort()
-                    /*
-                    var sp = tvCatalog.ScrollBarPercentage;
-                    tvCatalog.ShowIndexToDataIndex = GetSortArray(preSortArray: tvCatalog.ShowIndexToDataIndex);
-                    tvCatalog.ScrollBarPercentage = sp;
-                    setFileListFromThumbnailViewer(tryToKeepScroll: true);
-                    */
                 }
 
                 var deleteFromDisk = false;
@@ -21636,11 +18372,6 @@ namespace ZipPla
                 }
                 else
                 {
-                    /*
-                    var r = MessageBox.Show(this, deleteFromDisk ? Message.DoYouDeleteSelectedItemsPermanently : Message.DoYouSendSelectedItemsToRecycleBin,
-                        Message.Question, MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
-                    if (r != DialogResult.OK) return;
-                    */
 
                     var count = deleteList.Length;
                     //Exception exception = null;
@@ -21855,115 +18586,7 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void addSelectedToListOld(bool append, string sorPath = null, bool addToBookmark = false)
-        {
-            var selectedIndices = tvCatalog.SelectedIndices;
-            if (selectedIndices != null && selectedIndices.Length > 0)
-            {
-                var addList = new List<string>();
-                var pageList = new List<int>();
-                lock (ZipPathArrayLocker)
-                {
-                    var fullBufCount = ZipMaskArray.Length;
-                    foreach (var index in selectedIndices)
-                    {
-                        if (index < 0 || index >= fullBufCount) return;
-                        addList.Add(ZipPathArray[index]);
-                        pageList.Add(-1);
-                    }
-                }
-                if (addList.Count > 0)
-                {
-                    var temp = AllowFullpower;
-                    try
-                    {
-                        if (sorPath == null)
-                        {
-                            AllowFullpower = false;
-                            if (addToNewListSaveFileDialog.ShowDialog(this) == DialogResult.OK)
-                            {
-                                sorPath = addToNewListSaveFileDialog.FileName;
-                                if (!append && File.Exists(sorPath)) File.Delete(sorPath);
-                            }
-                        }
-                        if (sorPath != null)
-                        {
-                            VirtualFolder.AddBookmarkData(sorPath, addList, pageList);
-                            if (addToBookmark)
-                            {
-                                addCatalogBookmarkToList(currentConditionToColoredBookmark(currentProfileColor, sorPath));
-                            }
-                            bookmarkToolStripMenuItem.Checked = true;
-                            var rowIndexBound = dgvDirectoryList.Rows.Count - 1;
-                            for (var i = 0; i <= rowIndexBound; i++) dgvDirectoryList.Rows[i].Selected = i == rowIndexBound;
-                            saveBookmarkToIni_bookmarkChanged = true;
-                            saveBookmarkToConfig();
-                        }
-                    }
-                    catch (Exception error)
-                    {
-#if DEBUG
-                        MessageBox.Show(this, error.ToString(), null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-#else
-                        MessageBox.Show(this, error.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-#endif
-                    }
-                    finally
-                    {
-                        AllowFullpower = temp;
-                    }
-                }
-            }
-        }
-        */
 
-        /*
-        private void openListFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            var temp = AllowFullpower;
-            AllowFullpower = false;
-            try
-            {
-                string path = null;
-                try
-                {
-                    if (File.Exists(zabLocation.Text))
-                    {
-                        path = zabLocation.Text;
-                    }
-                }
-                catch { }
-                if (path == null) path = Program.ItsSelfOrExistingParentDirectory(zabLocation.Text);
-                if (!string.IsNullOrEmpty(path))
-                {
-                    if (File.Exists(path))
-                    {
-                        openListFileDialog.InitialDirectory = Path.GetDirectoryName(path);
-                        openListFileDialog.FileName = Path.GetFileName(path);
-                    }
-                    else
-                    {
-                        openListFileDialog.InitialDirectory = path;
-                        openListFileDialog.FileName = "";
-                    }
-                }
-                if (openListFileDialog.ShowDialog(this) == DialogResult.OK)
-                {
-                    zabLocation.Text = openListFileDialog.FileName;
-                    MakePreview();
-                }
-            }
-            catch (Exception error)
-            {
-                MessageBox.Show(this, error.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                AllowFullpower = temp;
-            }
-        }
-        */
 
         private void btnGoToBack_Click(object sender, EventArgs e)
         {
@@ -22105,21 +18728,6 @@ namespace ZipPla
 
         }
 
-        /*
-        private void gotToParent()
-        {
-            try
-            {
-                var parent = Path.GetDirectoryName(currentLocation);
-                if (!string.IsNullOrEmpty(parent))
-                {
-                    zabLocation.Text = parent;
-                    MakePreview(manualUndoShift: 0);!
-                }
-            }
-            catch { }
-        }
-        */
 
         private void CatalogForm_KeyDown(object sender, KeyEventArgs e)
         {
@@ -22154,23 +18762,6 @@ namespace ZipPla
                     else
                     {
                         goUpFromCurrentLocation();
-                        /*
-                        try
-                        {
-                            var path = Path.GetDirectoryName(preCurrentLocation);
-                            if (path != preCurrentLocation && Directory.Exists(path))
-                            {
-                                zabLocation.Text = path;
-                                bmwMakePreviewRunWorkerStartingFinalAction = () =>
-                                {
-                                    firstShownItemSelect();
-                                    bmwMakePreviewRunWorkerStartingFinalAction = null;
-                                };
-                                MakePreview();
-                            }
-                        }
-                        catch { }
-                        */
                     }
                 }
             }
@@ -22261,28 +18852,6 @@ namespace ZipPla
             AllowFullpower = true;
         }
 
-        /*
-        private bool newColorIsTooCloseToSomeColors(Color newColor, HashSet<Color> colors)
-        {
-            if (colors == null || colors.Count == 0) return false;
-            var min = (from c in colors select dist2(c, newColor)).Min();
-
-            var optimum = Math.Pow(colors.Count + 1, -1.0 / 3);
-
-            return min < optimum;
-        }
-
-        private double dist2(Color a, Color b)
-        {
-            //const double c = Math.Pow(0.299 * 0.587 * 0.114 * 255 * 255 * 255, -2.0 / 3);
-            const double c = 0.00020866208;
-
-            var dr = a.R - b.R;
-            var dg = a.G - b.G;
-            var db = a.B - b.B;
-            return (0.299 * 0.299 * c) * dr * dr + (0.587 * 0.587 * c) * dg * dg + (0.114 * 0.114 * c) * db * db;
-        }
-        */
 
         private CatalogProfile synchronizeCurrentProfile()
         {
@@ -22537,12 +19106,6 @@ namespace ZipPla
                 {
                     CollapseOthersWhenSynchronizing = (bool)profile.CollapseOthersWhenSynchronizing;
                 }
-                /*
-                if (profile.CheckDirectorySize != null)
-                {
-                    CheckDirectorySize = (bool)profile.CheckDirectorySize;
-                }
-                */
                 if (profile.ArchivesInArchiveMode is ArchivesInArchiveMode aiam && aiam != ArchivesInArchiveMode )
                 {
                     prepareToReload = true;
@@ -22607,17 +19170,6 @@ namespace ZipPla
                     OtherLoadLevel = o;
                     SubfolderMode = s;
 
-                    /*
-                    var a = (bool)profile.DisplayArchiveFiles;
-                    var i = (bool)profile.DisplayImageFiles;
-                    var v = (bool)profile.DisplayVideoFiles;
-                    var o = (bool)profile.DisplayOtherFiles;
-                    if (!a && !i && !v && !o) a = true;
-                    archivesFilesPDFFielsToolStripMenuItem.Checked = a;
-                    imageFilesToolStripMenuItem.Checked = i;
-                    videoFilesToolStripMenuItem.Checked = v;
-                    otherFilesToolStripMenuItem.Checked = o;
-                    */
                 }
                 if (profile.ThumbnailCacheRoot != null)
                 {
@@ -23219,20 +19771,6 @@ namespace ZipPla
                     }
 
 
-                    /*
-                    if (selectedCount == 1)
-                    {
-                        var lv = locationValid();
-                        var fv = filterValid();
-                        setCurrentLocationToolStripMenuItem.Enabled = lv;
-                        setCurrentLocationAndStateToolStripMenuItem.Enabled = lv && fv;
-                    }
-                    else
-                    {
-                        setCurrentLocationToolStripMenuItem.Enabled = false;
-                        setCurrentLocationAndStateToolStripMenuItem.Enabled = false;
-                    }
-                    */
 
                     dgvDirectoryList.Update();
                     //cmsDirectoryList.Show(Cursor.Position);
@@ -23242,15 +19780,6 @@ namespace ZipPla
                     if (this != ActiveForm) Activate();
                     cmsDirectoryList.Show(dgvDirectoryList, p);
                 }
-                /*
-                if (hit.RowIndex < 0 && hit.Type != DataGridViewHitTestType.ColumnHeader)
-                {
-                    foreach (DataGridViewRow row in (from DataGridViewRow r in dgvDirectoryList.SelectedRows select r).ToArray())
-                    {
-                        row.Selected = false;
-                    }
-                }
-                */
             }
             else if (e.Button == MouseButtons.Left)
             {
@@ -23389,45 +19918,6 @@ namespace ZipPla
             {
                 return;
             }
-            /*
-            else if (e.KeyCode == Keys.Apps)
-            {
-                var selectedRows = dgvDirectoryList.SelectedRows;
-                if (selectedRows.Count > 0)
-                {
-                    var selectedRow = getFirstDisplayedSelectedRow(dgvDirectoryList);
-                    if (selectedRow == null) return;
-                    var rect = dgvDirectoryList.GetRowDisplayRectangle(selectedRow.Index, cutOverflow: true);
-                    var m2 = Math.Min(rect.Height, rect.Width) / 2;
-                    var p = new Point(rect.X + m2, rect.Y + m2);
-                    cmsDirectoryListPrepareAndShow(new MouseEventArgs(MouseButtons.Right, 1, p.X, p.Y, 0));
-                }
-                else if (dgvDirectoryList.Visible)
-                {
-                    cmsDirectoryListPrepareAndShow(new MouseEventArgs(MouseButtons.Right, 1, -1, -1, 0));
-                }
-                LatestControledControl = sender as Control;
-            }
-            else if (e.KeyCode == Keys.Delete)
-            {
-                deleteKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.X)
-            {
-                //cutSelection(mk);
-                CutKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.C)
-            {
-                //copySelection(mk);
-                CopyKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.V)
-            {
-                //pasteToCurrentLocation();
-                PasteKeyAction(mk);
-            }
-            */
             else if (e.Alt)
             {
                 e.Handled = true;
@@ -23950,13 +20440,6 @@ namespace ZipPla
                 {
                     item.ForeColor = foreColor;
                     ForeColorManager.Set(item);
-                    /*
-                    EventHandler ev = (sender, e) => SetMenuItemColor(item, foreColor);
-                    item.DropDownOpening += ev;
-                    item.DropDownClosed += ev;
-                    item.MouseEnter += ev;
-                    item.MouseLeave += ev;
-                    */
                 }
 
                 CheckMarkProvider.SetCheckMark(cms, item, DisplayCheckMark.Select);
@@ -23997,19 +20480,6 @@ namespace ZipPla
                     tvCatalog.Invalidate();
                 }
                 setFileListFromThumbnailViewer();
-                /*
-                if (showTags)
-                {
-                    UpdatePreview();
-                }
-                else
-                {
-                    lock (ZipPathArrayLocker)
-                    {
-                        setFileListFromThumbnailViewer();
-                    }
-                }
-                */
             }
         }
 
@@ -24039,16 +20509,6 @@ namespace ZipPla
                 }
             }
 
-            /*●
-            if (leftRight)
-            {
-                cbFilter.ContextMenuStrip = cbFilter_MouseDown_DummyCMS;
-            }
-            else
-            {
-                cbFilter.ContextMenuStrip = null;
-            }
-            */
         }
 
         private void cbFilter_MouseUp(object sender, MouseEventArgs e)
@@ -24094,11 +20554,6 @@ namespace ZipPla
                     return GetShortString((string)data.GetData(DataFormats.UnicodeText));
                 }
 
-                /*
-                if (Clipboard.ContainsText())
-                {
-                    return GetShortString(Clipboard.GetText());
-                }*/
                 return null;
             }
             catch
@@ -24151,44 +20606,8 @@ namespace ZipPla
             }
             return b.ToString();
 
-            /*
-            using (var r = new StringReader(input))
-            {
-                while (r.Peek() > -1)
-                {
-                    var line = r.ReadLine().Trim(GetALineFromString_Spaces);
-                    if(line != "")
-                    {
-                        line = GetALineFromString_SpacesReplacer.Replace(line, " ");
-
-                        return line.Length <= maxLen ? line : line.Substring(0, maxLen);
-                    }
-                }
-            }
-            return null;
-            */
         }
 
-        /*
-        private void moveToThisFolderToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (currentLocation != preCurrentLocation) return;
-            var selectedIndex = tvCatalog.SelectedIndex;
-            if (selectedIndex < 0) return;
-            string path;
-            string name;
-            lock (ZipPathArrayLocker)
-            {
-                if (selectedIndex >= ZipPathArray.Length) return;
-                path = ZipPathArray[selectedIndex];
-                name = ZipNameArray[selectedIndex];
-            }
-            if (!name.EndsWith(Path.DirectorySeparatorChar.ToString())) return;
-
-            zabLocation.Text = path;
-            MakePreview();
-        }
-        */
         public void MoveLocation(ApplicationProviderUser user, string path)
         {
             if (path == null) return;
@@ -24461,14 +20880,6 @@ namespace ZipPla
             else if (e.Button == MouseButtons.Right)
             {
                 OpenTagButtonDropdown(sender as ToolStripMenuItem, byTouch: false);
-                /*
-                var tsmi = sender as ToolStripMenuItem;
-                var items = menuStripForTagFilter.Items;
-                var dropDown = setTagFilteringMenuItems_DropDown[items.IndexOf(tsmi) - 1];
-                tsmi.DropDown = dropDown;
-                tagFilterToolStripMenuItem_DropDownOpening(tsmi);
-                dropDown.Show();
-                */
             }
         }
 
@@ -24645,13 +21056,6 @@ namespace ZipPla
         private void setTagFilterLocation(bool? ratingFilterVisible = null)
         {
             if (!IsShown) return;
-            /*
-            if (WindowState == FormWindowState.Normal)
-            {
-                SaveSettings_WindowSizeWhenNotMaximized = Size;
-                SaveSettings_WindowLocationWhenNotMaximized = Location;
-            }
-            */
 
             if (setTagFilterLocation_rightSideToolStripMenuItem == null)
             {
@@ -24788,21 +21192,6 @@ namespace ZipPla
             ratingFilterToolStripMenuItemDropDown.Show();
         }
 
-        /*
-        private void MenuStripForTagFilter_MouseWheel(object sender, MouseEventArgs e)
-        {
-            if (ratingFilterToolStripMenuItem.Bounds.Contains(e.Location))
-            {
-                var v = ratingReferenceValue;
-                var d = e.Delta / 120;
-                if (v <= 1 && d <= 0 || v >= 5 && d >= 0) return;
-                ratingReferenceValue = v + d;
-                //setTagFilterLocation();
-                ratingFilterToolStripMenuItem_DropDownOpening(null, null);
-                setFilterDropDownLocation(ratingFilterToolStripMenuItemDropDown); // ratingReferenceValue の書き換えで位置が戻る＋フィルタ避け必要性の有無変化の可能性
-            }
-        }
-        */
 
         private void increaseReferenceValueToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -24898,9 +21287,6 @@ namespace ZipPla
 
                 //var trim = SearchManager.TrimOperatorAndDoubleQuotations(str);
 
-                //string[] trims;
-                //var currents = SearchManager.Split(text, out trims);
-                //var strIsRate = SearchManager.IsRatingFilterWithOrWithoutOperator.IsMatch(str);
 
                 var b = new StringBuilder(Math.Max(1, text.Length + str.Length + 1));
                 var replaced = false;
@@ -24947,74 +21333,6 @@ namespace ZipPla
                 }
 
 
-                /*
-                if (trims.Contains(trim))
-                {
-                    //var start = -1;
-                    var b = new StringBuilder(Math.Max(1, text.Length - str.Length - 1));
-                    for(var i = 0; i < currents.Length; i++)
-                    {
-                        var current = currents[i];
-                        var ctrim = trims[i];
-                        if (ctrim != trim)
-                        {
-                            b.Append(current);
-                            b.Append(' ');
-                        }
-                        else if (current != str)
-                        {
-                            b.Append(str);
-                            b.Append(' ');
-                        }
-                    }
-                    if (b.Length > 0) b.Remove(b.Length - 1, 1);
-                    cbFilter.Text = b.ToString();
-                    //cbFilter.Select(Math.Max(0, start), 0);
-                }
-                else
-                {
-                    var match = SearchManager.IsRatingFilterWithOrWithoutOperator.Match(str);
-                    var replaced = false;
-                    if (match.Success)
-                    {
-                        var ope = match.Groups[1].Value;
-                        var b = new StringBuilder(Math.Max(1, text.Length - str.Length - 1));
-                        for (var i = 0; i < currents.Length; i++)
-                        {
-                            var current = currents[i];
-                            var m2 = SearchManager.IsRatingFilterWithOrWithoutOperator.Match(current);
-                            if (m2.Success)
-                            {
-                                if (m2.Groups[1].Value == ope)
-                                {
-                                    replaced = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                b.Append(current);
-                                b.Append(' ');
-                            }
-                        }
-                        if (replaced)
-                        {
-                            b.Append(str);
-                            cbFilter.Text = b.ToString();
-                            cbFilter.Select(cbFilter.Text.Length - str.Length, str.Length);
-                        }
-
-                    }
-
-                    if (!replaced)
-                    {
-                        if (text.EndsWith(" ") || text == "") cbFilter.Text = text + str;
-                        else cbFilter.Text = text + " " + str;
-                        //cbFilter.SelectionStart = cbFilter.Text.Length;
-                        cbFilter.Select(cbFilter.Text.Length - str.Length, str.Length);
-                    }
-                }
-                */
             }
         }
 
@@ -25202,12 +21520,6 @@ namespace ZipPla
                 copy[start++] = setAspectRatioOption_GetToolStripMenuItem(option, count++);
             }
             items.AddRange(copy);
-            /*
-            foreach (var option in options)
-            {
-                items.Insert(start++, setAspectRatioOption_GetToolStripMenuItem(option, count++));
-            }
-            */
             var allItems = allRatiosToolStripMenuItem.DropDownItems;
             allItems.Clear();
             if (allOptions != null)
@@ -25234,20 +21546,6 @@ namespace ZipPla
 
             setAspectRatioOption_Ratios[count] = aspect;
 
-            /*
-            switch (count + 1)
-            {
-                case 1: cmsi.ShortcutKeys = Keys.Alt | Keys.D1; break;
-                case 2: cmsi.ShortcutKeys = Keys.Alt | Keys.D2; break;
-                case 3: cmsi.ShortcutKeys = Keys.Alt | Keys.D3; break;
-                case 4: cmsi.ShortcutKeys = Keys.Alt | Keys.D4; break;
-                case 5: cmsi.ShortcutKeys = Keys.Alt | Keys.D5; break;
-                case 6: cmsi.ShortcutKeys = Keys.Alt | Keys.D6; break;
-                case 7: cmsi.ShortcutKeys = Keys.Alt | Keys.D7; break;
-                case 8: cmsi.ShortcutKeys = Keys.Alt | Keys.D8; break;
-                case 9: cmsi.ShortcutKeys = Keys.Alt | Keys.D9; break;
-            }
-            */
 
             cmsi.Checked = aspect == aspectRatio;
 
@@ -25562,19 +21860,6 @@ namespace ZipPla
 
         private const int MaskAlpha = 160;
         private static Brush MaskBrush = new SolidBrush(Color.FromArgb(MaskAlpha, SystemColors.Window));
-        /*
-        public Brush GetMaskBrush(string path)
-        {
-            if (cutFilePathSetInLower != null)
-            {
-                if (cutFilePathSetInLower.Contains(path.ToLower()))
-                {
-                    return MilkMaskBrush;
-                }
-            }
-            return null;
-        }
-        */
 
         public int GetMaskAlpha(string path)
         {
@@ -25871,19 +22156,6 @@ namespace ZipPla
         {
             ToggleItemLoadLevelAndUpdatePreview(ref archiveLoadLevel, archivesFilesPDFFielsToolStripMenuItem);
 
-            /*
-            var tsmi = sender as ToolStripMenuItem;
-            tsmi.Checked = !tsmi.Checked;
-            if (!archivesFilesPDFFielsToolStripMenuItem.Checked && !imageFilesToolStripMenuItem.Checked && !videoFilesToolStripMenuItem.Checked && !otherFilesToolStripMenuItem.Checked)
-            {
-                tsmi.Checked = !tsmi.Checked;
-                AllowFullpower = false;
-                MessageBox.Show(this, Message.AtLeastOneKindOfFilesMustBeSelected, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                AllowFullpower = true;
-                return;
-            }
-            UpdatePreview();
-            */
         }
 
         private void imageFilesToolStripMenuItem_Click(object sender, EventArgs e)
@@ -25914,21 +22186,6 @@ namespace ZipPla
             if (InDirectoryVirtualDirectoryOrSmartDirectory) UpdatePreview();
 
             // Display(Header)AndSearch を禁止する実装
-            /*
-            if (SubfolderMode == SubfolderMode.Display)
-            {
-                SubfolderMode = SubfolderMode.DisplayHeader;
-            }
-            else if (SubfolderMode == SubfolderMode.DisplayHeader)
-            {
-                SubfolderMode = SubfolderMode.Ignore;
-            }
-            else
-            {
-                SubfolderMode = SubfolderMode.Display;
-            }
-            if (InDirectoryVirtualDirectoryOrSmartDirectory) UpdatePreview();
-            */
         }
 
         private void searchSubfoldersAsWellToolStripMenuItem_Click(object sender, EventArgs e)
@@ -25945,17 +22202,6 @@ namespace ZipPla
             if (InDirectoryVirtualDirectoryOrSmartDirectory) UpdatePreview();
 
             // Display(Header)AndSearch を禁止する実装
-            /*
-            if (SubfolderMode == SubfolderMode.Search)
-            {
-                SubfolderMode = SubfolderMode.Ignore;
-            }
-            else
-            {
-                SubfolderMode = SubfolderMode.Search;
-            }
-            if (InDirectoryVirtualDirectoryOrSmartDirectory) UpdatePreview();
-            */
         }
 
         private readonly Dictionary<string, Size> dgvDirectoryList_CellPainting_SizeDictionary = new Dictionary<string, Size>();
@@ -25999,14 +22245,6 @@ namespace ZipPla
                 e.Paint(e.CellBounds, e.PaintParts & ~DataGridViewPaintParts.ContentForeground);
 
 
-                /*
-                var textBack = new Rectangle(rect.X, rect.Y, size.Width, size.Height);
-                
-                using (var b = new SolidBrush(backColor))
-                {
-                    e.Graphics.FillRectangle(b, textBack);
-                }
-                */
             }
             else
             {
@@ -26056,28 +22294,12 @@ namespace ZipPla
                     var item = info.GetValue(this) as ToolStripMenuItem;
                     if (item?.Owner == menuStrip)
                     {
-                        /*
-                        item.DropDownOpening += ForeColorChanger;
-                        item.DropDownClosed += ForeColorChanger;
-                        item.MouseEnter += ForeColorChanger;
-                        item.MouseLeave += ForeColorChanger;
-                        */
                         list.Add(item);
                     }
                 }
             }
             //setMenuItemEventHandler_menuItemArray = list.ToArray();
 
-            /*
-            blackToolStripMenuItem.MouseEnter += ForeColorChanger2;
-            blackToolStripMenuItem.MouseLeave += ForeColorChanger2;
-            grayToolStripMenuItem.MouseEnter += ForeColorChanger2;
-            grayToolStripMenuItem.MouseLeave += ForeColorChanger2;
-            selectColorToolStripMenuItem.MouseEnter += ForeColorChanger2;
-            selectColorToolStripMenuItem.MouseLeave += ForeColorChanger2;
-            
-            backgroundColorOfBuiltinViewerToolStripMenuItem.DropDownOpening += BackgroundColorOfBuiltinViewerToolStripMenuItem_DropDownOpening;
-            */
 
             ForeColorManager.Set(blackToolStripMenuItem, grayToolStripMenuItem, selectColorToolStripMenuItem);
             ForeColorManager.Set(list);
@@ -26085,49 +22307,6 @@ namespace ZipPla
             //ToolStripManager.Renderer = new ToolStripProfessionalRenderer(new SuitableForeColorProfessionalColorTable());
         }
 
-        /*
-        private void ForeColorChanger(object sender, EventArgs e)
-        {
-            setMenuItemColor(sender as ToolStripMenuItem);
-        }
-
-        private void ForeColorChanger2(object sender, EventArgs e)
-        {
-            setMenuItemColor2(sender as ToolStripMenuItem);
-        }
-
-
-        private void setMenuItemColor()
-        {
-            foreach (var item in setMenuItemEventHandler_menuItemArray)
-            {
-                setMenuItemColor(item);
-            }
-        }
-
-        public static void SetMenuItemColor(ToolStripMenuItem item, Color normalColor)
-        {
-            if (item.DropDown.Visible || item.Bounds.Contains(item.Owner.PointToClient(Cursor.Position)))
-            //if (item.Selected || item.DropDown.Visible || item.Bounds.Contains(item.Owner.PointToClient(Cursor.Position)))
-            {
-                item.ForeColor = Color.Black;
-            }
-            else
-            {
-                item.ForeColor = normalColor;
-            }
-        }
-
-        private void setMenuItemColor2(ToolStripMenuItem item)
-        {
-            SetMenuItemColor(item, ZipTag.GetForeColor(item.BackColor));
-        }
-
-        private void setMenuItemColor(ToolStripMenuItem item)
-        {
-            SetMenuItemColor(item, currentProfileColor_ForeColor);
-        }
-        */
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -26272,11 +22451,6 @@ namespace ZipPla
                             }
 
                             //if (bwBusy)
-                            /*
-                            if (!bwBusy)
-                            {
-                                Program.FileOrDirectoryMove(oldPath, newPath);
-                            }*/
                             else
                             {
                                 try
@@ -26853,12 +23027,6 @@ namespace ZipPla
                         addOrReloadItem_Add(i, path, silentModeForAdd);
                         return;
 
-                        /*
-                        enterQuickReload();
-                        await Task.Run(() => ReloadOneThumbnailForSubThread(i, path, path, silentModeForAdd));
-                        exitQuickReload();
-                        return;
-                        */
                     }
                 }
 
@@ -27007,32 +23175,6 @@ namespace ZipPla
                 {
                     tvCatalog.ScrollBarToIndexWithMinimalMove(showIndex: topShowIndex);
                 }
-                /*
-                if (addOrReloadItem_UserAddFileInLower.Contains(path))
-                {
-                    addOrReloadItem_UserAddFileInLower.Remove(path);
-                    if (addOrReloadItem_UserAddFileInLower.Count == 0) addOrReloadItem_UserAddFileInLower = null;
-
-                    var selectedIndices = tvCatalog.SelectedIndices;
-                    var d2s = tvCatalog.ShowIndexToDataIndex;
-                    if (index >= 0 && index < d2s.Length)
-                    {
-                        var showIndex = d2s[index];
-                        if (showIndex >= 0)
-                        {
-                            if (selectedIndices == null) selectedIndices = new int[0];
-                            var newSelected = new int[selectedIndices.Length + 1];
-                            Array.Copy(selectedIndices, newSelected, selectedIndices.Length);
-                            newSelected[selectedIndices.Length] = showIndex;
-                            tvCatalog.SelectedIndices = newSelected;
-                            if (tvCatalog.SelectedIndicesCount == 1)
-                            {
-                                tvCatalog.ScrollBarToIndexWithMinimalMove(showIndex: showIndex);
-                            }
-                        }
-                    }
-                }
-                */
             }
         }
 
@@ -27110,94 +23252,6 @@ namespace ZipPla
             AllowFullpower = true;
         }
 
-        /*
-        private void changeCurrentProfileColorToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AllowFullpower = false;
-
-            using (var cd = new ColorDialog())
-            {
-
-                //cd.CustomColors = new int[] { currentProfileColor.R | currentProfileColor.G << 8 | currentProfileColor.B << 16 };
-
-                var cc = cd.CustomColors;
-                cc[cc.Length - 1] = currentProfileColor.R | currentProfileColor.G << 8 | currentProfileColor.B << 16;
-                cd.CustomColors = cc;
-
-                cd.Color = currentProfileColor;
-                cd.AllowFullOpen = true;
-                cd.SolidColorOnly = false;
-                while (cd.ShowDialog() == DialogResult.OK)
-                {
-                    var newColor = cd.Color;
-
-                    if (ColorEquals(currentProfileColor, newColor)) break;
-
-                    var sameColorBookmarks = "";
-                    var existingColors = new HashSet<Color>();
-                    foreach (DataGridViewRow row in dgvDirectoryList.Rows)
-                    {
-                        var bookmark = row.Cells[tbcDirectoryName.Index].Value as ColoredBookmark;
-                        if (bookmark == null || bookmark.SimpleBookmark.SpecialRole != SimpleBookmarkSpecialRole.None) continue; // セパレーターなら無視される
-                        existingColors.Add(bookmark.Color);
-                        if (ColorEquals(bookmark.Color, newColor))
-                        {
-                            sameColorBookmarks += "\n" + bookmark;
-                        }
-                    }
-
-                    if (sameColorBookmarks != "")
-                    {
-                        if (MessageBox.Show(this, Message.SelectedColorIsUsedByFollowingBookmarks + "\n" + sameColorBookmarks, null, MessageBoxButtons.OKCancel, MessageBoxIcon.Error) == DialogResult.OK)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-
-                    newColor = (SerializableRGB)newColor;
-
-                    foreach (DataGridViewRow row in dgvDirectoryList.Rows)
-                    {
-                        var bookmark = row.Cells[tbcDirectoryName.Index].Value as ColoredBookmark;
-                        if (bookmark != null && bookmark.SimpleBookmark.SpecialRole == SimpleBookmarkSpecialRole.None && bookmark.Color == currentProfileColor)// セパレーターなら無視される
-                        {
-                            bookmark.Color = newColor;
-                        }
-                    }
-
-                    foreach (var buf in undoBuffer)
-                    {
-                        if (buf.ProfileColor == currentProfileColor)
-                        {
-                            buf.ProfileColor = newColor;
-                        }
-                    }
-
-
-                    saveBookmarkToIni_bookmarkChanged = true;
-                    saveBookmarkToConfig();
-
-                    currentProfileColor = newColor;
-
-                    dgvDirectoryList.Invalidate();
-
-                    // if (Tags == null) Tags = new ZipTag[0]; // currentConditionToColoredBookmark で行われる
-                    //var config = new ZipTagConfig();
-                    //config.Tags = Tags;
-                    //config.ProfileColor = currentProfileColor;
-                    //config.Save();
-
-                    break;
-                }
-            }
-
-            AllowFullpower = true;
-        }
-        */
 
         private void changeCurrentProfileColorToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -27283,29 +23337,6 @@ namespace ZipPla
                         return Color.Empty;
                     }
 
-                    /*
-                    var sameColorBookmarks = "";
-                    var existingColors = new HashSet<Color>();
-                    var showLimit = 5;
-                    foreach (DataGridViewRow row in dgvDirectoryList.Rows)
-                    {
-                        var bookmark = row.Cells[tbcDirectoryName.Index].Value as ColoredBookmark;
-                        if (bookmark == null || bookmark.SimpleBookmark.SpecialRole != SimpleBookmarkSpecialRole.None) continue; // セパレーターなら無視される
-                        existingColors.Add(bookmark.Color);
-                        if (ColorEquals(bookmark.Color, newColor))
-                        {
-                            //sameColorBookmarks += "\n" + bookmark;
-
-                            sameColorBookmarks += "\n" + bookmark;
-                            showLimit--;
-                            if (showLimit == 0)
-                            {
-                                sameColorBookmarks += "\n...";
-                                break;
-                            }
-                        }
-                    }
-                    */
                     var sameColorBookmarks = GetBookmarksStringColoredBy(newColor);
 
                     if (!string.IsNullOrEmpty(sameColorBookmarks))
@@ -27415,17 +23446,6 @@ namespace ZipPla
             //pbSearch.Image = getSearchIcon(pbSearch.ClientRectangle.Width, pbSearch.ClientRectangle.Height);
         }
 
-        /*
-        private void btnFilterCommands_Paint(object sender, PaintEventArgs e)
-        {
-            var control = btnFilterCommands;
-            var g = e.Graphics;
-            var b = control.Enabled ? SystemBrushes.ControlText : Brushes.LightGray; //SystemBrushes.GrayText;
-            var rect = control.ClientRectangle;
-
-            drawSearchIcon(g, rect);
-        }
-        */
 
         private Bitmap getIcon(Action<Graphics, RectangleF> drawer, int width, int height)
         {
@@ -27793,20 +23813,6 @@ namespace ZipPla
 
 
                 //var data = setCutFiles(); // 明示的に
-                /*
-                if (data != null)
-                {
-                    try
-                    {
-                        // 貼り付け操作で使う Clipboard.GetText はどちらも取得する
-                        if (data.GetDataPresent(DataFormats.UnicodeText) || data.GetDataPresent(DataFormats.Text))
-                        {
-                            cbFilter_PasteMode = true;
-                        }
-                    }
-                    catch { }
-                }
-                */
 
                 if (!preNull || cutFilePathSetInLower != null)
                 {
@@ -27864,34 +23870,6 @@ namespace ZipPla
         {
             //string[] dummy;
             selectionToClipboard(DragDropEffects.Copy | DragDropEffects.Link, modifierKeys);//, out dummy);
-            /*
-            string[] selectedPaths;
-            bool[] isDirs;
-            getSelectedPathArray(out selectedPaths, out isDirs);
-            if (selectedPaths == null || selectedPaths.Length <= 0) return;
-
-            try
-            {
-                for (var i = 0; i < selectedPaths.Length; i++)
-                {
-                    var isDir = isDirs[i];
-                    if (isDir && !Directory.Exists(selectedPaths[i]) || !isDir && !File.Exists(selectedPaths[i]))
-                    {
-                        throw new FileNotFoundException(null, selectedPaths[i]);
-                    }
-                }
-
-                System.Collections.Specialized.StringCollection files =
-                    new System.Collections.Specialized.StringCollection();
-
-                files.AddRange(selectedPaths);
-                Clipboard.SetFileDropList(files);
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(this, e.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            */
         }
 
         private void pasteToCurrentLocation()
@@ -27996,12 +23974,6 @@ namespace ZipPla
                 //using (var fo = new MsdnMag.FileOperation(callbackSink: null, owner: this))
                 {
                     int dummy;
-                    /*
-                    var archiveSkip = !archivesFilesPDFFielsToolStripMenuItem.Checked;
-                    var imageSkip = !imageFilesToolStripMenuItem.Checked;
-                    var videoSkip = !videoFilesToolStripMenuItem.Checked;
-                    var otherSkip = !otherFilesToolStripMenuItem.Checked;
-                    */
                     var archiveSkip = ArchiveLoadLevel == ItemLoadLevel.Ignore;
                     var imageSkip = ImageLoadLevel == ItemLoadLevel.Ignore;
                     var videoSkip = VideoLoadLevel == ItemLoadLevel.Ignore;
@@ -28194,11 +24166,6 @@ namespace ZipPla
                         }
                         if (fileDescriptors.Length == 0) return;
 
-                        /*
-                        var message = Message.DoYouOverwriteFollowing1Items;
-                        var existinigs = (from desc in fileDescriptors let path = Path.Combine(cl, desc.cFileName) where File.Exists(path) select path).ToArray();
-                        if (!await showshowConfirmationDialogDialogAlways(message, existinigs)) return;
-                        */
 
                         //var ienumFormat = idata.EnumFormatEtc(DATADIR.DATADIR_GET);
 
@@ -28605,18 +24572,6 @@ namespace ZipPla
 
                 // ファイルサイズ確認
                 // これで 4.8 MB 程度
-                /*
-                result.Dispose();
-                result = new Bitmap(1280, 1280, PixelFormat.Format24bppRgb);
-                var data = result.LockBits(new Rectangle(0, 0, 1280, 1280), ImageLockMode.WriteOnly, result.PixelFormat);
-                var random = new Random();
-                unsafe
-                {
-                    var scan = (byte*)data.Scan0;
-                    for (var i = 0; i < 1280 * 1280 * 3; i++) scan[i] = (byte)random.Next(0, 256);
-                }
-                result.UnlockBits(data);
-                */
 
                 if (result.Width > maxWidth || result.Height > maxHeight)
                 {
@@ -28627,22 +24582,6 @@ namespace ZipPla
                         var height = (int)Math.Round(zoom * result.Height);
 
                         return BitmapResizer.CreateNew(result, width, height);
-                        /*
-                        var result2 = new Bitmap(width, height);
-                        try
-                        {
-                            using (var g = Graphics.FromImage(result2))
-                            {
-                                g.DrawImage(result, new Rectangle(0, 0, width, height));
-                                return result2;
-                            }
-                        }
-                        catch
-                        {
-                            result2.Dispose();
-                            throw;
-                        }
-                        */
                     }
                 }
                 else
@@ -28657,13 +24596,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void createCacheInADSInNTFSToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            //thumbnailCache = !thumbnailCache;
-            //createCacheInADSInNTFSToolStripMenuItem.Checked = thumbnailCache;
-        }
-        */
 
 
         private void zeroToolStripMenuItem_Click(object sender, EventArgs e)
@@ -29126,11 +25058,6 @@ namespace ZipPla
                     {
                         PrepareLookAheadProcess();
                     }
-                    /*
-                    if (dragGuid != Guid.Empty)
-                    {
-                        OpendByExternalApplication_Dictionary.Remove(dragGuid);
-                    }*/
 
                     dragOuting = false;
                 }
@@ -29393,15 +25320,6 @@ namespace ZipPla
                                 else
                                 {
                                     // 例外のスローでコピーをキャンセル
-                                    /*
-                                    Task.Run(() =>
-                                    {
-                                        MessageBox.Show(
-                                            Message.ToCopyAndPasteItemInCompressedFileKeepItOpenUntilPastingIsCompleted,
-                                            null, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1,
-                                            MessageBoxOptions.DefaultDesktopOnly);
-                                    });
-                                    */
                                     throw new Exception();
                                 }
                             }
@@ -29468,29 +25386,6 @@ namespace ZipPla
             {
                 return;
             }
-            /*
-            if (e.KeyCode == Keys.Delete)
-            {
-                //deleteonlyForListFileToolStripMenuItem_Click(sender, e);
-                //deleteSelectedItems(mk);
-                deleteKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.X)
-            {
-                //cutSelection(mk);
-                CutKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.C)
-            {
-                //copySelection(mk);
-                CopyKeyAction(mk);
-            }
-            else if (e.Control && e.KeyCode == Keys.V)
-            {
-                //pasteToCurrentLocation();
-                PasteKeyAction(mk);
-            }
-            */
         }
 
         private void clearFilterWhenMovingLocationToolStripMenuItem_Click(object sender, EventArgs e)
@@ -29551,66 +25446,6 @@ namespace ZipPla
             SetFolderSortMode(FolderSortMode.FitToDirectionOfSort, reSort: true);
         }
 
-        /*
-        private Rectangle? RestoreBounds_ForceValue = null;
-        private new Rectangle RestoreBounds
-        {
-            get => RestoreBounds_ForceValue ?? base.RestoreBounds;
-        }
-
-        private Rectangle? CatalogForm_LocationChanged_RectangleBeforeMovedByBaseRestoreBounds = null;
-        private void CatalogForm_LocationChanged(object sender, EventArgs e)
-        {
-            
-            var windowState = WindowState;
-            if (windowState == FormWindowState.Maximized)
-            {
-                var restoreBounds = base.RestoreBounds;
-                var workingArea = Bounds;
-                RestoreBounds_ForceValue = workingArea.Contains(restoreBounds) ? null as Rectangle? : ViewerForm.Pack(restoreBounds, workingArea);
-                CatalogForm_LocationChanged_RectangleBeforeMovedByBaseRestoreBounds = null;
-            }
-            else if (RestoreBounds_ForceValue is Rectangle restoreBounds)
-            {
-                if (windowState == FormWindowState.Normal)
-                {
-                    var bounds = Bounds;
-                    if (bounds == base.RestoreBounds)
-                    {
-                        RestoreBounds_ForceValue = null;
-                        var newBounds = CatalogForm_LocationChanged_RectangleBeforeMovedByBaseRestoreBounds ?? restoreBounds;
-                        CatalogForm_LocationChanged_RectangleBeforeMovedByBaseRestoreBounds = null;
-                        if (bounds != newBounds)
-                        {
-                            Task.Run(() =>
-                            {
-                                try
-                                {
-                                    Invoke(((MethodInvoker)(() =>
-                                    {
-                                        Bounds = newBounds;
-                                    })));
-                                }
-                                catch (ObjectDisposedException) { }
-                            });
-                        }
-                    }
-                    else
-                    {
-                        CatalogForm_LocationChanged_RectangleBeforeMovedByBaseRestoreBounds = bounds;
-                    }
-                }
-                else
-                {
-                    CatalogForm_LocationChanged_RectangleBeforeMovedByBaseRestoreBounds = null;
-                }
-            }
-            else
-            {
-                CatalogForm_LocationChanged_RectangleBeforeMovedByBaseRestoreBounds = null;
-            }
-        }
-    */
         
 
         private void loadLastViewedPageFromHistoryToolStripMenuItem_Click(object sender, EventArgs e)
@@ -30096,59 +25931,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void explorerTreeView_TreeWndDragDrop(object sender, DragEventArgs e)
-        {
-            if (explorerTreeView_TreeWndDragEnter_FileType != DragDropFileType.None)
-            {
-                var treeViewWnd = explorerTreeView.TreeViewWnd;
-                var pos = treeViewWnd.PointToClient(Cursor.Position);
-                var hit = treeViewWnd.HitTest(pos);
-                var node = hit.Node;
-                if (node != null)
-                {
-                    treeViewWnd.SelectedNode = node;
-                    var path = (node.Tag as ShellItem)?.Path;
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        try
-                        {
-                            if (explorerTreeView_TreeWndDragEnter_FileType == DragDropFileType.Virtual)
-                            {
-                                if ((e.AllowedEffect & DragDropEffects.Copy) == DragDropEffects.Copy)
-                                {
-                                    pasteToTarget(this, path, e.Data, DragDropEffects.Copy);
-                                }
-                            }
-                            else
-                            {
-                                var pathInLower = path.ToLower();
-                                if (explorerTreeView_TreeWndDragEnter_Files != null &&
-                                    explorerTreeView_TreeWndDragEnter_Files.All(file => Path.GetDirectoryName(file).ToLower() != pathInLower))
-                                {
-                                    var dstRoot = Path.GetPathRoot(pathInLower);
-                                    if ((e.AllowedEffect & DragDropEffects.Move) == DragDropEffects.Move && explorerTreeView_TreeWndDragEnter_Files.All(file => Path.GetPathRoot(file).ToLower() == dstRoot))
-                                    {
-                                        pasteToTarget(this, path, e.Data, DragDropEffects.Move);
-                                    }
-                                    else if ((e.AllowedEffect & DragDropEffects.Copy) == DragDropEffects.Copy)
-                                    {
-                                        pasteToTarget(this, path, e.Data, DragDropEffects.Copy);
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(this, ex.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                }
-                explorerTreeView_TreeWndDragEnter_FileType = DragDropFileType.None;
-                explorerTreeView_TreeWndDragEnter_Files = null;
-            }
-        }
-        }*/
         private void dgvFileList_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
             if (e.ColumnIndex >= 0 && e.RowIndex < 0)
@@ -30194,9 +25976,6 @@ namespace ZipPla
 
                     e.Handled = true;
                 }
-                //var rect = e.CellBounds;
-                //rect.X += tbcMargin;
-                //TextRenderer.DrawText(e.Graphics, column.HeaderText, dgvFileList.DefaultCellStyle.Font, rect, e.CellStyle.ForeColor, TextFormatFlags.VerticalCenter);
             }
         }
 
@@ -30360,26 +26139,6 @@ namespace ZipPla
         }
 
         // 自動でドロップダウンしない場合は空白になるのが妥当な使用と判断しコメントアウト
-            /*
-        private void cbFilter_DropDownClosed(object sender, EventArgs e)
-        {
-            var cb = (ComboBox)sender;
-            var si = cb.SelectedIndex;
-            if (si < 0)
-            {
-                // これをしないと空白になってしまう。
-                var text = cb.Text;
-                var items = cb.Items;
-                if (!items.Contains(text))
-                {
-                    var last = items.Count;
-                    items.Add(text);
-                    cb.SelectedIndex = last;
-                }
-                return;
-            }
-        }
-        */
 
         private void dgvDirectoryList_Paint(object sender, PaintEventArgs e)
         {
@@ -30499,14 +26258,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void aboutThumbnailCacheToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AllowFullpower = false;
-            MessageBox.Show(this, Message.ThumbnailCacheDescription.Replace(@"\n", "\n"), Message.AboutThumbnailCache, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            AllowFullpower = true;
-        }
-        */
 
 
 
@@ -30524,28 +26275,12 @@ namespace ZipPla
                 return new Size(originalSize.Width, (originalSize.Width / aspect).FloorOfPlusHalf());
             }
             // 誤り
-            /*
-            else if (aspect < pixelAspect)
-            {
-                return new Size((pixelAspect / aspect * originalSize.Width).FloorOfPlusHalf(), originalSize.Height);
-            }
-            else
-            {
-                return new Size(originalSize.Width, (aspect / pixelAspect * originalSize.Height).FloorOfPlusHalf());
-            }
-            */
         }
 
         public bool alertInvisibleItemsOnPaste(IEnumerable<string> dsts, bool checkPath, bool checkAttribute)
         {
             if (dsts == null) return false;
             int dummy;
-            /*
-            var archiveSkip = !archivesFilesPDFFielsToolStripMenuItem.Checked;
-            var imageSkip = !imageFilesToolStripMenuItem.Checked;
-            var videoSkip = !videoFilesToolStripMenuItem.Checked;
-            var otherSkip = !otherFilesToolStripMenuItem.Checked;
-            */
             var archiveSkip = ArchiveLoadLevel == ItemLoadLevel.Ignore;
             var imageSkip = ImageLoadLevel == ItemLoadLevel.Ignore;
             var videoSkip = VideoLoadLevel == ItemLoadLevel.Ignore;
@@ -30961,26 +26696,6 @@ namespace ZipPla
 
 
                 // ルート及びユーザーフォルダ以下のフォルダのみ FileTypeManager を使う
-                /*
-                if (MightBeSpecialDirectory(path))
-                {
-                    string result;
-                    if (GetDisplayNameDictionary.TryGetValue(pathToLower, out result))
-                    {
-                        return result;
-                    }
-                    try
-                    {
-                        if (Directory.Exists(path))
-                        {
-                            result = FileTypeManager.GetDisplayName(path);
-                            GetDisplayNameDictionary[pathToLower] = result;
-                            return result;
-                        }
-                    }
-                    catch { }
-                }
-                */
 
                 // Path.GetFileName("C:"); が期待通りに動作しない
                 //return Path.GetFileName(path);
@@ -31015,12 +26730,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        public static bool MightBeSpecialDirectory(string path)
-        {
-            return MightHaveSpecialDisplayName != null && MightHaveSpecialDisplayName.IsMatch(path);
-        }
-        */
     }
 
     public class CatalogProfile
@@ -31103,12 +26812,6 @@ namespace ZipPla
         {
         }
 
-        /*
-        public CatalogProfile(string location)
-        {
-            Location = location;
-        }
-        */
 
         public CatalogProfile(
             SortMode? lastSortMode,
@@ -32063,17 +27766,6 @@ namespace ZipPla
         {
             get
             {
-                /*
-                var denum = OnPaint_VerticalScrollMax - OnPaint_VerticalScrollMin;
-                if (denum != 0)
-                {
-                    return 100 * (OnPaint_VerticalScrollVal - OnPaint_VerticalScrollMin) / denum;
-                }
-                else
-                {
-                    return 0;
-                }
-                */
                 return scrollBarPercentage;
             }
             set
@@ -32143,25 +27835,6 @@ namespace ZipPla
         }
 
         // 使用する場合 s2d 等の更新が必要
-        /*
-        public void Add(ThumbViewerItem item)
-        {
-            if (item != null)
-            {
-                item.owner = this;
-                item.index = items.Count;
-                item.selected = selectedIndices?.Contains(items.Count) == true;
-            }
-            items.Add(item);
-            updateRowsCols();
-
-            // 追加されたサムネイルを表示
-            using (Graphics g = this.CreateGraphics())
-            {
-                DrawItem(g, items.Count - 1, false);
-            }
-        }
-        */
 
         public void SilentAdd(ThumbViewerItem item)
         {
@@ -32231,13 +27904,6 @@ namespace ZipPla
                 else
                 {
                     throw new IndexOutOfRangeException();
-                    /*
-                    while (index > items.Count)
-                    {
-                        items.Add(null);
-                    }
-                    Add(value);
-                    */
                 }
             }
         }
@@ -32267,12 +27933,6 @@ namespace ZipPla
 #else
                 throw new IndexOutOfRangeException();
 #endif
-                /*
-                    while (index > items.Count)
-                    {
-                        items.Add(null);
-                    }
-                    SilentAdd(item);*/
             }
         }
 
@@ -32296,25 +27956,6 @@ namespace ZipPla
         }
 
         // 指定された領域の中央に画像を描画
-        /*
-        void drawImageCenter(Graphics g, Image image, int x, int y, int w, int h)
-        {
-            float fw = (float)w / (float)image.Width;
-            float fh = (float)h / (float)image.Height;
-
-            float scale = Math.Min(fw, fh);
-            fw = image.Width * scale;
-            fh = image.Height * scale;
-
-            // g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High; // より高画質に
-
-            g.DrawImage(image,
-                x + (w - fw) / 2,
-                y + (h - fh) / 2,
-                fw, fh);
-
-        }
-        */
 
         public void DoMouseUp()
         {
@@ -32525,111 +28166,10 @@ namespace ZipPla
             // 枠ごと手動ダブルバッファリングする実装
             // 枠だけ描画する場合だけテキストを直接描画することになり
             // 外字のアンチエイリアスの一貫性が保たれなかったため廃止
-            /*
-            if (!onlyFrame)
-            {
-                var gRect = new Rectangle(col * gridSizeH, row * gridSizeV + this.AutoScrollPosition.Y, gridSizeH, gridSizeV);
-                if (clipRectangle.IsEmpty)
-                {
-                    clipRectangle = ClientRectangle;
-                }
-                if (clipRectangle.Contains(gRect))
-                {
-                    if (DrawItem_canvas != null && !(DrawItem_canvas.Width == gridSizeH && DrawItem_canvas.Height == gridSizeV))
-                    {
-                        DrawItem_canvas.Dispose();
-                        DrawItem_canvas = null;
-                    }
-
-                    if (DrawItem_canvas == null) DrawItem_canvas = new Bitmap(gridSizeH, gridSizeV);
-
-                    using (var g2 = Graphics.FromImage(DrawItem_canvas))
-                    {
-                        g2.FillRectangle(BackColorBrush, 0, 0, gridSizeH, gridSizeV);
-
-                        var tRect2 = getLocalThumbnailRectangle();
-
-                        drawImageUnscaled(g2, image, tRect2.X, tRect2.Y);
-                        if (ThumbnailPaint != null)
-                        {
-                            var e = new ThumbnailPaintEventArgs() { Graphics = g2, DataIndex = index, ThumbnailRectangle = tRect2 };
-                            ThumbnailPaint(this, e);
-                        }
-
-                        if (!selected && unselectedItemMaskBrush != null)
-                        {
-                            g2.FillRectangle(unselectedItemMaskBrush, tRect2);
-                        }
-                        
-                        // TextRenderer がグラフィックオブジェクトの種類によって描画方法を変え、主に外字で表示の一貫性がなくなる
-                        //drawFilledFrameLocal(g2, index, col, row, 0, 0, tRect2, selected, item?.Text);
-                    }
-
-                    g.DrawImageUnscaled(DrawItem_canvas, col * gridSizeH, row * gridSizeV + this.AutoScrollPosition.Y);
-
-                    drawFilledFrameGlobal(g, index, col, row, tRect, selected, item?.Text);
-                }
-                else
-                {
-                    var interSection = gRect;
-                    interSection.Intersect(clipRectangle);
-                    if (interSection.Width > 0 && interSection.Height > 0)
-                    {
-                        var dX = interSection.X - gRect.X;
-                        var dY = interSection.Y - gRect.Y;
-
-                        if (DrawItem_slicedCanvas != null && !(DrawItem_slicedCanvas.Width == interSection.Width && DrawItem_slicedCanvas.Height == interSection.Height))
-                        {
-                            DrawItem_slicedCanvas.Dispose();
-                            DrawItem_slicedCanvas = null;
-                        }
-
-                        if (DrawItem_slicedCanvas == null) DrawItem_slicedCanvas = new Bitmap(interSection.Width, interSection.Height);
-
-                        using (var g2 = Graphics.FromImage(DrawItem_slicedCanvas))
-                        {
-                            g2.FillRectangle(BackColorBrush, 0, 0, DrawItem_slicedCanvas.Width, DrawItem_slicedCanvas.Height);
-
-                            var tRect2 = getLocalThumbnailRectangle();
-                            tRect2.X -= dX;
-                            tRect2.Y -= dY;
-
-                            drawImageUnscaled(g2, image, tRect2.X, tRect2.Y);
-                            if (ThumbnailPaint != null)
-                            {
-                                var e = new ThumbnailPaintEventArgs() { Graphics = g2, DataIndex = index, ThumbnailRectangle = tRect2 };
-                                ThumbnailPaint(this, e);
-                            }
-
-                            if (!selected && unselectedItemMaskBrush != null)
-                            {
-                                g2.FillRectangle(unselectedItemMaskBrush, tRect2);
-                            }
-
-                            //drawFilledFrameLocal(g2, index, col, row, dX, dY, tRect2, selected, item?.Text);
-                        }
-
-                        g.DrawImageUnscaled(DrawItem_slicedCanvas, col * gridSizeH + dX, row * gridSizeV + dY + this.AutoScrollPosition.Y);
-
-                        drawFilledFrameGlobal(g, index, col, row, tRect, selected, item?.Text);
-                    }
-                }
-                
-            }
-            else
-            {
-                drawFilledFrameGlobal(g, index, col, row, tRect, selected, item?.Text);
-            }
-            */
 
         }
 
         // 指定されたインデックス番号の枠を表示／消去
-        /*
-        void drawFilledFrameLocal(Graphics g, int index, int col, int row, int dx, int dy, Rectangle thumbRect, bool draw, string text = null)
-        {
-            drawFilledFrame(g, index, col, row, -dx, -dy, thumbRect.X, thumbRect.Y, thumbRect.Width, thumbRect.Height, draw, text);
-        }*/
         void drawFilledFrameGlobal(Graphics g, int index, int col, int row, int AutoScrollPositionY, Rectangle thumbRect, bool draw, string text = null)
         {
             drawFilledFrame(g, index, col, row, gridOffsetH + col * gridSizeH, row * gridSizeV + AutoScrollPositionY, thumbRect.X, thumbRect.Y, thumbRect.Width, thumbRect.Height, draw, text);
@@ -32687,33 +28227,6 @@ namespace ZipPla
 
             // フレーム幅を固定する方法
             // ウインドウサイズのモジュロに依ってスキマができてしまう
-            /*
-            var frameWidth = Math.Min(Math.Min(Math.Min(x - x0, x1 - x - w), y - y0), y1 - y - h);
-            if (draw)
-            {
-                Brush b = frameBrush;
-                g.FillRectangles(b, new Rectangle[]
-                {
-                    new Rectangle(x - frameWidth, y - frameWidth, frameWidth, h + 2 * frameWidth),
-                    new Rectangle(x + w,  y - frameWidth, frameWidth, h + 2 * frameWidth),
-                    new Rectangle(x, y - frameWidth, w, frameWidth),
-                    new Rectangle(x, y + h, w, frameWidth)
-                });
-            }
-            else
-            {
-                using (Brush b = new SolidBrush(this.BackColor))
-                {
-                    g.FillRectangles(b, new Rectangle[]
-                    {
-                        new Rectangle(x - frameWidth, y - frameWidth, frameWidth, h + 2 * frameWidth),
-                        new Rectangle(x + w,  y - frameWidth, frameWidth, h + 2 * frameWidth),
-                        new Rectangle(x, y - frameWidth, w, frameWidth),
-                        new Rectangle(x, y + h, w, frameWidth)
-                    });
-                }
-            }
-            */
         }
 
         private void wrapAndEndAllipsis(Graphics g, string text, Font font, Rectangle rect, Color foreColor, Color backColor)
@@ -32816,26 +28329,6 @@ namespace ZipPla
             // gridSizeH は自前で計算する必要あり
 
             // 現在の幅で決める方法
-            /*
-            if (this.ClientSize.Width <= 0) // 最小化時など
-            {
-                return 1;
-            }
-
-            var cols = this.ClientSize.Width / (thumbWidth + sidePadding * 2);
-            if (cols == 0) cols = 1;
-
-            var hUniformed = layoutMode == ThumbViewerAligningMode.TotallyUniformedGrid || layoutMode == ThumbViewerAligningMode.HorizontallyUniformedGrid;
-            int gridSizeH;
-            if (hUniformed)
-            {
-                gridSizeH = this.ClientSize.Width / cols;
-            }
-            else
-            {
-                gridSizeH = thumbWidth + sidePadding * 2;
-            }
-            */
             // 最悪のケースを想定する方法
             var gridSizeH = thumbWidth + 0 * 2;
 
@@ -32850,26 +28343,6 @@ namespace ZipPla
         {
             // サムネイルサイズ設定後、updateRowsCols を呼び出す前に実行される可能性があるので
             // gridSizeH は自前で計算する必要あり
-            /*
-            if (screenSize.Width <= 0) // 最小化時など
-            {
-                return 0;
-            }
-
-            var cols = screenSize.Width / (thumbSize.Width + padding * 2);
-            if (cols == 0) cols = 1;
-
-            int gridSizeH;
-            var hUniformed = align == ThumbViewerAligningMode.TotallyUniformedGrid || align == ThumbViewerAligningMode.HorizontallyUniformedGrid;
-            if (hUniformed)
-            {
-                gridSizeH = screenSize.Width / cols;
-            }
-            else
-            {
-                gridSizeH = thumbSize.Width + padding * 2;
-            }
-            */
 
             // 最悪のケースを想定する方法
             var gridSizeH = thumbSize.Width + 0 * 2;
@@ -33080,9 +28553,6 @@ namespace ZipPla
                 gridSizeH = thumbSize.Width + padding * 2;
             }
 
-            //var rows = showIndexToDataIndex.Length / cols;
-            //if (showIndexToDataIndex.Length % cols > 0)
-            //    rows++;
 
             int thumbWidthCurrent;
             if (thumbSize.Width > gridSizeH - padding * 2)
@@ -33141,53 +28611,6 @@ namespace ZipPla
             return screenSize.Height / gridSizeV * cols;
         }
 
-        /*
-        void updateRowsCols()
-        {
-            if (this.ClientSize.Width <= 0)  // 最小化時など
-            {
-                return;
-            }
-
-            cols = this.ClientSize.Width / (thumbWidth + padding * 2);
-            if (cols == 0)
-                cols = 1;
-
-            gridSizeH = this.ClientSize.Width / cols;
-
-            rows = showIndexToDataIndex.Length / cols;
-            if (showIndexToDataIndex.Length % cols > 0)
-                rows++;
-
-            if (thumbWidth > gridSizeH - padding * 2)
-            {
-                thumbWidthCurrent = gridSizeH - padding * 2;
-            }
-            else
-            {
-                thumbWidthCurrent = thumbWidth;
-            }
-
-            var frameWidth2 = gridSizeH - thumbWidthCurrent;
-
-            thumbWidthCurrent = thumbWidth;
-
-            SetTextHeightFromSquareCharCount(16);
-
-            if (showText)
-            {
-                gridSizeV = frameWidth2 / 2 + Math.Max(textHeight + 2 * padding, (frameWidth2 + 1) / 2) + thumbHeight;
-
-            }
-            else
-            {
-                gridSizeV = frameWidth2 + thumbHeight;
-            }
-
-            // サムネイルの表示領域を設定
-            AutoScrollMinSize = new Size(0, rows * gridSizeV);
-        }
-        */
 
         // 現在選択されているデータインデックス番号の取得（未選択時：-1）
         // set 時は範囲外のものを代入しようとするとエラーとはせず -1 を入れたものとみなされる
@@ -33215,16 +28638,6 @@ namespace ZipPla
                                     {
                                         DrawItem(g, selected, selected: false, onlyFrame: true);
 
-                                        /*
-                                        // 枠消去
-                                        var index = dataIndexToShowIndex[selected];
-                                        if (index < 0) return;
-                                        int col2 = index % cols;
-                                        int row2 = index / cols;
-                                        var tRect = getThumbnailRectangle(col2, row2);
-
-                                        drawFilledFrame(g, index, col2, row2, tRect, false);
-                                        */
                                     }
                                 }
                             }
@@ -33271,13 +28684,6 @@ namespace ZipPla
                     ClearAllSelection();
                     addSelection(newSelected);
 
-                    /*
-                    if (drawCount > 1) Invalidate();
-                    else
-                    {
-                        using (Graphics g = CreateGraphics()) DrawItem(g, newSelected, selected: true, onlyFrame: true); // 枠のみ描画
-                    }
-                    */
 
                     SelectedIndexChanged?.Invoke(this, se);
                 }
@@ -33374,15 +28780,6 @@ namespace ZipPla
                     changed = false;
                     using (Graphics g = this.CreateGraphics())
                     {
-                        /*
-                        foreach (var index in showIndexToDataIndex)
-                        {
-                            if (setSelectedWithoutEvent(index, value != null && value.Contains(index), IndexOnSelection(index), g))
-                            {
-                                changed = true;
-                            }
-                        }
-                        */
                         foreach (var index in selectedToNoselected)
                         {
                             if (setSelectedWithoutEvent(index, false, IndexOnSelection(index), g)) changed = true;
@@ -33464,21 +28861,6 @@ namespace ZipPla
                 }
 
 
-                /*
-                // 枠消去
-                var showIndex = dataIndexToShowIndex[index];
-                if (showIndex >= 0)
-                {
-                    int col2 = showIndex % cols;
-                    int row2 = showIndex / cols;
-                    var tRect = getThumbnailRectangle(col2, row2);
-
-                    using (Graphics g = this.CreateGraphics())
-                    {
-                        drawFilledFrame(g, showIndex, col2, row2, tRect, false);
-                    }
-                }
-                */
 
                 removeSelectionAt(indexOnIndices);
 
@@ -33525,13 +28907,6 @@ namespace ZipPla
             int col2 = Math.Max(0, Math.Min(cols - 1, (clientPoint.X - gridOffsetH) / gridSizeH));
             int row2 = (clientPoint.Y - AutoScrollPosition.Y) / gridSizeV;
             return getThumbnailRectangle(col2, row2, AutoScrollPosition.Y);
-            /*
-            int x = col2 * gridSizeH + (gridSizeH - thumbWidthCurrent) / 2;
-            int y = row2 * gridSizeV + (gridSizeV - thumbHeight) / 2 + AutoScrollPosition.Y;
-            int w = thumbWidthCurrent;
-            int h = thumbHeight;
-            return new Rectangle(x, y, w, h);
-            */
         }
 
         public Rectangle IndexToContainerImageRectangle(int dataIndex)
@@ -33541,13 +28916,6 @@ namespace ZipPla
             int col2 = showIndex % cols;
             int row2 = showIndex / cols;
             return getThumbnailRectangle(col2, row2, AutoScrollPosition.Y);
-            /*
-            int x = col2 * gridSizeH + (gridSizeH - thumbWidthCurrent) / 2;
-            int y = row2 * gridSizeV + (gridSizeV - thumbHeight) / 2 + AutoScrollPosition.Y;
-            int w = thumbWidthCurrent;
-            int h = thumbHeight;
-            return new Rectangle(x, y, w, h);
-            */
         }
 
         private int PointToShowIndex(Point clientPoint, bool getNearestIndex)
@@ -33803,19 +29171,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private static int GetTextHeight(int gridSizeH, int textLength, int textLines)
-        {
-            if (textLength > 0)
-            {
-                return GetTextHeightFromSquareCharCount(gridSizeH, textLength);
-            }
-            else
-            {
-                return GetTextHeightFromLines(textLines);
-            }
-        }
-        */
 
         private int GetTextHeightFromSquareCharCount(int charCount)
         {
@@ -33835,9 +29190,6 @@ namespace ZipPla
         bool Clearing = false;
         public void Clear(int initialImageCount, int initialSelectedIndex, double initialScroolbarPercentage, int[] showIndexToDataIndex, int tWidth, int tHeight, int tPadding)
         {
-            //var sw = new Stopwatch();
-            //var ss = "";
-            //sw.Restart();
 
             Clearing = true;
             var imagesCount = items.Count;
@@ -34269,14 +29621,6 @@ namespace ZipPla
             // スクロール量実験
             // → 結果、DPI にかかわらず e.Delta の単位は 120 で、
             // OnMouseWheel はその数をそのままスクロール量漁に使うと判明
-            /*
-            preRenderScroll(-AutoScrollPosition.Y +Math.Abs(e.Delta));
-            base.OnMouseWheel(e);
-            if(e.X < 30)
-            {
-                MessageBox.Show(e.Delta.ToString());
-            }
-            */
 
             //scrollByGrid(-e.Delta / 120);
             //GuiUtil.EndUpdate(this);
@@ -34288,30 +29632,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
-        public const int WM_SETREDRAW = 0x000B;
-
-        /// <summary>
-        /// コントロール(子コントロールも含む)の描画を停止します。
-        /// </summary>
-        /// <param name="control">対象コントロール</param>
-        public static void BeginUpdate(Control control)
-        {
-            SendMessage(control.Handle, WM_SETREDRAW, 0, 0);
-        }
-
-        /// <summary>
-        /// コントロール(子コントロールも含む)の描画を開始します。
-        /// </summary>
-        /// <param name="control">対象コントロール</param>
-        public static void EndUpdate(Control control)
-        {
-            SendMessage(control.Handle, WM_SETREDRAW, 1, 0);
-            control.Refresh();
-        }
-        */
 
         protected override void OnResize(EventArgs e)
         {
@@ -34364,14 +29684,6 @@ namespace ZipPla
         private int OnMouseDown_DragOutStartIndex = -1;
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            /*
-            int col = (e.X - gridOffsetH) / gridSizeH;
-            int row = (e.Y - this.AutoScrollPosition.Y) / gridSizeV;
-
-
-            var showIndex = col < 0 || col >= cols ? -1 : row * cols + col;
-            int newSelected = showIndex < 0 || showIndex >= showIndexToDataIndex.Length ? -1 : showIndexToDataIndex[showIndex];
-            */
             int newSelected = PointToIndex(e.Location);
 
             var indexOnIndices = newSelected < 0 ? -1 : IndexOnSelection(newSelected);
@@ -34538,10 +29850,6 @@ namespace ZipPla
                     if (selectedIndexByDrag == null) selectedIndexByDrag = new HashSet<int>();
                     var minShow = Math.Min(mouseDownShowIndex, showIndex);
                     var maxShow = Math.Max(mouseDownShowIndex, showIndex);
-                    //var drawCount = maxShow - minShow + 1 + selectedIndexByDrag.Count;
-                    //var drawSingle = drawCount == 1;
-                    //var drawNeeded = maxShow >= minShow;
-                    //var selectArray = new int[Math.Max(0, maxShow - minShow + 1)];
 
                     if (maxShow >= minShow || selectedIndexByDrag.Any())
                     {
@@ -34943,24 +30251,6 @@ namespace ZipPla
                                 }
 
                                 // 選択解除を行わない実装
-                                /*
-                                var start = Math.Min(currentShowIndex, nextShowIndex);
-                                var stop = Math.Max(currentShowIndex, nextShowIndex);
-                                //var drawCount = stop - start + 1;
-                                //var drawSingle = drawCount == 1;
-                                if (stop >= start)
-                                {
-                                    using (var g = CreateGraphics())
-                                    {
-                                        for (var i = start; i <= stop; i++)
-                                        {
-                                            var dataIndex = showIndexToDataIndex[i];
-                                            setSelectedWithoutEvent(dataIndex, true, IndexOnSelection(dataIndex), g);
-                                        }
-                                    }
-                                }
-                                //if (drawCount > 1) Invalidate();
-                                */
 
                                 var se = new SelectedIndexChangedEventArgs(oldSelectedIndex, SelectedIndex);
                                 SelectedIndexChanged?.Invoke(this, se);
@@ -35167,14 +30457,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        public static long GetLength(FileSystemInfo fileInfo)
-        {
-            var fileInfo2 = fileInfo as FileInfo;
-            if (fileInfo2 != null) return fileInfo2.Length;
-            else return (fileInfo as FileInfoEx).fileInfo.Length;
-        }
-        */
 
         public override string FullName
         {
@@ -35191,26 +30473,6 @@ namespace ZipPla
             else return (fileInfo as FileInfoEx).fileInfo;
         }
 
-        /*
-        public static string GetEntityPath(FileSystemInfo fileInfo)
-        {
-            var fileInfo2 = fileInfo as FileInfo;
-            if (fileInfo2 != null) return fileInfo2.FullName;
-            else return (fileInfo as FileInfoEx).entityPath;
-        }
-
-        public static string GetAttributes(FileSystemInfo fileInfo)
-        {
-            var fileInfo2 = fileInfo as FileInfo;
-            if (fileInfo2 != null) return fileInfo2.FullName;
-            else return (fileInfo as FileInfoEx).entityPath;
-        }
-
-        public override FileAttributes Attributes
-        {
-
-        }
-        */
     }
 
     public class DataObjectEx : DataObject, System.Runtime.InteropServices.ComTypes.IDataObject
@@ -35395,20 +30657,6 @@ namespace ZipPla
             {
                 FileDescriptor.cFileName = si.FileName;
                 Int64? FileTime;
-                /*
-                FileTimeUtc = si.CreationTime?.ToFileTimeUtc();
-                if (FileTimeUtc != null)
-                {
-                    FileDescriptor.ftCreationTime.dwHighDateTime = (Int32)(FileTimeUtc >> 32);
-                    FileDescriptor.ftCreationTime.dwLowDateTime = (Int32)(FileTimeUtc & 0xFFFFFFFF);
-                }
-                FileTimeUtc = si.AccessTime?.ToFileTimeUtc();
-                if (FileTimeUtc != null)
-                {
-                    FileDescriptor.ftLastAccessTime.dwHighDateTime = (Int32)(FileTimeUtc >> 32);
-                    FileDescriptor.ftLastAccessTime.dwLowDateTime = (Int32)(FileTimeUtc & 0xFFFFFFFF);
-                }
-                */
                 //FileTime = si.WriteTime?.ToFileTimeUtc();
                 FileTime = si.WriteTime?.ToFileTime();
                 if (FileTime != null)
@@ -35437,24 +30685,6 @@ namespace ZipPla
             MemoryStream FileContentMemoryStream = null;
             if (SelectedItems != null && FileNumber < SelectedItems.Length)
             {
-                /*
-                FileContentMemoryStream = new MemoryStream();
-                SelectedItem si = SelectedItems[FileNumber];
-
-                // **************************************************************************************
-                // TODO: Get the virtual file contents and place the contents in the byte array bBuffer.
-                // If the contents are zero length then a single byte must be supplied to Windows
-                // Explorer otherwise the transfer will fail.  If this is part of a multi-file transfer,
-                // the entire transfer will fail at this point if the buffer is zero length.
-                // **************************************************************************************
-
-                Byte[] bBuffer;
-
-
-                if (bBuffer.Length == 0)  // Must send at least one byte for a zero length file to prevent stoppages.
-                    bBuffer = new Byte[1];
-                FileContentMemoryStream.Write(bBuffer, 0, bBuffer.Length);
-                */
 
                 FileContentMemoryStream = GetFileContents(SelectedItems[FileNumber], FileNumber);
                 if (FileContentMemoryStream == null) return null;

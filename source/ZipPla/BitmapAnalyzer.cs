@@ -12,28 +12,6 @@ namespace ZipPla
     {
         private const int maxLength = 128;
 
-        /*
-        public static Point GetFocus(Image img, Fraction pixelRatio)
-        {
-            return GetFocus(img, new Rectangle(0, 0, img.Width, img.Height), pixelRatio);
-        }
-        public static Point GetFocus(Image img, RectangleF rectangle, Fraction pixelRatio)
-        {
-            var bmp = img as Bitmap;
-            var rect = new Rectangle((int)Math.Round(rectangle.X), (int)Math.Round(rectangle.Y), (int)Math.Round(rectangle.Width), (int)Math.Round(rectangle.Height));
-            if (bmp != null)
-            {
-                return GetFocus(bmp, rect, pixelRatio);
-            }
-            else
-            {
-                using (var bmp2 = new Bitmap(img))
-                {
-                    return GetFocus(bmp2, rect, pixelRatio);
-                }
-            }
-        }
-        */
         public static Point GetFocus(Bitmap bmp, RectangleF rectangle, Fraction pixelRatio)
         {
             var rect = new Rectangle((int)Math.Round(rectangle.X), (int)Math.Round(rectangle.Y), (int)Math.Round(rectangle.Width), (int)Math.Round(rectangle.Height));
@@ -72,11 +50,6 @@ namespace ZipPla
             var workingSize = GetWorkignSize(rectangle.Size, pixelRatio);
             var workingWidth = workingSize.Width;
             var workingHeight = workingSize.Height;
-            /*
-            var m = orgW > orgH ? orgW : orgH;
-            var workingWidth = orgW * maxLength / m;
-            var workingHeight = orgH * maxLength / m;
-            */
 
             var pointsLinearArray = GetLinearArrayForFocus(bmp, rectangle, workingWidth, workingHeight);
 
@@ -203,86 +176,6 @@ namespace ZipPla
                     var nonDec = !(dx > 0 && dy < 0 || dx < 0 && dy > 0);
 
                     // 異符号
-                    /*
-                    if (absDx > absDy)
-                    {
-                        if (dx > 0)
-                        {
-                            for (var x2 = 0; x2 < x; x2++)
-                            {
-                                var y2 = Round(dy * (2 * (x2 - x) - 1) + dx, 2 * dx) + y;
-                                if (y2 < 0) { if (nonInc) break; }
-                                else if (y2 >= h) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2 * w] -= d2;
-                            }
-                            for (var x2 = x + 1; x2 < w; x2++)
-                            {
-                                var y2 = Round(dy * (2 * (x2 - x) - 1) + dx, 2 * dx) + y;
-                                if (y2 < 0) { if (nonInc) break; }
-                                else if (y2 >= h) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2 * w] += d2;
-                            }
-                        }
-                        else
-                        {
-                            for (var x2 = 0; x2 < x; x2++)
-                            {
-                                var y2 = Round(dy * (2 * (x2 - x) - 1) + dx, 2 * dx) + y;
-                                if (y2 < 0) { if (nonInc) break; }
-                                else if (y2 >= h) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2 * w] += d2;
-                            }
-                            for (var x2 = x + 1; x2 < w; x2++)
-                            {
-                                var y2 = Round(dy * (2 * (x2 - x) - 1) + dx, 2 * dx) + y;
-                                if (y2 < 0) { if (nonInc) break; }
-                                else if (y2 >= h) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2 * w] -= d2;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (dy > 0)
-                        {
-                            for (var y2 = 0; y2 < y; y2++)
-                            {
-                                var y2w = y2 * w;
-                                var x2 = Round(dx * (2 * (y2 - y) - 1) + dy, 2 * dy) + x;
-                                if (x2 < 0) { if (nonInc) break; }
-                                else if (x2 >= w) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2w] -= d2;
-                            }
-                            for (var y2 = y + 1; y2 < h; y2++)
-                            {
-                                var y2w = y2 * w;
-                                var x2 = Round(dx * (2 * (y2 - y) - 1) + dy, 2 * dy) + x;
-                                if (x2 < 0) { if (nonInc) break; }
-                                else if (x2 >= w) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2w] += d2;
-                            }
-                        }
-                        else
-                        {
-                            for (var y2 = 0; y2 < y; y2++)
-                            {
-                                var y2w = y2 * w;
-                                var x2 = Round(dx * (2 * (y2 - y) - 1) + dy, 2 * dy) + x;
-                                if (x2 < 0) { if (nonInc) break; }
-                                else if (x2 >= w) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2w] += d2;
-                            }
-                            for (var y2 = y + 1; y2 < h; y2++)
-                            {
-                                var y2w = y2 * w;
-                                var x2 = Round(dx * (2 * (y2 - y) - 1) + dy, 2 * dy) + x;
-                                if (x2 < 0) { if (nonInc) break; }
-                                else if (x2 >= w) { if (nonDec) break; }
-                                else pointsLinearArray[x2 + y2w] -= d2;
-                            }
-                        }
-                    }
-                    */
                     // 等符号
                     if (absDx > absDy)
                     {

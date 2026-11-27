@@ -68,9 +68,6 @@ namespace ZipPla
         static ImageLoader()
         {
             defaultSupportPathRegex = new Regex(@"\.(?:" + string.Join("|", defaultSupportExtensions) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            //var list = new List<string>(defaultSupportExtensions);
-            //list.AddRange(individualSupportExtensions);
-            //supportsFullReadingPathRegex = new Regex(@"\.(?:" + string.Join("|", list) + ")$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
             supportsFullReadingWithoutSusieFfmpeg = defaultSupportExtensions.Concat(individualSupportExtensions).ToArray();
 
@@ -149,14 +146,6 @@ namespace ZipPla
             ImageLoader.searchInstallationFolder = searchInstallationFolder;
             var signature = GetSusieSignature(allowUntested, searchInstallationFolder);
             if (signature == susieSignature) return; // 設定もプラグインも前回と同じ（K20）
-            /*
-            if (Environment.Is64BitProcess)
-            {
-                if (susieSupports == null) susieSupports = new string[0];
-                else return;
-            }
-            else
-            */
             {
                 susieSupportsExtensionWithoutPeriodInLowerCaseToSpiName = GetSusieSupports(supportsFullReadingWithoutSusieFfmpeg, allowUntested, searchInstallationFolder);
             }
@@ -365,26 +354,6 @@ namespace ZipPla
         }
 
 
-        /*
-        public static bool SupportsAtLeastThumbnailReading(string path, bool? ffmpegExists)
-        {
-            //return path != null && supportsAtLeastThumbnailReadingPathRegex.IsMatch(path);
-            if (path == null) return false;
-            try
-            {
-                var ext = Path.GetExtension(path).ToLower();
-
-                if (supportsAtLeastThumbnailReadingExtensionWithPeriodInLowerCase.Contains(ext)) return true;
-
-                return MovieThumbnailLoader.SupportedImageExtensionsWithPeriodInLowerCase.Contains(ext)
-                    && (ffmpegExists != null ? (bool)ffmpegExists : MovieThumbnailLoader.ffmpegExists());
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        */
 
         public static bool SupportsAtLeastThumbnailReading(string path, ref bool? ffmpegExists)
         {
@@ -790,23 +759,9 @@ namespace ZipPla
                 else imageInfo = null;
                 return img;
 
-                /*
-                // 0.9 秒程度
-                var result = BitmapResizer.Load(filePath);
-                if (setImageInfo) imageInfo = GetImageInfo(result);
-                else imageInfo = null;
-                sw.Stop(); MessageBox.Show($"{sw.Elapsed}");
-                return result;
-                */
 
 
                 // この方法だと Bitmap が Dispose されるまで filePath にロックが掛かる
-                /*
-                var img = new Bitmap(filePath);
-                if (setImageInfo) imageInfo = GetImageInfo(img);
-                else imageInfo = null;
-                return img;
-                */
             }
             else
             {
@@ -1184,14 +1139,6 @@ namespace ZipPla
                 //case ".xml":
                 //case ".mht":
                     // WebBrowser による実装
-                    /*
-                    if (invoke == null) throw new ArgumentNullException("invoke");
-                    var textType = ext == ".xml";
-                    var zoom = textType ? 1 : 2; // / Program.DisplayMagnification;
-                    var page = GetWebPageImage(filePath, new Size(desiredSize.Width * zoom, desiredSize.Height * zoom), invoke);
-                    imageInfo = null;
-                    return page;
-                    */
 
                     // HtmlRender による実装
                     const int zoom = 2; // / Program.DisplayMagnification;
@@ -1254,12 +1201,6 @@ namespace ZipPla
             else throw new Exception();
         }
 
-        /*
-        public static Bitmap GetImageAtLeastThumbnailBitmap(string filePath, Size desiredSize, out ImageInfo imageInfo)
-        {
-            return GetAtLeastThumbnailBitmap(filePath, desiredSize, null, out imageInfo);
-        }
-        */
 
         //public static Bitmap GetAtLeastThumbnailBitmap(string filePath, Size desiredSize, Func<Delegate, object> invoke, out ImageInfo imageInfo)
         public static Bitmap GetAtLeastThumbnailBitmap(string filePath, Size desiredSize, bool ffmpegExists, out ImageInfo imageInfo)
@@ -1505,202 +1446,6 @@ namespace ZipPla
         }
 
         // WebBrowser を使う方法。パフォーマンスに問題があるので廃止
-        /*
-        public static Bitmap GetWebPageImage(string url, Size size, Func<Delegate, object> invoke)
-        {
-            const int completeCheckIntervalMilliseconds = 10;
-
-            // ローカル前提
-            if (!File.Exists(url)) throw new FileNotFoundException(null, url);
-            int timeOutMilliseconds = 10 * 1000;
-            
-            Exception exception = null;
-            Bitmap result = null;
-            var th = new System.Threading.Thread(() =>
-            {
-                try
-                {
-                    using (var webBrowser = new WebBrowser())
-                    {
-                        webBrowser.ScrollBarsEnabled = false;
-
-                        webBrowser.ScriptErrorsSuppressed = true;
-                        // オンラインも考慮する場合、以下で別の方法が紹介されている
-                        // http://d.hatena.ne.jp/chi-bd/20141210/1418220231
-
-                        webBrowser.Width = size.Width;
-                        webBrowser.Height = size.Height;
-                        var completed = false;
-                        webBrowser.DocumentCompleted += (sender, e) => completed = true;
-                        webBrowser.Navigated += WebBrowser_Navigated;
-                        webBrowser.Navigate(url);
-
-                        do
-                        {
-                            System.Threading.Thread.Sleep(Math.Min(completeCheckIntervalMilliseconds, timeOutMilliseconds));
-                            timeOutMilliseconds -= completeCheckIntervalMilliseconds;
-                            if (timeOutMilliseconds <= 0)
-                            {
-                                throw exception != null ? exception : new TimeoutException();
-                            }
-
-                            Application.DoEvents();
-                        }
-                        while (!completed);
-
-                            // Take Screenshot of the web pages full width + some padding
-                            //webBrowser.Width = webBrowser.Document.Body.ScrollRectangle.Height;
-                            // Take Screenshot of the web pages full height
-                            //webBrowser.Height = webBrowser.Document.Body.ScrollRectangle.Height;
-
-                            using (Graphics graphics = webBrowser.CreateGraphics())
-                        {
-                            Rectangle bounds = new Rectangle(0, 0, size.Width, size.Height);
-                            result = new Bitmap(size.Width, size.Height, graphics);
-                            try
-                            {
-                                webBrowser.DrawToBitmap(result, bounds);
-                            }
-                            catch
-                            {
-                                result.Dispose();
-                                result = null;
-                                throw;
-                            }
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    exception = e;
-                }
-            });
-            th.SetApartmentState(System.Threading.ApartmentState.STA);
-            th.Start();
-            th.Join();
-
-            if (exception != null) throw exception;
-
-            return result;
-        }
-
-        [DllImport("urlmon.dll")]
-        [PreserveSig]
-        [return: MarshalAs(UnmanagedType.Error)]
-        internal static extern int CoInternetSetFeatureEnabled(uint FeatureEntry, [MarshalAs(UnmanagedType.U4)] uint dwFlags, bool fEnable);
-        private static void WebBrowser_Navigated(object sender, WebBrowserNavigatedEventArgs e)
-        {
-            const uint FEATURE_DISABLE_NAVIGATION_SOUNDS = 21;
-            const uint SET_FEATURE_ON_PROCESS = 0x00000002;
-            CoInternetSetFeatureEnabled(FEATURE_DISABLE_NAVIGATION_SOUNDS, SET_FEATURE_ON_PROCESS, true);
-        }
-
-        public static Bitmap GetWebPageImageo(string url, Size size, Func<Delegate, object> invoke)
-        {
-            const int completeCheckIntervalMilliseconds = 10;
-
-            // ローカル前提
-            if (!File.Exists(url)) throw new FileNotFoundException(null, url);
-            int timeOutMilliseconds = 10 * 1000;
-
-            WebBrowser webBrowser = null;
-
-            
-
-            var completed = false;
-            Exception exception = null;
-            invoke((MethodInvoker)(() =>
-            {
-                try
-                {
-                    webBrowser = new WebBrowser();
-                    try
-                    {
-                        webBrowser.ScrollBarsEnabled = false;
-                        webBrowser.ScriptErrorsSuppressed = true;
-                        webBrowser.Width = size.Width;
-                        webBrowser.Height = size.Height;
-                        webBrowser.DocumentCompleted += (sender, e) => completed = true;
-                        webBrowser.Navigate(url);
-                    }
-                    catch
-                    {
-                        webBrowser.Dispose();
-                        webBrowser = null;
-                        throw;
-                    }
-                }
-                catch (Exception e)
-                {
-                    exception = e;
-                }
-            }));
-
-            if (exception != null) throw exception;
-
-            while (!completed)
-            {
-                System.Threading.Thread.Sleep(Math.Min(completeCheckIntervalMilliseconds, timeOutMilliseconds));
-                timeOutMilliseconds -= completeCheckIntervalMilliseconds;
-                if(timeOutMilliseconds <= 0)
-                {
-                    invoke((MethodInvoker)(() =>
-                    {
-                        try
-                        {
-                            webBrowser.Dispose();
-                        }
-                        catch (Exception e)
-                        {
-                            exception = e;
-                        }
-                    }));
-                    throw exception != null ? exception : new TimeoutException();
-                }
-            }
-
-            Bitmap result = null;
-            invoke((MethodInvoker)(() =>
-            {
-                // Take Screenshot of the web pages full width + some padding
-                //webBrowser.Width = webBrowser.Document.Body.ScrollRectangle.Height;
-                // Take Screenshot of the web pages full height
-                //webBrowser.Height = webBrowser.Document.Body.ScrollRectangle.Height;
-                try
-                {
-                    using (Graphics graphics = webBrowser.CreateGraphics())
-                    {
-                        Rectangle bounds = new Rectangle(0, 0, size.Width, size.Height);
-                        result = new Bitmap(size.Width, size.Height, graphics);
-                        try
-                        {
-                            webBrowser.DrawToBitmap(result, bounds);
-                        }
-                        catch
-                        {
-                            result.Dispose();
-                            result = null;
-                            throw;
-                        }
-                    }
-                }
-                catch(Exception e)
-                {
-                    exception = e;
-                }
-                finally
-                {
-                    webBrowser.Dispose();
-                }
-            }));
-
-            if (exception != null) throw exception;
-
-            return result;
-        }
-        
-        
-        */
         
         private static Bitmap ConvertHtmlFromFileToImage(string fileName, SizeF size, bool stylesheetLoad, bool imageLoad)
         {
@@ -1764,81 +1509,9 @@ namespace ZipPla
         }
 
 
-        /*
-        private static Bitmap ConvertHtmlFromStringToImage(string html, SizeF size)
-        {
-            Bitmap m_Bitmap = new Bitmap((int)Math.Round(size.Width), (int)Math.Round(size.Height));
-            try
-            {
-                PointF point = new PointF(0, 0);
-                SizeF maxSize = size;
-                using (var g = Graphics.FromImage(m_Bitmap))
-                {
-                    //TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.Render(g, html, point, maxSize);
-                    
-                    maxSize.Width = float.MaxValue; TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.Render(g, html, point, maxSize, null, HtmlStylesheetLoad);
-                }
-                return m_Bitmap;
-            }
-            catch
-            {
-                m_Bitmap.Dispose();
-                throw;
-            }
-        }
-        */
-
-        /*
-    private static Uri HtmlStylesheetLoad_CurrentDirectory = null;
-    private static void HtmlStylesheetLoad(object sender, TheArtOfDev.HtmlRenderer.Core.Entities.HtmlStylesheetLoadEventArgs e)
-    {
-        var cd = HtmlStylesheetLoad_CurrentDirectory;
-        if (cd == null) return;
-        try
-        {
-            var srcPath = e.Src;
-            if (string.IsNullOrEmpty(srcPath)) return;
-            srcPath = System.Net.WebUtility.UrlDecode(srcPath);
-            srcPath = new Uri(cd, srcPath).LocalPath;
-            if (File.Exists(srcPath))
-            {
-                e.SetStyleSheetData = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.ParseStyleSheet(getText(srcPath));
-            }
-        }
-        catch { }
-    }
-    */
 
 
-        /*
-        private static Bitmap ConvertHtmlFromFileToImageOld(string fileName, SizeF size)
-        {
-            var html = getText(fileName);
-            if (html == null) return null;
-            return ConvertHtmlFromStringToImage(html, size);
-        }
 
-        private static Bitmap ConvertHtmlFromStringToImage(string html, SizeF size)
-        {
-            Bitmap m_Bitmap = new Bitmap((int)Math.Round(size.Width), (int)Math.Round(size.Height));
-            try
-            {
-                PointF point = new PointF(0, 0);
-                SizeF maxSize = size;
-                using (var g = Graphics.FromImage(m_Bitmap))
-                {
-                    //TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.Render(g, html, point, maxSize);
-                    maxSize.Width = float.MaxValue;  TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.Render(g, html, point, maxSize);
-                }
-                return m_Bitmap;
-            }
-            catch
-            {
-                m_Bitmap.Dispose();
-                throw;
-            }
-        }
-        */
         private static Bitmap GetAPng(Stream stream)
         {
             var result = APngLoader.GetAPng(stream);
@@ -1874,47 +1547,6 @@ namespace ZipPla
                 if (frameCount <= 1) return new Bitmap(seekable);
                 //tm.Block("get");
 
-                /*
-                using (var image = Image.FromStream(seekable))
-                {
-                    var fd = new System.Drawing.Imaging.FrameDimension(image.FrameDimensionsList[0]);
-                    if (image.GetFrameCount(fd) != frameCount) throw new Exception();
-                    var width = fileData.iSWidth;
-                    var height = fileData.iSHeight;
-                    var frames = new Tuple<Bitmap, TimeSpan>[frameCount];
-                    try
-                    {
-                        for (int i = 0; i < frameCount; i++)
-                        {
-                            image.SelectActiveFrame(fd, i);
-
-                            // 単純な方法
-                            //frames[i] = Tuple.Create(new Bitmap(image), TimeSpan.FromMilliseconds(imageDatas[i].iDelayTime * 10));
-
-                            // 高速化した方法
-                            frames[i] = Tuple.Create(CreateNewBitmap(image), TimeSpan.FromMilliseconds(imageDatas[i].iDelayTime * 10));
-                        }
-                    }
-                    catch
-                    {
-                        for (int i = 0; i < frameCount; i++)
-                        {
-                            var frame = frames[i];
-                            if (frame != null)
-                            {
-                                frame.Item1.Dispose();
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        throw;
-                    }
-                    //tm.Dispose();
-                    return new BitmapEx(frames);
-                }
-                */
                 // 取り出し済みのメモリなら、同じ配列を指すストリームを作り、全体を写さない（D10）
                 if (stream is MemoryStream source && source.TryGetBuffer(out var segment) && p >= 0 && p <= source.Length)
                 {
@@ -2190,35 +1822,6 @@ namespace ZipPla
 
         public void Start(DateTime dateTime) { source.Start(dateTime); }
         public DateTime GetNextChangeTime(DateTime dateTime) { return source.GetNextChangeTime(dateTime); }
-        /*
-        private DateTime startTime;
-        public void Start(DateTime dateTime)
-        {
-            startTime = dateTime;
-        }
-        public int GetCurrentIndex(DateTime dateTime)
-        {
-            if (FrameCount == 1 || startTime == default(DateTime)) return 0;
-            var subtract = (dateTime - startTime).Ticks % Period.Ticks;
-            for (var i = 0; i < FrameCount; i++)
-            {
-                subtract -= Delays[i].Ticks;
-                if (subtract < 0) return i;
-            }
-            return 0;
-        }
-        public DateTime GetNextChangeTime(DateTime dateTime)
-        {
-            if (FrameCount == 1 || startTime == default(DateTime)) return dateTime;
-            var subtract = (dateTime - startTime).Ticks % Period.Ticks;
-            for (var i = 0; i < FrameCount; i++)
-            {
-                subtract -= Delays[i].Ticks;
-                if (subtract < 0) return dateTime + TimeSpan.FromTicks(-subtract);
-            }
-            return dateTime;
-        }
-        */
 
         private bool disposed = false;
         public void Dispose()
@@ -2369,17 +1972,6 @@ namespace ZipPla
         public long GetDataSizeInBytes()
         {
             // 遅延読み込みが無駄になるので廃止
-            /*
-            var result = 0L;
-            for (var i = 0; i < FrameCount; i++)
-            {
-                var bmp = GetBitmap(i);
-                var bytesPerPixel = Image.GetPixelFormatSize(bmp.PixelFormat) >> 3;
-                var stride = (bmp.Width * bytesPerPixel + 3) & ~3L;
-                result += stride * bmp.Height;
-            }
-            return result;
-            */
 
             var bytesPerPixel = Image.GetPixelFormatSize(PixelFormat) >> 3;
             var stride = (Width * bytesPerPixel + 3) & ~3L;
@@ -2540,12 +2132,6 @@ namespace ZipPla
             BaseBitmap = new System.Drawing.Bitmap(filename);
         }
 
-        /*
-        public Bitmap(Image image)
-        {
-            baseBitmap = new System.Drawing.Bitmap(image);
-        }
-        */
 
         public Bitmap(int width, int height)
         {

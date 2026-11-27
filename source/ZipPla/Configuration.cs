@@ -244,20 +244,6 @@ namespace Common
                             }
                             File.Delete(XmlBack);
 
-                            /*
-                            File.Copy(XmlPath, XmlBack, overwrite: false); // 移動では一時的に設定ファイルが存在しない状態になるため危険
-                            try
-                            {
-                                using (var fs = new FileStream(XmlPath, FileMode.Truncate, FileAccess.Write)) ms.CopyTo(fs);
-                            }
-                            catch
-                            {
-                                // Truncate したがその後の書き込みに失敗した、等のパターンで XmlBack からの復旧処理を行うか？
-
-                                throw;
-                            }
-                            File.Delete(XmlBack);
-                            */
                         }
                         else
                         {

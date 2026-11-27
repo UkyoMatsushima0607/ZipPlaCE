@@ -27,12 +27,6 @@ namespace ZipPla
         public static Group GetImportantRange(string str)
         {
             var isDir = str.EndsWith(@"\");
-            /*
-            if (!(isDir || PackedImageLoader.SupportedArchivesPath.IsMatch(str)))
-            {
-                str = "";
-            }
-            */
             if (isDir) str = str.Substring(0, str.Length - 1);
             else
             {

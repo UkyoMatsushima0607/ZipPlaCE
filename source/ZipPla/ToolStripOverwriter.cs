@@ -105,17 +105,6 @@ namespace ZipPla
 
     public static class CheckMarkProvider
     {
-        /*
-        public static void SetCheckMark(ToolStrip ts, ToolStripMenuItem tsmi, DisplayCheckMark checkMark)
-        {
-            setCheckMark(ts, tsmi, getCheckMarkBitmap(ts, checkMark));
-        }
-
-        public static void SetCheckMark(ToolStrip ts, DisplayCheckMark checkMark)
-        {
-            setCheckMark(ts, getCheckMarkBitmap(ts, checkMark));
-        }
-        */
 
         public static void SetCheckMark(ToolStrip ts, DisplayCheckMark checkMark)
         {
@@ -301,47 +290,6 @@ namespace ZipPla
             return new RectangleF((float)(x0 - 0.5), (float)(y0 - 0.5), (float)(x1 - x0), (float)(y1 - y0));
         }
 
-        /*
-        private static Bitmap getCheckMarkBitmapOld(ToolStrip ts, DisplayCheckMark checkMark)
-        {
-            const int aa = 4;
-
-            var checkMarkString = "✓";
-
-            Bitmap bitmap;
-            if (!checkMarkBitmaps.TryGetValue(checkMarkString, out bitmap))
-            {
-                var size = ts.ImageScalingSize;
-                var aaSize = new Size(size.Width * aa, size.Height * aa);
-                var aaFont = new Font(ts.Font.FontFamily, ts.Font.Size * aa);
-                using (var largeBitmap = new Bitmap(aaSize.Width, aaSize.Height, PixelFormat.Format32bppArgb))
-                {
-                    using (var g = Graphics.FromImage(largeBitmap))
-                    {
-                        var rect = new Rectangle(Point.Empty, aaSize);
-
-                        TextRenderer.DrawText(g, checkMarkString, aaFont, rect, Color.Black, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
-                    }
-                    bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
-                    try
-                    {
-                        using (var g = Graphics.FromImage(bitmap))
-                        {
-                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
-                            var rect = new Rectangle(Point.Empty, size);
-                            g.DrawImage(largeBitmap, 0, 0, size.Width, size.Height);
-                        }
-                    }
-                    catch
-                    {
-                        bitmap.Dispose();
-                        throw;
-                    }
-                }
-            }
-            return bitmap;
-        }
-        */
     }
 
 

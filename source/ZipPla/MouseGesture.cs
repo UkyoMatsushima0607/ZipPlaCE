@@ -366,12 +366,6 @@ namespace ZipPla
             // Actions == null だった場合に上の if 文を実行しない実装だった場合に付け加えたもの
             // MouseOrbit.Count > 0 でなければ（実際には MouseOrbit.Count > 1 でなければ）
             // なにも描画されていないし、Graphics も Pen も null のまま
-            /*
-            else
-            {
-                Owner.Invalidate();
-                Clear();
-            }*/
         }
 
         public void Clear()

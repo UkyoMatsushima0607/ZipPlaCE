@@ -34,20 +34,6 @@ namespace ZipPla
 
             // 自然と思われる順
             // null を返さないことが最優先の場合に利用
-            /*
-            if (extension.Any() && (
-                TryGetCommandFromTypeRoot(typeRoot = ToUserTypeRoot(extension), extra, out result) ||
-                TryGetCommandFromType(GetUserChoiceType(typeRoot), extra, out result) ||
-                TryGetCommandFromTypeRoot(typeRoot = ToDefaultTypeRoot(extension), extra, out result) ||
-                TryGetCommandFromType(GetDefaultType(typeRoot), extra, out result)))
-            {
-                return result;
-            }
-            else
-            {
-                return null;
-            }
-            */
         }
 
         private static string ToUserTypeRoot(string type)
@@ -88,11 +74,6 @@ namespace ZipPla
             }
             
             // <extra>\command が見つからなければ次の候補に移る
-            /*
-            result = typeRoot == null ? null :
-                Registry.GetValue(typeRoot + @"\shell\" + extra + @"\command", "", null) as string;
-            return result != null;
-            */
         }
 
         private static bool TryGetCommandFromType(string type, string extra, out string result)

@@ -283,17 +283,6 @@ namespace ZipPla
             if (File.Exists(path))
             {
                 return FileTypeManager.GetTypeName(path, useFileAttrinutes: false); // IconUtility.TypeName(path);
-                /*
-                var ext = Path.GetExtension(path);
-                if (!string.IsNullOrEmpty(ext))
-                {
-                    return ext.Substring(1).ToUpper() + " " + Message.File;
-                }
-                else
-                {
-                    return Message.File;
-                }
-                */
             }
             else if (Directory.Exists(path))
             {
@@ -306,17 +295,6 @@ namespace ZipPla
                 if(MovieThumbnailLoader.Supports(virtualParent) && (bool)(ffmpegExists = MovieThumbnailLoader.ffmpegExists()))
                 {
                     return FileTypeManager.GetTypeName(virtualParent, useFileAttrinutes: false);
-                    /*
-                    var ext = Path.GetExtension(virtualParent);
-                    if (!string.IsNullOrEmpty(ext))
-                    {
-                        return ext.Substring(1).ToUpper() + " " + Message.File;
-                    }
-                    else
-                    {
-                        throw new FileNotFoundException(null, path);
-                    }
-                    */
                 }
                 else if(ImageLoader.SupportsAtLeastThumbnailReading(path, ref ffmpegExists))
                 {
@@ -326,24 +304,6 @@ namespace ZipPla
                 {
                     return "-"; // PDF
                 }
-                /*
-                else if(PackedImageLoader.SupportedArchivesPath.IsMatch(virtualParent))
-                {
-                    var ext = Path.GetExtension(path);
-                    if (!string.IsNullOrEmpty(ext))
-                    {
-                        return ext.Substring(1).ToUpper() + " " + Message.File;
-                    }
-                    else
-                    {
-                        return "-"; // PDF
-                    }
-                }
-                else
-                {
-                    throw new FileNotFoundException(null, path);
-                }
-                */
             }
             else
             {

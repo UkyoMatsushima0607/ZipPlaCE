@@ -40,22 +40,6 @@ namespace ZipPla
             if (firstSetting)
             {
                 // 全て非選択で開始する場合
-                /*
-                rbNoCache.AutoCheck = rbADS.AutoCheck = rbFile.AutoCheck = false;
-
-                // AutoCheck == true の場合ここで全 false が解除されるので注意
-                setAdsEnabled(false);
-                setFileEnabled(false);
-                
-                rbNoCache.Checked = false;
-                rbADS.Checked = false;
-                rbFile.Checked = false;
-
-                rbNoCache.AutoCheck = rbADS.AutoCheck = rbFile.AutoCheck = true;
-                tbFile.Text = CatalogForm.DefaultThumbnailCache;
-
-                btnOK.Enabled = false;
-                */
 
                 // 推奨設定を選択済みで開始する場合
                 rbADS.Checked = true;

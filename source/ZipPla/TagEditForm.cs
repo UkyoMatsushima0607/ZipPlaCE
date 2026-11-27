@@ -93,15 +93,6 @@ namespace ZipPla
             btnOK.Select();
         }
 
-        /*
-        public static void SetProfileColorPixtureBox(Form form, PictureBox pictureBox)
-        {
-            var w = Program.DpiScalingY(6);
-            pictureBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            pictureBox.BorderStyle = BorderStyle.None;
-            pictureBox.Bounds = new Rectangle(0, 0, form.Width, w);
-        }
-        */
 
         private void SetMessages()
         {

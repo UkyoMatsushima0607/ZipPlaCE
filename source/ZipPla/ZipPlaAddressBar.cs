@@ -169,66 +169,6 @@ namespace ZipPla
         }
 
         // LowLevelMouseHook は安定しない＋エクスプローラーはドラッグ中のホイール操作を許さないのでそれに合わせる
-        /*
-        private ContextMenuStripEx LowLevelMouseHook_MouseWheel_DraggingInDropDown = null;
-        private MouseEventArgs LowLevelMouseHook_MouseWheel_EventArgs = null;
-        private System.Threading.Tasks.Task LowLevelMouseHook_MouseWheel_Task = null;
-        private void LowLevelMouseHook_MouseWheel(object sender, MouseEventArgs e)
-        {
-            // このイベントハンドラが遅いと lowLevelMouseHook がタイムアウトして使えなくなるので
-            if (
-                LowLevelMouseHook_MouseWheel_DraggingInDropDown == null) return;
-
-            if (LowLevelMouseHook_MouseWheel_Task == null)
-            {
-                LowLevelMouseHook_MouseWheel_Task = new System.Threading.Tasks.Task(LowLevelMouseHook_MouseWheel_Action);
-            }
-            else if (LowLevelMouseHook_MouseWheel_Task.Status == System.Threading.Tasks.TaskStatus.Running)
-            {
-                return;
-            }
-            else
-            {
-                LowLevelMouseHook_MouseWheel_Task.Dispose();
-                LowLevelMouseHook_MouseWheel_Task = new System.Threading.Tasks.Task(LowLevelMouseHook_MouseWheel_Action);
-            }
-
-            LowLevelMouseHook_MouseWheel_EventArgs = e;
-
-            LowLevelMouseHook_MouseWheel_Task.Start();
-        }
-        private void LowLevelMouseHook_MouseWheel_Action()
-        {
-            try
-            {
-                ownerForm?.Invoke(((MethodInvoker)(() =>
-                {
-                    // このイベントハンドラが遅いと lowLevelMouseHook がタイムアウトして使えなくなるので
-                    if (
-                LowLevelMouseHook_MouseWheel_EventArgs != null &&
-                LowLevelMouseHook_MouseWheel_DraggingInDropDown != null &&
-                !LowLevelMouseHook_MouseWheel_DraggingInDropDown.IsDisposed)
-                    {
-                        LowLevelMouseHook_MouseWheel_DraggingInDropDown.PerformScroll(LowLevelMouseHook_MouseWheel_EventArgs);
-                    }
-                })));
-            }
-            catch (ObjectDisposedException) { }
-
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            // デストラクタからの呼び出し (disposing == false) でも実行
-            if (lowLevelMouseHook != null)
-            {
-                lowLevelMouseHook.Dispose();
-                lowLevelMouseHook = null;
-            }
-
-            base.Dispose(disposing);
-        }
-        */
         
         bool dragOuting = false;
         public bool DragOuting { get { return dragOuting; } }
@@ -692,9 +632,6 @@ namespace ZipPla
                 separatorButton.BackColor = Color.FromKnownColor(KnownColor.Control);
                 //separatorButton.Size = new Size((10 * buttonHeight + 1) / 14, buttonHeight);
                 separatorButton.Size = new Size(buttonHeight * 3 / 4, buttonHeight);
-                //if (RightTriangle == null) RightTriangle = getTriangle(separatorButton.ClientSize, Direction.Right);
-                //separatorButton.ImageAlign = ContentAlignment.MiddleCenter;
-                //separatorButton.Image = RightTriangle;
                 separatorButton.Paint += separatorButton_Paint;
                 separatorButton.Location = location;
                 separatorButton.Click += separatorButton_Click;
@@ -1450,21 +1387,6 @@ namespace ZipPla
             var path = null as string;
             foreach (var b in buttonList)
             {
-                /*
-                if (separator)
-                {
-                    //path += Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    path += b.Text;
-                }
-                if (b == button)
-                {
-                    break;
-                }
-                separator = !separator;
-                */
                 var dirButton = b as DirectoryButton;
                 if (dirButton != null) path = dirButton.Path;
                 else if (b == button) break;
@@ -1517,12 +1439,6 @@ namespace ZipPla
                     //LowLevelMouseHook_MouseWheel_DraggingInDropDown = cms;
                 };
 
-                /*
-                cms.DragOver += (sender2, e2) =>
-                {
-                    e2.Effect = e2.Effect == DragDropEffects.Move ? DragDropEffects.Copy : DragDropEffects.Move;
-                };
-                */
 
                 cms.DragOver += DropDown_DragOver;
                 cms.DragDrop += DropDown_DragDrop;
@@ -1725,14 +1641,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void Cms_DragEnter(object sender, DragEventArgs e)
-        {
-            var e2 = new ZipPlaAddressBarDragEventArgs(e, null, isDropDown: false, hasDropDown: false);
-            SubControlDragEnter?.Invoke(this, e2);
-            e2.SetTo(e);
-        }
-        */
 
         //private DragDropEffects lastItemEffect;
 
@@ -1819,13 +1727,6 @@ namespace ZipPla
                             focusRobber();
                         }
                     }
-                    /*
-                    else
-                    {
-                        cms.Close();
-                        otherControl.Focus();
-                    }
-                    */
                 };
 
                 var hasDropDown = localHasAnyDirectory(subdir);// item.HasDropDown;
@@ -2024,41 +1925,9 @@ namespace ZipPla
                 {
 
                     //AbsoluteNeverOpen で行う
-                    /*
-                    dropDownNeverOpen = value;
-                    if (HasDropDown)
-                    {
-                        var dropDown = DropDown as ContextMenuStripEx;
-                        if (dropDown != null)
-                        {
-                            //dropDown.NeverOpen = value;
-                            setAllNeverOpen(dropDown, value);
-                            
-                        }
-                    }
-                   */
                 }
             }
 
-            /*
-            void setAllNeverOpen(ContextMenuStripEx ex, bool value)
-            {
-                if (ex == null) return;
-                ex.NeverOpen = value;
-                var items = ex.Items;
-                if (items != null)
-                {
-                    for (var i = 0; i < items.Count; i++)
-                    {
-                        var item = items[i] as ZipPlaAddresBarToolStripMenuItem;
-                        if (item != null)
-                        {
-                            setAllNeverOpen(item.DropDown as ContextMenuStripEx, value);
-                        }
-                    }
-                }
-            }
-                */
 
             // DropDownNeverOpen が書き換えられる前に DropDown が書き換えられることもある
             public ToolStripDropDown NewDropDown
@@ -2066,24 +1935,10 @@ namespace ZipPla
                 set
                 {
                     //AbsoluteNeverOpen で行う
-                    /*
-                    var ex = value as ContextMenuStripEx;
-                    if (ex != null)
-                    {
-                        setAllNeverOpen(ex, dropDownNeverOpen);
-                        //ex.NeverOpen = dropDownNeverOpen;
-                    }
-                    */
                     base.DropDown = value;
                 }
             }
             
-            /*
-            private void CancelEventHandler_Cancel(object sender, CancelEventArgs e)
-            {
-                e.Cancel = true;
-            }
-            */
 
             private bool? fixedSelect = null;
             /// <summary>
@@ -2119,77 +1974,8 @@ namespace ZipPla
             focusRobber();
         }
 
-        /*
-        private string getButtonPath(Button button)
-        {
-            var result = "";
-            var skip = true;
-            foreach (var btn in buttonList)
-            {
-                if (skip = !skip) continue;
-                if (button != btn)
-                {
-                    result += btn.Text + Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    return result + btn.Text;
-                }
-            }
-            throw new Exception("Program Logic error.");
-        }
-        */
 
         //private const int allowance = 32;
-        /*
-        private void fitVisibleButtonCount()
-        {
-            if (buttonList.Count == 0) return;
-            var baseRight = baseControl.Right;
-            var lastButton = buttonList.Last();
-            var allowance = (32 * lastButton.Height + 23 / 2) / 23;
-            var buttonRight = lastButton.Right;
-            var shift = 0;
-            while (nextDeleteIndex < buttonList.Count && buttonRight + allowance - shift > baseRight)
-            {
-                var button = buttonList[nextDeleteIndex++];
-                if (button.Visible)
-                {
-                    shift += button.Width;
-                    var temp = BaseControl_TextChanged_StopRead;
-                    BaseControl_TextChanged_StopRead = true;
-                    button.Visible = false;
-                    BaseControl_TextChanged_StopRead = temp;
-                }
-            }
-            if (shift > 0)
-            {
-                for (var i = 0; i < buttonList.Count; i++)
-                {
-                    var button = buttonList[i];
-                    button.Location = new Point(button.Location.X - shift, button.Location.Y);
-                }
-            }
-            else
-            {
-                while (nextDeleteIndex > 0 && buttonRight + allowance + shift + buttonList[nextDeleteIndex - 1].Width <= baseRight)
-                {
-                    var button = buttonList[nextDeleteIndex - 1];
-                    shift += button.Width;
-                    button.Visible = true;
-                    nextDeleteIndex--;
-                }
-                if (shift > 0)
-                {
-                    for (var i = 0; i < buttonList.Count; i++)
-                    {
-                        var button = buttonList[i];
-                        button.Location = new Point(button.Location.X + shift, button.Location.Y);
-                    }
-                }
-            }
-        }
-        */
         private void fitVisibleButtonCount()
         {
             if (buttonsHiddenForEdit_Visibility != null) return; // 編集のために隠している間は触らない（K27）
@@ -2242,35 +2028,6 @@ namespace ZipPla
                 }
 
 
-                /*
-                var minWidth = 4 * buttonHeight;
-                for (var i = startIndex; i < buttonListCount; i++)
-                {
-                    if (buttonList[i] is DirectoryButton dButton)
-                    {
-                        var newButtonWidth = dButton.FullWidth - (totalWidth - regionWidth);
-                        if (newButtonWidth >= minWidth)
-                        {
-                            dButton.AutoSize = false;
-                            //dButton.AutoEllipsis = true;
-                            dButton.Size = new Size(newButtonWidth, buttonHeight);
-                            // totalWidth = regionWidth; // あとで使う場合コメントアウトを外す
-                            while (++i < buttonListCount)
-                            {
-                                if (buttonList[i] is DirectoryButton dButton2) dButton2.Size = new Size(dButton2.FullWidth, buttonHeight);
-                            }
-                            break;
-                        }
-                        else if (dButton.FullWidth > minWidth)
-                        {
-                            dButton.AutoSize = false;
-                            //dButton.AutoEllipsis = true;
-                            dButton.Size = new Size(minWidth, buttonHeight);
-                            totalWidth -= dButton.FullWidth - minWidth;
-                        }
-                    }
-                }
-                */
 
             }
             else
@@ -2289,16 +2046,6 @@ namespace ZipPla
             {
                 buttonList[i].Visible = false;
             }
-            /*
-            var prevButtonRight = regionLeft;
-            for (var i = 0; i < startIndex; i++)
-            {
-                var button = buttonList[i];
-                button.Visible = false;
-                prevButtonRight -= button.Width;
-                button.Left = prevButtonRight;
-            }
-            */
 
             var nextButtonLeft = regionLeft;
             for (var i = startIndex; i < buttonListCount; i++)
@@ -2516,54 +2263,6 @@ namespace ZipPla
                 }
             }
 
-            /*
-            bool TouchAnalyzer_Pan_Scrolled = false;
-            private void TouchAnalyzer_Pan(TouchAnalyzer sender, PanEventArgs e)
-            {
-                if (Items.Count > 0)
-                {
-                    if (e.Condition == TouchGestureCondition.Begin)
-                    {
-                        TouchAnalyzer_Pan_Scrolled = false;
-                        e.Handled = true;
-                    }
-                    var height = Items[0].Height;
-                    var totalDelta = CastHelper.Round(e.TotalVerticalMotion / height);
-                    var prevTotalDelta = CastHelper.Round(e.PreviousTotalVerticalMotion / height);
-                    if (totalDelta != prevTotalDelta)
-                    {
-                        TouchAnalyzer_Pan_Scrolled = true;
-                        PerformScroll(totalDelta - prevTotalDelta);
-                    }
-                    if (e.Condition == TouchGestureCondition.Ongoing)
-                    {
-                        e.Handled = true;
-                    }
-                    else if (e.Condition == TouchGestureCondition.Complete && TouchAnalyzer_Pan_Scrolled)
-                    {
-                        TouchAnalyzer_Pan_Scrolled = false;
-                        e.Handled = true;
-                    }
-                }
-            }
-            
-            private bool disposed = false;
-            protected override void Dispose(bool disposing)
-            {
-                if (!disposed)
-                {
-                    if (disposing)
-                    {
-                        touchAnalyzer.Dispose();
-                        touchListener.Dispose();
-                    }
-
-                    disposed = true;
-
-                    base.Dispose(disposing);
-                }
-            }
-            */
 
             private class escapeAmpersand : ToolStripProfessionalRenderer
             {
@@ -2579,23 +2278,6 @@ namespace ZipPla
             {
                 get
                 {
-                    /*
-                    if (neverOpen) return true;
-                    
-                    var cms = this;
-                    ZipPlaAddresBarToolStripMenuItem parent;
-                    while ((parent = cms?.OwnerItem as ZipPlaAddresBarToolStripMenuItem) != null)
-                    {
-                        if (parent.DropDownNeverOpen)
-                        {
-                            NeverOpen = true;
-                            return true;
-                        }
-                        cms = parent.Owner as ContextMenuStripEx;
-                    }
-                    
-                    return false;
-                    */
                     return neverOpen;
                 }
                 set
@@ -2603,12 +2285,6 @@ namespace ZipPla
                     if (neverOpen != value)
                     {
                         neverOpen = value;
-                        /*
-                        if (neverOpen && Visible)
-                        {
-                            Close();
-                        }
-                        */
                     }
                 }
             }

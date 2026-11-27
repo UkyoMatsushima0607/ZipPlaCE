@@ -637,15 +637,6 @@ namespace GenerarClasses
         private int Exit_Code = 0;
         public void ReserveExit(int exitCode, out bool realTime)
         {
-            /*
-            Exit_Que = true;
-            Exit_Code = exitCode;
-            CancelAsync();
-
-            realTime = true;
-            return;
-            
-            */
             if (AllWorkerCount == 0)
             {
                 realTime = true;

@@ -24,13 +24,6 @@ namespace ZipPla
 
         // Compiled は開放されないので static readonly 以外で使うのは適切ではない
         // https://msdn.microsoft.com/ja-jp/library/8zbs0h2f(v=vs.110).aspx
-        /*
-        public static Regex GetCompiledRegex(string text, bool compile = true)
-        {
-            return new Regex(IsRegex.Replace(text, "$1"), (IsIgnoreCaseRegex.IsMatch(text) ?
-                    RegexOptions.IgnoreCase : RegexOptions.None) | (compile ? RegexOptions.Compiled : 0));
-        }
-        */
 
         public static Regex GetRegex(string text)
         {
@@ -311,28 +304,6 @@ namespace ZipPla
         public static readonly Regex IsRegex = new Regex(@"^\/(.+)\/[imgy]*$", RegexOptions.Compiled);
         private static readonly Regex IsIgnoreCaseRegex = new Regex(@"i[imgy]*$", RegexOptions.Compiled);
 
-        /*
-        public static Regex[] TextToRegexArrayConverter(string text)
-        {
-            if (IsRegex.IsMatch(text))
-            {
-                return new Regex[1] { new Regex(IsRegex.Replace(text, "$1"), (IsIgnoreCaseRegex.IsMatch(text) ? RegexOptions.IgnoreCase : RegexOptions.None) | RegexOptions.Compiled) };
-            }
-            else
-            {
-                var array = split(text);
-                var length = array.Length;
-                var result = new Regex[length];
-                for (var i = 0; i < length; i++)
-                {
-                    var wildcard = array[i];
-                    if (includesInvalidPathChars(wildcard)) throw new FormatException();
-                    result[i] = wildcardToRegex(wildcard);
-                }
-                return result;
-            }
-        }
-        */
 
         public static string[] Split(string str)
         {
@@ -594,37 +565,6 @@ namespace ZipPla
                 j++;
             }
         }
-        /*
-        public bool IsMatch(string text)
-        {
-            var count = exa.Length;
-            var len = text.Length;
-            var i = 0;
-            var j = 0;
-            while(true)
-            {
-                i += qes[j];
-                var c = len - i - lef[j];
-                if (c < 0) return false;
-                var e = exa[j];
-                var eLen = e.Length;
-                if (ast[j])
-                {
-                    var p = ci.IndexOf(text, e, i, c + eLen, stringComparison);
-                    if (p >= 0) i = p + eLen;
-                    else return false;
-                }
-                else
-                {
-                    if (ci.IndexOf(text, e, i, eLen, stringComparison) == i) i += eLen;
-                    else return false;
-                }
-                if (++j >= count) break;
-            }
-            if (ast[j]) return len - i >= qes[j];
-            else return len - i == qes[j];
-        }
-        */
 
         public static int Compare(string string1, string string2)
         {

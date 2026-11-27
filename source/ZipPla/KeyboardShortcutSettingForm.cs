@@ -120,12 +120,6 @@ namespace ZipPla
                     var displayableShortcut = new DisplayableShortcut(action.Shortcut, action.Name);
                     rows.Add(getRow(keyToIndex[action.Key], displayableShortcut));
 
-                    /*
-                    if (action.Shortcut.Any(s => s.Contains(Keys.LButton)))
-                    {
-                        LButtonCount++;
-                    }
-                    */
                 }
                 dataGridView.Rows.AddRange(rows.ToArray());
                 Shown += (sender, e) => { foreach (DataGridViewRow row in dataGridView.Rows) row.Selected = false; };
@@ -261,17 +255,6 @@ namespace ZipPla
             }
         }
 
-        /*
-        private void KeyboardShortcutSettingForm_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (addedKeys.Count == 0 || addedKeys.Last() != e.KeyCode)
-            {
-                addedKeys.Add(e.KeyCode);
-                lbHint.Text = KeyboardShortcutAction.GetNameOfShortcut(addedKeys);
-            }
-            e.Handled = true;
-        }
-        */
 
         private void Control_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
@@ -306,12 +289,6 @@ namespace ZipPla
             if (e != null) e.Handled = true;
             endAddMode();
 
-            /*
-            if (preLButtonCount == 0 && LButtonCount > 0 && UseLButtonWarningMessage != null)
-            {
-                MessageBox.Show(this, UseLButtonWarningMessage, InformationText, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            */
         }
         
         private void endAddMode()
@@ -389,12 +366,6 @@ namespace ZipPla
             {
                 row = getRow(templateIndex, displayableShortcut);
                 dataGridView.Rows.Insert(index, row);
-                /*
-                if (displayableShortcut.Shortcut.Any(s => s.Contains(Keys.LButton)))
-                {
-                    LButtonCount++;
-                }
-                */
             }
             else
             {
@@ -523,12 +494,6 @@ namespace ZipPla
             return a0 != null && a0.Count == 1 && ExtendedKeys.IsLButton((System.Windows.Forms.Keys)a0.First());
         }
 
-        /*
-        public static bool intersectsShortcut(HashSet<Keys>[] a, HashSet<Keys>[] b)
-        {
-            return a != null && a.Any(ai => ai != null && ai.Any(ak => b != null && b.Any(bi => bi != null && bi.Any(bk => ak == bk || ExtendedKeys.IsLButton(ak) && ExtendedKeys.IsLButton(bk)))));
-        }
-        */
         public static bool WeaklyCompetesShortcut(HashSet<Keys>[] a, HashSet<Keys>[] b)
         {
             if (a == null || b == null) return false;
@@ -571,14 +536,8 @@ namespace ZipPla
             {
                 bool changed;
                 var supCurrentState = getSupplementCommands(currentState, out changed);
-                // var preActionsContainsLButton = targetShortcut.ActionsContainsLButton;
-                //var preActionsContainsMButton = targetShortcut.ActionsContainsMButton;
-                //var preActionsContainsRButton = targetShortcut.ActionsContainsRButton;
                 targetShortcut.Actions = (from s in supCurrentState select new KeyboardShortcutAction(templates[s.Item2].Key, templates[s.Item2].Action, continuousExecutionKeys.Contains(templates[s.Item2].Key), s.Item1)).ToArray();
                 if(changed
-                    //|| UseLButtonWarningMessage != null && !preActionsContainsLButton && targetShortcut.ActionsContainsLButton
-                    //|| UseMButtonWarningMessage != null && !preActionsContainsMButton && targetShortcut.ActionsContainsMButton 
-                    //|| UseRButtonWarningMessage != null && !preActionsContainsRButton && targetShortcut.ActionsContainsRButton
                     )
                 {
                     var message = "";
@@ -587,28 +546,6 @@ namespace ZipPla
 
                     // 入力直後に Warning を出すように変更
 
-                    /*
-                    // もとから LButton 等が使われていれば積極的にワーニングを出すことはしないが
-                    // ワーニングを出すなら表示するので preActionsContainsLButton は参照しない
-
-                    if (UseLButtonWarningMessage != null && targetShortcut.ActionsContainsLButton)
-                    {
-                        if (message != "") message += "\n\n";
-                        message += UseLButtonWarningMessage;
-                    }
-
-                    if (UseMButtonWarningMessage != null && targetShortcut.ActionsContainsMButton)
-                    {
-                        if (message != "") message += "\n\n";
-                        message += UseMButtonWarningMessage;
-                    }
-
-                    if (UseRButtonWarningMessage != null && targetShortcut.ActionsContainsRButton)
-                    {
-                        if (message != "") message += "\n\n";
-                        message += UseRButtonWarningMessage;
-                    }
-                    */
 
                     MessageBox.Show(MessageBoxOwner, message, InformationText, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -655,13 +592,6 @@ namespace ZipPla
         {
             foreach (DataGridViewRow row in dataGridView.SelectedRows)
             {
-                /*
-                var sc = row.Cells[tbcShortcut.Index].Value as DisplayableShortcut;
-                if (sc != null && sc.Shortcut.Any(s => s.Contains(Keys.LButton)))
-                {
-                    LButtonCount--;
-                }
-                */
                 dataGridView.Rows.Remove(row);
             }
         }

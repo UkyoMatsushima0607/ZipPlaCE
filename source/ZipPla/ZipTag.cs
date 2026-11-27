@@ -56,14 +56,6 @@ namespace ZipPla
             //return Color.FromArgb(128 + random.Next(128), 128 + random.Next(128), 128 + random.Next(128));
 
             // 幾何的な議論で、これは青色にかたよる傾向になることが分かる
-            /*
-            for(uint i = 0; i < uint.MaxValue; i++)
-            {
-                var color = Color.FromArgb(random.Next(256), random.Next(256), random.Next(256));
-                if (nearToWhite(color)) return color;
-            }
-            return Color.White;
-            */
         }
 
         public string Name
@@ -138,9 +130,6 @@ namespace ZipPla
             return Math.Pow(0.299 * color.R, 2.2 * 2) + Math.Pow(0.587 * color.G, 2.2 * 2) + Math.Pow(0.114 * color.B, 2.2 * 2);
         }
 
-        //private static readonly ColorLabComparator whilteComparator = new ColorLabComparator(Color.White, Color.Black);
-       // private static readonly ColorLab labWhite = new ColorLab(Color.White);
-       // private static readonly ColorLab labBlack = new ColorLab(Color.Black);
         public static bool NearToWhite(Color color)
         {
             //return getGrayScale(color) >= 186.083713474; // 255 * 0.5^(1/2.2)
@@ -158,12 +147,6 @@ namespace ZipPla
             //return 2 * labWhite.CIE2000(colorLab) < labBlack.CIE2000(colorLab);
         }
 
-        /*
-        public static Color GetSelectionForeColor(Color backColor, Color selectionBackColor)
-        {
-
-        }
-        */
 
     }
     
