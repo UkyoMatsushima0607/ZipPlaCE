@@ -375,41 +375,7 @@ namespace ZipPla
                 EventHandler eh2 = (sender2, e2) =>
                 {
                     if (unckeckAllTags_Changing) return;
-                    if (getTagChanged(itemsForEventHandler.Count > 0 ? itemsForEventHandler : items)) // 外側が閉じた後に呼び出されることがあり、その場合 items の方に入っている
-                    {
-                        noneToolStripMenuItem.Enabled = false;
-                        rating1ToolStripMenuItem.Enabled = false;
-                        rating2ToolStripMenuItem.Enabled = false;
-                        rating3ToolStripMenuItem.Enabled = false;
-                        rating4ToolStripMenuItem.Enabled = false;
-                        rating5ToolStripMenuItem.Enabled = false;
-
-                        tagEditorToolStripMenuItem.Enabled = false;
-                        addTagsFromTheFileNameToolStripMenuItem.Enabled = false;
-
-                        clearPageSequenceSettingToolStripMenuItem.Enabled = false;
-                        saveCurrentPageSequenceToolStripMenuItem.Enabled = false;
-                        clearThumbnailSettingToolStripMenuItem.Enabled = false;
-                        setThumbnailManuallyToolStripMenuItem.Enabled = false;
-                    }
-                    else
-                    {
-                        noneToolStripMenuItem.Enabled = true;
-                        rating1ToolStripMenuItem.Enabled = true;
-                        rating2ToolStripMenuItem.Enabled = true;
-                        rating3ToolStripMenuItem.Enabled = true;
-                        rating4ToolStripMenuItem.Enabled = true;
-                        rating5ToolStripMenuItem.Enabled = true;
-
-                        tagEditorToolStripMenuItem.Enabled = true;
-                        addTagsFromTheFileNameToolStripMenuItem.Enabled = editToolStripMenuItem_newTagExists;
-
-                        clearPageSequenceSettingToolStripMenuItem.Enabled = editToolStripMenuItem_pathHasPageDirectionInfo;
-                        saveCurrentPageSequenceToolStripMenuItem.Enabled = pageSequensCanBeSaved;
-                        clearThumbnailSettingToolStripMenuItem.Enabled = editToolStripMenuItem_pathHasThumbnailInfo;
-                        //setThumbnailManuallyToolStripMenuItem.Enabled = isBookAndNormal;
-                        setThumbnailManuallyToolStripMenuItem.Enabled = isBook;
-                    }
+                    setEditMenuItemsEnabled(tagChanged: getTagChanged(itemsForEventHandler.Count > 0 ? itemsForEventHandler : items), canSavePageSequence: pageSequensCanBeSaved, canSetThumbnail: isBook); // 外側が閉じた後に呼び出されることがあり、その場合 items の方に入っている
                 };
 
                 foreach (var item in partialItems)
@@ -666,40 +632,27 @@ namespace ZipPla
             }
             unckeckAllTags_Changing = false;
 
-            if (!editToolStripMenuItem_initialTagEmpty)
-            {
-                noneToolStripMenuItem.Enabled = false;
-                rating1ToolStripMenuItem.Enabled = false;
-                rating2ToolStripMenuItem.Enabled = false;
-                rating3ToolStripMenuItem.Enabled = false;
-                rating4ToolStripMenuItem.Enabled = false;
-                rating5ToolStripMenuItem.Enabled = false;
+            setEditMenuItemsEnabled(tagChanged: !editToolStripMenuItem_initialTagEmpty, canSavePageSequence: true, canSetThumbnail: true);
+        }
 
-                tagEditorToolStripMenuItem.Enabled = false;
-                addTagsFromTheFileNameToolStripMenuItem.Enabled = false;
+        // タグのチェックを変えている間は、評価・タグの編集・ページ順・サムネイルの項目を選べなくする（タグの変更と同時には行えない）
+        private void setEditMenuItemsEnabled(bool tagChanged, bool canSavePageSequence, bool canSetThumbnail)
+        {
+            var enabled = !tagChanged;
+            noneToolStripMenuItem.Enabled = enabled;
+            rating1ToolStripMenuItem.Enabled = enabled;
+            rating2ToolStripMenuItem.Enabled = enabled;
+            rating3ToolStripMenuItem.Enabled = enabled;
+            rating4ToolStripMenuItem.Enabled = enabled;
+            rating5ToolStripMenuItem.Enabled = enabled;
 
-                clearPageSequenceSettingToolStripMenuItem.Enabled = false;
-                saveCurrentPageSequenceToolStripMenuItem.Enabled = false;
-                clearThumbnailSettingToolStripMenuItem.Enabled = false;
-                setThumbnailManuallyToolStripMenuItem.Enabled = false;
-            }
-            else
-            {
-                noneToolStripMenuItem.Enabled = true;
-                rating1ToolStripMenuItem.Enabled = true;
-                rating2ToolStripMenuItem.Enabled = true;
-                rating3ToolStripMenuItem.Enabled = true;
-                rating4ToolStripMenuItem.Enabled = true;
-                rating5ToolStripMenuItem.Enabled = true;
+            tagEditorToolStripMenuItem.Enabled = enabled;
+            addTagsFromTheFileNameToolStripMenuItem.Enabled = enabled && editToolStripMenuItem_newTagExists;
 
-                tagEditorToolStripMenuItem.Enabled = true;
-                addTagsFromTheFileNameToolStripMenuItem.Enabled = editToolStripMenuItem_newTagExists;
-
-                clearPageSequenceSettingToolStripMenuItem.Enabled = editToolStripMenuItem_pathHasPageDirectionInfo;
-                saveCurrentPageSequenceToolStripMenuItem.Enabled = true;
-                clearThumbnailSettingToolStripMenuItem.Enabled = editToolStripMenuItem_pathHasThumbnailInfo;
-                setThumbnailManuallyToolStripMenuItem.Enabled = true;
-            }
+            clearPageSequenceSettingToolStripMenuItem.Enabled = enabled && editToolStripMenuItem_pathHasPageDirectionInfo;
+            saveCurrentPageSequenceToolStripMenuItem.Enabled = enabled && canSavePageSequence;
+            clearThumbnailSettingToolStripMenuItem.Enabled = enabled && editToolStripMenuItem_pathHasThumbnailInfo;
+            setThumbnailManuallyToolStripMenuItem.Enabled = enabled && canSetThumbnail;
         }
 
         private void uncheckAllToolStripMenuItem_MouseDown(object sender, MouseEventArgs e)

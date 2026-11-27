@@ -696,6 +696,20 @@ namespace ZipPla
             }
         }
 
+        // セルの境界線の内側から Padding を差し引いた、内容を描く範囲
+        private static Rectangle GetCellContentRectangle(Rectangle cellBounds, Rectangle borderWidths, DataGridViewCellStyle cellStyle)
+        {
+            var rect = new Rectangle(
+                cellBounds.Left + borderWidths.Left,
+                cellBounds.Top + borderWidths.Top,
+                cellBounds.Width - borderWidths.Right,
+                cellBounds.Height - borderWidths.Bottom);
+            rect.Offset(cellStyle.Padding.Right, cellStyle.Padding.Top);
+            rect.Width -= cellStyle.Padding.Horizontal;
+            rect.Height -= cellStyle.Padding.Vertical;
+            return rect;
+        }
+
         class DataGridViewIconCell : DataGridViewTextBoxCell
         {
             // K6: 行は共有されるので、セルは行ごとの状態を持たない。アイコンと種類の名前は FileListRowInfo に持ち、描画するときに取得する
@@ -1019,18 +1033,8 @@ namespace ZipPla
                 if (r < 0) r = 0;
 
 
-                //境界線の内側に範囲を取得する
-                Rectangle borderRect = this.BorderWidths(advancedBorderStyle);
-                Rectangle paintRect = new Rectangle(
-                    cellBounds.Left + borderRect.Left,
-                    cellBounds.Top + borderRect.Top,
-                    cellBounds.Width - borderRect.Right,
-                    cellBounds.Height - borderRect.Bottom);
-
-                //Paddingを差し引く
-                paintRect.Offset(cellStyle.Padding.Right, cellStyle.Padding.Top);
-                paintRect.Width -= cellStyle.Padding.Horizontal;
-                paintRect.Height -= cellStyle.Padding.Vertical;
+                //境界線と Padding の内側の範囲
+                Rectangle paintRect = GetCellContentRectangle(cellBounds, this.BorderWidths(advancedBorderStyle), cellStyle);
 
 
                 base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts & ~DataGridViewPaintParts.ContentForeground);
@@ -1108,18 +1112,8 @@ namespace ZipPla
                     }
                 }
 
-                //境界線の内側に範囲を取得する
-                Rectangle borderRect = this.BorderWidths(advancedBorderStyle);
-                Rectangle paintRect = new Rectangle(
-                    cellBounds.Left + borderRect.Left,
-                    cellBounds.Top + borderRect.Top,
-                    cellBounds.Width - borderRect.Right,
-                    cellBounds.Height - borderRect.Bottom);
-
-                //Paddingを差し引く
-                paintRect.Offset(cellStyle.Padding.Right, cellStyle.Padding.Top);
-                paintRect.Width -= cellStyle.Padding.Horizontal;
-                paintRect.Height -= cellStyle.Padding.Vertical;
+                //境界線と Padding の内側の範囲
+                Rectangle paintRect = GetCellContentRectangle(cellBounds, this.BorderWidths(advancedBorderStyle), cellStyle);
 
                 base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, formattedValue, errorText, cellStyle, advancedBorderStyle, paintParts & ~DataGridViewPaintParts.ContentForeground);
                 //return;

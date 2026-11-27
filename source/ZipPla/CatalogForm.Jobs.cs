@@ -336,6 +336,17 @@ namespace ZipPla
 
         private int bmwMakePreview_EachRunWorkerCompleted_LastCountTick = Environment.TickCount - 1000;
 
+        // 表示順に並べた選択を、クリックした項目が先頭になるように回す。クリックした項目が選択になければ null
+        private static int[] rotateToStartFrom(int[] indices, int firstValue)
+        {
+            var start = Array.IndexOf(indices, firstValue);
+            if (start < 0) return null;
+            var result = new int[indices.Length];
+            Array.Copy(indices, start, result, 0, indices.Length - start);
+            Array.Copy(indices, 0, result, indices.Length - start, start);
+            return result;
+        }
+
         private void getSelectedPathArray(int clickedIndex, out string[] selectedPaths, out int[] pages, out bool[] isDirs, bool pageReset = false)
         {
             selectedPaths = null;
@@ -368,19 +379,8 @@ namespace ZipPla
 
                 if (clickedIndex >= 0)
                 {
-                    var indexindex = Array.IndexOf(selectedIndices, clickedIndex);
-                    if (indexindex < 0) return;
-                    var newSelectedIndices = new int[selectedIndices.Length];
-                    var j = 0;
-                    for (var i = indexindex; i < selectedIndices.Length; i++)
-                    {
-                        newSelectedIndices[j++] = selectedIndices[i];
-                    }
-                    for (var i = 0; i < indexindex; i++)
-                    {
-                        newSelectedIndices[j++] = selectedIndices[i];
-                    }
-                    selectedIndices = newSelectedIndices;
+                    selectedIndices = rotateToStartFrom(selectedIndices, clickedIndex);
+                    if (selectedIndices == null) return;
                 }
             }
             catch
@@ -448,19 +448,8 @@ namespace ZipPla
 
                 if (clickedIndex >= 0)
                 {
-                    var indexindex = Array.IndexOf(selectedIndices, clickedIndex);
-                    if (indexindex < 0) return;
-                    var newSelectedIndices = new int[selectedIndices.Length];
-                    var j = 0;
-                    for (var i = indexindex; i < selectedIndices.Length; i++)
-                    {
-                        newSelectedIndices[j++] = selectedIndices[i];
-                    }
-                    for (var i = 0; i < indexindex; i++)
-                    {
-                        newSelectedIndices[j++] = selectedIndices[i];
-                    }
-                    selectedIndices = newSelectedIndices;
+                    selectedIndices = rotateToStartFrom(selectedIndices, clickedIndex);
+                    if (selectedIndices == null) return;
                 }
             }
             catch
