@@ -864,5 +864,203 @@ namespace ZipPla
         {
             Program.TextBoxShowRight(selectedFileNameToolStripTextBox);
         }
+
+        private void btnLocationCommands_Click(object sender, EventArgs e)
+        {
+            clearAllHistoryOfLocationsToolStripMenuItem.Enabled = cbLocation.Items.Count > 0;
+            deleteCurrentPathFromHistoryToolStripMenuItem.Enabled = zabLocation.Text != null && cbLocation.Items.Contains(zabLocation.Text);
+            cmsLocationCommands.Show(Cursor.Position);
+        }
+
+        private void btnLocationCommands_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                btnLocationCommands_Click(null, null);
+            }
+        }
+
+        private void deleteCurrentPathFromHistoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            cbLocation.Items.Remove(zabLocation.Text);
+            zabLocation.Text = "";
+        }
+
+        private void clearAllHistoryOfLocationsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(Message.DoYouClearLocationHistory, Message.Information, MessageBoxButtons.OKCancel, MessageBoxIcon.Information) == DialogResult.OK)
+            {
+                cbLocation.Items.Clear();
+            }
+        }
+
+        private string cbLocation_DropDown_TextBeforeDropDown = null;
+
+        private bool cbLocation_DropDowning = false;
+
+        private void cbLocation_DropDown(object sender, EventArgs e)
+        {
+            cbLocation_DropDown_TextBeforeDropDown = zabLocation.Text;
+            cbLocation_DropDowning = true;
+        }
+
+        private void cbLocation_DropDownClosed(object sender, EventArgs e)
+        {
+            cbLocation_DropDowning = false;
+            var cb = (ComboBox)sender;
+
+            // この時点で cb.Text を明示的に変更しないと、cb.Text の値の変更のタイミングがこれに続く if 文よりも後になってしまうばかりか、
+            // これに続くイベントハンドラで行われる読み込みパスの決定よりも後にさえなってしまう。
+            var si = cb.SelectedIndex;
+            if (si < 0)
+            {
+                // → KeyDown 側で対処
+                return;
+            }
+
+            zabLocation.Text = cb.Items[si].ToString();
+
+            if (zabLocation.Text != cbLocation_DropDown_TextBeforeDropDown)
+            {
+                MakePreview();
+            }
+        }
+
+        private void cbLocation_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                if (cbLocation_DropDowning)
+                {
+                    // ComboBox は Enter キーで閉じると Text が Items に含まれない場合に空白に置き換える
+                    // 以下の記述で Text をそのままにできる
+                    e.SuppressKeyPress = true;
+                    var text = cbLocation.Text;
+                    cbLocation.DroppedDown = false;
+                    cbLocation.Text = text;
+                }
+                //else // エンターでドロップダウンを閉じた場合もそのまま移動
+                {
+                    e.SuppressKeyPress = true;
+                    MakePreview();
+                }
+            }
+            else if (e.KeyCode == Keys.Escape && !cbLocation_DropDowning)
+            {
+                e.SuppressKeyPress = true;
+                FocusLatestControledControl();
+            }
+        }
+
+        private void cbLocation_MouseDown(object sender, MouseEventArgs e)
+        {
+            var cb = (ComboBox)sender;
+            if (!cbLocation_Focused_for_MouseDown && e.Button == MouseButtons.Left && !cb.DroppedDown)
+            {
+                cbLocation.DroppedDown = true;
+            }
+            cbLocation_Focused_for_MouseDown = true;
+        }
+
+        bool cbLocation_Focused_for_MouseDown = false;
+
+        private void cbLocation_Leave(object sender, EventArgs e)
+        {
+            cbLocation_Focused_for_MouseDown = false;
+        }
+
+        private void btnGoToBack_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                //showUndoBufferList(0, undoBufferIndex + 1);
+                showUndoBufferList(0, undoBuffer.Count);
+            }
+        }
+
+        private void btnGoToForward_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                //showUndoBufferList(undoBufferIndex, undoBuffer.Count);
+                showUndoBufferList(0, undoBuffer.Count);
+            }
+        }
+
+        private ContextMenuStrip showUndoBufferList_ContextMenuStrip = null;
+
+        private void showUndoBufferList(int fromInclusive, int toExclusive)
+        {
+            if (fromInclusive < 0 || fromInclusive >= toExclusive || toExclusive > undoBuffer.Count) return;
+
+            ContextMenuStrip cms;
+            if (showUndoBufferList_ContextMenuStrip != null)
+            {
+                cms = showUndoBufferList_ContextMenuStrip;
+                foreach (var item in (from ToolStripMenuItem item in cms.Items select item).ToArray())
+                {
+                    item.Dispose();
+                }
+            }
+            else
+            {
+                cms = new ContextMenuStrip();
+                cms.Closed += (sender2, e2) =>
+                {
+                    AllowFullpower = true;
+                };
+                ToolStripDropDownScroller.Enscrollable(cms, ToolStripDropDownScroller.GetGestureListener(cms));
+                showUndoBufferList_ContextMenuStrip = cms;
+            }
+            var items = new ToolStripMenuItem[toExclusive - fromInclusive];
+            for (var i = fromInclusive; i < toExclusive; i++)
+            {
+                var buf = undoBuffer[i];
+                var path = buf.Location;
+                var item = new ToolStripMenuItem(SimpleBookmark.GetDisplayName(path));
+
+                if (i == undoBufferIndex)
+                {
+                    item.Font = Program.StyledFont(item.Font, FontStyle.Bold);
+                    item.CheckState = CheckState.Indeterminate;
+                }
+                else
+                {
+                    item.Font = Program.StyledFont(item.Font, FontStyle.Regular);
+                    var ii = i;
+                    item.Click += (sender2, e2) =>
+                    {
+                        gotToUnderBuffer(ii, ApplicationProviderUser.MouseClick);
+                    };
+                }
+
+                var backColor = buf.ProfileColor;
+                var foreColor = ZipTag.GetForeColor(backColor);
+                item.BackColor = backColor;
+                item.ForeColor = foreColor;
+
+                if (ColorEquals(foreColor, Color.White))
+                {
+                    item.ForeColor = foreColor;
+                    ForeColorManager.Set(item);
+                }
+
+                CheckMarkProvider.SetCheckMark(cms, item, DisplayCheckMark.Select);
+
+                items[toExclusive - i - 1] = item;
+            }
+
+            cms.Items.AddRange(items);
+
+
+            var maxSize = cms.MaximumSize;
+            var area = Screen.FromControl(btnGoToBack).WorkingArea;
+            var buttonBound = RectangleToScreen(btnGoToBack.Bounds);
+            cms.MaximumSize = new Size(maxSize.Width, Math.Max(buttonBound.Height * 2 * SystemInformation.MouseWheelScrollLines, area.Bottom - (buttonBound.Bottom - 1)));
+
+            AllowFullpower = false;
+            if (this != ActiveForm) Activate();
+            cms.Show(new Point(buttonBound.Left, buttonBound.Bottom - 1));
+        }
     }
 }

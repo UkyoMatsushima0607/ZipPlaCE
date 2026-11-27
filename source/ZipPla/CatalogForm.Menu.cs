@@ -625,5 +625,632 @@ namespace ZipPla
             {
             }
         }
+
+        private void propertiesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenSelectedProperties();
+        }
+
+        private void OpenSelectedProperties()
+        {
+            var selectedIndex = tvCatalog.SelectedIndex;
+            if (selectedIndex < 0 || ZipPathArray == null || ZipPathArray.Length <= selectedIndex)
+            {
+                return;
+            }
+            var path = ZipPathArray[selectedIndex];
+
+            AllowFullpower = false;
+
+            string newPath;
+            using (var pform = new ArchivePropertiesForm(path, FileCountArray[selectedIndex], ArchivesInArchiveMode, ImageInfoArray[selectedIndex], MovieInfoArray[selectedIndex]))
+            {
+                pform.ShowDialog(this);
+                newPath = pform.FilePath;
+            }
+
+            RenameShownArchive(selectedIndex, path, newPath);
+
+            AllowFullpower = true;
+        }
+
+        private void startToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+        {
+            try
+            {
+                openHistoryToolStripMenuItem.Enabled = File.Exists(Program.HistorySorPath);
+            }
+            catch
+            {
+                openHistoryToolStripMenuItem.Enabled = false;
+            }
+            newFolderToolStripMenuItem.Enabled = !CreatingZipPathArray && InRealDirectory;
+            AllowFullpower = false;
+        }
+
+        private void startToolStripMenuItem_DropDownClosed(object sender, EventArgs e)
+        {
+            // ショートカットキーで使用できるように
+            openHistoryToolStripMenuItem.Enabled = true;
+            newFolderToolStripMenuItem.Enabled = true;
+
+            AllowFullpower = true;
+        }
+
+        // メニューを開いている間は全力の処理を控える
+        private void menu_DropDownOpeningDisallowFullpower(object sender, EventArgs e)
+        {
+            AllowFullpower = false;
+        }
+
+        // メニューを閉じたら全力の処理を許す
+        private void menu_DropDownClosedAllowFullpower(object sender, EventArgs e)
+        {
+            AllowFullpower = true;
+        }
+
+        private void cmsRightClick_Opening(object sender, CancelEventArgs e)
+        {
+            AllowFullpower = false;
+            msSortBy.Stop = msFilter.Stop = msCatalog.Stop = msFileList.Stop = true;
+        }
+
+        private void cmsRightClick_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            //renameForTextBoxRatingTagPageSequence(noop: KeyboardShortcut.GetKeyState(Keys.Escape));
+            renameForTextBoxRatingTagPageSequence(noop: cmsRightClick_Closing_CloseReason == ToolStripDropDownCloseReason.Keyboard);
+            //MessageBox.Show(cmsRightClick_Closing_CloseReason.ToString());
+
+            //msSortBy.Stop = msFilter.Stop = msCatalog.Stop = msFileList.Stop = false; // 直後の Opening と逆転することがあるので Closing で
+            //AllowFullpower = true; // 直後の Opening と逆転することがあるので Closing で
+        }
+
+        // コンテキストメニューを開いている間は全力の処理を控える
+        private void contextMenu_OpeningDisallowFullpower(object sender, CancelEventArgs e)
+        {
+            AllowFullpower = false;
+        }
+
+        private void cmsDirectoryList_Opening(object sender, CancelEventArgs e)
+        {
+            msDirectoryList.Stop = true;
+            AllowFullpower = false;
+        }
+
+        private void cmsDirectoryList_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            msDirectoryList.Stop = false;
+            AllowFullpower = true;
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AllowFullpower = false;
+            Program.ShowAbout();
+            AllowFullpower = true;
+        }
+
+        private void openDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AllowFullpower = false;
+
+            var path = Program.ItsSelfOrExistingParentDirectory(zabLocation.Text);
+            if (!string.IsNullOrEmpty(path))
+            {
+                folderBrowserDialog.SelectedPath = path;
+            }
+            if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                zabLocation.Text = folderBrowserDialog.SelectedPath;
+                MakePreview();
+            }
+
+            AllowFullpower = true;
+        }
+
+        private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AllowFullpower = false;
+
+            var path = Program.ItsSelfOrExistingParentDirectory(zabLocation.Text);
+            if (!string.IsNullOrEmpty(path))
+            {
+                openFileDialog.InitialDirectory = path;
+            }
+            openFileDialog.FileName = "";
+
+            PackedImageLoader.CheckSevenZipExistence(this);
+            var supportedArchiveFileFilter = PackedImageLoader.GetSupportedArchiveFileFilter();
+
+            if (MovieThumbnailLoader.ffmpegExists())
+            {
+                openFileDialog.Filter =
+                    Message.AllSupportedFiles + $"|*.sor;*.{SmartFolder.ExtensionWithoutPeriodInLower};" +
+                        supportedArchiveFileFilter + ";" + MovieThumbnailLoader.SupportedVideoFileFilter + "|" +
+                    Message.VirtualFolder + "|*.sor|" +
+                    Message.SmartFolder + $"|*.{SmartFolder.ExtensionWithoutPeriodInLower}|" +
+                    Message.ArchiveFilesPdfFiles + "|" + supportedArchiveFileFilter + "|" +
+                    Message.VideoFiles + "|" + MovieThumbnailLoader.SupportedVideoFileFilter;
+            }
+            else
+            {
+                openFileDialog.Filter =
+                    Message.AllSupportedFiles + $"|*.sor;*.{SmartFolder.ExtensionWithoutPeriodInLower};" + supportedArchiveFileFilter + "|" +
+                    Message.VirtualFolder + "|*.sor|" +
+                    Message.SmartFolder + $"|*.{SmartFolder.ExtensionWithoutPeriodInLower}|" +
+                    Message.ArchiveFilesPdfFiles + "|" + supportedArchiveFileFilter + "|" +
+                    Message.VideoFilesRequireFfmpeg + "|;"; // 最後の ; を省略するとすべてのファイルが表示されてしまう
+            }
+
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                zabLocation.Text = openFileDialog.FileName;
+                MakePreview();
+                //OpenInDefaultViewer(ApplicationProviderUser.OpenFileDialog, openFileDialog.FileName);
+            }
+
+            AllowFullpower = true;
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void editLocationToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            cbLocation.Focus();
+            cbLocation.DroppedDown = true;
+        }
+
+        private void editFilterToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            cbFilter.Focus();
+            cbFilter.DroppedDown = true;
+        }
+
+        private void fileListToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        {
+            var ckd = fileListToolStripMenuItem.Checked;
+            var ckd2 = thumbnailListToolStripMenuItem.Checked;
+            var firstCkd = ckd && dgvFileList.FirstDisplayedScrollingRowIndex < 0;
+            var temp = selectionSynchronizing;
+            selectionSynchronizing = true;
+            splRight.Visible = ckd && ckd2;
+            pnlRight.Visible = ckd;
+            selectionSynchronizing = temp;
+            if (ckd)
+            {
+                dgvFileList.Focus();
+            }
+
+            if (ckd && ckd2)
+            {
+                pnlRight.Dock = getFileListDock();
+            }
+
+            if (firstCkd) // 現実装では分岐の必要なし
+            {
+                selectionSynchronizingFromThumbnailToFileList();
+            }
+            else
+            {
+                selectionSynchronizingFromThumbnailToFileList();
+            }
+            if (!ckd && !ckd2)
+            {
+                thumbnailListToolStripMenuItem.Checked = true;
+            }
+            else
+            {
+                setTagfilterLocationIfRatingFilterVisibleChanged();
+            }
+        }
+
+        private void thumbnailListToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        {
+            var ckd = thumbnailListToolStripMenuItem.Checked;
+            var ckd2 = fileListToolStripMenuItem.Checked;
+
+            if (ckd) setFileListWidthWithoutSettingWidth(pnlRight_NormalWidth);
+
+            pnlCenter.Visible = ckd;
+            splRight.Visible = ckd && ckd2;
+
+            //pnlRight.Dock = ckd ? DockStyle.Right : DockStyle.Fill;
+
+            if (ckd)
+            {
+                if (ckd2)
+                {
+                    pnlRight.Dock = getFileListDock();
+                }
+            }
+            else
+            {
+                pnlRight.Dock = DockStyle.Fill;
+            }
+
+
+            if (WindowState != FormWindowState.Minimized) setMainPanelWidth();
+
+            if (ckd)
+            {
+                tvCatalog.Focus();
+            }
+
+            if (!ckd && !ckd2)
+            {
+                fileListToolStripMenuItem.Checked = true;
+            }
+            else
+            {
+                setTagfilterLocationIfRatingFilterVisibleChanged();
+            }
+        }
+
+        int pnlBookmarkNoFillHeight;
+
+        private void bookmarkToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        {
+            if (bookmarkToolStripMenuItem.Checked)
+            {
+                pnlBookmark.Visible = pnlLeft.Visible = splLeft.Visible = true;
+                if (folderTreeToolStripMenuItem.Checked)
+                {
+                    pnlBookmark.Dock = DockStyle.Top;
+                    splBookmark.Visible = true;
+                    pnlBookmark.Height = pnlBookmarkNoFillHeight;
+                }
+                else
+                {
+                    splBookmark.Visible = false;
+                    if (pnlBookmark.Dock != DockStyle.Fill)
+                    {
+                        pnlBookmarkNoFillHeight = pnlBookmark.Height;
+                        pnlBookmark.Dock = DockStyle.Fill;
+                    }
+                }
+                fixLeftSplitter();
+                dgvDirectoryList.Focus();
+            }
+            else
+            {
+                pnlBookmark.Visible = splBookmark.Visible = false;
+                pnlLeft.Visible = splLeft.Visible = folderTreeToolStripMenuItem.Checked;
+            }
+        }
+
+        private void folderTreeToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        {
+            setFolderTreeVisible(silent: false);
+            if (folderTreeToolStripMenuItem.Checked)
+            {
+                if (SynchroFromBarToTree)
+                {
+                    setToTree(currentLocation, CollapseOthersWhenSynchronizing);
+                }
+                explorerTreeView.TreeViewWnd.Focus();
+            }
+        }
+
+        private void setFolderTreeVisible(bool silent)
+        {
+            if (folderTreeToolStripMenuItem.Checked)
+            {
+                pnlDirectoryTree.Visible = pnlLeft.Visible = splLeft.Visible = true;
+                if (bookmarkToolStripMenuItem.Checked)
+                {
+                    pnlBookmark.Dock = DockStyle.Top;
+                    splBookmark.Visible = true;
+                    pnlBookmark.Height = pnlBookmarkNoFillHeight;
+                }
+                else
+                {
+                    splBookmark.Visible = false;
+                }
+                fixLeftSplitter();
+
+                if (!explorerTreeView.Initialized)
+                {
+                    // MessageBox などでないと効果なし
+                    //await Task.Run(() => Invoke((MethodInvoker)(() => explorerTreeView.Initialize())));
+
+                    // 高速化前
+                    //Application.DoEvents();
+                    //explorerTreeView.Initialize(IsShown ? Message.NowLoading + "..." : null);
+
+                    // 十分に高速化したので同期的で良い
+                    explorerTreeView.Initialize(null);
+
+                    //await Task.Delay(1);
+                    //explorerTreeView.Initialize(); // await のコストを考えて一度しか呼び出さないが二回以上呼び出しても無視されるだけ
+                }
+            }
+            else
+            {
+                pnlDirectoryTree.Visible = splBookmark.Visible = false;
+                if (bookmarkToolStripMenuItem.Checked)
+                {
+                    if (pnlBookmark.Dock != DockStyle.Fill)
+                    {
+                        pnlBookmarkNoFillHeight = pnlBookmark.Height;
+                        pnlBookmark.Dock = DockStyle.Fill;
+                    }
+                }
+                else
+                {
+                    pnlLeft.Visible = splLeft.Visible = false;
+                }
+            }
+        }
+
+        private void pnlLeft_SizeChanged(object sender, EventArgs e)
+        {
+            fixLeftSplitter();
+        }
+
+        private void fixLeftSplitter()
+        {
+            if (WindowState != FormWindowState.Minimized && pnlBookmark.Visible &&
+                pnlDirectoryTree.Visible && pnlDirectoryTree.Height < splBookmark.MinExtra)
+            {
+                pnlBookmark.Height = Math.Max(splBookmark.MinSize, pnlLeft.Height - splBookmark.MinExtra - splBookmark.Height);
+            }
+        }
+
+        private void ratingHeaderRightClickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcRating.Visible = !tbcRating.Visible;
+            setTagfilterLocationIfRatingFilterVisibleChanged();
+        }
+
+        private void iconToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcIcon.Visible = !tbcIcon.Visible;
+        }
+
+        private void pageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcPage.Visible = !tbcPage.Visible;
+        }
+
+        private void dateCreatedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcCreateTime.Visible = !tbcCreateTime.Visible;
+        }
+
+        private void accessTimeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcAccessTime.Visible = !tbcAccessTime.Visible;
+        }
+
+        private void writeTimeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcWriteTime.Visible = !tbcWriteTime.Visible;
+        }
+
+        private void sizeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcSize.Visible = !tbcSize.Visible;
+        }
+
+        private void resolutionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcResolution.Visible = !tbcResolution.Visible;
+        }
+
+        private void ratioToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcRatio.Visible = !tbcRatio.Visible;
+        }
+
+        private void widthToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcWidth.Visible = !tbcWidth.Visible;
+        }
+
+        private void heightToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcHeight.Visible = !tbcHeight.Visible;
+        }
+
+        private void lengthToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcLength.Visible = !tbcLength.Visible;
+        }
+
+        private void fPSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            tbcFPS.Visible = !tbcFPS.Visible;
+        }
+
+        private void letterboxToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!(sender as ToolStripMenuItem).Checked)
+            {
+                clipModeByControl = ClipMode.Letterbox;
+                ChangeThumbnailSize(null);
+                UpdatePreview();
+            }
+        }
+
+        private void panAndScanToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!(sender as ToolStripMenuItem).Checked)
+            {
+                clipModeByControl = ClipMode.PanAndScan;
+                ChangeThumbnailSize(null);
+                UpdatePreview();
+            }
+        }
+
+        private void plaClipToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!(sender as ToolStripMenuItem).Checked)
+            {
+                clipModeByControl = ClipMode.PlaClip;
+                ChangeThumbnailSize(null);
+                UpdatePreview();
+            }
+        }
+
+        private void verticalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            setFileListDockForUser(DockStyle.Bottom);
+        }
+
+        private void alternativeVerticalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            setFileListDockForUser(DockStyle.Top);
+        }
+
+        private void horizontalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            setFileListDockForUser(DockStyle.Right);
+        }
+
+        private void alternativeHorizontalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            setFileListDockForUser(DockStyle.Left);
+        }
+
+        private void reloadAllItemsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            userReload();
+        }
+
+        private void userReload()
+        {
+            SmartStaticIconProvider.ClearIconCache();
+            UpdatePreview();
+        }
+
+        // マウスダウンイベントに InDirectoryOrVirtualDirectory のイベントが割り当ててある
+        private void clearThumbnailSettingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (InMovie || InArchive) removeCoverSettingFromCurrentLocation();
+        }
+
+        private void addToolStripMenuItem_DropDownClosed(object sender, EventArgs e)
+        {
+
+            addToolStripMenuItem.DropDown = null;
+            AllowFullpower = true;
+        }
+
+        private void editSmartFolderToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var selectedRows = dgvDirectoryList.SelectedRows;
+            if (selectedRows.Count != 1) return;
+            var path = (selectedRows[0].Cells[tbcDirectoryName.Index].Value as ColoredBookmark)?.SimpleBookmark?.Location;
+            if (path == null) return;
+            openSmartFolderSettingForm(path); // AllowFullpower 込み
+        }
+
+        private void cutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            cutSelection(ModifierKeys);
+        }
+
+        private void copyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            copySelection(ModifierKeys);
+        }
+
+        private void pasteToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var targetChildFolder = null as string;
+            while (InRealDirectory)
+            {
+                var selectedIndex = tvCatalog.SelectedIndex; if (selectedIndex < 0) break;
+                var zpa = ZipPathArray; if (zpa == null) break;
+                var count = zpa.Length; if (count <= selectedIndex) break;
+                var zna = ZipNameArray; if (zna == null || zna.Length != count) break;
+                var name = zna[selectedIndex]; if (name == null || !name.Any() || name.Last() != Path.DirectorySeparatorChar) break;
+                targetChildFolder = zpa[selectedIndex];
+                if (targetChildFolder == "") targetChildFolder = null;
+                break;
+            }
+
+            if (targetChildFolder == null)
+            {
+                pasteToCurrentLocation();
+            }
+            else
+            {
+                pasteToTarget(targetChildFolder);
+            }
+        }
+
+        private void standardRightclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RightClickContextMenu = CatalogFormConetxtMenu.ZipPla;
+        }
+
+        private void standardMiddleclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MiddleClickContextMenu = CatalogFormConetxtMenu.ZipPla;
+        }
+
+        private void standardCtrlRightclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ControlRightClickContextMenu = CatalogFormConetxtMenu.ZipPla;
+        }
+
+        private void OnlyTagRightclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RightClickContextMenu = CatalogFormConetxtMenu.Tag;
+        }
+
+        private void OnlyTagMiddleclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MiddleClickContextMenu = CatalogFormConetxtMenu.Tag;
+        }
+
+        private void onlyTagCtrlRightclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ControlRightClickContextMenu = CatalogFormConetxtMenu.Tag;
+        }
+
+        private void explorerRightclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RightClickContextMenu = CatalogFormConetxtMenu.Explorer;
+        }
+
+        private void explorerMiddleclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MiddleClickContextMenu = CatalogFormConetxtMenu.Explorer;
+        }
+
+        private void explorerCtrlRightclickToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ControlRightClickContextMenu = CatalogFormConetxtMenu.Explorer;
+        }
+
+        private void alwaysAutomaticallyHideUIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AlwaysHideUI = !AlwaysHideUI;
+        }
+
+        private void sortFilesWithTheSameOrderAsThumbnailWindowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SortSyncMode = SortSyncMode == SortSyncMode.None ? SortSyncMode.Directory : SortSyncMode.None;
+        }
+
+        private void noneItemSelectionFeedbackToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ItemSelectionFeedback = ItemSelectionFeedback.None;
+        }
+
+        private void inAppropriateCasesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ItemSelectionFeedback = ItemSelectionFeedback.IfSortMayBeSame;
+        }
+
+        private void alwaysItemSelectionFeedbackToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ItemSelectionFeedback = ItemSelectionFeedback.Always;
+        }
     }
 }

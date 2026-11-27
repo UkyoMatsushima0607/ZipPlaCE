@@ -622,5 +622,39 @@ namespace ZipPla
                 return size.IsEmpty ? 1 : 0;
             }
         }
+
+        private void resetVolatilitySort()
+        {
+            foreach (DataGridViewColumn c in dgvFileList.Columns)
+            {
+                if (
+                    c != tbcFileName &&
+                    c != tbcRating &&
+                    c != tbcCreateTime &&
+                    c != tbcAccessTime &&
+                    c != tbcWriteTime &&
+                    c != tbcSize)
+                {
+                    c.HeaderCell.SortGlyphDirection = SortOrder.None;
+                }
+            }
+        }
+
+        private void setNonVolatilitySort()
+        {
+            resetVolatilitySort();
+            dgvFileList.Columns[tbcIcon.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.TypeInAsc ? SortOrder.Ascending : sortMode == SortMode.TypeInDesc ? SortOrder.Descending : SortOrder.None;
+            dgvFileList.Columns[tbcFileName.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.NameInAsc ? SortOrder.Ascending : sortMode == SortMode.NameInDesc ? SortOrder.Descending : SortOrder.None;
+            dgvFileList.Columns[tbcRating.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.RatingInAsc ? SortOrder.Ascending : sortMode == SortMode.RatingInDesc ? SortOrder.Descending : SortOrder.None;
+            dgvFileList.Columns[tbcCreateTime.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.CreatedInAsc ? SortOrder.Ascending : sortMode == SortMode.CreatedInDesc ? SortOrder.Descending : SortOrder.None;
+            dgvFileList.Columns[tbcAccessTime.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.AccessedInAsc ? SortOrder.Ascending : sortMode == SortMode.AccessedInDesc ? SortOrder.Descending : SortOrder.None;
+            dgvFileList.Columns[tbcWriteTime.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.ModifiedInAsc ? SortOrder.Ascending : sortMode == SortMode.ModifiedInDesc ? SortOrder.Descending : SortOrder.None;
+            dgvFileList.Columns[tbcSize.Index].HeaderCell.SortGlyphDirection = sortMode == SortMode.SizeInAsc ? SortOrder.Ascending : sortMode == SortMode.SizeInDesc ? SortOrder.Descending : SortOrder.None;
+            var temp = cbSortBy_SelectedValueChanged_Stop;
+            cbSortBy_SelectedValueChanged_Stop = true;
+            //while (cbSortBy.Items.Count > (int)SortMode.Random + 1) cbSortBy.Items.RemoveAt(cbSortBy.Items.Count - 1);
+            cbSortBy.SelectedIndex = (int)sortMode;
+            cbSortBy_SelectedValueChanged_Stop = temp;
+        }
     }
 }

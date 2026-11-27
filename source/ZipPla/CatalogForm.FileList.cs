@@ -1634,5 +1634,227 @@ namespace ZipPla
                 cmsFileListHeader.Show(Cursor.Position);
             }
         }
+
+        private void dgvFileList_KeyDown(object sender, KeyEventArgs e)
+        {
+            var mk = ModifierKeys;
+            if (e.KeyCode == Keys.Enter)
+            {
+                OpenSelectedArchiveInDefaultViewer(ApplicationProviderUser.EnterKey, null);
+                e.Handled = true;
+                LatestControledControl = sender as Control;
+            }
+            else if (e.KeyCode == Keys.F2)
+            {
+                renameToolStripMenuItem_Click(sender, e);
+                LatestControledControl = sender as Control;
+            }
+            else if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right || e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
+            {
+                LatestControledControl = sender as Control;
+            }
+            else if (e.KeyCode == Keys.Home)
+            {
+                LatestControledControl = dgvFileList;
+                if (SelectItem(0, dgvFileList.CurrentRow?.Index ?? -1, mk))
+                {
+                    e.Handled = true;
+                    if (tvCatalog.SelectedIndicesCount > 1) dgvFileList.FirstDisplayedScrollingRowIndex = 0; // 単数選択なら自動的にスクロールされる
+                    else tvCatalog.ScrollBarPercentage = 0; // 単数の場合のみサムネイル側もスクロール
+                }
+            }
+            else if (e.KeyCode == Keys.End)
+            {
+                LatestControledControl = dgvFileList;
+                if (SelectItem(-1, dgvFileList.CurrentRow?.Index ?? -1, mk))
+                {
+                    e.Handled = true;
+                    if (tvCatalog.SelectedIndicesCount > 1) dgvFileList.FirstDisplayedScrollingRowIndex = dgvFileList.Rows.Count - 1;
+                    else tvCatalog.ScrollBarPercentage = 100;
+                }
+            }
+            else if (commonKeyAction(e, mk))
+            {
+                return;
+            }
+            else if (e.Alt)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private bool SelectItem(int showIndex, int currentShowIndex, Keys modifiedKeys)
+        {
+            if (CreatingZipPathArray) return false;
+            var s2d = tvCatalog.ShowIndexToDataIndex;
+            if (s2d == null) return false;
+            var count = s2d.Length;
+            if (count <= 0) return false;
+            if (showIndex < 0) showIndex += count;
+            if (showIndex < 0 || showIndex >= count) return false;
+            if ((modifiedKeys & Keys.Shift) != Keys.Shift) currentShowIndex = -1;
+            if (currentShowIndex < 0 || currentShowIndex >= count || currentShowIndex == showIndex)
+            {
+                tvCatalog.SelectedIndex = s2d[showIndex];
+            }
+            else
+            {
+                var selectedShowTable = new bool[count];
+                var alreadySelected = tvCatalog.SelectedIndices;
+                var d2s = tvCatalog.DataIndexToShowIndex;
+                var selectedCount = alreadySelected.Length;
+                for (var i = 0; i < alreadySelected.Length; i++) selectedShowTable[d2s[alreadySelected[i]]] = true;
+                int start, stop;
+                if (showIndex < currentShowIndex)
+                {
+                    start = showIndex;
+                    stop = currentShowIndex + 1;
+                }
+                else
+                {
+                    start = currentShowIndex;
+                    stop = showIndex + 1;
+                }
+                for (var i = start; i < stop; i++)
+                {
+                    if (!selectedShowTable[i])
+                    {
+                        selectedShowTable[i] = true;
+                        selectedCount++;
+                    }
+                }
+                var selectedIndices = new int[selectedCount];
+                var k = 0;
+                for (var i = 0; i < selectedShowTable.Length; i++)
+                {
+                    if (selectedShowTable[i])
+                    {
+                        selectedIndices[k++] = s2d[i];
+                    }
+                }
+                tvCatalog.SelectedIndices = selectedIndices;
+            }
+            return true;
+        }
+
+        private void cmsRightClickPrepareAndShowForKeyOnFileList(bool onlyTag, Keys modifierKeys)
+        {
+            var mk = modifierKeys;
+            //var mk = ModifierKeys;
+            if (tvCatalog.SelectedIndicesCount > 0)
+            {
+                var selectedRow = dgvFileList_FirstDisplayedSelectedRow();
+                if (selectedRow == null) return;
+                var rect = dgvFileList.GetRowDisplayRectangle(selectedRow.Index, cutOverflow: true);
+                var m2 = Math.Min(rect.Height, rect.Width) / 2;
+                var p = dgvFileList.PointToScreen(new Point(rect.X + m2, rect.Y + m2));
+
+                //cmsRightClickPrepareAndShow(p, onlyTag);
+                if (onlyTag)
+                {
+                    cmsRightClickPrepareAndShow_(p, true);
+                }
+                else
+                {
+                    rightClickContextMenuPrepareAndShow(p, mk);
+                }
+            }
+            else if (!onlyTag && dgvFileList.Visible && (RightClickContextMenu != CatalogFormConetxtMenu.Tag))
+            {
+                var p = dgvFileList.PointToScreen(dgvFileList.Location);
+                p.Y += dgvFileList.ColumnHeadersHeight;
+                //cmsRightClickPrepareAndShow_(p);
+
+                rightClickContextMenuPrepareAndShow(p, mk);
+            }
+        }
+
+        private DataGridViewRow dgvFileList_FirstDisplayedSelectedRow()
+        {
+            return getFirstDisplayedSelectedRow(dgvFileList);
+        }
+
+        private static DataGridViewRow getFirstDisplayedSelectedRow(DataGridView dataGridView)
+        {
+            try
+            {
+                var start = dataGridView.FirstDisplayedScrollingRowIndex;
+                var stop = start + dataGridView.DisplayedRowCount(includePartialRow: true);
+                for (var i = start; i < stop; i++)
+                {
+                    if ((dataGridView.Rows.GetRowState(i) & DataGridViewElementStates.Selected) != 0) return dataGridView.Rows[i];
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
+
+        string renameToolStripMenuItem_Click_OldName = null;
+
+        string renameToolStripMenuItem_Click_OldPath = null;
+
+        int renameToolStripMenuItem_Click_Index = -1;
+
+        private void renameToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //if (!dgvFileList.Focused) return;
+            if (!fileListToolStripMenuItem.Checked || !dgvFileList.Visible) return;
+
+            if (renameToolStripMenuItem_Click_OldName != null) return;
+            if (CreatingZipPathArray) return;
+
+            try
+            {
+                if (!InDirectoryVirtualDirectoryOrSmartDirectory) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            if (!dgvFileList.Focused) dgvFileList.Focus();
+
+            var selectedIndex = tvCatalog.SelectedIndex;
+            if (selectedIndex < 0) return;
+
+            string currentPath;
+            bool isDirectory;
+            lock (ZipPathArrayLocker)
+            {
+                if (ZipPathArray == null || ZipPathArray.Length <= selectedIndex) return;
+                currentPath = ZipPathArray[selectedIndex];
+                isDirectory = ZipNameArray[selectedIndex].EndsWith(Path.DirectorySeparatorChar.ToString());
+            }
+            if (isDirectory && !Directory.Exists(currentPath) || !isDirectory && !File.Exists(currentPath))
+            {
+                var exception = new FileNotFoundException(null, currentPath);
+                MessageBox.Show(this, exception.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var d2s = tvCatalog.DataIndexToShowIndex;
+            if (selectedIndex >= d2s.Length) return;
+            var showIndex = d2s[selectedIndex];
+            if (showIndex < 0 || showIndex >= dgvFileList.RowCount) return;
+            var info = getFileListRowInfo(showIndex);
+            if (info == null) return;
+            var cell = dgvFileList[tbcFileName.Index, showIndex];
+
+            // 仮想モードなのでセルに値を入れられない。編集中は CellValueNeeded で拡張子を除いた名前を返す
+            var name = info.Texts[tbcFileName.Index] ?? "";
+            fileListEditingShowIndex = showIndex;
+            fileListEditingText = getBaseName(name);
+            dgvFileList.InvalidateCell(tbcFileName.Index, showIndex);
+
+            renameToolStripMenuItem_Click_OldName = name;
+            renameToolStripMenuItem_Click_Index = selectedIndex;
+            renameToolStripMenuItem_Click_OldPath = currentPath;
+
+            dgvFileList.CurrentCell = cell;
+            dgvFileList.ReadOnly = false;
+            dgvFileList.BeginEdit(true);
+        }
     }
 }

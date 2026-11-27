@@ -779,5 +779,143 @@ namespace ZipPla
             }
 
         }
+
+        private void CatalogForm_Deactivate(object sender, EventArgs e)
+        {
+            SetBackgroundMode(false, 0);
+            unselectedItemMaskOff();
+
+            stopLookAheadOnDeactivate();
+        }
+
+        /// <summary>
+        /// カタログが非アクティブになったとき、先読みした本を持つ待機ビューアを止め（本のファイルを掴んだままにしないため）、
+        /// 何も読んでいない待機ビューアを低い優先度で用意しておく（Y8）。
+        /// 以前は何も読んでいない待機ビューアまで殺していた。本を開いた直後に作った次の待機ビューアも、開いたビューアが前面に出た
+        /// ときに殺され（開いている途中なら作られず）、カタログに戻って項目にマウスを乗せるまで作られなかった。
+        /// エクスプローラーなどから開く本（S7）もそのたびに待機ビューアの起動からになっていた
+        /// </summary>
+        private void stopLookAheadOnDeactivate()
+        {
+            // 開いている途中の待機ビューアは、開く本を表示するので止めない。開き終わると次の待機ビューアが作られる
+            if (OpenWaitingProcess_Processing) return;
+            var hasLookAhead = lookAheadInfo?.Path != null; // 先読みの依頼を送ると Path が入る。新しく作った待機ビューアでは null
+            if (hasLookAhead || waitingProcess == null || waitingProcess.HasExited)
+            {
+                StopLookAheadProcess();
+                SetLookAheadArchive_PrevDataIndex = -1;
+                // 表示前（Shown で作る）と終了中は作らない
+                if (AllowReadAheadProcess && IsShown && !IsDisposed && !CatalogForm_FormClosing_FormClosed) PrepareLookAheadProcess();
+            }
+            setWaitingProcessPriority(ProcessPriorityClass.BelowNormal);
+        }
+
+        private void setWaitingProcessPriority(ProcessPriorityClass priority)
+        {
+            if (waitingProcess == null || waitingProcess.HasExited) return;
+            try
+            {
+                waitingProcess.PriorityClass = priority;
+            }
+            catch (InvalidEnumArgumentException)
+            {
+                throw;
+            }
+            catch
+            {
+            }
+        }
+
+        private IpcLookAheadInfo lookAheadInfo = null;
+
+        private Process waitingProcess = null;
+
+        private CatalogIpcServer currentIpcChanne = null; // 名前付きパイプのサーバー（P3。以前は .NET Remoting の IpcServerChannel）
+
+        private IpcReportFromViewerToCatalog reportFromViewerToCatalog = null;
+
+        private string currentIpcGUID = null; // チャンネル自身の名前及び ViewerForm 用プロセスからの連絡用オブジェクト名
+
+        public void PrepareLookAheadProcess()
+        {
+            if (!AllowReadAheadProcess) return;
+            PrepareLookAheadProcess(/*Configuration.GetLastWriteTime(),*/ forcePrepare: false);
+        }
+
+        void PrepareLookAheadProcess(/*DateTime iniModified,*/ bool forcePrepare = false)
+        {
+            if (!forcePrepare && !AllowReadAheadProcess) return;
+
+            // チャンネル登録及び ViewerForm 用プロセスからの連絡用オブジェクト登録
+            if (currentIpcChanne == null)
+            {
+                currentIpcGUID = Guid.NewGuid().ToString();
+                currentIpcChanne = new CatalogIpcServer(currentIpcGUID);
+
+                reportFromViewerToCatalog = new IpcReportFromViewerToCatalog();
+                currentIpcChanne.Reports = reportFromViewerToCatalog;
+
+                tmWatchIpc.Start();
+            }
+
+            // リモートオブジェクトを生成して公開
+            if (lookAheadInfo != null)
+            {
+                currentIpcChanne?.Unregister(lookAheadInfo);
+                lookAheadInfo = null;
+            }
+            lookAheadInfo = new IpcLookAheadInfo();
+
+            var guid = Guid.NewGuid().ToString();
+            currentIpcChanne.Register(lookAheadInfo, guid); // 依頼を書いて Accept を false にすると待機ビューアへ送る（P3）
+
+            //CheckAndRecoverWaitingProcess_INIModified = iniModified;
+
+            var psi = new ProcessStartInfo();
+            psi.FileName = Application.ExecutablePath;
+
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            const string command = "-LookAheadMode";
+            psi.Arguments = command + " " + currentIpcGUID + " " + guid;
+            waitingProcess = Process.Start(psi);
+            // 本を開いた直後に起動されると、CLR の起動・JIT・フォームの構築（0.3〜0.6 秒の CPU）が開いたばかりのビューアの読み込みと
+            // CPU を取り合う。カーソルがカタログの上になければ低い優先度で起動しておく（S2。カタログに戻れば globalMouseEnter で通常に戻る）
+            if (!CursorIsOnControllField) setWaitingProcessPriority(ProcessPriorityClass.BelowNormal);
+        }
+
+        private bool mouseOnWindow;
+
+        // ハンドルからウインドウの位置を取得。
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int left;
+            public int top;
+            public int right;
+            public int bottom;
+
+            public static implicit operator Rectangle(RECT rect)
+            {
+                return new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+            }
+        }
+
+        private bool CursorIsJustOnWindow(Point screenLocation)
+        {
+            if (ActiveForm == this) return false; // 極力 API は使わない
+
+            var handle = GetForegroundWindow();
+            if (handle == Handle) return false;
+            RECT otherRectangle0;
+            if (!GetWindowRect(handle, out otherRectangle0)) return false;
+            var otherRectangle = (Rectangle)otherRectangle0;
+            return otherRectangle.Contains(screenLocation);
+        }
     }
 }

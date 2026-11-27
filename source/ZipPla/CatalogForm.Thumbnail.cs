@@ -2032,5 +2032,323 @@ namespace ZipPla
         ClipMode currentClipMode = ClipMode.PlaClip;
 
         BindingMode currentBindingMode = BindingMode.LeftToRight;
+
+        // 64bit では動かない
+        // http://pieceofnostalgy.blogspot.jp/2011/11/net-framework.html
+        //[System.Runtime.InteropServices.DllImport("user32.dll", CallingConvention = System.Runtime.InteropServices.CallingConvention.StdCall)]
+        //public static extern IntPtr WindowFromPoint(int x, int y);
+
+        void ReloadOneThumbnailForSubThread(int index, Guid startingGuid)
+        {
+            if (index >= 0)
+            {
+                lock (ZipPathArrayLocker)
+                {
+                    if (ZipPathArray != null && index < ZipPathArray.Length)
+                    {
+                        ReloadOneThumbnailForSubThread(index, ZipPathArray[index], startingGuid);
+                    }
+                }
+            }
+        }
+
+        void ReloadOneThumbnailForSubThread(string oldPath, string newPath, Guid startingGuid)
+        {
+            if (!string.IsNullOrEmpty(oldPath) && !string.IsNullOrEmpty(newPath))
+            {
+                lock (ZipPathArrayLocker)
+                {
+                    if (ZipPathArray != null)
+                    {
+                        ReloadOneThumbnailForSubThread(Array.IndexOf(ZipPathArray, oldPath), newPath, startingGuid);
+                    }
+                }
+            }
+        }
+
+        enum SilentMode { Always, Never, OnlyIfNotSuccess }
+
+        void ReloadOneThumbnailForSubThread(int index, string newPath, Guid startingGuid, string oldPath = null, SilentMode silentMode = SilentMode.Never, bool reloadPage = false)
+        {
+            if (index >= 0 && !string.IsNullOrEmpty(newPath))
+            {
+                if (startingGuid != loadingGuid) return;
+                var enterIf = false;
+                Bitmap thumbnail = null;
+                int filecount = -1;
+                LoadResult loadResult = LoadResult.NotYet;
+                long fileSize = -1;
+                ImageInfo imageInfo;
+                MovieInfo movieInfo;
+                string zipName = null;
+                var path = newPath;
+                var isDir = false;
+                lock (ZipPathArrayLocker)
+                {
+                    if (CreatingZipPathArray) return;
+
+                    if (ZipPathArray != null && index < ZipPathArray.Length)
+                    {
+                        enterIf = true;
+                        try
+                        {
+                            if (oldPath != null && oldPath != ZipPathArray[index]) return;
+                            ZipPathArray[index] = path;
+                            //var name = path.Substring(dirPathFullPathLengthPlusOne);
+
+                            //isDir = oldPath != null ? ZipNameArray[index].EndsWith(Path.DirectorySeparatorChar.ToString()) : Directory.Exists(newPath);
+                            isDir = Directory.Exists(newPath);
+                            ZipNameArray[index] = zipName = getRelativePath(path, isDir);// name + Path.DirectorySeparatorChar;
+
+                            FileSystemInfo info;
+                            if (isDir)
+                            {
+                                info = new DirectoryInfo(path);
+                            }
+                            else
+                            {
+                                info = new FileInfo(path);
+                            }
+                            CreateTimeArray[index] = Program.GetCreateTime(info);
+                            LastAccessTimeArray[index] = Program.GetLastAccessTime(info); // info.LastAccessTime;
+                            ModifiedTimeArray[index] = Program.GetLastWriteTime(info);// .LastWriteTime;
+                            FileCountArray[index] = -1;
+                            ImageInfoArray[index] = null;// Size.Empty;
+                            MovieInfoArray[index] = null;
+
+                            if (reloadPage && LoadLastViewedPageFromHistory && File.Exists(Program.HistorySorPath))
+                            {
+                                ZipPageArray[index] = VirtualFolder.GetPageFromBookmark(path, isDir, Program.HistorySorPath);
+                            }
+
+                        }
+                        catch (Exception error)
+                        {
+                            Program.AlertError(error);
+                            return;
+                        }
+                    }
+                }
+                if (enterIf)
+                {
+                    // サムネイルは作らず、ヘッダ（ページ数・解像度・動画情報など）だけを取る。サムネイルは、表示範囲に入っている項目だけ
+                    // ThumbViewerItem.LoadAsync が作る（K21。以前は監視イベントのたびに、見えていない項目のサムネイルまで作ってキャッシュに書いていた）
+                    GetHeader(path, isDir, out _, out filecount, out loadResult, out fileSize, out imageInfo, out movieInfo);
+                    if (fileSize < 0 && !isDir) // フォルダの場合サイズは取得済みまたはサイズは表示しない設定
+                    {
+                        try
+                        {
+                            fileSize = (new FileInfo(path)).Length;
+                        }
+                        catch { }
+                    }
+                    //if (fileSize >= 0)
+                    {
+                        if (startingGuid != loadingGuid)
+                        {
+                            thumbnail?.Dispose();
+                            return;
+                        }
+                        try
+                        {
+                            Invoke((MethodInvoker)(() =>
+                            {
+                                if (CreatingZipPathArray || startingGuid != loadingGuid)
+                                {
+                                    thumbnail?.Dispose();
+                                    return;
+                                }
+                                try
+                                {
+                                    if (index >= tvCatalog.Count)
+                                    {
+                                        thumbnail?.Dispose();
+                                        return;
+                                    }
+
+
+                                    lock (ZipPathArrayLocker)
+                                    {
+                                        if (CreatingZipPathArray || index >= FileCountArray.Length)
+                                        {
+                                            thumbnail?.Dispose();
+                                            return;
+                                        }
+
+                                        //NameInAsc, NameInDesc, RatingInAsc, RatingInDesc, AccessedInAsc, AccessedInDesc, ModifiedInAsc, ModifiedInDesc, SizeInAsc, SizeInDesc
+
+                                        if (sortMode == SortMode.NameInAsc || sortMode == SortMode.NameInDesc)
+                                        {
+                                            var s2d = tvCatalog.ShowIndexToDataIndex;
+                                            var sign = sortMode == SortMode.NameInAsc ? 1 : -1;
+                                            var showIndex = tvCatalog.DataIndexToShowIndex[index];
+                                            if (showIndex >= 0)
+                                            {
+                                                var clearSortOrder = false;
+                                                var s2dLength = s2d.Length;
+                                                var showIndexMinus1 = showIndex - 1;
+                                                var ZipNameArrayLength = ZipNameArray.Length;
+                                                if (showIndexMinus1 >= 0 && showIndexMinus1 < s2dLength)
+                                                {
+                                                    var preIndex = s2d[showIndexMinus1];
+                                                    if (preIndex >= 0 && preIndex < ZipNameArrayLength)
+                                                    {
+                                                        var preName = ZipNameArray[preIndex];
+                                                        if (preName != null && zipName != null && sign * GetSortArray_NaturalSort.Compare(preName, zipName) > 0)
+                                                        {
+                                                            clearSortOrder = true;
+                                                        }
+                                                    }
+                                                }
+                                                if (!clearSortOrder)
+                                                {
+                                                    var showIndexPlus1 = showIndex + 1;
+                                                    if (showIndexPlus1 >= 0 && showIndexPlus1 < s2dLength)
+                                                    {
+                                                        var nexIndex = s2d[showIndexPlus1];
+                                                        if (nexIndex >= 0 && nexIndex < ZipNameArrayLength)
+                                                        {
+                                                            var nexName = ZipNameArray[nexIndex];
+                                                            if (nexName != null && zipName != null && sign * GetSortArray_NaturalSort.Compare(zipName, nexName) > 0)
+                                                            {
+                                                                clearSortOrder = true;
+                                                            }
+                                                        }
+
+                                                    }
+                                                }
+
+                                                if (clearSortOrder)
+                                                {
+                                                    tbcFileName.HeaderCell.SortGlyphDirection = SortOrder.None;
+                                                    cbSortBy.SelectedIndex = -1;
+                                                }
+                                            }
+                                        }
+
+
+                                        FileCountArray[index] = filecount;
+                                        LoadResultArray[index] = loadResult;
+                                        ZipSizeArray[index] = fileSize;
+                                        ImageInfoArray[index] = imageInfo;
+                                        MovieInfoArray[index] = movieInfo;
+
+                                        setFileListRowInLock(index, dynamicOnly: false, localOnly: false, cultureForOnlyStatic: Message.CurrentLanguage, volatilitySortCancelIfChanged: true);
+
+                                    }
+
+                                    // 最後にやらないと描画時に Success 等が正しく参照されない
+                                    var silent = silentMode == SilentMode.Always || silentMode == SilentMode.OnlyIfNotSuccess && loadResult != LoadResult.Success;
+                                    if (tvCatalog[index] == null)
+                                    {
+                                        var item = new ThumbViewerItem()
+                                        {
+                                            OwnerCatalog = this,
+                                            FilePath = path,
+                                            Image = thumbnail,
+                                            Text = zipName,
+                                        };
+                                        if (silent)
+                                        {
+                                            tvCatalog.SilentSet(index, item);
+                                        }
+                                        else
+                                        {
+                                            tvCatalog[index] = item;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (silent)
+                                        {
+                                            tvCatalog[index].SilentSet(zipName); // サムネイルは変わっていないので今の画像のまま（K21）
+                                        }
+                                        else
+                                        {
+                                            tvCatalog[index].ResetForReload(zipName);
+                                        }
+                                    }
+                                    // 表示範囲に入っている項目のサムネイルを作らせる（描画のときに LoadAsync が呼ばれる。K21）
+                                    tvCatalog.Invalidate();
+                                }
+                                catch (Exception error)
+                                {
+                                    Program.AlertError(error);
+                                }
+                                if (tvCatalog.IsSelected(index))
+                                {
+                                    ShowStatusBarAfterItemLoaded();
+                                }
+                            }));
+                        }
+                        catch (ObjectDisposedException) { }
+                    }
+                }
+            }
+        }
+
+        private void setThumbnailManuallyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenSelectedArchiveCoverSetting();
+        }
+
+        private void OpenSelectedArchiveCoverSetting()
+        {
+            var selectedIndex = tvCatalog.SelectedIndex;
+            if (selectedIndex >= 0)
+            {
+                string selectedPath = null;
+                lock (ZipPathArrayLocker)
+                {
+                    if (ZipPathArray != null && selectedIndex < ZipPathArray.Length)
+                    {
+                        if (LoadResultArray == null || selectedIndex >= LoadResultArray.Length) return;
+                        // LoadResult.NotYet は読み込む
+                        switch (LoadResultArray[selectedIndex])
+                        {
+                            case LoadResult.LoadError:
+                                MessageBox.Show(Message.FailedToLoadFile, null, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+                                return;
+                            case LoadResult.FileNotFound:
+
+                                MessageBox.Show(Message.NoReadableFile, null, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+                                return;
+                        }
+                        try
+                        {
+                            selectedPath = ZipPathArray[selectedIndex];
+                        }
+                        catch (Exception error)
+                        {
+                            Program.AlertError(error);
+                        }
+                    }
+                }
+                if (selectedPath != null)
+                {
+                    try
+                    {
+                        if (PackedImageLoader.Supports(selectedPath))
+                        {
+                            OpenWaitingProcess(selectedPath, -1, true);
+                        }
+                        else if (InArchive)
+                        {
+                            OpenWaitingProcess(selectedPath, page: -1, coverSettingMode: true); // selectedPath が / を含むパスの場合 page は -1 でよい
+                        }
+                        else if (MovieThumbnailLoader.Supports(selectedPath) && MovieThumbnailLoader.ffmpegExists())
+                        {
+                            zabLocation.Text = selectedPath;
+                            ThumbnailSettingToCatalog_CoverSettingModeAtOnce = true;
+                            MakePreview();
+                        }
+                    }
+                    catch (Exception error)
+                    {
+                        Program.AlertError(error);
+                    }
+                }
+            }
+        }
     }
 }

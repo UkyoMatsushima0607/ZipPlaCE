@@ -863,5 +863,386 @@ namespace ZipPla
         // フォルダの項目の表紙・件数のためにサブフォルダの中も見るのでイベントが多く、まとめてコピーしたときなどにあふれる（以前は知らせなしに取りこぼしていた）。
         // バッファ（InternalBufferSize）を 64KB に広げると、.NET Framework の監視の IO スレッドで ArgumentException が起きてプロセスが落ちたので、既定のまま
         private System.Windows.Forms.Timer fileSystemWatcherErrorTimer;
+
+        private void ThumbnailSize_Click(ToolStripMenuItem toolStripMenuItem)
+        {
+            if (!toolStripMenuItem.Checked)
+            {
+                ChangeThumbnailSize(toolStripMenuItem);
+                UpdatePreview();
+            }
+        }
+
+        int ChangeThumbnailSize_Width = 210;
+
+        int ChangeThumbnailSize_Height = 297;
+
+        double ChangeThumbnailSize_Padding = 2;
+
+        private void ChangeThumbnailSize(ToolStripMenuItem toolStripMenuItem)
+        {
+            var items = thumbnailSizeToolStripMenuItem.DropDownItems;
+
+            //var isPlaClip = clipModeByControl == ClipMode.PlaClip;
+
+            var inSizeBlock = false;
+            foreach (object itemObject in items)
+            {
+                if (!inSizeBlock)
+                {
+                    inSizeBlock = itemObject == thumbnailSizeTopSeparator;
+                    continue;
+                }
+                if (itemObject == thumbnailSizeBottomSeparator) break;
+                if (itemObject.GetType() != typeof(ToolStripMenuItem)) continue;
+                var item = (ToolStripMenuItem)itemObject;
+                if (toolStripMenuItem != null)
+                {
+                    item.Checked = item == toolStripMenuItem;
+                }
+                else if (item.Checked)
+                {
+                    toolStripMenuItem = item;
+                }
+            }
+
+        }
+
+        private bool ThumbnailSettingToCatalog_CoverSettingModeAtOnce = false;
+
+        private void ThumbnailSettingToCatalog()
+        {
+            int size;
+            if (tinyToolStripMenuItem.Checked) size = -2;
+            else if (smallToolStripMenuItem.Checked) size = -1;
+            else if (largeToolStripMenuItem.Checked) size = 1;
+            else if (hugeToolStripMenuItem.Checked) size = 2;
+            else size = 0;
+
+
+            double localAspectRatio = aspectRatio;
+            if (ThumbnailSettingToCatalog_CoverSettingModeAtOnce)
+            {
+                ThumbnailSettingToCatalog_CoverSettingModeAtOnce = false;
+            }
+            else if (InMovie)
+            {
+                var mia = MovieInfoArray;
+                if (mia != null && mia.Length > 0)
+                {
+                    var info = mia[0];
+                    var movieSize = info.SizeByPixel;
+                    var sar = info.SAR;
+                    if (sar != 0) movieSize = sar * (Fraction)movieSize;
+                    if (movieSize.Width > 0 && movieSize.Height > 0)
+                    {
+                        localAspectRatio = Math.Max(0.2, Math.Min(5.0, (double)movieSize.Width / movieSize.Height));
+                    }
+                }
+            }
+
+            var padding = size * 2; if (padding == 2) padding = 3; else if (padding < 2) padding = 2;
+            var ratioSqrt = Math.Sqrt(localAspectRatio);
+            var scale = Math.Pow(2, size / 2.0);
+            ChangeThumbnailSize_Width = Program.DpiScalingX(ChangeThumbnailSize_NeutralLength * scale * ratioSqrt);
+            ChangeThumbnailSize_Height = Program.DpiScalingX(ChangeThumbnailSize_NeutralLength * scale / ratioSqrt);
+            ChangeThumbnailSize_Padding = padding;
+        }
+
+        private int GetThumbnailCountInTvCatalogOrFileList(MovieInfo info)
+        {
+            if (thumbnailListToolStripMenuItem.Checked)
+            {
+                int size;
+                if (tinyToolStripMenuItem.Checked) size = -2;
+                else if (smallToolStripMenuItem.Checked) size = -1;
+                else if (largeToolStripMenuItem.Checked) size = 1;
+                else if (hugeToolStripMenuItem.Checked) size = 2;
+                else size = 0;
+
+                double localAspectRatio = aspectRatio;
+                if (!ThumbnailSettingToCatalog_CoverSettingModeAtOnce && info != null)
+                {
+                    var movieSize = info.SizeByPixel;
+                    var sar = info.SAR;
+                    if (sar != 0) movieSize = sar * (Fraction)movieSize;
+                    if (movieSize.Width > 0 && movieSize.Height > 0)
+                    {
+                        localAspectRatio = Math.Max(0.2, Math.Min(5.0, (double)movieSize.Width / movieSize.Height));
+                    }
+                }
+
+                var padding = size * 2; if (padding == 2) padding = 3; else if (padding < 2) padding = 2;
+                var ratioSqrt = Math.Sqrt(localAspectRatio);
+                var scale = Math.Pow(2, size / 2.0);
+                var w = Program.DpiScalingX(ChangeThumbnailSize_NeutralLength * scale * ratioSqrt);
+                var h = Program.DpiScalingX(ChangeThumbnailSize_NeutralLength * scale / ratioSqrt);
+                padding = Program.DpiScaling(padding * currentMinimumFrameThickness);
+                var ChangeThumbnailSize_Padding = padding;
+
+                // スクロールバーは無視するべきなので tvCatalog.ClientSize は不適切
+                int textLength, textLines;
+                if (numberOfLinesOfName != NumberOfLinesOfName.Full)
+                {
+                    GetNameLengthAndNameLines(out textLength, out textLines);
+                }
+                else
+                {
+                    textLength = 0;
+                    textLines = ThumbViewer.GetTextLines(default(TimeSpan).ToString(), new Size(w, h), padding, tvCatalog.bottomPadding, currentAligning, tvCatalog.Size);
+                }
+                return ThumbViewer.GetThumbnailCountInScreen(new Size(w, h), padding, tvCatalog.bottomPadding, tvCatalog.ShowText, tvCatalog.GetCharHeight(), textLength, textLines, currentAligning, tvCatalog.Size);
+            }
+            else if (fileListToolStripMenuItem.Checked)
+            {
+                return (dgvFileList.ClientRectangle.Bottom - dgvFileList.ColumnHeadersHeight) / GetCellDisplayHeight(dgvFileList);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// DPI も考慮してセルの標準の高さを取得
+        /// </summary>
+        private static int GetCellDisplayHeight(DataGridView dataGridView)
+        {
+            var i = dataGridView.FirstDisplayedScrollingRowIndex;
+            int result;
+            if (i >= 0)
+            {
+                result = dataGridView.GetRowDisplayRectangle(i, false).Height;
+            }
+            else
+            {
+                result = dataGridView.ColumnHeadersHeight + 1;
+                // 2016/12 Windows10 100%, 125%, 150%, 175%, 200%, 225% で完全一致を確認
+            }
+            return result > 0 ? result : dataGridView.RowTemplate.Height;
+        }
+
+        // サムネイルの大きさのメニュー項目
+        private void thumbnailSizeMenuItem_Click(object sender, EventArgs e)
+        {
+            ThumbnailSize_Click((ToolStripMenuItem)sender);
+        }
+
+        private void showIconToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            showIcon = showIconToolStripMenuItem.Checked = !showIcon;
+            tvCatalog.Invalidate();
+        }
+
+        private void showRatingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            showRating = showRatingToolStripMenuItem.Checked = !showRating;
+            setTagfilterLocationIfRatingFilterVisibleChanged();
+            //UpdatePreview();
+            tvCatalog.Invalidate();
+        }
+
+        private void showTagsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            showTags = showTagsToolStripMenuItem.Checked = !showTags;
+            tvCatalog.Invalidate();
+        }
+
+        private void showFilenameToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            setShowFileName(!showFilenameToolStripMenuItem.Checked);
+        }
+
+        private void setShowFileName(bool show)
+        {
+            showFilenameToolStripMenuItem.Checked = show;
+            tvCatalog.ShowText = show;
+            theNumberOfLinesOfNameToolStripMenuItem.Enabled = show;
+        }
+
+        private void setEraserAndSearchIcon()
+        {
+            var iconSize = cmsRightClick.ImageScalingSize;
+            SelectionToFilterToolStripMenuItem.Icon = getIcon(drawInvertSearchIcon, iconSize.Width, iconSize.Height);
+
+            SelectionToClipBoardToolStripMenuItem.Icon = getIcon(drawClipboardIcon, iconSize.Width, iconSize.Height);
+
+            btnLocationCommands.FlatStyle = FlatStyle.Flat;
+            btnLocationCommands.FlatAppearance.BorderColor = BackColor;
+            btnLocationCommands.Text = null;
+            btnLocationCommands.Image = getIcon(drawEraserIcon, btnLocationCommands.ClientRectangle.Width, btnLocationCommands.ClientRectangle.Height);
+
+            btnFilterCommands.FlatStyle = FlatStyle.Flat;
+            btnFilterCommands.FlatAppearance.BorderColor = BackColor;
+            btnFilterCommands.Text = null;
+            //btnFilterCommands.Paint += btnFilterCommands_Paint;
+            btnFilterCommands.Image = getIcon(drawInvertSearchIcon, btnFilterCommands.ClientRectangle.Width, btnFilterCommands.ClientRectangle.Height);
+
+            //pbSearch.Image = getSearchIcon(pbSearch.ClientRectangle.Width, pbSearch.ClientRectangle.Height);
+        }
+
+        private Bitmap getIcon(Action<Graphics, RectangleF> drawer, int width, int height)
+        {
+            var result = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(result))
+            {
+                drawer(g, new Rectangle(0, 0, width, height));
+            }
+            return result;
+        }
+
+        private void drawEraserIcon(Graphics g, RectangleF rect)
+        {
+            var x = rect.X;
+            var y = rect.Y;
+            var width = rect.Width;
+            var height = rect.Height;
+
+            const double upperTop = 0.15;
+            const double upperBottom = 0.35;
+            const double upperWidth = 0.45;
+
+            const double lowerTop = 0.45;
+            const double lowerBottom = 0.85;
+            const double lowerWidth = 0.55;
+
+            var ut = (int)Math.Round(y + lowerTop * height);
+            var ub = (int)Math.Round(y + lowerBottom * height);
+            var ul = (int)Math.Round(x + (1 - lowerWidth) * height / 2);
+            var ur = (int)Math.Round(rect.Right - (ul - rect.Left));
+
+            var lt = (int)Math.Round(y + upperTop * height);
+            var lb = (int)Math.Round(y + upperBottom * height);
+            var ll = (int)Math.Round(x + (1 - upperWidth) * height / 2);
+            var lr = (int)Math.Round(rect.Right - (ll - rect.Left));
+
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            g.FillRectangle(Brushes.Black, ul - 1, ut - 1, ur - ul, ub - ut);
+            g.FillRectangle(Brushes.Black, ll - 1, lt - 1, lr - ll, lb - lt);
+
+        }
+
+        private void drawInvertSearchIcon(Graphics g, RectangleF rect)
+        {
+            drawSearchIcon(g, new RectangleF(rect.Right, rect.Y, -rect.Width, rect.Height));
+        }
+
+        private void drawSearchIcon(Graphics g, RectangleF rect)
+        {
+            var x = rect.X;
+            var y = rect.Y;
+            var width = rect.Width;
+            var height = rect.Height;
+
+            const double thk = 0.15;
+
+            const double rectX0 = 0.20;
+            const double rectX1 = 0.65;
+
+            const double lineX1 = 0.8;
+            const double lineY1 = 0.8;
+
+            const double rectY0 = rectX0;
+            const double rectY1 = rectX1;
+            const double lineX0 = (rectX0 + rectX1) / 2 + (rectX1 - rectX0) / (2 * 1.41421356237309504880168872421);
+            const double lineY0 = lineX0;
+
+            using (var p = new Pen(Color.Black, (float)((thk / 2) * (Math.Abs(width) + Math.Abs(height)))))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+
+                g.DrawEllipse(p, new RectangleF((float)(x + rectX0 * width) - 1, (float)(y + rectY0 * height) - 1, (float)((rectX1 - rectX0) * width), (float)((rectY1 - rectY0) * height)));
+
+                p.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                g.DrawLine(p, new PointF((float)(x + lineX0 * width) - 1, (float)(y + lineY0 * height) - 1), new PointF((float)(x + lineX1 * width) - 1, (float)(y + lineY1 * height) - 1));
+            }
+        }
+
+        private void drawClipboardIcon(Graphics g, RectangleF rect)
+        {
+            var x = rect.X;
+            var y = rect.Y;
+            var width = rect.Width;
+            var height = rect.Height;
+
+            const double thk = 0.1;
+            const double thk2 = thk / 2;
+
+            const double rectX = 0.20;
+            const double rectY = 0.10;
+            const double strnX = 0.35;
+            const double strnY = 0.32;
+
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+
+            using (var p = new Pen(Color.Black, (float)((thk / 2) * (Math.Abs(width) + Math.Abs(height)))))
+            {
+                g.DrawRectangle(p, (float)(x + rectX * width) - 1, (float)(y + rectY * height) - 1, (float)((1 - 2 * rectX) * width), (float)((1 - 2 * rectY) * height));
+            }
+
+            using (var p = new Pen(Color.Black, (float)((thk2 / 2) * (Math.Abs(width) + Math.Abs(height)))))
+            {
+                var px1 = (float)(x + strnX * width) - 1;
+                var px2 = (float)(x + (1 - strnX) * width) - 1;
+                float py;
+
+                py = (float)(y + strnY * height) - 1;
+                g.DrawLine(p, new PointF(px1, py), new PointF(px2, py));
+
+                py = (float)(y + 0.5 * height) - 1;
+                g.DrawLine(p, new PointF(px1, py), new PointF(px2, py));
+
+                py = (float)(y + (1 - strnY) * height) - 1;
+                g.DrawLine(p, new PointF(px1, py), new PointF(px2, py));
+            }
+        }
+
+        private void tvCatalog_Paint(object sender, PaintEventArgs e)
+        {
+            if (showStartHelpMessage && tvCatalog.Visible)
+            {
+                drawInitialMessage(e, tvCatalog.ClientRectangle, tvCatalog.BackColor);
+            }
+        }
+
+        Font drawInitialMessageFont = null;
+
+        private Font GetDrawInitialMessageFont()
+        {
+            if (drawInitialMessageFont == null)
+            {
+                drawInitialMessageFont = new Font(DefaultFont.FontFamily, DefaultFont.SizeInPoints * 1.7f);
+            }
+            return drawInitialMessageFont;
+        }
+
+        private void drawInitialMessage(PaintEventArgs e, Rectangle rect, Color backColor)
+        {
+            // ファイルリストにも表示させる場合共通設定終了時に描画を追加すること
+            var drawInitialMessageFont = GetDrawInitialMessageFont();
+
+            if (dragAndDropAction == DragAndDropAction.ShowThumbnails)
+            {
+                // アンチエイリアスが効かない
+                //TextRenderer.DrawText(e.Graphics, Message.FolderOpenDescription.Replace("\\n", "\n"), drawInitialMessageFont, rect, SystemColors.GrayText, backColor,
+                //    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak);
+
+                var preMode = e.Graphics.TextRenderingHint;
+                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                var message = Message.FolderOpenDescription.Replace("\\n", "\n");
+                var size = e.Graphics.MeasureString(message, drawInitialMessageFont, rect.Size);
+                var rect2 = new RectangleF(rect.X + (rect.Width - size.Width) / 2, rect.Y + (rect.Height - size.Height) / 2, size.Width, size.Height);
+
+                e.Graphics.DrawString(message, drawInitialMessageFont, SystemBrushes.GrayText, rect2);
+
+                e.Graphics.TextRenderingHint = preMode;
+            }
+            else
+            {
+
+            }
+
+        }
     }
 }

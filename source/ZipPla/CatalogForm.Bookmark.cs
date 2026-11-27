@@ -1220,5 +1220,177 @@ namespace ZipPla
                 dgvDirectoryList_MouseLeave_DragOutPart(e);
             }
         }
+
+        private void changeCurrentProfileColorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AllowFullpower = false;
+
+            var bookmarksWithCurrentColor = GetBookmarksStringColoredBy(currentProfileColor);
+            var message = bookmarksWithCurrentColor != null ?
+                $"{Message.WillChangeCurrentProfileColor}\n{Message.ThisChangeAlsoAffectsFollowingBookmarks}\n\n{bookmarksWithCurrentColor}\n\n{Message.HowToCreateNewColorDescription}" :
+                $"{Message.WillChangeCurrentProfileColor}\n\n{Message.HowToCreateNewColorDescription}";
+
+
+            var result = MessageBox.Show(this, message, Message.ChangeCurrentProfileColor, MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (result == DialogResult.OK)
+            {
+                AllowFullpower = false;
+            }
+            else
+            {
+                AllowFullpower = true;
+                return;
+            }
+            
+            var newColor = getNewProfileColorFromDialog(useCurrentAsDefault: true);
+            if (!newColor.IsEmpty)
+            {
+                foreach (DataGridViewRow row in dgvDirectoryList.Rows)
+                {
+                    var bookmark = row.Cells[tbcDirectoryName.Index].Value as ColoredBookmark;
+                    if (bookmark != null && bookmark.SimpleBookmark.SpecialRole == SimpleBookmarkSpecialRole.None && bookmark.Color == currentProfileColor)// セパレーターなら無視される
+                    {
+                        bookmark.Color = newColor;
+                    }
+                }
+
+                foreach (var buf in undoBuffer)
+                {
+                    if (buf.ProfileColor == currentProfileColor)
+                    {
+                        buf.ProfileColor = newColor;
+                    }
+                }
+
+                saveBookmarkToIni_bookmarkChanged = true;
+                saveBookmarkToConfig();
+
+                currentProfileColor = newColor;
+
+                dgvDirectoryList.Invalidate();
+            }
+
+            AllowFullpower = true;
+        }
+
+        private Color getNewProfileColorFromDialog(bool useCurrentAsDefault)
+        {
+            using (var cd = new ColorDialog())
+            {
+                Color dc;
+                bool defaultExists = useCurrentAsDefault;
+                if (defaultExists)
+                {
+                    dc = currentProfileColor;
+                    var cc = cd.CustomColors;
+                    cc[cc.Length - 1] = dc.R | dc.G << 8 | dc.B << 16;
+                    cd.CustomColors = cc;
+                    cd.Color = dc;
+                }
+                else
+                {
+                    dc = Color.Empty;
+                }
+
+                cd.AllowFullOpen = true;
+                cd.SolidColorOnly = false;
+                AllowFullpower = false;
+                while (cd.ShowDialog(this) == DialogResult.OK)
+                {
+                    var newColor = cd.Color;
+
+                    if (defaultExists && ColorEquals(dc, newColor))
+                    {
+                        AllowFullpower = false;
+                        return Color.Empty;
+                    }
+
+                    var sameColorBookmarks = GetBookmarksStringColoredBy(newColor);
+
+                    if (!string.IsNullOrEmpty(sameColorBookmarks))
+                    {
+                        // ウインドウが切り替わると AllowFullpower が復帰する
+                        AllowFullpower = false;
+                        if (MessageBox.Show(this, Message.SelectedColorIsUsedByFollowingBookmarks + "\n\n" + sameColorBookmarks
+                            + (useCurrentAsDefault ? "" : ("\n\n" + Message.HowToAddUsedColorDescription)), null, MessageBoxButtons.OKCancel, MessageBoxIcon.Error) == DialogResult.OK)
+                        {
+                            AllowFullpower = false;
+                            continue;
+                        }
+                        else
+                        {
+                            AllowFullpower = false;
+                            return Color.Empty;
+                        }
+                    }
+
+                    return (SerializableRGB)newColor;
+                }
+                return Color.Empty;
+            }
+        }
+
+        private string GetBookmarksStringColoredBy(Color color)
+        {
+            var sb = new StringBuilder();
+            string lastLine = null;
+            const int showLimit = 10;
+            var lineCount = 0;
+            foreach (DataGridViewRow row in dgvDirectoryList.Rows)
+            {
+                var bookmark = row.Cells[tbcDirectoryName.Index].Value as ColoredBookmark;
+                if (bookmark == null || bookmark.SimpleBookmark.SpecialRole != SimpleBookmarkSpecialRole.None) continue; // セパレーターなら無視される
+                if (ColorEquals(bookmark.Color, color))
+                {
+                    var line = bookmark.SimpleBookmark?.GetDisplayString() ?? "";
+                    if (lineCount == 0)
+                    {
+                        sb.Append(line);
+                    }
+                    else if (lineCount < showLimit - 1)
+                    {
+                        sb.AppendLine().Append(line);
+                    }
+                    else if (lastLine == null)
+                    {
+                        lastLine = line;
+                    }
+                    else
+                    {
+                        sb.AppendLine().Append("...");
+                        lastLine = null;
+                        break;
+                    }
+                    lineCount++;
+                }
+            }
+            if (lineCount == 0) return null;
+            if (lastLine != null) sb.AppendLine().Append(lastLine);
+            return sb.ToString();
+        }
+
+        private void newSmartFolderToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            openSmartFolderSettingForm(null); // AllowFullpower 込み
+        }
+
+        private void openSmartFolderSettingForm(string smartFolderPath)
+        {
+            AllowFullpower = false;
+
+            string output;
+            using (var smartFolderSettingForm = new SmartFolderSettingForm(smartFolderPath))
+            {
+                smartFolderSettingForm.ShowDialog(this);
+                output = smartFolderSettingForm.Edited ? smartFolderSettingForm.TargetSmartFolderPath : null;
+            }
+            if (output != null)
+            {
+                zabLocation.Text = output;
+                MakePreview();
+            }
+
+            AllowFullpower = true;
+        }
     }
 }

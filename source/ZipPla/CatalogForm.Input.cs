@@ -929,5 +929,469 @@ namespace ZipPla
             }
             AllowFullpower = true;
         }
+
+        private bool CursolIsOnControll()
+        {
+            return CursorIsOnControllField;
+            //return UnderCursorSet.Count > 0;
+        }
+
+        // 復元する場合 RunWorkerStarting 内のコメントアウトを外すこと
+
+        #region ポインタ位置処理
+
+        bool CursorIsOnControllField = false;
+        private void GeneralMouseLeave(object something)
+        {
+        }
+        private void GeneralMouseEnter(object something)
+        {
+#if !AUTOBUILD
+            //if (something == null) throw new ArgumentNullException();
+#endif
+
+            //CursorIsOnControllField = true;
+
+        }
+
+        private void tvCatalog_MouseEnter(object sender, EventArgs e) { focusIfRightness(sender as Control); GeneralMouseEnter(tvCatalog); }
+        private void tvCatalog_MouseLeave(object sender, EventArgs e) { tvCatalog_MouseMove_RatingChangePart(); GeneralMouseLeave(tvCatalog); }
+        private void cbLocation_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cbLocation); }
+        private void cbLocation_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cbLocation); }
+        private void btnLocationCommands_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnLocationCommands); }
+        private void btnLocationCommands_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnLocationCommands); }
+        private void cbSortBy_MouseEnter(object sender, EventArgs e) { focusIfRightness(sender as Control); GeneralMouseEnter(cbSortBy); }
+        private void cbSortBy_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cbSortBy); }
+        private void cbFilter_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cbFilter);
+            showToolTip_MouseEnter(sender as Control, Message.MiddleClickToClearPaste + "\n" + Message.LeftFlickToClear + "\n" + Message.RightFlickToPaste,
+                avoidCursorIcon: false, avoidTarget: true); }
+        private void cbFilter_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cbFilter); showToolTip_MouseLeave(sender as Control); }
+        private void btnFilterCommands_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnFilterCommands); }
+        private void btnFilterCommands_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnFilterCommands); }
+        private void menuStrip_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(menuStrip); }
+        private void menuStrip_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(menuStrip); }
+        private void CatalogForm_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(this); }
+        private void CatalogForm_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(this); }
+        private void dgvFileList_MouseEnter(object sender, EventArgs e) { focusIfRightness(sender as Control); GeneralMouseEnter(dgvFileList); }
+        private void dgvFileList_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(dgvFileList); }
+        private void splRight_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(splRight); }
+        private void splRight_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(splRight); }
+        private void zabLocation_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(zabLocation); }
+        private void zabLocation_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(zabLocation); }
+        private void btnGoToBack_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnGoToBack); }
+        private void btnGoToBack_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnGoToBack); }
+        private void btnGoToForward_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(btnGoToForward); }
+        private void btnGoToForward_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(btnGoToForward); }
+
+        private void menuStripLeft_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
+        private void menuStripLeft_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
+        private void addToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
+        private void addToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
+        private void dgvDirectoryList_MouseEnter(object sender, EventArgs e)
+        {
+            focusIfRightness(sender as Control); GeneralMouseEnter(sender);
+            dgvDirectoryList.ShowCellToolTips = true; // ドラッグアウト時に false になるため
+        }
+        private void dgvDirectoryList_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
+        private void splLeft_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
+        private void splLeft_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
+        private void cmsDirectoryList_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(sender); }
+        private void cmsDirectoryList_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(sender); }
+
+        private void SelectedFileNameToolStripTextBox_MouseEnter(object sender, EventArgs e)
+        {
+            //SelectedFileNameToolStripTextBox_MouseEnter_UnselectedItemMaskPart();
+            GeneralMouseEnter(selectedFileNameToolStripTextBox);
+        }
+        private void SelectedFileNameToolStripTextBox_MouseLeave(object sender, EventArgs e)
+        {
+            //SelectedFileNameToolStripTextBox_MouseLeave_UnselectedItemMaskPart();
+            GeneralMouseLeave(selectedFileNameToolStripTextBox);
+        }
+
+        private void startToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(startToolStripMenuItem); }
+        private void startToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(startToolStripMenuItem); }
+        private void viewToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(viewToolStripMenuItem); }
+        private void viewToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(viewToolStripMenuItem); }
+        private void thumbnailSizeToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(thumbnailSizeToolStripMenuItem); }
+        private void thumbnailSizeToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(thumbnailSizeToolStripMenuItem); }
+        private void optionToolStripMenuItem1_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(optionToolStripMenuItem); }
+        private void optionToolStripMenuItem1_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(optionToolStripMenuItem); }
+
+        private void cmsRightClick_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cmsRightClick); }
+        private void cmsRightClick_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cmsRightClick); }
+
+
+        private void cmsRightClickOnBackground_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(cmsRightClickOnBackground); }
+
+        private void cmsRightClickOnBackground_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(cmsRightClickOnBackground); }
+
+        private void ratingFilterToolStripMenuItem_MouseEnter(object sender, EventArgs e) { GeneralMouseEnter(ratingFilterToolStripMenuItem); }
+        private void ratingFilterToolStripMenuItem_MouseLeave(object sender, EventArgs e) { GeneralMouseLeave(ratingFilterToolStripMenuItem); }
+
+        #endregion
+
+        private readonly HashSet<Control> showToolTipWaitingControls = new HashSet<Control>();
+
+        private async void showToolTip_MouseEnter(Control target, string message, bool avoidCursorIcon, bool avoidTarget)
+        {
+            if (target != null && !string.IsNullOrEmpty(message) && !showToolTipWaitingControls.Contains(target))
+            {
+                showToolTipWaitingControls.Add(target);
+                await Task.Delay(toolTip.InitialDelay);
+                if (showToolTipWaitingControls.Contains(target))
+                {
+                    var rectangle = target.ClientRectangle;
+                    var point = target.PointToClient(Cursor.Position);
+                    // if (target.Cursor is Cursor cursor) // HotSopt が正しく取得できない
+                    if (avoidCursorIcon && Cursor.Current is Cursor cursor)
+                    {
+                        point.Y += cursor.Size.Height - cursor.HotSpot.Y;
+                    }
+                    if (avoidTarget && rectangle.Right > point.X && rectangle.Bottom > point.Y) point.Y = rectangle.Bottom;
+                    toolTip.Show(message, target, point);
+                    await Task.Delay(toolTip.AutoPopDelay);
+                    if (showToolTipWaitingControls.Contains(target))
+                    {
+                        toolTip.Hide(target);
+                        showToolTipWaitingControls.Remove(target);
+                    }
+                }
+            }
+        }
+
+        private void showToolTip_MouseLeave(Control target)
+        {
+            if (target != null)
+            {
+                toolTip.Hide(target);
+                showToolTipWaitingControls.Remove(target);
+            }
+        }
+
+        private void globalMouseEnter(Point screenLocation)
+        {
+            unselectedItemMaskOff();
+            setWaitingProcessPriority(ProcessPriorityClass.Normal);
+            CursorIsOnControllField = true;
+        }
+
+        private void globalMouseLeave(Point screenLocation)
+        {
+            bool? thisIsActiveNullable = null;
+            if (SelectionHilightMode == SelectionHighlightMode.WhenMouseLeaves && !dragOuting && (bool)(thisIsActiveNullable = ActiveForm == this))
+            {
+                unselectedItemMaskOn();
+            }
+
+            setWaitingProcessPriority(ProcessPriorityClass.BelowNormal);
+
+            if (!RenameShownArchive_MakePreviewSleepRequest && (!ClientRectangle.Contains(PointToClient(MousePosition))))
+            {
+                if (!(((MouseButtons & MouseButtons.Left) == MouseButtons.Left || cbFilter.Focused) && (bool)(
+                     thisIsActiveNullable = thisIsActiveNullable ?? ActiveForm == this
+                    )) && AllowFullpower)
+                {
+                    bmwMakePreview.ThreadCount = Math.Max(2, Environment.ProcessorCount - 1);
+                    Program.SetPriority(ProcessPriorityClass.BelowNormal);
+                }
+            }
+            
+            if (!(bool)(thisIsActiveNullable = thisIsActiveNullable ?? ActiveForm == this))
+            {
+                stopLookAheadOnDeactivate();
+            }
+
+            CursorIsOnControllField = false;
+        }
+
+        //private static readonly Color unselectedItemMaskColor = Color.FromArgb(224, 255, 255, 255);
+        private void unselectedItemMaskOn()
+        {
+            //if(tvCatalog.SelectedIndex >= 0)
+            {
+                tvCatalog.UnselectedItemAlphaChannel = 255 - MaskAlpha;
+            }
+        }
+
+        private void unselectedItemMaskOff()
+        {
+            tvCatalog.UnselectedItemAlphaChannel = 255;
+        }
+
+        private bool NotInEditiongAnything()
+        {
+            return dgvFileList.ReadOnly && dgvDirectoryList.ReadOnly && !cbLocation.Focused && !cbFilter.Focused && !selectedFileNameToolStripTextBox.Focused;
+        }
+
+        private void focusIfRightness(Control control)
+        {
+            //if (NotInEditiongAnything()) control.Focus();
+        }
+
+        private void tvCatalog_KeyDown(object sender, KeyEventArgs e)
+        {
+            var mk = ModifierKeys;
+            if (e.KeyCode == Keys.Enter)
+            {
+                // これを有効にする場合 Alt キーでメニューにフォーカスが移る動作を無効にする必要がある
+                {
+                    OpenSelectedArchiveInDefaultViewer(ApplicationProviderUser.EnterKey, null);
+                }
+                LatestControledControl = sender as Control;
+            }
+            else if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right || e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
+            {
+                LatestControledControl = sender as Control;
+            }
+            else if (commonKeyAction(e, mk))
+            {
+                return;
+            }
+        }
+
+        private bool commonKeyAction(KeyEventArgs e, Keys modifierKeys)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                deleteKeyAction(modifierKeys); return true;
+            }
+            else if (e.Control && e.KeyCode == Keys.X)
+            {
+                CutKeyAction(modifierKeys); return true;
+            }
+            else if (e.Control && e.KeyCode == Keys.C)
+            {
+                CopyKeyAction(modifierKeys); return true;
+            }
+            else if (e.Control && e.KeyCode == Keys.V)
+            {
+                PasteKeyAction(modifierKeys); return true;
+            }
+            else if (IsApps(e.KeyCode, modifierKeys))
+            {
+                AppsKeyAction(modifierKeys); return true;
+            }
+            else if (applicationShortcutKeyAction(e, modifierKeys) != applicationShortcutKeyAction_result.SomeException)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool IsApps(Keys keys, Keys modifierKeys)
+        {
+            return keys == Keys.Apps || keys == Keys.F10 && (modifierKeys & Keys.Shift) == Keys.Shift;
+        }
+
+        enum applicationShortcutKeyAction_result { Application, Bookmark, SomeException, NotFound }
+
+        private applicationShortcutKeyAction_result applicationShortcutKeyAction(KeyEventArgs e, Keys modifierKeys)
+        {
+            var startApplicationWithAccessKeyLocal = startApplicationWithAccessKey;
+            var bookmarkWithAccessKeyLocal = startApplicationWithAccessKeyLocal;
+            if (!startApplicationWithAccessKey && !bookmarkWithAccessKeyLocal) return applicationShortcutKeyAction_result.NotFound;
+            ApplicationProvider[] aa = null;
+            if (startApplicationWithAccessKeyLocal)
+            {
+                var onlyApp = !bookmarkWithAccessKeyLocal;
+                aa = ApplicationArray;
+                if (aa == null)
+                {
+                    if (onlyApp) return applicationShortcutKeyAction_result.NotFound;
+                    startApplicationWithAccessKeyLocal = false;
+                }
+                else if (!aa.Any())
+                {
+                    if (onlyApp) return applicationShortcutKeyAction_result.NotFound;
+                    startApplicationWithAccessKeyLocal = false;
+                }
+                if (!startApplicationWithAccessKeyLocal)
+                {
+                    var lcc = LatestControledControl;
+                    if (lcc != dgvFileList && lcc != tvCatalog)
+                    {
+                        if (onlyApp) return applicationShortcutKeyAction_result.NotFound;
+                        startApplicationWithAccessKeyLocal = false;
+                    }
+                }
+            }
+            
+            if (modifierKeys != Keys.None) return applicationShortcutKeyAction_result.SomeException;
+            var kc = e.KeyCode;
+            if (kc < Keys.D0 || kc > Keys.Z) return applicationShortcutKeyAction_result.SomeException; // D0, D1, ..., D9, A, B, ..., Z の順に並んでいる
+
+            try
+            {
+                // フォーカスによってはアプリケーションは無視されることがあると考えるとこちら優先が妥当
+                if (bookmarkWithAccessKeyLocal)
+                {
+                    var rows = (from DataGridViewRow row in dgvDirectoryList.Rows select row).ToArray();
+                    foreach (var row in rows)
+                    {
+                        if (row.Cells[tbcDirectoryName.Index].Value is ColoredBookmark bookmark && bookmark.SimpleBookmark.SpecialRole == SimpleBookmarkSpecialRole.None) // セパレーターなら無視される
+                        {
+                            var sb = bookmark.SimpleBookmark;
+
+                            if (bookmark.SimpleBookmark.Alias is string alias && alias != "" && kc == ExternalApplicationProvider.GetAccessKey(alias))
+                            {
+                                /*if (dgvDirectoryList.Visible)*/ foreach (var row2 in rows) row2.Selected = row2 == row;
+                                moveToBookmark(row.Index, ApplicationProviderUser.EnterKey); // AccessKey も EnterKey と同様に振る舞う
+                                return applicationShortcutKeyAction_result.Bookmark;
+                            }
+                        }
+                    }
+                }
+
+                if (startApplicationWithAccessKeyLocal)
+                {
+                    string[] selectedPaths;
+                    bool[] isDirs;
+                    getSelectedPathArray(-1, out selectedPaths, out isDirs);
+                    if (selectedPaths == null || selectedPaths.Length <= 0) return applicationShortcutKeyAction_result.SomeException;
+                    var zpa = ZipPathArray;
+                    if (zpa == null || zpa.Length != tvCatalog.Count) return applicationShortcutKeyAction_result.SomeException;
+                    var zna = ZipNameArray;
+                    if (zna == null || zna.Length != zpa.Length) return applicationShortcutKeyAction_result.SomeException;
+                    var infos = new FileInfoForApplicationProvider[selectedPaths.Length];
+                    for (var i = 0; i < selectedPaths.Length; i++)
+                    {
+                        infos[i] = new FileInfoForApplicationProvider { Path = selectedPaths[i], IsDir = isDirs[i] };
+                    }
+                    RecentFfmpegExists = MovieThumbnailLoader.ffmpegExists();
+                    foreach (var app in aa)
+                    {
+                        if (kc == app.GetAccessKey())
+                        {
+                            if (app.Supports(infos))
+                            {
+                                app.Exec(ApplicationProviderUser.AccessKey, selectedPaths);
+                                return applicationShortcutKeyAction_result.Application;
+                            }
+                        }
+                    }
+                    //throw new Exception(Message.ApplicationIsNotSpecified);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Task.Run(() => Invoke((MethodInvoker)(() => tvCatalog.DoMouseUp())));
+            }
+
+            // プログラムが見つかったかどうか、エラーが出たかどうかで動作は変更しない
+            return applicationShortcutKeyAction_result.NotFound;
+        }
+
+        private void cmsRightClickPrepareAndShowForKeyOnTvCatalog(bool onlyTag, Keys modifierKeys)
+        {
+            var mk = modifierKeys;
+            //var mk = ModifierKeys;
+            if (tvCatalog.SelectedIndicesCount > 0)
+            {
+                int showIndex = tvCatalog.FirstDisplayedSelectedShowIndex;
+                if (showIndex < 0) return;
+                var p = tvCatalog.GetSemiCenterClientcoordinateOf(showIndex);
+                p = tvCatalog.PointToScreen(p);
+                if (onlyTag)
+                {
+                    cmsRightClickPrepareAndShow_(p, true);
+                }
+                else
+                {
+                    rightClickContextMenuPrepareAndShow(p, mk);
+                }
+            }
+            else if (!onlyTag && tvCatalog.Visible && (RightClickContextMenu != CatalogFormConetxtMenu.Tag))
+            {
+                var p = tvCatalog.PointToScreen(tvCatalog.Location);
+
+                //cmsRightClickPrepareAndShow(p);
+
+                rightClickContextMenuPrepareAndShow(p, mk);
+                //cmsRightClickPrepareAndShow_(p, false);
+            }
+        }
+
+        private void mouseGestureSettingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AllowFullpower = false;
+
+            var edited = Program.OpenMouseGestureSetting(Icon, mgCatalog, getMouseGestureSettingTemplate(), this);
+
+            if (edited)
+            {
+                mgFileList.Actions = mgCatalog.Actions;
+                mgFileList.Enabled = mgCatalog.Enabled;
+                mgFileList.Width = mgCatalog.Width;
+                mgFileList.Color = mgCatalog.Color;
+            }
+
+            AllowFullpower = true;
+        }
+
+        public enum Command { GoBack, GoForward, GoUp, ScrollToTop, ResetFilter, ScrollToBottom, ScrollToSelection, Reload, Exit }
+
+        public class MouseGestureCommand { public MouseGestureDirection[] Gesture; public Command Command; }
+
+        private MouseGestureSettingTemplate[] getMouseGestureSettingTemplate()
+        {
+            return new MouseGestureSettingTemplate[]
+            {
+                new MouseGestureSettingTemplate( (int)Command.GoBack, Message.GoBack,
+                   btnGoToBack.PerformClick),
+                new MouseGestureSettingTemplate( (int)Command.GoForward, Message.GoForward,
+                   btnGoToForward.PerformClick),
+                new MouseGestureSettingTemplate( (int)Command.GoUp, Message.GoUp,
+                   goUpFromCurrentLocation),
+                new MouseGestureSettingTemplate( (int)Command.ResetFilter, Message.ResetFilter,
+                   () => cbFilter.Text = ""),
+                new MouseGestureSettingTemplate( (int)Command.ScrollToTop, Message.ScrollToTop,
+                   () => {
+                       if(tvCatalog.Focused)
+                       {
+                           tvCatalog.ScrollBarPercentage = 0;
+                       }
+                       else if(dgvFileList.Focused && dgvFileList.FirstDisplayedScrollingRowIndex > 0)
+                       {
+                           dgvFileList.FirstDisplayedScrollingRowIndex = 0;
+                       }
+                   }),
+                new MouseGestureSettingTemplate( (int)Command.ScrollToBottom, Message.ScrollToBottom,
+                   () => {
+                       if(tvCatalog.Focused)
+                       {
+                           tvCatalog.ScrollBarPercentage = 100;
+                       }
+                       else if(dgvFileList.Focused && dgvFileList.FirstDisplayedScrollingRowIndex >= 0)
+                       {
+                           dgvFileList.FirstDisplayedScrollingRowIndex = dgvFileList.Rows.Count - 1;
+                       }
+                   }),
+                new MouseGestureSettingTemplate( (int)Command.ScrollToSelection, Message.ScrollToSelection,
+                   () => {
+                       if(tvCatalog.Focused)
+                       {
+                           var index = tvCatalog.SelectedIndex;
+                           if(index >= 0)
+                           {
+                                tvCatalog.ScrollBarToIndexWithMinimalMove(tvCatalog.DataIndexToShowIndex[index]);
+                           }
+                       }
+                       else if(dgvFileList.Focused)
+                       {
+                           selectionSynchronizingFromThumbnailToFileList(changeScroll: true);
+                       }
+                   }),
+                new MouseGestureSettingTemplate( (int)Command.Reload, Message.Reload,
+                   userReload),
+
+                new MouseGestureSettingTemplate( (int)Command.Exit, Message.Exit,
+                   Close),
+            };
+        }
     }
 }
