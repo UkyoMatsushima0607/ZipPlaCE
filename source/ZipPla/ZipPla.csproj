@@ -176,6 +176,22 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LongVectorImageResizer.Generated.cs">
+      <DependentUpon>LongVectorImageResizer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ForeColorManager.cs" />
+    <Compile Include="PrefixEscapedToolStripMenuItem.cs" />
+    <Compile Include="IpcMessages.cs" />
+    <Compile Include="SortModeDetails.cs" />
+    <Compile Include="ToolStripDropDownScroller.cs" />
+    <Compile Include="MovieInfo.cs" />
+    <Compile Include="Fraction.cs" />
+    <Compile Include="NetShare.cs" />
+    <Compile Include="LogicalStringComparer.cs" />
+    <Compile Include="SeekableStream.cs" />
+    <Compile Include="ReleasableStream.cs" />
+    <Compile Include="BitmapEx.cs" />
+    <Compile Include="NTFSMultiStream.cs" />
     <Compile Include="ViewControl.cs" />
     <Compile Include="ViewerFormEnums.cs" />
     <Compile Include="ViewerFormConfig.cs" />
@@ -2825,7 +2841,7 @@
     <Compile Include="WebPDecoder.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="DataGridViewSorter.cs" />
-    <Compile Include="GenerarClasses.cs">
+    <Compile Include="BackgroundMultiWorker.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="CatalogForm.cs">
