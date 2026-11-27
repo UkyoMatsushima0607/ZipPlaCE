@@ -1392,9 +1392,46 @@ namespace ZipPla
             var loc0 = button0.Location;
             visibleContextMenuStripSet.Add(cms);
             cms.Closed += (sender2, e2) => visibleContextMenuStripSet.Remove(cms);
+            // 押すたびに作るメニューなので、閉じたら項目・サブメニューごと破棄する（ウィンドウハンドルを持つ。TD-8）。
+            // 項目のクリックの処理は Close のあとも続くので、イベントを抜けてから
+            cms.Closed += (sender2, e2) =>
+            {
+                try
+                {
+                    ownerForm.BeginInvoke((MethodInvoker)(() =>
+                    {
+                        if (cms.IsDisposed || cms.Visible) return;
+                        disposeMenuItems(cms.Items);
+                        cms.Dispose();
+                    }));
+                }
+                catch (InvalidOperationException) { } // フォームが閉じた
+            };
             //cms.Show(ownerForm.PointToScreen(new Point(button0.Left, button0.Bottom)));
             //cms.Show(ownerForm.PointToScreen(new Point(button0.Left, button0.Bottom - 1))); // 外観の問題
             cms.Show(new Point(buttonBound.Left, buttonBound.Bottom - 1)); // 外観の問題
+        }
+
+        // 項目を外して破棄する。サブメニュー（getDirectorySeekingMenuItemArray2 が作る ContextMenuStripEx）は
+        // 項目の Dispose では破棄されない（自動で作られたものだけが破棄される）ので、中の項目ごと破棄する（TD-8）
+        private static void disposeMenuItems(ToolStripItemCollection items)
+        {
+            var array = items.Cast<ToolStripItem>().ToArray();
+            items.Clear();
+            foreach (var item in array)
+            {
+                var ddi = item as ToolStripDropDownItem;
+                if (ddi != null && ddi.HasDropDown) // DropDown の getter は空のドロップダウンを作るので、あるときだけ
+                {
+                    var dropDown = ddi.DropDown;
+                    if (dropDown != null && !dropDown.IsDisposed)
+                    {
+                        disposeMenuItems(dropDown.Items);
+                        dropDown.Dispose();
+                    }
+                }
+                item.Dispose();
+            }
         }
 
         private void DropDown_DragLeave(object sender, EventArgs e)
@@ -1669,7 +1706,7 @@ namespace ZipPla
 
                     item.DropDownOpening += (sender2, e2) =>
                     {
-                        item.DropDownItems.Clear();
+                        disposeMenuItems(item.DropDownItems); // 前に開いたときの項目を破棄する（TD-8）
                         item.DropDownItems.AddRange(getDirectorySeekingMenuItemArray2(subdir, null, sender, e, cms));
 
                     };
