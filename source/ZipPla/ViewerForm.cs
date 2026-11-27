@@ -590,6 +590,7 @@ namespace ZipPla
             if (ipcLookAheadInfo == null && Program.CheckConfigException()) CloseWithoutSave();
 
             InitializeComponent();
+            InitializeScalingAlgorithmMenuItems();
             // 先読みは表示中のページの前後だけ（SetBackgroundMode）
             bmwLoadEachPage.AllowPartialWorksOrder = true;
             ResizeBegin += ViewerForm_ResizeBegin_V4;

@@ -168,20 +168,48 @@ namespace ZipPla
             return algorithm == ScalingAlgorithm.Default || algorithm == ScalingAlgorithm.HighSpeed || algorithm == ScalingAlgorithm.NearestNeighbor;
         }
 
+        // 拡大縮小アルゴリズムのメニュー項目と値の対応（通常表示とルーペ）。クリックとチェックの付け外しはこの表で行う
+        private (ToolStripMenuItem Item, ScalingAlgorithm Algorithm)[] standardScalingAlgorithmMenuItems, magnifierScalingAlgorithmMenuItems;
+
+        private void InitializeScalingAlgorithmMenuItems()
+        {
+            standardScalingAlgorithmMenuItems = new[]
+            {
+                (defaultScalingAlgorithmNormalToolStripMenuItem, ScalingAlgorithm.Default),
+                (default2ScalingAlgorithmNormalToolStripMenuItem, ScalingAlgorithm.HighSpeed),
+                (nearestNeighborNormalToolStripMenuItem, ScalingAlgorithm.NearestNeighbor),
+                (areaAverageNormalToolStripMenuItem, ScalingAlgorithm.AreaAverage),
+                (lanczos1NormalToolStripMenuItem, ScalingAlgorithm.Lanczos1),
+                (lanczos2NormalToolStripMenuItem, ScalingAlgorithm.Lanczos2),
+                (lanczos3NormalToolStripMenuItem, ScalingAlgorithm.Lanczos3),
+                (lanczos4NormalToolStripMenuItem, ScalingAlgorithm.Lanczos4),
+                (spline4NormalToolStripMenuItem, ScalingAlgorithm.Spline4),
+                (spline16NormalToolStripMenuItem, ScalingAlgorithm.Spline16),
+                (spline36NormalToolStripMenuItem, ScalingAlgorithm.Spline36),
+                (spline64NormalToolStripMenuItem, ScalingAlgorithm.Spline64),
+            };
+            magnifierScalingAlgorithmMenuItems = new[]
+            {
+                (defaultMagnifierToolStripMenuItem, ScalingAlgorithm.HighSpeed), // ルーペの「既定」は高速
+                (default0MagnifierToolStripMenuItem, ScalingAlgorithm.Default),
+                (nearestNeighborMagnifierToolStripMenuItem, ScalingAlgorithm.NearestNeighbor),
+                (areaAverageMagnifierToolStripMenuItem, ScalingAlgorithm.AreaAverage),
+                (lanczos1MagnifierToolStripMenuItem, ScalingAlgorithm.Lanczos1),
+                (lanczos2MagnifierToolStripMenuItem, ScalingAlgorithm.Lanczos2),
+                (lanczos3MagnifierToolStripMenuItem, ScalingAlgorithm.Lanczos3),
+                (lanczos4MagnifierToolStripMenuItem, ScalingAlgorithm.Lanczos4),
+                (spline4MagnifierToolStripMenuItem, ScalingAlgorithm.Spline4),
+                (spline16MagnifierToolStripMenuItem, ScalingAlgorithm.Spline16),
+                (spline36MagnifierToolStripMenuItem, ScalingAlgorithm.Spline36),
+                (spline64MagnifierToolStripMenuItem, ScalingAlgorithm.Spline64),
+            };
+            foreach (var (item, algorithm) in standardScalingAlgorithmMenuItems) item.Click += (sender, e) => setStandardScalingAlgorithm(algorithm);
+            foreach (var (item, algorithm) in magnifierScalingAlgorithmMenuItems) item.Click += (sender, e) => setMagnifierScalingAlgorithm(algorithm);
+        }
+
         private void scalingAlgorithmNormalToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
-            defaultScalingAlgorithmNormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Default;
-            default2ScalingAlgorithmNormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.HighSpeed;
-            nearestNeighborNormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.NearestNeighbor;
-            areaAverageNormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.AreaAverage;
-            lanczos1NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos1;
-            lanczos2NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos2;
-            lanczos3NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos3;
-            lanczos4NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos4;
-            spline4NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline4;
-            spline16NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline16;
-            spline36NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline36;
-            spline64NormalToolStripMenuItem.Checked = StandardScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline64;
+            foreach (var (item, algorithm) in standardScalingAlgorithmMenuItems) item.Checked = StandardScalingAlgorithm.ScaleDown == algorithm;
         }
 
         int standardScalingAlgorithm_BenchRequest = -1;
@@ -216,66 +244,6 @@ namespace ZipPla
                     reloadForChangeFilter(forOnlyPostFilter: true);
                 }
             }
-        }
-
-        private void defaultScalingAlgorithmNormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Default);
-        }
-
-        private void default2ScalingAlgorithmNormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.HighSpeed);
-        }
-
-        private void nearestNeighborNormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.NearestNeighbor);
-        }
-
-        private void areaAverageNormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.AreaAverage);
-        }
-
-        private void lanczos1NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Lanczos1);
-        }
-
-        private void lanczos2NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Lanczos2);
-        }
-
-        private void lanczos3NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Lanczos3);
-        }
-
-        private void lanczos4NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Lanczos4);
-        }
-
-        private void spline4NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Spline4);
-        }
-
-        private void spline16NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Spline16);
-        }
-
-        private void spline36NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Spline36);
-        }
-
-        private void spline64NormalToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setStandardScalingAlgorithm(ScalingAlgorithm.Spline64);
         }
 
         private void linearizeColorSpaceforGamma22NormalToolStripMenuItem_Click(object sender, EventArgs e)
@@ -332,18 +300,7 @@ namespace ZipPla
 
         private void scalingAlgorithmMagnifierToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
-            defaultMagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.HighSpeed;
-            default0MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Default;
-            nearestNeighborMagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.NearestNeighbor;
-            areaAverageMagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.AreaAverage;
-            lanczos1MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos1;
-            lanczos2MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos2;
-            lanczos3MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos3;
-            lanczos4MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Lanczos4;
-            spline4MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline4;
-            spline16MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline16;
-            spline36MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline36;
-            spline64MagnifierToolStripMenuItem.Checked = MagnifierScalingAlgorithm.ScaleDown == ScalingAlgorithm.Spline64;
+            foreach (var (item, algorithm) in magnifierScalingAlgorithmMenuItems) item.Checked = MagnifierScalingAlgorithm.ScaleDown == algorithm;
         }
 
         private void setMagnifierScalingAlgorithm(ScalingAlgorithm algorithm)
@@ -362,66 +319,6 @@ namespace ZipPla
                 //reloadForChangeFilter(forOnlyPostFilter: true);
                 resetMagnifyingPower(magnifyingPower);
             }
-        }
-
-        private void defaultMagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.HighSpeed);
-        }
-
-        private void default0MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Default);
-        }
-
-        private void nearestNeighborMagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.NearestNeighbor);
-        }
-
-        private void areaAverageMagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.AreaAverage);
-        }
-
-        private void lanczos1MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Lanczos1);
-        }
-
-        private void lanczos2MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Lanczos2);
-        }
-
-        private void lanczos3MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Lanczos3);
-        }
-
-        private void lanczos4MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Lanczos4);
-        }
-
-        private void spline4MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Spline4);
-        }
-
-        private void spline16MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Spline16);
-        }
-
-        private void spline36MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Spline36);
-        }
-
-        private void spline64MagnifierToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            setMagnifierScalingAlgorithm(ScalingAlgorithm.Spline64);
         }
 
         private void linearizeColorSpaceforGamma22MagnifierToolStripMenuItem_Click(object sender, EventArgs e)

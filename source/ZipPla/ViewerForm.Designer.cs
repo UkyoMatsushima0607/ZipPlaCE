@@ -810,84 +810,72 @@
             this.defaultScalingAlgorithmNormalToolStripMenuItem.Name = "defaultScalingAlgorithmNormalToolStripMenuItem";
             this.defaultScalingAlgorithmNormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.defaultScalingAlgorithmNormalToolStripMenuItem.Text = "Default (high quality)";
-            this.defaultScalingAlgorithmNormalToolStripMenuItem.Click += new System.EventHandler(this.defaultScalingAlgorithmNormalToolStripMenuItem_Click);
             // 
             // default2ScalingAlgorithmNormalToolStripMenuItem
             // 
             this.default2ScalingAlgorithmNormalToolStripMenuItem.Name = "default2ScalingAlgorithmNormalToolStripMenuItem";
             this.default2ScalingAlgorithmNormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.default2ScalingAlgorithmNormalToolStripMenuItem.Text = "Default (high speed)";
-            this.default2ScalingAlgorithmNormalToolStripMenuItem.Click += new System.EventHandler(this.default2ScalingAlgorithmNormalToolStripMenuItem_Click);
             // 
             // nearestNeighborNormalToolStripMenuItem
             // 
             this.nearestNeighborNormalToolStripMenuItem.Name = "nearestNeighborNormalToolStripMenuItem";
             this.nearestNeighborNormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.nearestNeighborNormalToolStripMenuItem.Text = "Nearest neighbor";
-            this.nearestNeighborNormalToolStripMenuItem.Click += new System.EventHandler(this.nearestNeighborNormalToolStripMenuItem_Click);
             // 
             // areaAverageNormalToolStripMenuItem
             // 
             this.areaAverageNormalToolStripMenuItem.Name = "areaAverageNormalToolStripMenuItem";
             this.areaAverageNormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.areaAverageNormalToolStripMenuItem.Text = "Area average";
-            this.areaAverageNormalToolStripMenuItem.Click += new System.EventHandler(this.areaAverageNormalToolStripMenuItem_Click);
             // 
             // lanczos1NormalToolStripMenuItem
             // 
             this.lanczos1NormalToolStripMenuItem.Name = "lanczos1NormalToolStripMenuItem";
             this.lanczos1NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos1NormalToolStripMenuItem.Text = "Lanczos1";
-            this.lanczos1NormalToolStripMenuItem.Click += new System.EventHandler(this.lanczos1NormalToolStripMenuItem_Click);
             // 
             // lanczos2NormalToolStripMenuItem
             // 
             this.lanczos2NormalToolStripMenuItem.Name = "lanczos2NormalToolStripMenuItem";
             this.lanczos2NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos2NormalToolStripMenuItem.Text = "Lanczos2";
-            this.lanczos2NormalToolStripMenuItem.Click += new System.EventHandler(this.lanczos2NormalToolStripMenuItem_Click);
             // 
             // lanczos3NormalToolStripMenuItem
             // 
             this.lanczos3NormalToolStripMenuItem.Name = "lanczos3NormalToolStripMenuItem";
             this.lanczos3NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos3NormalToolStripMenuItem.Text = "Lanczos3";
-            this.lanczos3NormalToolStripMenuItem.Click += new System.EventHandler(this.lanczos3NormalToolStripMenuItem_Click);
             // 
             // lanczos4NormalToolStripMenuItem
             // 
             this.lanczos4NormalToolStripMenuItem.Name = "lanczos4NormalToolStripMenuItem";
             this.lanczos4NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos4NormalToolStripMenuItem.Text = "Lanczos4";
-            this.lanczos4NormalToolStripMenuItem.Click += new System.EventHandler(this.lanczos4NormalToolStripMenuItem_Click);
             // 
             // spline4NormalToolStripMenuItem
             // 
             this.spline4NormalToolStripMenuItem.Name = "spline4NormalToolStripMenuItem";
             this.spline4NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline4NormalToolStripMenuItem.Text = "Spline4";
-            this.spline4NormalToolStripMenuItem.Click += new System.EventHandler(this.spline4NormalToolStripMenuItem_Click);
             // 
             // spline16NormalToolStripMenuItem
             // 
             this.spline16NormalToolStripMenuItem.Name = "spline16NormalToolStripMenuItem";
             this.spline16NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline16NormalToolStripMenuItem.Text = "Spline16";
-            this.spline16NormalToolStripMenuItem.Click += new System.EventHandler(this.spline16NormalToolStripMenuItem_Click);
             // 
             // spline36NormalToolStripMenuItem
             // 
             this.spline36NormalToolStripMenuItem.Name = "spline36NormalToolStripMenuItem";
             this.spline36NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline36NormalToolStripMenuItem.Text = "Spline36";
-            this.spline36NormalToolStripMenuItem.Click += new System.EventHandler(this.spline36NormalToolStripMenuItem_Click);
             // 
             // spline64NormalToolStripMenuItem
             // 
             this.spline64NormalToolStripMenuItem.Name = "spline64NormalToolStripMenuItem";
             this.spline64NormalToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline64NormalToolStripMenuItem.Text = "Spline64";
-            this.spline64NormalToolStripMenuItem.Click += new System.EventHandler(this.spline64NormalToolStripMenuItem_Click);
             // 
             // toolStripMenuItem18
             // 
@@ -938,84 +926,72 @@
             this.defaultMagnifierToolStripMenuItem.Name = "defaultMagnifierToolStripMenuItem";
             this.defaultMagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.defaultMagnifierToolStripMenuItem.Text = "Default (high speed)";
-            this.defaultMagnifierToolStripMenuItem.Click += new System.EventHandler(this.defaultMagnifierToolStripMenuItem_Click);
             // 
             // default0MagnifierToolStripMenuItem
             // 
             this.default0MagnifierToolStripMenuItem.Name = "default0MagnifierToolStripMenuItem";
             this.default0MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.default0MagnifierToolStripMenuItem.Text = "Default (high quality)";
-            this.default0MagnifierToolStripMenuItem.Click += new System.EventHandler(this.default0MagnifierToolStripMenuItem_Click);
             // 
             // nearestNeighborMagnifierToolStripMenuItem
             // 
             this.nearestNeighborMagnifierToolStripMenuItem.Name = "nearestNeighborMagnifierToolStripMenuItem";
             this.nearestNeighborMagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.nearestNeighborMagnifierToolStripMenuItem.Text = "Nearest neighbor";
-            this.nearestNeighborMagnifierToolStripMenuItem.Click += new System.EventHandler(this.nearestNeighborMagnifierToolStripMenuItem_Click);
             // 
             // areaAverageMagnifierToolStripMenuItem
             // 
             this.areaAverageMagnifierToolStripMenuItem.Name = "areaAverageMagnifierToolStripMenuItem";
             this.areaAverageMagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.areaAverageMagnifierToolStripMenuItem.Text = "Area average";
-            this.areaAverageMagnifierToolStripMenuItem.Click += new System.EventHandler(this.areaAverageMagnifierToolStripMenuItem_Click);
             // 
             // lanczos1MagnifierToolStripMenuItem
             // 
             this.lanczos1MagnifierToolStripMenuItem.Name = "lanczos1MagnifierToolStripMenuItem";
             this.lanczos1MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos1MagnifierToolStripMenuItem.Text = "Lanczos1";
-            this.lanczos1MagnifierToolStripMenuItem.Click += new System.EventHandler(this.lanczos1MagnifierToolStripMenuItem_Click);
             // 
             // lanczos2MagnifierToolStripMenuItem
             // 
             this.lanczos2MagnifierToolStripMenuItem.Name = "lanczos2MagnifierToolStripMenuItem";
             this.lanczos2MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos2MagnifierToolStripMenuItem.Text = "Lanczos2";
-            this.lanczos2MagnifierToolStripMenuItem.Click += new System.EventHandler(this.lanczos2MagnifierToolStripMenuItem_Click);
             // 
             // lanczos3MagnifierToolStripMenuItem
             // 
             this.lanczos3MagnifierToolStripMenuItem.Name = "lanczos3MagnifierToolStripMenuItem";
             this.lanczos3MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos3MagnifierToolStripMenuItem.Text = "Lanczos3";
-            this.lanczos3MagnifierToolStripMenuItem.Click += new System.EventHandler(this.lanczos3MagnifierToolStripMenuItem_Click);
             // 
             // lanczos4MagnifierToolStripMenuItem
             // 
             this.lanczos4MagnifierToolStripMenuItem.Name = "lanczos4MagnifierToolStripMenuItem";
             this.lanczos4MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.lanczos4MagnifierToolStripMenuItem.Text = "Lanczos4";
-            this.lanczos4MagnifierToolStripMenuItem.Click += new System.EventHandler(this.lanczos4MagnifierToolStripMenuItem_Click);
             // 
             // spline4MagnifierToolStripMenuItem
             // 
             this.spline4MagnifierToolStripMenuItem.Name = "spline4MagnifierToolStripMenuItem";
             this.spline4MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline4MagnifierToolStripMenuItem.Text = "Spline4";
-            this.spline4MagnifierToolStripMenuItem.Click += new System.EventHandler(this.spline4MagnifierToolStripMenuItem_Click);
             // 
             // spline16MagnifierToolStripMenuItem
             // 
             this.spline16MagnifierToolStripMenuItem.Name = "spline16MagnifierToolStripMenuItem";
             this.spline16MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline16MagnifierToolStripMenuItem.Text = "Spline16";
-            this.spline16MagnifierToolStripMenuItem.Click += new System.EventHandler(this.spline16MagnifierToolStripMenuItem_Click);
             // 
             // spline36MagnifierToolStripMenuItem
             // 
             this.spline36MagnifierToolStripMenuItem.Name = "spline36MagnifierToolStripMenuItem";
             this.spline36MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline36MagnifierToolStripMenuItem.Text = "Spline36";
-            this.spline36MagnifierToolStripMenuItem.Click += new System.EventHandler(this.spline36MagnifierToolStripMenuItem_Click);
             // 
             // spline64MagnifierToolStripMenuItem
             // 
             this.spline64MagnifierToolStripMenuItem.Name = "spline64MagnifierToolStripMenuItem";
             this.spline64MagnifierToolStripMenuItem.Size = new System.Drawing.Size(280, 22);
             this.spline64MagnifierToolStripMenuItem.Text = "Spline64";
-            this.spline64MagnifierToolStripMenuItem.Click += new System.EventHandler(this.spline64MagnifierToolStripMenuItem_Click);
             // 
             // toolStripMenuItem19
             // 

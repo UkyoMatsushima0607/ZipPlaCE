@@ -565,25 +565,7 @@ namespace ZipPla
                 return;
             }
 
-            DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
-            try
-            {
-                Program.FileOrDirectoryMove(prevArchiveFilePath, newArchiveFilePath, retryOwner: this);
-                //currentArchiveFilePath = newArchiveFilePath;
-            }
-            catch// (Exception error)
-            {
-                //MessageBox.Show(this, error.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error); // よくあることなので。
-                //OpenFile(newArchiveFilePath); // こちらは不適切
-                OpenFile(prevArchiveFilePath, currentPage, currentSortModeDetails); // loader を null にしてしまっているので再読み込みは必要
-                return;
-            }
-
-            // 名前の変更を報告
-            SendRenameMessageToCatalogForm(prevArchiveFilePath, newArchiveFilePath);
-
-            //MessageBox.Show(Message.DonePageSequenceSetting, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            OpenFile(newArchiveFilePath, currentPage, currentSortModeDetails);
+            RenameCurrentArchiveAndReopen(prevArchiveFilePath, newArchiveFilePath);
         }
 
         private void noneToolStripMenuItem_Click(object sender, EventArgs e)
@@ -664,25 +646,7 @@ namespace ZipPla
                 return;
             }
 
-            DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
-            try
-            {
-                Program.FileOrDirectoryMove(prevArchiveFilePath, newArchiveFilePath, retryOwner: this);
-                //currentArchiveFilePath = newArchiveFilePath;
-            }
-            catch// (Exception error)
-            {
-                //MessageBox.Show(this, error.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error); // よくあることなので。
-                //OpenFile(newArchiveFilePath); // こちらは不適切
-                OpenFile(prevArchiveFilePath, currentPage, currentSortModeDetails); // loader を null にしてしまっているので再読み込みは必要
-                return;
-            }
-
-            // 名前の変更を報告
-            SendRenameMessageToCatalogForm(prevArchiveFilePath, newArchiveFilePath);
-
-            //MessageBox.Show(this, Message.DonePageSequenceSetting, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            OpenFile(newArchiveFilePath, currentPage, currentSortModeDetails);
+            RenameCurrentArchiveAndReopen(prevArchiveFilePath, newArchiveFilePath);
         }
 
         private bool unckeckAllTags_Changing = false;

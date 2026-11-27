@@ -72,26 +72,30 @@ namespace ZipPla
                 return;
             }
 
+            RenameCurrentArchiveAndReopen(prevArchiveFilePath, newArchiveFilePath, beforeReopen: ExitCoverSetting);
+        }
+
+        /// <summary>
+        /// 今の書庫の名前を変えて開き直す（表紙・綴じ方向・評価・タグの設定をファイル名に書くとき）。
+        /// 読み込み中の書庫を閉じてから移動し、失敗したら元の名前で開き直す（失敗はよくあるので知らせない）。
+        /// 成功したらカタログに報告する。beforeReopen は開き直す直前に呼ぶ（成功・失敗とも）
+        /// </summary>
+        private void RenameCurrentArchiveAndReopen(string prevArchiveFilePath, string newArchiveFilePath, Action beforeReopen = null)
+        {
             DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
             try
             {
                 Program.FileOrDirectoryMove(prevArchiveFilePath, newArchiveFilePath, retryOwner: this);
-                //currentArchiveFilePath = newArchiveFilePath;
             }
-            catch //(Exception error)
+            catch
             {
-                //MessageBox.Show(this, error.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error); // よくあることなので。
-                ExitCoverSetting();
-                //OpenFile(newArchiveFilePath); // こちらは不適切
-                OpenFile(prevArchiveFilePath, currentPage, currentSortModeDetails); // loader を null にしてしまっているので再読み込みは必要
+                beforeReopen?.Invoke();
+                OpenFile(prevArchiveFilePath, currentPage, currentSortModeDetails); // loader を閉じたので開き直す
                 return;
             }
 
-            // 名前の変更を報告
             SendRenameMessageToCatalogForm(prevArchiveFilePath, newArchiveFilePath);
-
-            //MessageBox.Show(this, Message.DoneCoverSetting, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            ExitCoverSetting();
+            beforeReopen?.Invoke();
             OpenFile(newArchiveFilePath, currentPage, currentSortModeDetails);
         }
 
@@ -377,25 +381,7 @@ namespace ZipPla
                 return;
             }
 
-            DisposeLoader(); // 読み込みジョブが取り出し中でないときに（V1）
-            try
-            {
-                Program.FileOrDirectoryMove(prevArchiveFilePath, newArchiveFilePath, retryOwner: this);
-                //currentArchiveFilePath = newArchiveFilePath;
-            }
-            catch// (Exception error)
-            {
-                //MessageBox.Show(this, error.Message, null, MessageBoxButtons.OK, MessageBoxIcon.Error); // よくあることなので。
-                //OpenFile(newArchiveFilePath); // こちらは不適切
-                OpenFile(prevArchiveFilePath, currentPage, currentSortModeDetails); // loader を null にしてしまっているので再読み込みは必要
-                return;
-            }
-
-            // 名前の変更を報告
-            SendRenameMessageToCatalogForm(prevArchiveFilePath, newArchiveFilePath);
-
-            //MessageBox.Show(this, Message.DonePageSequenceSetting, Message.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            OpenFile(newArchiveFilePath, currentPage, currentSortModeDetails);
+            RenameCurrentArchiveAndReopen(prevArchiveFilePath, newArchiveFilePath);
         }
 
         private Rectangle GetCoverRectangleForDisplay(Point? clientPoint = null)
