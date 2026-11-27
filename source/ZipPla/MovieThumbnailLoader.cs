@@ -160,17 +160,27 @@ namespace ZipPla
             }
 
             byte[] buf;
+#if PERFLOG
+            var perfFfmpeg = PerfTrace.Now();
+#endif
             //lock (GetThumbnail_ffmpegLocker)
             {
                 buf = readStdOutBinary(ffmpegPath, cmd,
                 backgroundWorker, size.Width * size.Height * 4 + 124, out outputSize); // http://www.ruche-home.net/program/bmp/struct 実際には * 3 + 54 が多いが、 * 4 + 54 のケースもある
             }
+#if PERFLOG
+            PerfTrace.AddStage("movieFfmpeg", PerfTrace.Now() - perfFfmpeg); // ffmpeg の起動から、標準出力の BMP を読み終えるまで
+            var perfBitmap = PerfTrace.Now();
+#endif
 
             using (var ms = new MemoryStream(buf, 0, outputSize, writable: false, publiclyVisible: false))
             {
                 try
                 {
                     var result = new Bitmap(ms);
+#if PERFLOG
+                    PerfTrace.AddStage("movieBitmap", PerfTrace.Now() - perfBitmap); // BMP を Bitmap にする
+#endif
                     if(result.Size != size)
                     {
                         result.Dispose();
