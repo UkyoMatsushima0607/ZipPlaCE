@@ -821,145 +821,40 @@ namespace ZipPla
 
         // 16:10 で横が3段階にならないようにするには横のオーバーラップが 2 - 1.25√2 ≒ 0.232233 以下でなければならない
         // 縦を3段階にするには縦のオーバーラップが 0 より大きくなければならない
-        private void MagnifierAutoScrollForwardWith20PercentOverwrap()
+        // ルーペのオートスクロール（コマンドとして呼ばれる 16 個）。20% は横の重なり 0.2・縦 0.499999、0% は重なりなし。
+        // Right / Left は綴じ方向に合わせて Forward / Back に読み替える。MoveXxxOr… はスクロールできなければページを送る
+        private ScrollResult MagnifierAutoScrollStep(bool back, bool overwrap20)
         {
-            MagnifierAutoScroll(back: false, prioritizeHorizontal: false, horizontalOverwrap: 0.2, verticalOverwrap: 0.499999);
+            return overwrap20 ?
+                MagnifierAutoScroll(back: back, prioritizeHorizontal: false, horizontalOverwrap: 0.2, verticalOverwrap: 0.499999) :
+                MagnifierAutoScroll(back: back, prioritizeHorizontal: false, horizontalOverwrap: 0, verticalOverwrap: 0);
         }
 
-        private void MagnifierAutoScrollBackWith20PercentOverwrap()
+        private void MoveOrMagnifierAutoScroll(bool back, bool overwrap20)
         {
-            MagnifierAutoScroll(back: true, prioritizeHorizontal: false, horizontalOverwrap: 0.2, verticalOverwrap: 0.499999);
+            if (MagnifierAutoScrollStep(back, overwrap20) == ScrollResult.Scrolled) return;
+            if (back) MoveToPreviousPage();
+            else moveToNextPage();
         }
 
-        private void MagnifierAutoScrollForwardWith0PercentOverwrap()
-        {
-            MagnifierAutoScroll(back: false, prioritizeHorizontal: false, horizontalOverwrap: 0, verticalOverwrap: 0);
-        }
+        private bool RightIsForward => BindingMode != BindingMode.RightToLeft;
 
-        private void MagnifierAutoScrollBackWith0PercentOverwrap()
-        {
-            MagnifierAutoScroll(back: true, prioritizeHorizontal: false, horizontalOverwrap: 0, verticalOverwrap: 0);
-        }
-
-        private void MoveForwardOrMagnifierAutoScrollWith20PercentOverwrap()
-        {
-            var r = MagnifierAutoScroll(back: false, prioritizeHorizontal: false, horizontalOverwrap: 0.2, verticalOverwrap: 0.499999);
-            if (r != ScrollResult.Scrolled) moveToNextPage();
-        }
-
-        private void MoveBackOrMagnifierAutoScrollWith20PercentOverwrap()
-        {
-            var r = MagnifierAutoScroll(back: true, prioritizeHorizontal: false, horizontalOverwrap: 0.2, verticalOverwrap: 0.499999);
-            if (r != ScrollResult.Scrolled) MoveToPreviousPage();
-        }
-
-        private void MoveForwardOrMagnifierAutoScrollWith0PercentOverwrap()
-        {
-            var r = MagnifierAutoScroll(back: false, prioritizeHorizontal: false, horizontalOverwrap: 0, verticalOverwrap: 0);
-            if (r != ScrollResult.Scrolled) moveToNextPage();
-        }
-
-        private void MoveBackOrMagnifierAutoScrollWith0PercentOverwrap()
-        {
-            var r = MagnifierAutoScroll(back: true, prioritizeHorizontal: false, horizontalOverwrap: 0, verticalOverwrap: 0);
-            if (r != ScrollResult.Scrolled) MoveToPreviousPage();
-        }
-
-        private void MagnifierAutoScrollRightWith20PercentOverwrap()
-        {
-            if (BindingMode != BindingMode.RightToLeft)
-            {
-                MagnifierAutoScrollForwardWith20PercentOverwrap();
-            }
-            else
-            {
-                MagnifierAutoScrollBackWith20PercentOverwrap();
-            }
-        }
-
-        private void MagnifierAutoScrollLeftWith20PercentOverwrap()
-        {
-            if (BindingMode == BindingMode.RightToLeft)
-            {
-                MagnifierAutoScrollForwardWith20PercentOverwrap();
-            }
-            else
-            {
-                MagnifierAutoScrollBackWith20PercentOverwrap();
-            }
-        }
-
-        private void MagnifierAutoScrollRightWith0PercentOverwrap()
-        {
-            if (BindingMode != BindingMode.RightToLeft)
-            {
-                MagnifierAutoScrollForwardWith0PercentOverwrap();
-            }
-            else
-            {
-                MagnifierAutoScrollBackWith0PercentOverwrap();
-            }
-        }
-
-        private void MagnifierAutoScrollLeftWith0PercentOverwrap()
-        {
-            if (BindingMode == BindingMode.RightToLeft)
-            {
-                MagnifierAutoScrollForwardWith0PercentOverwrap();
-            }
-            else
-            {
-                MagnifierAutoScrollBackWith0PercentOverwrap();
-            }
-        }
-
-        private void MoveRightOrMagnifierAutoScrollWith20PercentOverwrap()
-        {
-            if (BindingMode != BindingMode.RightToLeft)
-            {
-                MoveForwardOrMagnifierAutoScrollWith20PercentOverwrap();
-            }
-            else
-            {
-                MoveBackOrMagnifierAutoScrollWith20PercentOverwrap();
-            }
-        }
-
-        private void MoveLeftOrMagnifierAutoScrollWith20PercentOverwrap()
-        {
-            if (BindingMode == BindingMode.RightToLeft)
-            {
-                MoveForwardOrMagnifierAutoScrollWith20PercentOverwrap();
-            }
-            else
-            {
-                MoveBackOrMagnifierAutoScrollWith20PercentOverwrap();
-            }
-        }
-
-        private void MoveRightOrMagnifierAutoScrollWith0PercentOverwrap()
-        {
-            if (BindingMode != BindingMode.RightToLeft)
-            {
-                MoveForwardOrMagnifierAutoScrollWith0PercentOverwrap();
-            }
-            else
-            {
-                MoveBackOrMagnifierAutoScrollWith0PercentOverwrap();
-            }
-        }
-
-        private void MoveLeftOrMagnifierAutoScrollWith0PercentOverwrap()
-        {
-            if (BindingMode == BindingMode.RightToLeft)
-            {
-                MoveForwardOrMagnifierAutoScrollWith0PercentOverwrap();
-            }
-            else
-            {
-                MoveBackOrMagnifierAutoScrollWith0PercentOverwrap();
-            }
-        }
+        private void MagnifierAutoScrollForwardWith20PercentOverwrap() => MagnifierAutoScrollStep(back: false, overwrap20: true);
+        private void MagnifierAutoScrollBackWith20PercentOverwrap() => MagnifierAutoScrollStep(back: true, overwrap20: true);
+        private void MagnifierAutoScrollForwardWith0PercentOverwrap() => MagnifierAutoScrollStep(back: false, overwrap20: false);
+        private void MagnifierAutoScrollBackWith0PercentOverwrap() => MagnifierAutoScrollStep(back: true, overwrap20: false);
+        private void MoveForwardOrMagnifierAutoScrollWith20PercentOverwrap() => MoveOrMagnifierAutoScroll(back: false, overwrap20: true);
+        private void MoveBackOrMagnifierAutoScrollWith20PercentOverwrap() => MoveOrMagnifierAutoScroll(back: true, overwrap20: true);
+        private void MoveForwardOrMagnifierAutoScrollWith0PercentOverwrap() => MoveOrMagnifierAutoScroll(back: false, overwrap20: false);
+        private void MoveBackOrMagnifierAutoScrollWith0PercentOverwrap() => MoveOrMagnifierAutoScroll(back: true, overwrap20: false);
+        private void MagnifierAutoScrollRightWith20PercentOverwrap() => MagnifierAutoScrollStep(back: !RightIsForward, overwrap20: true);
+        private void MagnifierAutoScrollLeftWith20PercentOverwrap() => MagnifierAutoScrollStep(back: RightIsForward, overwrap20: true);
+        private void MagnifierAutoScrollRightWith0PercentOverwrap() => MagnifierAutoScrollStep(back: !RightIsForward, overwrap20: false);
+        private void MagnifierAutoScrollLeftWith0PercentOverwrap() => MagnifierAutoScrollStep(back: RightIsForward, overwrap20: false);
+        private void MoveRightOrMagnifierAutoScrollWith20PercentOverwrap() => MoveOrMagnifierAutoScroll(back: !RightIsForward, overwrap20: true);
+        private void MoveLeftOrMagnifierAutoScrollWith20PercentOverwrap() => MoveOrMagnifierAutoScroll(back: RightIsForward, overwrap20: true);
+        private void MoveRightOrMagnifierAutoScrollWith0PercentOverwrap() => MoveOrMagnifierAutoScroll(back: !RightIsForward, overwrap20: false);
+        private void MoveLeftOrMagnifierAutoScrollWith0PercentOverwrap() => MoveOrMagnifierAutoScroll(back: RightIsForward, overwrap20: false);
 
         private Size GetPreviewModeMagnifierRectangleSize(Size pbViewSize, double magPower)
         {
