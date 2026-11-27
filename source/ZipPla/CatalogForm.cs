@@ -1321,109 +1321,6 @@ namespace ZipPla
         private ToolStripDropDown ratingFilterToolStripMenuItemDropDown;
         private ToolStripDropDown addToolStripMenuItemDropDown;
 
-#if DEBUG
-        // リリース版で有効にする場合リロードへの対処やエラー処理を記述すること
-        private void backupFilepath_Click(object sender, EventArgs e)
-        {
-            if (ZipPathArray == null) return;
-            var sizeToPath = new Dictionary<long, string>();
-            for (var i = 0; i < ZipPathArray.Length; i++)
-            {
-                var path = ZipPathArray[i];
-                var size = ZipSizeArray[i];
-                if (!sizeToPath.ContainsKey(size))
-                {
-                    sizeToPath[size] = path;
-                }
-                else
-                {
-                    MessageBox.Show(this, $"File size duplicates.\n\n{ Program.GetFormatSizeString(size, "Bytes")}\n{sizeToPath[size]}\n{path}");
-                    return;
-                }
-            }
-
-            if (sizeToPath.Count == 0) return;
-
-            string savePath = null;
-            using (var dialog = new SaveFileDialog())
-            {
-                dialog.Filter = "*.txt|*.txt";
-                if (dialog.ShowDialog(this) == DialogResult.OK)
-                {
-                    savePath = dialog.FileName;
-                }
-            }
-
-            if (savePath != null)
-            {
-                using (var writer = new StreamWriter(savePath, append: false))
-                {
-                    foreach (var pair in sizeToPath)
-                    {
-                        writer.WriteLine(pair.Key + "\t" + pair.Value);
-                    }
-                }
-            }
-        }
-
-        // （予定はないが）リリース版で有効にする場合リロードへの対処やエラー処理を記述すること
-        private void saveIntensiveLines_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var path = ZipPathArray[tvCatalog.SelectedIndex];
-                using (var target = new Bitmap(path))
-                using (var intensiveLines = BitmapAnalyzer.GetIntensiveLines(target, pixelRatio: 1))
-                using (var dialog = new SaveFileDialog())
-                {
-                    dialog.Filter = "PNG files|*.png";
-                    if (dialog.ShowDialog(this) == DialogResult.OK)
-                    {
-                        intensiveLines.Save(dialog.FileName);
-                    }
-                }
-            }
-            catch { }
-        }
-
-        private void filterPerformanceTest_Click(object sender, EventArgs e)
-        {
-            var s = cbFilter.Text;
-
-            var re = new Regex(Regex.Escape(s), RegexOptions.IgnoreCase);
-
-            var rec = new Regex(Regex.Escape(s), RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            var names = ZipNameArray.Where(name => name != null).ToArray();
-
-            var sw = new Stopwatch();
-            var ss = "";
-            var count = 0;
-            sw.Start();
-
-            count = 0;
-            foreach (var name in names)
-            {
-                if (name.Contains(s)) count++;
-            }
-            sw.Stop(); ss += $"plain:\t{sw.Elapsed}\n"; sw.Restart();
-
-
-            count = 0;
-            foreach (var name in names)
-            {
-                if (re.IsMatch(name)) count++;
-            }
-            sw.Stop(); ss += $"notcmp:\t{sw.Elapsed}\n"; sw.Restart();
-
-            count = 0;
-            foreach (var name in names)
-            {
-                if (rec.IsMatch(name)) count++;
-            }
-            sw.Stop(); ss += $"cmp:\t{sw.Elapsed}\n"; MessageBox.Show(ss);
-        }
-#endif
         int tbcIconWidth, tbcMargin;
 
         Font MenuTextFont = null;
@@ -1468,23 +1365,6 @@ namespace ZipPla
 
 
             Configuration.WaitPrepareTask();
-
-#if DEBUG
-            // ファイル名のバックアップ
-            var backupFilepath = new ToolStripMenuItem("Backup filepath");
-            backupFilepath.Click += backupFilepath_Click;
-            cmsRightClick.Items.Insert(cmsRightClick.Items.IndexOf(pasteToolStripMenuItem) + 1, backupFilepath);
-
-            // 集中線の出力
-            var saveIntensiveLines = new ToolStripMenuItem("Save intensive lines");
-            saveIntensiveLines.Click += saveIntensiveLines_Click;
-            cmsRightClick.Items.Insert(cmsRightClick.Items.IndexOf(backupFilepath) + 1, saveIntensiveLines);
-
-            // フィルタ実験
-            var filterPerformanceTest = new ToolStripMenuItem("Filter performance test");
-            filterPerformanceTest.Click += filterPerformanceTest_Click;
-            cmsRightClick.Items.Insert(cmsRightClick.Items.IndexOf(saveIntensiveLines) + 1, filterPerformanceTest);
-#endif
 
             try
             {

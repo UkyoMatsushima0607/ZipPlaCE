@@ -636,9 +636,6 @@ namespace ZipPla
 
             activateManager = new ActivateManager(this, tvCatalog, dgvFileList);
 
-#if DEBUG
-            //setColors();
-#endif
             //setControlEvent(this);
             IsLoaded = true;
         }

@@ -2337,10 +2337,6 @@ namespace ZipPla
                             switch (imageType)
                             {
                                 case RiosFastPdfImageDecoder.Type.JP2:
-#if DEBUG
-                                    //using (var fs = new FileStream("x.jp2", FileMode.CreateNew, FileAccess.Write)) result.CopyTo(fs);
-                                    //result.Seek(0, SeekOrigin.Begin);
-#endif
                                     image = ImageLoader.GetFullBitmap(result, "x.jp2");
                                     break;
                                 default:
@@ -2677,10 +2673,6 @@ namespace ZipPla
                     var code = ImageLoader.GetCode(nameBuffer);
                     foundUtf8 = code == Encoding.UTF8;
 
-#if DEBUG
-                    int preambleLength = code.GetPreamble().Length;
-                    var s = code.GetString(nameBuffer, preambleLength, nameBuffer.Length - preambleLength);
-#endif
                     if (code != Encoding.ASCII || uncompressedSize != 0) break;
                     if ((flags & 0x8) != 0 || compressedSize == 0xffffffff) break; // 圧縮データの長さがヘッダから分からない
                     position += header.Length + fileNameLength + extraFieldLength + compressedSize;

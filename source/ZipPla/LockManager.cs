@@ -9,47 +9,6 @@ namespace ZipPla
 {
     public static class LockManager
     {
-#if DEBUG
-        public static void Test()
-        {
-            var obj = new object();
-
-            lock(obj)
-            {
-                lock(obj)
-                {
-                }
-            }
-            System.Windows.Forms.MessageBox.Show("test1 ok");
-
-            var token1 = false;
-            var token2 = false;
-            Monitor.Enter(obj, ref token1);
-            Monitor.Enter(obj, ref token2);
-            if (token2) Monitor.Exit(obj);
-            if (token1) Monitor.Exit(obj);
-
-            System.Windows.Forms.MessageBox.Show($"test2 ok token1 = {token1}, token2 = {token2}");
-
-            lock (obj)
-            {
-                token2 = false;
-                Monitor.Enter(obj, ref token2);
-                if (token2) Monitor.Exit(obj);
-            }
-            System.Windows.Forms.MessageBox.Show($"test3 ok  token2 = {token2}");
-
-            token1 = false;
-            Monitor.Enter(obj, ref token1);
-            lock(obj)
-            {
-
-            }
-            if (token1) Monitor.Exit(obj);
-            System.Windows.Forms.MessageBox.Show($"test4 ok  token1 = {token1}");
-
-        }
-#endif
 
         /// <summary>
         /// list[index] の項目のロックを取って body を呼ぶ（項目が null ならロックなしで null を渡す）。

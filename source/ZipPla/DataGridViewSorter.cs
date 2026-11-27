@@ -127,8 +127,6 @@ namespace WindowsFormUtilities
             }
             rows = newRows;
             selectedRows = adsorbedRows;
-#if DEBUG
-#endif
         }
 
         public DataGridViewSorter(DataGridView dgv)

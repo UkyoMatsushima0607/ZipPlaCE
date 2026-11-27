@@ -818,10 +818,6 @@ namespace ZipPla
                             for (long i = 0; i < rx2; i++) v += cx[i] * buff1dLocal[i];
                             //for (long i = 0; i < rx2long; i++) v += *cx++ * *buff1dLocal++; // こちらのほうが低速
 
-#if DEBUG
-                        //v = interDesignRoundOffset + (buff1dLocal[0] << interShift);
-#endif
-
                             //buff2dHori[dstX] = ((v >> interShift) & interMask) - interSignOffset;
                             buff2dHori[dstX * ry2] = ((v >> interShift) & interMask) - interSignOffset;
                         }
@@ -951,10 +947,6 @@ namespace ZipPla
                                 for (long j = 0; j < jLoop; j++) v += cy[j] * buff2dVert[j];
                                 buff2dVert -= ry2;
                                 for (long j = jLoop; j < ry2; j++) v += cy[j] * buff2dVert[j];
-
-#if DEBUG
-                            //v = ((unt2 << 11) + (unt2 << 19)) + (buff2dVert[buff2dSize] << 11);
-#endif
 
                                 ulong s;
                                 s = v & (3UL << 19);
