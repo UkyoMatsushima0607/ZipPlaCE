@@ -327,6 +327,11 @@ namespace ZipPla
                         ipcLookAheadInfo = client.LookAheadInfo;
                         ipcReportFromViewerToCatalog = client.Reports;
                     }
+                    catch (Exception error) when (error is IpcDisconnectedException || error is TimeoutException || error is System.IO.IOException)
+                    {
+                        // つなぐ前後にカタログが終了した。待機用のビューアに役目はないので、エラーを出さずに終わる
+                        return;
+                    }
                     catch (Exception error)
                     {
                         AlertError(error);
