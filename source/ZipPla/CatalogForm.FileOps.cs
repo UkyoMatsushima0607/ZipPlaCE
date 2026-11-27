@@ -771,8 +771,8 @@ namespace ZipPla
                                 setFileListRowInLock(index, dynamicOnly: false, localOnly: false, cultureForOnlyStatic: Message.CurrentLanguage, volatilitySortCancelIfChanged: true);
 
                                 var item = tvCatalog[index];
-                                item.SilentSet(name);
-                                item.DrawItem(onlyFrame: false); // レートなどの再描画が必要なので
+                                item?.SetPathKeepingImage(path, name); // パスも差し替える（TD-6）
+                                item?.DrawItem(onlyFrame: false); // レートなどの再描画が必要なので
 
                                 if (needToReload != null) needToReloadArray[i] = ntr;
                                 else needToReloadArray[i] = LoadResultArray[index] == LoadResult.NotYet;

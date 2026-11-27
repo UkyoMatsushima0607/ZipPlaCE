@@ -2218,6 +2218,7 @@ namespace ZipPla
                                     }
                                     else
                                     {
+                                        tvCatalog[index].SetPathKeepingImage(path, zipName); // 名前が変わった場合にパスを差し替える（TD-6）
                                         if (silent)
                                         {
                                             tvCatalog[index].SilentSet(zipName); // サムネイルは変わっていないので今の画像のまま（K21）

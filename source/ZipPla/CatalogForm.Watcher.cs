@@ -425,8 +425,8 @@ namespace ZipPla
                     swapPathAndNameInSorBookmarkUndoBuff(oldPath, newPath, needToSaveBookmark: true);
 
                     var item = tvCatalog[idx];
-                    item.SilentSet(name);
-                    item.DrawItem(onlyFrame: false);
+                    item?.SetPathKeepingImage(newPath, name); // パスも差し替える（TD-6）
+                    item?.DrawItem(onlyFrame: false);
                     var showIndex = d2s[idx];
                     if (showIndex >= 0 && showIndex < dgvFileList.Rows.Count)
                     {

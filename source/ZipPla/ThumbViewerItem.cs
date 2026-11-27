@@ -209,7 +209,8 @@ namespace ZipPla
             if (loadCancelled || disposed || filePath != path)
             {
                 result?.Dispose();
-                if (reloadAfterLoad && !disposed && filePath == path)
+                // 読み直しは今のパスで（名前が変わった場合も、TD-6）。範囲外になったときは Clear が reloadAfterLoad を消している
+                if (reloadAfterLoad && !disposed)
                 {
                     reloadAfterLoad = false;
                     _ = LoadAsync(); // 読み込み中にファイルが変わった（K21）
@@ -315,6 +316,26 @@ namespace ZipPla
         }
         private bool reloadAfterLoad = false;
 
+        /// <summary>
+        /// 名前が変わったとき（TD-6）: 画像は捨てずに、パスと表示名だけを差し替える。
+        /// FilePath の setter は画像を捨てるので使わない。差し替えないと、範囲外へ出て戻ったときに旧パスを読みに行く
+        /// </summary>
+        public void SetPathKeepingImage(string newPath, string text)
+        {
+            this.text = text;
+            if (filePath == newPath) return;
+            var oldPath = filePath;
+            filePath = newPath;
+            loadFailed = false;
+            owner?.ThumbnailMemoryCache.Move(oldPath, newPath); // 範囲外でキャッシュに移した画像も新しいパスで使えるように
+            if (loading)
+            {
+                // 旧パスで読んでいる結果は LoadCoreAsync が捨てるので、終わったら新しいパスで読み直す
+                loadCancelled = true;
+                reloadAfterLoad = true;
+            }
+        }
+
         public void Set(Bitmap image, string text)
         {
             if (this.image != null) this.image.Dispose();
@@ -396,6 +417,19 @@ namespace ZipPla
                 return null;
             }
             return image;
+        }
+
+        /// <summary>名前が変わったとき（TD-6）: 旧パスの画像を新しいパスに付け替える</summary>
+        public void Move(string oldPath, string newPath)
+        {
+            LinkedListNode<Entry> node;
+            if (oldPath == null || newPath == null || !map.TryGetValue(oldPath, out node)) return;
+            map.Remove(oldPath);
+            Remove(newPath); // 新しいパスに古い画像が残っていれば捨てる
+            var entry = node.Value;
+            entry.Path = newPath;
+            node.Value = entry;
+            map[newPath] = node;
         }
 
         public void Remove(string path)
