@@ -242,7 +242,8 @@ namespace ZipPla
                 {
                     // サムネイル一覧の表示順からは消えた項目をすぐに除く（残りの順番は変わらないので並べ替えは要らない）。
                     // 除かずに後回しにすると、消えた項目を描こうとしてサムネイル一覧が描画中に例外を出す
-                    lock (loadingPackedImageLoaderLocker)
+                    // 配列はほかの並べ替えと同じく ZipPathArrayLocker で守る（以前は書庫のローダーのロックで、配列の差し替えは防げず、取り出しだけを止めていた）
+                    lock (ZipPathArrayLocker)
                     {
                         var s2d = tvCatalog.ShowIndexToDataIndex;
                         var zpa = ZipPathArray;
@@ -302,7 +303,9 @@ namespace ZipPla
         {
             exitQuickReload_Pending = false;
             exitQuickReload_Timer?.Stop();
-            lock (loadingPackedImageLoaderLocker)
+            // 並べ替えと一覧の作り直しの間、配列の差し替えを止める（ほかの並べ替えと同じ ZipPathArrayLocker。以前は書庫のローダーのロックで、
+            // その間サムネイルのワーカーの書庫からの取り出しが止まっていた。RF-C5）
+            lock (ZipPathArrayLocker)
             {
 #if PERFLOG
                 var perfT0 = System.Diagnostics.Stopwatch.GetTimestamp();
