@@ -102,61 +102,37 @@ namespace ZipPla
         /// </summary>
         public static Bitmap GetJpeg2000ImageByFfmpeg(Stream stream, long streamLength = -1)
         {
-            if (stream.CanSeek) return getJpeg2000ImageByFfmpegSeekable(stream);
-            using (var source = streamLength >= 0 && streamLength <= int.MaxValue ?
-                new MemoryStream((int)streamLength) : new MemoryStream())
-            {
-                stream.CopyTo(source);
-                source.Position = 0;
-                return getJpeg2000ImageByFfmpegSeekable(source);
-            }
-        }
-
-        private static Bitmap getJpeg2000ImageByFfmpegSeekable(Stream source)
-        {
-            var position = source.Position;
-            try
-            {
-                int outputSize;
-                var buf = readStdOutBinary(ffmpegPath,
-                    "-hide_banner -loglevel error -f j2k_pipe -i pipe:0 -vframes 1 -an -vcodec bmp -f image2 -update 1 pipe:1",
-                    source, null, out outputSize);
-                using (var imageStream = new MemoryStream(buf, 0, outputSize, writable: false, publiclyVisible: false))
-                {
-                    return new Bitmap(imageStream);
-                }
-            }
-            catch (Exception e) when (e is IOException || e is InvalidDataException || e is ArgumentException || e is System.ComponentModel.Win32Exception || e is System.Runtime.InteropServices.ExternalException)
-            {
-                source.Position = position;
-                return GetImageByFfmpeg(source);
-            }
+            return getImageByFfmpegPipe(stream, streamLength, "-f j2k_pipe -i pipe:0 -vframes 1 -an -vcodec bmp -f image2 -update 1 pipe:1");
         }
 
         public static Bitmap GetWebPImageByFfmpeg(Stream stream, long streamLength = -1)
         {
-            if (stream.CanSeek) return getWebPImageByFfmpegSeekable(stream);
+            return getImageByFfmpegPipe(stream, streamLength, "-f webp_pipe -i pipe:0 -vframes 1 -an -vcodec bmp -f image2 pipe:1");
+        }
 
-            // Keep the compressed image for a file-based fallback when an older ffmpeg
-            // cannot identify WebP from standard input.
+        /// <summary>
+        /// 画像を ffmpeg の標準入力に渡して BMP で受け取る（D6）。標準入力から読めなければ（古い ffmpeg など）一時ファイルで読む。
+        /// その読み直しのために、シークできないストリームは先にメモリへ写す
+        /// </summary>
+        private static Bitmap getImageByFfmpegPipe(Stream stream, long streamLength, string arguments)
+        {
+            if (stream.CanSeek) return getImageByFfmpegPipeSeekable(stream, arguments);
             using (var source = streamLength >= 0 && streamLength <= int.MaxValue ?
                 new MemoryStream((int)streamLength) : new MemoryStream())
             {
                 stream.CopyTo(source);
                 source.Position = 0;
-                return getWebPImageByFfmpegSeekable(source);
+                return getImageByFfmpegPipeSeekable(source, arguments);
             }
         }
 
-        private static Bitmap getWebPImageByFfmpegSeekable(Stream source)
+        private static Bitmap getImageByFfmpegPipeSeekable(Stream source, string arguments)
         {
             var position = source.Position;
             try
             {
                 int outputSize;
-                var buf = readStdOutBinary(ffmpegPath,
-                    "-hide_banner -loglevel error -f webp_pipe -i pipe:0 -vframes 1 -an -vcodec bmp -f image2 pipe:1",
-                    source, null, out outputSize);
+                var buf = readStdOutBinary(ffmpegPath, "-hide_banner -loglevel error " + arguments, source, null, out outputSize);
                 using (var imageStream = new MemoryStream(buf, 0, outputSize, writable: false, publiclyVisible: false))
                 {
                     return new Bitmap(imageStream);
