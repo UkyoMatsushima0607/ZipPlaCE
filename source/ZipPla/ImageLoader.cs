@@ -720,6 +720,20 @@ namespace ZipPla
             }
         }
 
+        /// <summary>GDI+ で読む形式（defaultSupportPathRegex）。アニメーションの GIF・APNG はフレームごとに、JPEG は Exif の向きに合わせて回す</summary>
+        private static Bitmap DecodeByGdiPlus(Stream stream, string pathForType, string extInLower, bool animation)
+        {
+            if (animation && extInLower == ".gif") return GetGif(stream);
+            if (animation && (extInLower == ".png" || extInLower == ".apng")) return GetAPng(stream);
+            return IsJpegPath(pathForType) ? LoadRotateBitmap(stream) : new Bitmap(stream);
+        }
+
+        private static Bitmap DecodePsd(System.Drawing.PSD.PsdFile loadedPsd, out ImageInfo imageInfo)
+        {
+            imageInfo = new ImageInfo(loadedPsd.Columns, loadedPsd.Rows, loadedPsd.Depth * loadedPsd.ImageData.Length);
+            return RiosFastPsdDecoder.DecodeImage(loadedPsd);
+        }
+
         private static Bitmap GetFullBitmap(string filePath, bool setImageInfo, out ImageInfo imageInfo, out bool needToRefresh, bool animation)
         {
             if (defaultSupportPathRegex.IsMatch(filePath))
@@ -739,18 +753,7 @@ namespace ZipPla
                 {
                     using (var s = OpenFileForDecode(filePath))
                     {
-                        if (animation && ext == ".gif")
-                        {
-                            img = GetGif(s);
-                        }
-                        else if (animation && (ext == ".png" || ext == ".apng"))
-                        {
-                            img = GetAPng(s);
-                        }
-                        else
-                        {
-                            img = IsJpegPath(filePath) ? LoadRotateBitmap(s) : new Bitmap(s);
-                        }
+                        img = DecodeByGdiPlus(s, filePath, ext, animation);
                     }
                 }
 
@@ -778,11 +781,7 @@ namespace ZipPla
                                 {
                                     //psd.Load(filePath); // このオーバーロードは内部で FileAccess.Read が指定されておらずエラーが出ることがある
                                     psd.Load(stream);
-                                    imageInfo = new ImageInfo(psd.Columns, psd.Rows, psd.Depth * psd.ImageData.Length);
-
-                                    //var result = System.Drawing.PSD.ImageDecoder.DecodeImage(psd);
-                                    var result = RiosFastPsdDecoder.DecodeImage(psd);
-                                    return result;
+                                    return DecodePsd(psd, out imageInfo);
                                 }
                             }
 #if !AUTOBUILD
@@ -857,19 +856,7 @@ namespace ZipPla
             if (defaultSupportPathRegex.IsMatch(filePathForGetFileType))
             {
                 var ext = Path.GetExtension(filePathForGetFileType).ToLower();
-                Bitmap img;
-                if (animation && ext == ".gif")
-                {
-                    img = GetGif(stream);
-                }
-                else if (animation && (ext == ".png" || ext == ".apng"))
-                {
-                    img = GetAPng(stream);
-                }
-                else
-                {
-                    img = IsJpegPath(filePathForGetFileType) ? LoadRotateBitmap(stream) : new Bitmap(stream);
-                }
+                var img = DecodeByGdiPlus(stream, filePathForGetFileType, ext, animation);
                 if (setImageInfo) imageInfo = GetImageInfo(img);
                 else imageInfo = null;
                 return img;
@@ -885,8 +872,7 @@ namespace ZipPla
                             if (stream.CanSeek)
                             {
                                 psd.Load(stream);
-                                imageInfo = new ImageInfo(psd.Columns, psd.Rows, psd.Depth * psd.ImageData.Length);
-                                return RiosFastPsdDecoder.DecodeImage(psd);
+                                return DecodePsd(psd, out imageInfo);
                             }
                             else
                             {
@@ -894,9 +880,7 @@ namespace ZipPla
                                 {
                                     stream.CopyTo(ms);
                                     psd.Load(ms.ToArray());
-                                    //psd.Load(ms);
-                                    imageInfo = new ImageInfo(psd.Columns, psd.Rows, psd.Depth * psd.ImageData.Length);
-                                    return RiosFastPsdDecoder.DecodeImage(psd);
+                                    return DecodePsd(psd, out imageInfo);
                                 }
                             }
                         }
